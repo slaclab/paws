@@ -1,9 +1,9 @@
 ## Synopsis
 
-`laxray` is designed to be a fast, lean, and modular 
+`slacx` is designed to be a fast, lean, and modular 
 x-ray data workflow interface.
 Beginning with raw detector output, 
-`laxray` performs calibration, 
+`slacx` performs calibration, 
 data cleaning (cosmic ray removal),
 dimensionality reduction (azimuthal integration),
 peak analysis,
