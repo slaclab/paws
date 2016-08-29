@@ -3,4 +3,8 @@ lib
 local
 include
 share
+images
 pip-selfcheck.json
+*.pyc
+*.swp
+*.swo

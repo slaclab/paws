@@ -1,14 +1,14 @@
 ## Synopsis
 
 `slacx` is designed to be a fast, lean, and modular 
-x-ray data workflow interface.
-Beginning with raw detector output, 
-`slacx` performs calibration, 
-data cleaning (cosmic ray removal),
-dimensionality reduction (azimuthal integration),
-peak analysis,
-and ultimately packaging and shipping the data and results
-to a remote filesystem or server.
+workflow manager for image-like data.
+Beginning with raw pixel data, 
+`slacx` operations can be written to perform calibration, 
+data cleaning, dimensionality reduction (e.g. integration),
+feature extraction, peak analysis, custom operations, 
+and packaging and visualization of results.
+The `slacx` engine and gui also drop in 
+as the batch processing plugin for `xi-cam`.
 
 ## Code Example
 
