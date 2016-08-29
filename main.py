@@ -2,8 +2,11 @@ import os
 import sys
 
 from PySide import QtGui, QtCore
+import qdarkstyle
 
-from ui import slacxui
+from ui import slacxuiman
+from core import slacximgman
+from core.operations import slacxopman
 
 """
 slacx main module.
@@ -16,13 +19,35 @@ def main():
     """
 
     # Instantiate QApplication, pass in cmd line args sys.argv.
-    # TODO: If file list provided in sys.argv, load these files.
-    # TODO: Add functionality to do batch mode without a gui.
     app = QtGui.QApplication(sys.argv)
 
-    # Start a UiManager to create and manage a QMainWindow 
+    # TODO: parse sys.argv for:
+    #   running without a gui 
+    #   image files to load  
+    #   Operations to load 
+    #   loading a workflow
+    #   batch mode
+    #   real-time mode
+
+    # If running with gui, load dark style:
+    style = app.styleSheet()
+    app.setStyleSheet(qdarkstyle.load_stylesheet() + style)
+
+    # Start an ImgManager to manage input files.
+    # TODO: give kwargs to these init routines to rebuild saved jobs
+    imgman = slacximgman.ImgManager()
+    # Start an OpManager to manage operations.
+    opman = slacxopman.OpManager()
+
+    # Start a UiManager to create and manage a QMainWindow.
+    # Takes ui file name as only argument.
     ui_file = QtCore.QFile(os.getcwd()+"/ui/basic.ui")
-    uiman = slacxui.UiManager(ui_file)
+    uiman = slacxuiman.UiManager(ui_file)
+    # UiManager needs to store references to the QAbstractItemModel objects
+    # that are used to interact with the features of the gui
+    # TODO: make this part of the UiManager constructor.
+    uiman.imgman = imgman
+    uiman.opman = opman
 
     # Make the slacx title box
     uiman.make_title()    
@@ -46,7 +71,7 @@ if __name__ == '__main__':
 
 
 ### ARCHIVES ###
-#For windows execution:
+#For win32 execution:
 #if sys.platform == 'win32':
 #    sys.stdout = open(os.path.join(os.path.expanduser('~'),'out.log'),'w')
 #    sys.stderr = open(os.path.join(os.path.expanduser('~'),'err.log'),'w')

@@ -1,5 +1,18 @@
+--- definitely needed: ---
 numpy
 scipy
 setuptools
 PySide
+pyqtgraph
+
+--- trial zone: ---
+pillow
+libtiff
 fabio
+lxml
+matplotlib
+qdarkstyle
+
+--- purge list: ---
+
+
