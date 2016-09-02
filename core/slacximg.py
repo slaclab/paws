@@ -21,6 +21,7 @@ class SlacxImage(object):
         self.img_filename = img_url.split('/')[-1]
         self.img_tag = os.path.splitext(self.img_filename)[0]
         self.img_ext = os.path.splitext(self.img_filename)[1]
+        self.rendered = False
         self.img_data = None 
         self.img_hdr = None 
         self.pil_img = None
@@ -48,6 +49,7 @@ class SlacxImage(object):
                     # Image.getdata() returns a sequence (have to reshape):
                     self.img_data = np.array(
                     self.pil_img.getdata()).reshape(self.pil_img.size).T
+                    self.rendered = True
                     #import pdb; pdb.set_trace()
                     #print 'Image data attributes...'
                     #print 'shape: {}'.format(self.img_data.shape)

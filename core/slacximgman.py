@@ -33,14 +33,6 @@ class ImgManager(TreeModel):
         + "MAR (*.mar*)"
         )
 
-    @staticmethod
-    def pixel_data_tag():
-        return 'pixel data'
-
-    @staticmethod
-    def url_tag():
-        return 'URL'
-
     # add a SlacxImage object to the tree as a new top-level TreeItem.
     def add_image(self,new_img):
         # Count top-level rows by passing parent=QModelIndex()
@@ -55,36 +47,29 @@ class ImgManager(TreeModel):
         # Image insertion occurs between notification methods
         self.root_items.insert(ins_row,new_treeitem)
         self.endInsertRows()
-        # TODO: insert any default child TreeItems? (url? metadata?)
-        img_indx = self.index(ins_row,0,QtCore.QModelIndex())
-        self.add_image_text(img_indx,new_img.img_url,self.url_tag())
-        new_img.load_img_data()
-        imgsize = new_img.img_data.shape
-        sz_tag = '{} by {} array'.format(imgsize[0],imgsize[1])
-        self.add_image_data(img_indx,new_img.img_data,self.pixel_data_tag(),sz_tag)
 
-    def add_image_data(self,parent_indx,data,tag,long_tag=None):
-        """Add data as a child TreeItem to the TreeItem at parent_indx"""
-        ins_row = self.rowCount(parent_indx)
-        new_treeitem = TreeItem(ins_row,0,parent_indx)
+    def add_image_data(self,data,parent,tag,long_tag=None):
+        """Add data as a child TreeItem to the TreeItem at parent"""
+        ins_row = self.rowCount(parent)
+        new_treeitem = TreeItem(ins_row,0,parent)
         new_treeitem.data.append(data)
         new_treeitem.set_tag(tag)
         if long_tag:
             new_treeitem.long_tag = long_tag 
-        p_item = parent_indx.internalPointer()
-        self.beginInsertRows(parent_indx,ins_row,ins_row)
+        p_item = parent.internalPointer()
+        self.beginInsertRows(parent,ins_row,ins_row)
         p_item.children.insert(ins_row,new_treeitem)
         self.endInsertRows()
 
-    def add_image_text(self,parent_indx,text,tag):
-        """Add text as a child TreeItem to the TreeItem at parent_indx"""
-        ins_row = self.rowCount(parent_indx)
-        new_treeitem = TreeItem(ins_row,0,parent_indx)
+    def add_image_text(self,parent,text,tag):
+        """Add text as a child TreeItem to the TreeItem at parent"""
+        ins_row = self.rowCount(parent)
+        new_treeitem = TreeItem(ins_row,0,parent)
         new_treeitem.data.append(text)
         new_treeitem.set_tag(tag)
         new_treeitem.long_tag = text 
-        p_item = parent_indx.internalPointer()
-        self.beginInsertRows(parent_indx,ins_row,ins_row)
+        p_item = parent.internalPointer()
+        self.beginInsertRows(parent,ins_row,ins_row)
         p_item.children.insert(ins_row,new_treeitem)
         self.endInsertRows()
 

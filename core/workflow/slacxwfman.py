@@ -1,80 +1,76 @@
 from PySide import QtCore
 
-import core.operations as ops
 
-class OpManager(QtCore.QAbstractListModel):
+class WfManager(QtCore.QAbstractListModel):
     """
-    Class for managing operations.
-    Should be able to add operations to the list
-    and remove selected operations from the list.
-    Operations will be displayed in operation builder ui,
-    use data() to ensure that the display is intelligible
+    Class for managing a workflow built from slacx operations.
     """
 
     def __init__(self,**kwargs):
-        # TODO: build operation list from core/operations/__init__.py 
-        self._op_list = [] 
-        super(OpManager,self).__init__()
+        self._wf = {}       # this will be a dict managed by a dask graph 
+        self._n_ops = 0     # private op counter
+        super(WfManager,self).__init__()
 
-    def load_ops(self,op_list):
-        for op in op_list:
-            self.add_op(op)
+    def check_wf(self):
+        """
+        Check the dependencies of the workflow.
+        Ensure that all loaded operations have inputs that make sense
+        """
+        pass
 
-    # add an Operation to the list
-    def add_op(self,new_op):
+    def next_op(self):
+        self._n_ops += 1
+        return self._n_ops
+
+    # add an Operation to the workflow 
+    def add_op(self,new_op,op_input_tags):
+        op_key = 'op'+str(self.next_op())
+        op_computation = tuple([new_op.run] + [op_input_tags])
+
+       ####### WE ARE HERE. #######
+
         insertion_row = self.rowCount()
         self.beginInsertRows(
         QtCore.QModelIndex(),insertion_row,insertion_row)
         # Insertion occurs between notification methods
-        self._op_list.insert(insertion_row,new_op)
+        self._wf[op_key]=(new_op.run, new_op.inputs())
         self.endInsertRows()
 
-    # remove an Operation from the list 
+    # remove an Operation from the workflow 
     def remove_op(self,removal_indx):
         removal_row = removal_indx.row()
         self.beginRemoveRows(
         QtCore.QModelIndex(),removal_row,removal_row)
         # Removal occurs between notification methods
-        self._op_list.pop(removal_row)
+        self._wf.pop(removal_row)
         self.endRemoveRows()
 
-    def list_ops(self):
-        return [op.__name__ for op in self._op_list]
-
-    # get an Operation from the list by its name 
-    def get_op_byname(self,op_name):
-        for op in self._op_list:
-            if op.__name__ == op_name:
-                return op
-        return None
-
-    # get an Operation from the list by its QModelIndex
+    # get an Operation from the workflow by its QModelIndex
     def get_op(self,indx):
-        return self._op_list[indx.row()]
+        return self._wf[indx.row()]
  
     # QAbstractItemModel subclass must implement rowCount()
     def rowCount(self,parent=QtCore.QModelIndex()):
-        return len(self._op_list)
+        return len(self._wf)
  
     # QAbstractItemModel subclass must implement 
     # data(QModelIndex[,role=Qt.DisplayRole])
     def data(self,indx,data_role):
         if (not indx.isValid()
-            or indx.row() > len(self._op_list)):
+            or indx.row() > len(self._wf)):
             return None
         if data_role == QtCore.Qt.DisplayRole:
-            return self._op_list[indx.row()].__name__
+            return type( self._wf[indx.row()] ).__name__
         elif data_role == QtCore.Qt.ToolTipRole:
-            return self._op_list[indx.row()].description()
+            return self._wf[indx.row()].description()
         else:
             return None
 
     # QAbstractItemModel subclass should implement 
     # headerData(int section,Qt.Orientation orientation[,role=Qt.DisplayRole])
     def headerData(self,section_dummy,orientation_dummy,data_role):
-        # TODO: ensure this header is visible.
         if data_role == QtCore.Qt.DisplayRole:
-            return "{} operation(s) loaded".format(self.rowCount())
+            return "workflow: {} total operation(s)".format(self.rowCount())
         else:
             return None
 
@@ -84,7 +80,7 @@ class OpManager(QtCore.QAbstractListModel):
         # Signal listeners that rows are about to be born
         self.beginInsertRows(parent,row,row+count-1)
         for indx in range(row,row+count):
-            self._op_list.insert(indx,None)
+            self._wf.insert(indx,None)
         # Signal listeners that we are done inserting rows
         self.endInsertRows()
 
@@ -94,7 +90,7 @@ class OpManager(QtCore.QAbstractListModel):
         # Signal listeners that rows are about to die
         self.beginRemoveRows(parent,row,row+count-1)
         for indx in range(row,row+count):
-            self._op_list.pop(indx)
+            self._wf.pop(indx)
         # Signal listeners that we are done removing rows
         self.endRemoveRows()
 

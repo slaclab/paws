@@ -126,9 +126,6 @@
     <item>
      <layout class="QVBoxLayout" name="verticalLayout">
       <item>
-       <widget class="QListView" name="operation_list"/>
-      </item>
-      <item>
        <widget class="QFrame" name="io_button_box">
         <property name="frameShape">
          <enum>QFrame::StyledPanel</enum>
@@ -136,30 +133,23 @@
         <property name="frameShadow">
          <enum>QFrame::Raised</enum>
         </property>
-        <layout class="QGridLayout" name="gridLayout_3">
-         <item row="0" column="0">
-          <widget class="QPushButton" name="create_operation_button">
+        <layout class="QVBoxLayout" name="verticalLayout_4">
+         <item>
+          <widget class="QPushButton" name="add_op_button">
            <property name="text">
             <string>PushButton</string>
            </property>
           </widget>
          </item>
-         <item row="0" column="1">
-          <widget class="QPushButton" name="remove_operation_button">
+         <item>
+          <widget class="QPushButton" name="edit_op_button">
            <property name="text">
             <string>PushButton</string>
            </property>
           </widget>
          </item>
-         <item row="1" column="0">
-          <widget class="QPushButton" name="add_op_to_workflow_button">
-           <property name="text">
-            <string>PushButton</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="1">
-          <widget class="QPushButton" name="rm_op_from_workflow_button">
+         <item>
+          <widget class="QPushButton" name="rm_op_button">
            <property name="text">
             <string>PushButton</string>
            </property>

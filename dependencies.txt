@@ -4,14 +4,15 @@ scipy
 setuptools
 PySide
 pyqtgraph
-
---- trial zone: ---
 pillow
 libtiff
+
+--- bells, whistles, libs on trial: ---
 fabio
 lxml
 matplotlib
 qdarkstyle
+dask
 
 --- purge list: ---
 

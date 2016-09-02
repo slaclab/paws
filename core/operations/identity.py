@@ -2,25 +2,19 @@ from core.operations.slacxop import Operation
 
 class Identity(Operation):
 
-    def __init__(self,args):
-        self.imgdata = args['img'] 
+    def __init__(self):
+        input_vars = ['image_data']
+        output_vars = ['image_data']
+        super(Identity,self).__init__(input_vars,output_vars)        
         
-    def args(self):
-        return {'imgdata':self.imgdata}
-
     def run(self):
-        return {'imgdata':self.imgdata}
+        self.outputs['image_data'] = self.inputs['image_data']
 
     def description(self):
         return str(
-        "An Identity operation is constructed by: \n"
-        + ">> op = Identity(args)\n"
-        + "where args is a dict " 
-        + "containing the image data (as a 2D array)"
-        + "in a field named 'imgdata'.\n\n"
-        + "For example, \n"
-        + ">> op = Identity( {'imgdata':existing_2d_array} )\n"
-        + "creates an Identity(Operation) object "
-        + "and sets self.imgdata to existing_2d_array"
+        "An Identity operation takes one input argument: "
+        + "inputs['image_data'] (a 2d pixel array). "
+        + "When Identity.run() is called, "
+        + "it saves the same pixel array in outputs['image_data']. "
         )
 

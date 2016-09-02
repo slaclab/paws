@@ -6,7 +6,9 @@ import qdarkstyle
 
 from ui import slacxuiman
 from core import slacximgman
+import core.operations as ops
 from core.operations import slacxopman
+from core.workflow import slacxwfman
 
 """
 slacx main module.
@@ -30,14 +32,18 @@ def main():
     #   real-time mode
 
     # If running with gui, load dark style:
-    style = app.styleSheet()
-    app.setStyleSheet(qdarkstyle.load_stylesheet() + style)
+    #print qdarkstyle.load_stylesheet()+app.styleSheet()
+    app.setStyleSheet(qdarkstyle.load_stylesheet() + app.styleSheet())
 
+    # TODO: give kwargs to these init routines to rebuild saved jobs?
     # Start an ImgManager to manage input files.
-    # TODO: give kwargs to these init routines to rebuild saved jobs
     imgman = slacximgman.ImgManager()
     # Start an OpManager to manage operations.
     opman = slacxopman.OpManager()
+    # Add core.operations.op_list to opman
+    opman.load_ops(ops.op_list)
+    # Start a WfManager to manage workflows.
+    wfman = slacxwfman.WfManager()
 
     # Start a UiManager to create and manage a QMainWindow.
     # Takes ui file name as only argument.
@@ -45,9 +51,10 @@ def main():
     uiman = slacxuiman.UiManager(ui_file)
     # UiManager needs to store references to the QAbstractItemModel objects
     # that are used to interact with the features of the gui
-    # TODO: make this part of the UiManager constructor.
+    # TODO: make this part of the UiManager constructor?
     uiman.imgman = imgman
     uiman.opman = opman
+    uiman.wfman = wfman
 
     # Make the slacx title box
     uiman.make_title()    
