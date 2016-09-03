@@ -12,8 +12,7 @@ class Rotation(Operation):
     def run(self):
         """Rotate self.input_vars['image_data'] and save as self.output_vars['image_data']"""
         # load self.inputs into local vars 
-        img = self.inputs['image_data']
-        rot_deg = self.inputs['rotation_deg']
+        self.load_vars()    
         if rot_deg==90:
             img_rot = np.rot90(img)
         elif rot_deg==180:
@@ -26,7 +25,8 @@ class Rotation(Operation):
         # save results to self.outputs
         self.outputs['image_data'] = img_rot
 
-    def description(self):
+    @classmethod
+    def description(cls):
         return str(
         "A Rotation operation takes two input arguments: "
         + "inputs['image_data'] (2d pixel array), "

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>OpBuilder</class>
- <widget class="QGroupBox" name="OpBuilder">
+ <class>op_builder</class>
+ <widget class="QGroupBox" name="op_builder">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -64,7 +64,7 @@
     </widget>
    </item>
    <item row="1" column="0" colspan="2">
-    <widget class="QPushButton" name="load_op_button">
+    <widget class="QPushButton" name="finish_button">
      <property name="minimumSize">
       <size>
        <width>2</width>
@@ -72,7 +72,7 @@
       </size>
      </property>
      <property name="text">
-      <string>Load Operation</string>
+      <string>PushButton</string>
      </property>
     </widget>
    </item>

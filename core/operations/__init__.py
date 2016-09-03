@@ -21,9 +21,9 @@ for modloader, modname, ispkg in mods:
                 # is it a non-abstract subclass of Operation?
                 if issubclass(item,Operation) and name is not 'Operation':
                     op_list.append(getattr(mod,name))
-    except ImportError as ex:
-        print '[{}] had trouble dealing with module item {}: {}'.format(__name__,name,item)
-        raise ex
+    except ImportError:
+        print '[{}] had trouble dealing with module attribute {}: {}'.format(__name__,name,item)
+        raise
 
 
 

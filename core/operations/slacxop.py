@@ -35,7 +35,7 @@ class Operation(object):
         Operation.run() should use all of the Operation.inputs
         and set values for all of the Operation.outputs.
         It is expected that the Operation will have values
-        set for all items in inputs when it is added to the workflow.
+        set for all items in inputs before calling run().
         """
         pass
 
@@ -47,6 +47,9 @@ class Operation(object):
         """
         return self.inputs
 
+    def set_input(self,inputname,source,value):
+        self.inputs[inputname] = (source, value)
+
 #    @abc.abstractmethod
     def outputs(self):
         """
@@ -56,8 +59,10 @@ class Operation(object):
         return self.outputs 
 
     @abc.abstractmethod
-    def description(self):
+    def description(cls):
         """
+        IMPORTANT: This is a class method. 
+        It must be implemented with the with @classmethod decorator.
         self.description() should return a string 
         documenting the input and output structure 
         and usage instructions for the Operation

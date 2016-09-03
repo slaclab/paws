@@ -10,7 +10,8 @@ class Identity(Operation):
     def run(self):
         self.outputs['image_data'] = self.inputs['image_data']
 
-    def description(self):
+    @classmethod
+    def description(cls):
         return str(
         "An Identity operation takes one input argument: "
         + "inputs['image_data'] (a 2d pixel array). "

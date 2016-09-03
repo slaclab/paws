@@ -53,7 +53,7 @@ class UiManager(object):
         self.op_ui = self.activate_op_ui()
         # Load initial op and args
         if self.opman.rowCount() > 0:
-            self.build_nameval_list(0)
+            self.build_nameval_list(self.opman.index(0,0))
         # Connect self.op_ui.op_selector to opman (QAbstractListModel).
         self.op_ui.op_selector.setModel(self.opman)
         # Connect op selection with a slot that populates op_ui.op_info and op_ui.arg_frame
@@ -64,7 +64,7 @@ class UiManager(object):
         self.op_ui.show()
 
     def load_op(self):
-        # parse the things in self.op_ui, package as 
+        # parse the things in self.op_ui, package as Operation object with inputs set. 
         allgood=True
         if allgood:
             # instantiate operation
@@ -83,34 +83,45 @@ class UiManager(object):
         ui_file.close()
         #op_ui.setParent(self.ui)
         op_ui.setTitle("slacx operation builder")
-        op_ui.load_op_button.setText("Finish / Load to Workflow")
+        op_ui.finish_button.setText("Finish / Load to Workflow")
         op_ui.arg_frame.setMinimumWidth(400)
         op_ui.op_frame.setMinimumWidth(300)
+        op_ui.setStyleSheet( "QLineEdit { border: none }" + op_ui.styleSheet() )
+        #name_widget.setStyleSheet( "QLineEdit { border: none }" )
+        #val_widget.setStyleSheet( "QLineEdit { border: none }" )
+        #src_widget.setStyleSheet( "QLineEdit { border: none }" )
         return op_ui
 
     def build_nameval_list(self,op_indx):
         # TODO: align / distribute the widgets nicerly. 
-        # TODO: add scrolling for when shit gets out of hand. 
-        op = self.opman.get_op_byname(self.opman.list_ops()[op_indx])()
+        # TODO: add scrolling for when there are too many inputs/outputs 
+        # get the op class and instantiate it:
+        op = self.opman.get_op(op_indx)()
         # Set self.op_ui.op_info to op.description
         self.op_ui.op_info.setPlainText(op.description())
         # Count the items in the current layout
         n_val_widgets = self.op_ui.nameval_layout.count()
         # Loop through them, last to first, clear the frame
         for i in range(n_val_widgets-1,-1,-1):
-            # QLayout.takeAt returns a LayoutItem
-            widg = self.op_ui.nameval_layout.takeAt(i)
-            # get the QWidget of that LayoutItem and set it to deleteLater()
-            widg.widget().deleteLater()
+            # QLayout.takeAt returns a LayoutItem- set its widget to deleteLater()
+            item = self.op_ui.nameval_layout.takeAt(i)
+            item.widget().deleteLater()
         i=0
-        self.op_ui.nameval_layout.addWidget(self.text_widget('--- inputs ---'),i,0,1,3) 
+        self.op_ui.nameval_layout.addWidget(self.text_widget('--- INPUTS ---'),i,0,1,4) 
+        i+=1
+        self.op_ui.nameval_layout.addWidget(self.hdr_widget('(name)'),i,0,1,1) 
+        self.op_ui.nameval_layout.addWidget(self.hdr_widget('(source)'),i,2,1,1) 
+        self.op_ui.nameval_layout.addWidget(self.hdr_widget('(value)'),i,3,1,1) 
         i+=1 
         for name, val in op.inputs.items():
             self.add_nameval_widget(name,val,i)
             i+=1 
-        self.op_ui.nameval_layout.addWidget(self.smalltext_widget(' '),i,0,1,3) 
+        self.op_ui.nameval_layout.addWidget(self.smalltext_widget(' '),i,0,1,4) 
         i+=1 
-        self.op_ui.nameval_layout.addWidget(self.text_widget('--- outputs ---'),i,0,1,3) 
+        self.op_ui.nameval_layout.addWidget(self.text_widget('--- OUTPUTS ---'),i,0,1,4) 
+        i+=1 
+        self.op_ui.nameval_layout.addWidget(self.hdr_widget('(name)'),i,0,1,1) 
+        self.op_ui.nameval_layout.addWidget(self.hdr_widget('(value)'),i,2,1,2) 
         i+=1 
         for name, val in op.outputs.items():
             self.add_nameval_widget(name,val,i,output=True)
@@ -120,7 +131,12 @@ class UiManager(object):
         widg = QtGui.QLineEdit(text)
         widg.setReadOnly(True)
         widg.setAlignment(QtCore.Qt.AlignHCenter)
-        widg.setStyleSheet( "QLineEdit { border: none }" + widg.styleSheet() )
+        return widg 
+    def hdr_widget(self,text):
+        widg = QtGui.QLineEdit(text)
+        widg.setReadOnly(True)
+        widg.setAlignment(QtCore.Qt.AlignHCenter)
+        widg.setStyleSheet( "QLineEdit { background-color: transparent }" + widg.styleSheet() )
         return widg 
 
     def smalltext_widget(self,text):
@@ -134,16 +150,18 @@ class UiManager(object):
         #widg = QtGui.QWidget()
         name_widget = QtGui.QLineEdit(name)
         name_widget.setReadOnly(True)
-        name_widget.setStyleSheet( "QLineEdit { border: none }" )
+        name_widget.setAlignment(QtCore.Qt.AlignRight)
         self.op_ui.nameval_layout.addWidget(name_widget,row,0)
         eq_widget = self.smalltext_widget('=')
         self.op_ui.nameval_layout.addWidget(eq_widget,row,1)
         val_widget = QtGui.QLineEdit('None')
         if output:
             val_widget.setReadOnly(True)
-        val_widget.setStyleSheet( "QLineEdit { border: none }" )
-        self.op_ui.nameval_layout.addWidget(val_widget,row,2)
-        #return widg
+            self.op_ui.nameval_layout.addWidget(val_widget,row,2,1,2)
+        else:
+            src_widget = QtGui.QLineEdit('None')
+            self.op_ui.nameval_layout.addWidget(src_widget,row,2,1,1)
+            self.op_ui.nameval_layout.addWidget(val_widget,row,3,1,1)
 
     def apply_workflow(self):
         """
