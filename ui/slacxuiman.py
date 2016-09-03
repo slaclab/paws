@@ -32,156 +32,7 @@ class UiManager(object):
         self.opman = None    
         self.wfman = None
         self.op_ui = None
-
-    def edit_op(self):
-        """
-        edit the selected operation in the workflow list 
-        """
-        pass
-
-    def rm_op(self):
-        """
-        remove the selected operation in the workflow list from the workflow
-        """
-        pass
-
-    def add_op(self):
-        """
-        interact with user to build an operation into the workflow
-        """
-        # Load the op_builder popup
-        self.op_ui = self.activate_op_ui()
-        # Load initial op and args
-        if self.opman.rowCount() > 0:
-            self.build_nameval_list(self.opman.index(0,0))
-        # Connect self.op_ui.op_selector to opman (QAbstractListModel).
-        self.op_ui.op_selector.setModel(self.opman)
-        # Connect op selection with a slot that populates op_ui.op_info and op_ui.arg_frame
-        self.op_ui.op_selector.activated.connect(self.build_nameval_list)
-        # Connect op_ui.finish_button with self.opman.load_op 
-        self.op_ui.finish_button.clicked.connect(self.load_op)
-        # Show the op_builder popup
-        self.op_ui.show()
-
-    def load_op(self):
-        # parse the things in self.op_ui, package as Operation object with inputs set. 
-        allgood=True
-        if allgood:
-            # instantiate operation
-            # cast as dict entry, send to wfman
-            # close self.op_ui
-            self.op_ui.close()
-        else:
-            # TODO: popup, tell the user what went wrong.
-            pass
-
-    def activate_op_ui(self):
-        # TODO: make so op_ui closes if main ui is closed
-        ui_file = QtCore.QFile(os.getcwd()+"/ui/op_builder.ui")
-        ui_file.open(QtCore.QFile.ReadOnly)
-        op_ui = QtUiTools.QUiLoader().load(ui_file)
-        ui_file.close()
-        #op_ui.setParent(self.ui)
-        op_ui.setTitle("slacx operation builder")
-        op_ui.finish_button.setText("Finish / Load to Workflow")
-        op_ui.arg_frame.setMinimumWidth(400)
-        op_ui.op_frame.setMinimumWidth(300)
-        op_ui.setStyleSheet( "QLineEdit { border: none }" + op_ui.styleSheet() )
-        #name_widget.setStyleSheet( "QLineEdit { border: none }" )
-        #val_widget.setStyleSheet( "QLineEdit { border: none }" )
-        #src_widget.setStyleSheet( "QLineEdit { border: none }" )
-        return op_ui
-
-    def build_nameval_list(self,op_indx):
-        # TODO: align / distribute the widgets nicerly. 
-        # TODO: add scrolling for when there are too many inputs/outputs 
-        # get the op class and instantiate it:
-        op = self.opman.get_op(op_indx)()
-        # Set self.op_ui.op_info to op.description
-        self.op_ui.op_info.setPlainText(op.description())
-        # Count the items in the current layout
-        n_val_widgets = self.op_ui.nameval_layout.count()
-        # Loop through them, last to first, clear the frame
-        for i in range(n_val_widgets-1,-1,-1):
-            # QLayout.takeAt returns a LayoutItem- set its widget to deleteLater()
-            item = self.op_ui.nameval_layout.takeAt(i)
-            item.widget().deleteLater()
-        i=0
-        self.op_ui.nameval_layout.addWidget(self.text_widget('--- INPUTS ---'),i,0,1,4) 
-        i+=1
-        self.op_ui.nameval_layout.addWidget(self.hdr_widget('(name)'),i,0,1,1) 
-        self.op_ui.nameval_layout.addWidget(self.hdr_widget('(source)'),i,2,1,1) 
-        self.op_ui.nameval_layout.addWidget(self.hdr_widget('(value)'),i,3,1,1) 
-        i+=1 
-        for name, val in op.inputs.items():
-            self.add_nameval_widget(name,val,i)
-            i+=1 
-        self.op_ui.nameval_layout.addWidget(self.smalltext_widget(' '),i,0,1,4) 
-        i+=1 
-        self.op_ui.nameval_layout.addWidget(self.text_widget('--- OUTPUTS ---'),i,0,1,4) 
-        i+=1 
-        self.op_ui.nameval_layout.addWidget(self.hdr_widget('(name)'),i,0,1,1) 
-        self.op_ui.nameval_layout.addWidget(self.hdr_widget('(value)'),i,2,1,2) 
-        i+=1 
-        for name, val in op.outputs.items():
-            self.add_nameval_widget(name,val,i,output=True)
-            i+=1 
-
-    def text_widget(self,text):
-        widg = QtGui.QLineEdit(text)
-        widg.setReadOnly(True)
-        widg.setAlignment(QtCore.Qt.AlignHCenter)
-        return widg 
-    def hdr_widget(self,text):
-        widg = QtGui.QLineEdit(text)
-        widg.setReadOnly(True)
-        widg.setAlignment(QtCore.Qt.AlignHCenter)
-        widg.setStyleSheet( "QLineEdit { background-color: transparent }" + widg.styleSheet() )
-        return widg 
-
-    def smalltext_widget(self,text):
-        widg = self.text_widget(text)
-        widg.setMaximumWidth( 20 )
-        widg.setStyleSheet( "QLineEdit { background-color: transparent }" + widg.styleSheet() )
-        return widg
-
-    def add_nameval_widget(self,name,val,row,output=False):
-        """a widget for name-value pairs"""
-        #widg = QtGui.QWidget()
-        name_widget = QtGui.QLineEdit(name)
-        name_widget.setReadOnly(True)
-        name_widget.setAlignment(QtCore.Qt.AlignRight)
-        self.op_ui.nameval_layout.addWidget(name_widget,row,0)
-        eq_widget = self.smalltext_widget('=')
-        self.op_ui.nameval_layout.addWidget(eq_widget,row,1)
-        val_widget = QtGui.QLineEdit('None')
-        if output:
-            val_widget.setReadOnly(True)
-            self.op_ui.nameval_layout.addWidget(val_widget,row,2,1,2)
-        else:
-            src_widget = QtGui.QLineEdit('None')
-            self.op_ui.nameval_layout.addWidget(src_widget,row,2,1,1)
-            self.op_ui.nameval_layout.addWidget(val_widget,row,3,1,1)
-
-    def apply_workflow(self):
-        """
-        run the workflow
-        """
-        pass
-
-    #def add_operation(self):
-    #    """
-    #    Interact with the user to select and provide parameters 
-    #    for a new operation.
-    #    """
-    #    new_op = ops.identity.Identity()
-    #    self.opman.add_op(new_op)
-
-    #def remove_operation(self):
-    #    """remove an existing operation from the operation list"""
-    #    selected_indxs = self.ui.operation_list.selectedIndexes()
-    #    for indx in selected_indxs:
-    #        self.opman.remove_op(indx)
+        self.op_input_widgets = {} 
 
     def export_image(self):
         """export the image in the currently selected tab"""
@@ -216,15 +67,10 @@ class UiManager(object):
             self.imgman.add_image(new_img)
             indx = self.imgman.index(ins_row,0,QtCore.QModelIndex())
             # Add data and tags
-            self.imgman.add_image_data(new_img.img_data,indx,'img_data',self.size_tag(new_img))
+            self.imgman.add_image_data(new_img.img_data,indx,'img_data',new_img.size_tag())
             # set self.ui.image_tree selection to be the new image
             self.ui.image_tree.setCurrentIndex(
                 self.imgman.index(ins_row,0,QtCore.QModelIndex()))
-
-    @staticmethod
-    def size_tag(img):
-        imgsize = img.img_data.shape
-        sz_tag = '{} by {} array'.format(imgsize[0],imgsize[1])
 
     def display_item(self):
         """
@@ -315,9 +161,9 @@ class UiManager(object):
         # Connect self.ui.image_tree (QListView) 
         # to self.imgman (ImgManager(QAbstractListModel))
         self.ui.image_tree.setModel(self.imgman)
-        # Connect self.ui.operation_list (QListView) 
-        # to self.opman (OpManager(QAbstractListModel))
-        #self.ui.operation_list.setModel(self.opman)
+        # Connect self.ui.workflow_tree (QTreeView) 
+        # to self.wfman (WfManager(TreeModel))
+        self.ui.workflow_tree.setModel(self.wfman)
 
     def make_title(self):
         """Display the slacx logo in the title box"""
@@ -355,73 +201,146 @@ class UiManager(object):
     def show_status(self,msg):
         self.ui.statusbar.showMessage(msg)
 
-    #def pixmap_from_data(self,data_in):
-    #    # downsample img_data? we are getting segfaults...
-    #    data_in = data_in[0::8,0::8]
-    #    height, width = data_in.shape
-    #    data_out = np.zeros((height,width),dtype=long)
-    #    for y in range(0,height):
-    #        for x in range(0,width):
-    #            mag = data_in[y,x]
-    #            data_out[y,x] = QtGui.QColor(mag,mag,mag).rgb() 
-    #    qimg = QtGui.QImage(data_out,width,height,QtGui.QImage.Format_RGB32)
-    #    return QtGui.QPixmap(qimg)
+    def edit_op(self):
+        """
+        edit the selected operation in the workflow list 
+        """
+        pass
 
-    #        #pil_imqt = ImageQt.ImageQt(item_in.pil_img)
-    #        #qimg = QtGui.QImage(pil_imqt)
-    #        #img_pixmap = QtGui.QPixmap(qimg) 
+    def rm_op(self):
+        """
+        remove the selected operation in the workflow list from the workflow
+        """
+        pass
 
-    #        # Make a QtImage from item_in.img_data
-    #        #height, width = item_in.img_data.shape
-    #        #qt_img = QtGui.QImage(item_in.img_data,
-    #        #width, height, QtGui.QImage.Format_Mono)
-    #        # Make a QPixmap from this QImage
-    #        #img_pixmap = QtGui.QPixmap(qt_img)
+    def add_op(self):
+        """
+        interact with user to build an operation into the workflow
+        """
+        # Load the op_builder popup
+        self.op_ui = self.activate_op_ui()
+        # Load initial op and args
+        if self.opman.rowCount() > 0:
+            self.create_op(opman.index(0,0))
+        # Connect self.op_ui.op_selector to opman (QAbstractListModel).
+        self.op_ui.op_selector.setModel(self.opman)
+        # Connect op selection with a slot that populates op_ui.op_info and op_ui.arg_frame
+        self.op_ui.op_selector.activated.connect(self.create_op)
+        # Connect op_ui.finish_button with self.opman.load_op 
+        self.op_ui.finish_button.clicked.connect(self.load_op)
+        # Show the op_builder popup
+        self.op_ui.show()
 
-    #        # Cast image as PIL.ImageQt.ImageQt object
-    #        #qtimg = item_in.qt_image() #works but leads to segfaults later on
-    #        # Cast ImageQt as pixmap
-    #        #img_pixmap = QtGui.QPixmap(qtimg)
+    def load_op(self):
+        """
+        Parse the fields in self.op_ui, 
+        package Operation, ship to self.wfman
+        """ 
+        
+        self.op_ui.close()
 
-    #    #with open('img_load_output.txt','w') as sys.stdout:
-    #    #    item_in.load_img_data()
+    def activate_op_ui(self):
+        # TODO: make so op_ui closes if main ui is closed
+        ui_file = QtCore.QFile(os.getcwd()+"/ui/op_builder.ui")
+        ui_file.open(QtCore.QFile.ReadOnly)
+        op_ui = QtUiTools.QUiLoader().load(ui_file)
+        ui_file.close()
+        #op_ui.setParent(self.ui)
+        op_ui.setTitle("slacx operation builder")
+        op_ui.load_op_button.setText("Finish / Load to Workflow")
+        op_ui.arg_frame.setMinimumWidth(400)
+        op_ui.op_frame.setMinimumWidth(300)
+        return op_ui
 
-    #    #img_pixmap = QtGui.QPixmap(img_url)
-    #    # Make a QtGui.QGraphicsPixmapItem from this QPixmap
-    #    #img_pixmap_item = QtGui.QGraphicsPixmapItem(img_pixmap)
-    #    # Add this QtGui.QGraphicsPixmapItem to a QtGui.QGraphicsScene 
-    #    #pixmap_scene = QtGui.QGraphicsScene()
-    #    #pixmap_scene.addItem(img_pixmap_item)
-    #    #return pixmap_scene
+    def clear_nameval_list(self):
+        self.nameval_dict = {}
+        # Count the items in the current layout
+        n_val_widgets = self.op_ui.nameval_layout.count()
+        # Loop through them, last to first, clear the frame
+        for i in range(n_val_widgets-1,-1,-1):
+            # QLayout.takeAt returns a LayoutItem
+            widg = self.op_ui.nameval_layout.takeAt(i)
+            # get the QWidget of that LayoutItem and set it to deleteLater()
+            widg.widget().deleteLater()
 
-                # add the QGraphicsScene to the QGraphicsView
-                #new_view.setScene(qpix_scene)
-                #new_view.fitInView(qpix_scene.sceneRect(),
-                #QtCore.Qt.KeepAspectRatioByExpanding)
+    def build_nameval_list(self,op):
+        # Count the items in the current layout
+        n_val_widgets = self.op_ui.nameval_layout.count()
+        # Loop through them, last to first, clear the frame
+        for i in range(n_val_widgets-1,-1,-1):
+            # QLayout.takeAt returns a LayoutItem- set its widget to deleteLater()
+            item = self.op_ui.nameval_layout.takeAt(i)
+            item.widget().deleteLater()
+        i=0
+        self.op_ui.nameval_layout.addWidget(self.text_widget('--- INPUTS ---'),i,0,1,4) 
+        i+=1
+        self.op_ui.nameval_layout.addWidget(self.hdr_widget('(name)'),i,0,1,1) 
+        self.op_ui.nameval_layout.addWidget(self.hdr_widget('(source)'),i,2,1,1) 
+        self.op_ui.nameval_layout.addWidget(self.hdr_widget('(value)'),i,3,1,1) 
+        i+=1 
+        for name, val in op.inputs.items():
+            self.add_nameval_widget(name,val,i)
+            i+=1 
+        self.op_ui.nameval_layout.addWidget(self.smalltext_widget(' '),i,0,1,4) 
+        i+=1 
+        self.op_ui.nameval_layout.addWidget(self.text_widget('--- OUTPUTS ---'),i,0,1,4) 
+        i+=1 
+        self.op_ui.nameval_layout.addWidget(self.hdr_widget('(name)'),i,0,1,1) 
+        self.op_ui.nameval_layout.addWidget(self.hdr_widget('(value)'),i,2,1,2) 
+        i+=1 
+        for name, val in op.outputs.items():
+            self.add_nameval_widget(name,val,i,output=True)
+            i+=1 
 
-    #def render_pixmap(self,item_in):
-        #"""
-        #Render the input item as a QGraphicsPixmapItem,
-        #and return a QGraphicsScene with this QGraphicsPixmapItem in it
-        #"""
-        #
-        # TODO: Handle rendering of all sorts of item_in types
-        # if item_in is a 2d array:
-        #
-        #if item_in is a SlacxImage:
-        #if isinstance(item_in,slacximg.SlacxImage):
-        #    # load the image data
-        #    item_in.load_img_data()
-        #    # make a QtGui.QPixmap from item_in.img_data
-        #    img_pixmap = self.pixmap_from_data(item_in.img_data)
-        #else:
-        #    msg = '[{}] TODO: handle rendering for things like {}'.format(
-        #        __name__,type(item_in).__name__)
-        #    raise slacxex.LazyCodeError(msg)
-        # Package the QPixmap in a QGraphicsPixmapItem
-        #img_pixmap_item = QtGui.QGraphicsPixmapItem(img_pixmap)
-        # Put pixmap item in a QGraphicsScene 
-        #qpix_scene = QtGui.QGraphicsScene()
-        #qpix_scene.addItem(img_pixmap_item)
-        #return qpix_scene
+    def create_op(self,op_indx):
+        # TODO: align / distribute the widgets nicerly. 
+        # TODO: add scrolling for when shit gets out of hand. 
+        op = self.opman.get_op(op_indx)()
+        # Set self.op_ui.op_info to op.description
+        self.op_ui.op_info.setPlainText(op.description())
+        # Clear the view of name-value widgets
+        self.clear_nameval_list()
+        self.build_nameval_list(op)
+
+    def text_widget(self,text):
+        widg = QtGui.QLineEdit(text)
+        widg.setReadOnly(True)
+        widg.setAlignment(QtCore.Qt.AlignHCenter)
+        return widg 
+    def hdr_widget(self,text):
+        widg = QtGui.QLineEdit(text)
+        widg.setReadOnly(True)
+        widg.setAlignment(QtCore.Qt.AlignHCenter)
+        widg.setStyleSheet( "QLineEdit { background-color: transparent }" + widg.styleSheet() )
+        return widg 
+
+    def smalltext_widget(self,text):
+        widg = self.text_widget(text)
+        widg.setMaximumWidth( 20 )
+        widg.setStyleSheet( "QLineEdit { background-color: transparent }" + widg.styleSheet() )
+        return widg
+
+    def add_nameval_widget(self,name,val,row,output=False):
+        """a widget for name-value pairs"""
+        #widg = QtGui.QWidget()
+        name_widget = QtGui.QLineEdit(name)
+        name_widget.setReadOnly(True)
+        name_widget.setAlignment(QtCore.Qt.AlignRight)
+        self.op_ui.nameval_layout.addWidget(name_widget,row,0)
+        eq_widget = self.smalltext_widget('=')
+        self.op_ui.nameval_layout.addWidget(eq_widget,row,1)
+        val_widget = QtGui.QLineEdit('None')
+        if output:
+            val_widget.setReadOnly(True)
+            self.op_ui.nameval_layout.addWidget(val_widget,row,2,1,2)
+        else:
+            src_widget = QtGui.QLineEdit('None')
+            self.op_ui.nameval_layout.addWidget(src_widget,row,2,1,1)
+            self.op_ui.nameval_layout.addWidget(val_widget,row,3,1,1)
+
+    def apply_workflow(self):
+        """
+        run the workflow
+        """
+        pass
 

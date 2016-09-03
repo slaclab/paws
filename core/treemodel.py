@@ -128,4 +128,9 @@ class TreeModel(QtCore.QAbstractItemModel):
                 self.root_items.pop(j)
         # Signal listeners that we are done removing rows
         self.endRemoveRows()
+
+    # get a TreeItem from the tree by its QModelIndex
+    def get_item(self,indx):
+        return indx.internalPointer() 
+
     

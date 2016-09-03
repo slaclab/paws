@@ -19,3 +19,6 @@ class Identity(Operation):
         + "it saves the same pixel array in outputs['image_data']. "
         )
 
+    def tag(self):
+        return "Image-Identity"
+

@@ -93,7 +93,7 @@ class ImgManager(TreeModel):
 
     # QAbstractItemModel subclass should implement 
     # headerData(int section,Qt.Orientation orientation[,role=Qt.DisplayRole])
-    # note section arg indicates row or column number, depending on orientation
+    # note: section arg indicates row or column number, depending on orientation
     def headerData(self,section,orientation,data_role):
         if (data_role == QtCore.Qt.DisplayRole
             and section == 0):

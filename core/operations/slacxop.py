@@ -40,23 +40,23 @@ class Operation(object):
         pass
 
 #    @abc.abstractmethod
-    def inputs(self):
-        """
-        Operation.inputs() should return a dict 
-        containing the operation's inputs.  
-        """
-        return self.inputs
+#    def inputs(self):
+#        """
+#        Operation.inputs() should return a dict 
+#        containing the operation's inputs.  
+#        """
+#        return self.inputs
 
     def set_input(self,inputname,source,value):
         self.inputs[inputname] = (source, value)
 
 #    @abc.abstractmethod
-    def outputs(self):
-        """
-        Operation.outputs() should return a dict 
-        containing the operation's outputs.  
-        """
-        return self.outputs 
+#    def outputs(self):
+#        """
+#        Operation.outputs() should return a dict 
+#        containing the operation's outputs.  
+#        """
+#        return self.outputs 
 
     @abc.abstractmethod
     def description(cls):
@@ -66,6 +66,14 @@ class Operation(object):
         self.description() should return a string 
         documenting the input and output structure 
         and usage instructions for the Operation
+        """
+        pass
+
+    @abc.abstractmethod
+    def tag(self):
+        """
+        self.tag() should return a string 
+        containing a human-readable name for this operation.
         """
         pass
 

@@ -159,7 +159,7 @@
        </widget>
       </item>
       <item>
-       <widget class="QListView" name="workflow_list"/>
+       <widget class="QTreeView" name="workflow_tree"/>
       </item>
       <item>
        <widget class="QFrame" name="frame">

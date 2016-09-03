@@ -32,6 +32,10 @@ class SlacxImage(object):
             return True
         return False
 
+    def size_tag(self):
+        imgsize = self.img_data.shape
+        sz_tag = '{} by {} array'.format(imgsize[0],imgsize[1])
+
     def load_img_data(self):
         """
         Call on image rendering libs to extract image data
@@ -69,19 +73,19 @@ class SlacxImage(object):
         # TODO: Self-destruct all data 
 
     #### ARCHIVE ####
-    def qt_image(self):
-        if self.pil_img:
-            try:
-                # ImageQt.ImageQt(Image) is a subclass of QtGui.QImage.
-                # This works, but the result segfaults when converted to QPixmap?
-                return ImageQt.ImageQt(self.pil_img)
-            except:
-                print "[{}] PIL error in ImageQt conversion for {}".format(
-                __name__,self.img_filename)
-                raise
-        else:
-            msg = '[{}] TODO: handle QtImage conversion for files like {}'.format(
-                __name__,self.img_filename)
-            raise slacxex.LazyCodeError(msg)
+    #def qt_image(self):
+    #    if self.pil_img:
+    #        try:
+    #            # ImageQt.ImageQt(Image) is a subclass of QtGui.QImage.
+    #            # This works, but the result segfaults when converted to QPixmap?
+    #            return ImageQt.ImageQt(self.pil_img)
+    #        except:
+    #            print "[{}] PIL error in ImageQt conversion for {}".format(
+    #            __name__,self.img_filename)
+    #            raise
+    #    else:
+    #        msg = '[{}] TODO: handle QtImage conversion for files like {}'.format(
+    #            __name__,self.img_filename)
+    #        raise slacxex.LazyCodeError(msg)
 
 

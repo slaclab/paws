@@ -36,3 +36,8 @@ class Rotation(Operation):
         + "Rotation angle must be 90, 180, or 270 degrees."
         )
 
+    def tag(self):
+        return "Image-Rotation"
+
+
+
