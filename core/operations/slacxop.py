@@ -18,12 +18,16 @@ class Operation(object):
         workflow connections with results that are not yet computed.
         """
         self.inputs = {}
+        self.input_doc = {}
         self.outputs = {}
+        self.output_doc = {}
         # For each of the var names, assign to None 
         for name in input_vars: 
             self.inputs[name] = None
+            self.input_doc[name] = None
         for name in output_vars: 
             self.outputs[name] = None
+            self.output_doc[name] = None
 
     def print_locals(self):
         # debug: print local namespace.
@@ -47,8 +51,8 @@ class Operation(object):
 #        """
 #        return self.inputs
 
-    def set_input(self,inputname,source,value):
-        self.inputs[inputname] = (source, value)
+#    def set_input(self,inputname,source,value):
+#        self.inputs[inputname] = (source, value)
 
 #    @abc.abstractmethod
 #    def outputs(self):
@@ -58,23 +62,42 @@ class Operation(object):
 #        """
 #        return self.outputs 
 
-    @abc.abstractmethod
-    def description(cls):
+    def description(self):
         """
-        IMPORTANT: This is a class method. 
-        It must be implemented with the with @classmethod decorator.
-        self.description() should return a string 
+        self.description() returns a string 
         documenting the input and output structure 
         and usage instructions for the Operation
         """
-        pass
+        return str(
+        "Operation description: \n"
+        + self.__doc__ 
+        + "\n\nInputs: \n"
+        + self.inputs_description()
+        + "\nOutputs: \n"
+        + self.outputs_description())
 
-    @abc.abstractmethod
-    def tag(self):
-        """
-        self.tag() should return a string 
-        containing a human-readable name for this operation.
-        """
-        pass
+    def inputs_description(self):
+        a = ""
+        for name,val in self.inputs.items(): 
+            a = a + self.parameter_doc(name,val,self.input_doc[name]) + "\n"
+        return a
+
+    def outputs_description(self):
+        a = ""
+        for name,val in self.outputs.items(): 
+            a = a + self.parameter_doc(name,val,self.output_doc[name]) + "\n"
+        return a
+
+    @staticmethod
+    def parameter_doc(name,val,doc):
+        return "name: {} \nvalue: {} \ndoc: {}".format(name,val,doc) 
+
+#    @abc.abstractmethod
+#    def tag(self):
+#        """
+#        self.tag() should return a string 
+#        containing a human-readable name for this operation.
+#        """
+#        pass
 
 

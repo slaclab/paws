@@ -3,11 +3,16 @@ import numpy as np
 from core.operations.slacxop import Operation
 
 class Rotation(Operation):
+    """The Rotation(Operation) class: rotates an image by 90, 180, or 270 degrees"""
 
     def __init__(self):
         input_vars = ['image_data','rotation_deg']
         output_vars = ['image_data']
         super(Rotation,self).__init__(input_vars,output_vars)        
+        self.input_doc['image_data'] = '2d array representing intensity for each pixel'
+        self.input_doc['rotation_deg'] = str('rotation in degrees counter-clockwise, '
+                                    + 'must be either 90, 180, or 270')
+        self.output_doc['image_data'] = '2d array representing rotated image'
 
     def run(self):
         """Rotate self.input_vars['image_data'] and save as self.output_vars['image_data']"""
@@ -25,19 +30,19 @@ class Rotation(Operation):
         # save results to self.outputs
         self.outputs['image_data'] = img_rot
 
-    @classmethod
-    def description(cls):
-        return str(
-        "A Rotation operation takes two input arguments: "
-        + "inputs['image_data'] (2d pixel array), "
-        + "and inputs['rotation_deg'] (angle in degrees). "
-        + "Calling run() populates the outputs['image_data'] "
-        + "with a pixel array that is rotated CCW from the input. "
-        + "Rotation angle must be 90, 180, or 270 degrees."
-        )
+#    @classmethod
+#    def description(cls):
+#        return str(
+#        "A Rotation operation takes two input arguments: "
+#        + "inputs['image_data'] (2d pixel array), "
+#        + "and inputs['rotation_deg'] (angle in degrees). "
+#        + "Calling run() populates the outputs['image_data'] "
+#        + "with a pixel array that is rotated CCW from the input. "
+#        + "Rotation angle must be 90, 180, or 270 degrees."
+#        )
 
-    def tag(self):
-        return "Image-Rotation"
+#    def tag(self):
+#        return "Image-Rotation"
 
 
 

@@ -65,7 +65,7 @@ class OpManager(QtCore.QAbstractListModel):
         if data_role == QtCore.Qt.DisplayRole:
             return self._op_list[indx.row()].__name__
         elif data_role == QtCore.Qt.ToolTipRole:
-            return self._op_list[indx.row()].description()
+            return self._op_list[indx.row()]().description()
         else:
             return None
 

@@ -16,6 +16,7 @@ class ImgManager(TreeModel):
     """
 
     def __init__(self,**kwargs):
+        self._n_loaded = 0 
         #TODO: build a saved tree from kwargs
         #if 'file_list' in kwargs:
         #    for fname in file_list:
@@ -40,22 +41,26 @@ class ImgManager(TreeModel):
         # Make a new TreeItem, column 0, invalid parent 
         new_treeitem = TreeItem(ins_row,0,QtCore.QModelIndex())
         new_treeitem.data.append(new_img)
-        new_treeitem.set_tag(new_img.img_tag)
+        new_treeitem.set_tag( 'img{}'.format(self._n_loaded) )
         new_treeitem.long_tag = new_img.img_url
         self.beginInsertRows(
         QtCore.QModelIndex(),ins_row,ins_row)
         # Image insertion occurs between notification methods
         self.root_items.insert(ins_row,new_treeitem)
         self.endInsertRows()
+        self._n_loaded += 1
 
-    def add_image_data(self,data,parent,tag,long_tag=None):
+    def add_image_data(self,parent,data,tag,long_tag=None):
         """Add data as a child TreeItem to the TreeItem at parent"""
         ins_row = self.rowCount(parent)
         new_treeitem = TreeItem(ins_row,0,parent)
         new_treeitem.data.append(data)
         new_treeitem.set_tag(tag)
         if long_tag:
+            print 'found long_tag: {}'.format(long_tag)
             new_treeitem.long_tag = long_tag 
+        else:
+            print 'image data has no long_tag'
         p_item = parent.internalPointer()
         self.beginInsertRows(parent,ins_row,ins_row)
         p_item.children.insert(ins_row,new_treeitem)

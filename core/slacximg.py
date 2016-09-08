@@ -19,7 +19,7 @@ class SlacxImage(object):
     def __init__(self,img_url):
         self.img_url = img_url
         self.img_filename = img_url.split('/')[-1]
-        self.img_tag = os.path.splitext(self.img_filename)[0]
+        self.img_name = os.path.splitext(self.img_filename)[0]
         self.img_ext = os.path.splitext(self.img_filename)[1]
         self.rendered = False
         self.img_data = None 
@@ -35,6 +35,7 @@ class SlacxImage(object):
     def size_tag(self):
         imgsize = self.img_data.shape
         sz_tag = '{} by {} array'.format(imgsize[0],imgsize[1])
+        return sz_tag
 
     def load_img_data(self):
         """

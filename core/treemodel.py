@@ -2,7 +2,7 @@ from PySide import QtCore
 
 class TreeModel(QtCore.QAbstractItemModel):
     """
-    Class for clean tree management with a QAbstractItemModel.
+    Class for tree management with a QAbstractItemModel.
     Implements required virtual methods index(), parent(), rowCount().
     Other required virtual methods are columnCount() and data():
     these should be implemented by subclassing of TreeModel.
@@ -62,22 +62,13 @@ class TreeModel(QtCore.QAbstractItemModel):
     # Subclass of QAbstractItemModel must implement columnCount()
     def columnCount(self,parent):
         """
-        Either give 1 for top-level items,
-        or count the columns of parent
-        """
-        if not parent.isValid():
-            # top level parent: return number of columns for top root item?
-            # TODO: assess whether this is a wise choice. 
-            if len(self.root_items) > 1:
-                return self.root_items[0].n_data() 
-            else:
-                return 1
-        else:
-            # count data of child TreeItems?
-            p_item = parent.internalPointer()
-            child_columns = [p_item.children[j].n_data() 
-                            for j in range(p_item.n_children())] 
-            return max(child_columns)
+        In current implementation, all TreeItems only have one column"""
+        #if not parent.isValid():
+        #    if len(self.root_items) > 1:
+        #        return self.root_items[0].n_data() 
+        #    else:
+        #        return 1
+        return 1
 
     # QAbstractItemModel subclass must implement 
     # data(QModelIndex[,role=Qt.DisplayRole])
@@ -87,12 +78,12 @@ class TreeModel(QtCore.QAbstractItemModel):
         item = item_indx.internalPointer()
         if data_role == QtCore.Qt.DisplayRole:
             return item.tag()
-        elif (data_role == QtCore.Qt.ToolTipRole):
-            return type(item.data[item_indx.column()]).__name__ 
+        #elif (data_role == QtCore.Qt.ToolTipRole) and len(item.data) > 0:
+        #    return type(item.data[0]).__name__ 
         elif (data_role == QtCore.Qt.ToolTipRole 
             or data_role == QtCore.Qt.StatusTipRole
             or data_role == QtCore.Qt.WhatsThisRole):
-            return item.long_tag
+            return item.long_tag + '\n\n' + item.data_str()
         else:
             return None
 

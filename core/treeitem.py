@@ -15,7 +15,7 @@ class TreeItem(object):
         self.column = column
         self.data = []          # list of objects, one for each column 
         self.children = []      # list of other TreeItems
-        self.long_tag = 'no information available'
+        self.long_tag = 'no information'
         self._tag = None
 
     def n_data(self):
@@ -40,4 +40,13 @@ class TreeItem(object):
 
     def set_tag(self,tag_in):
         self._tag = tag_in
+
+    def data_str(self):
+        """Build a string representing the items in self.data"""
+        a = "data items:"
+        for i in range(len(self.data)):
+            element = self.data[i]
+            a = a + '\n[{}]:'.format(i) + str(element)[:min((len(str(element)),40))]  
+        return a
+
 

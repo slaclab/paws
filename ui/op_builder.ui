@@ -1,22 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>op_builder</class>
- <widget class="QGroupBox" name="op_builder">
+ <class>Frame</class>
+ <widget class="QFrame" name="Frame">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>628</width>
-    <height>570</height>
+    <width>755</width>
+    <height>464</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>GroupBox</string>
+   <string>Frame</string>
   </property>
-  <property name="title">
-   <string>GroupBox</string>
+  <property name="frameShape">
+   <enum>QFrame::StyledPanel</enum>
   </property>
-  <layout class="QGridLayout" name="gridLayout_4">
+  <property name="frameShadow">
+   <enum>QFrame::Raised</enum>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
    <item row="0" column="0">
     <widget class="QFrame" name="op_frame">
      <property name="frameShape">
@@ -25,7 +28,7 @@
      <property name="frameShadow">
       <enum>QFrame::Raised</enum>
      </property>
-     <layout class="QVBoxLayout" name="verticalLayout">
+     <layout class="QVBoxLayout" name="verticalLayout_4">
       <item>
        <widget class="QComboBox" name="op_selector"/>
       </item>
@@ -56,9 +59,29 @@
      <property name="frameShadow">
       <enum>QFrame::Raised</enum>
      </property>
-     <layout class="QVBoxLayout" name="verticalLayout_2">
+     <layout class="QVBoxLayout" name="verticalLayout_3">
       <item>
-       <layout class="QGridLayout" name="nameval_layout"/>
+       <widget class="QScrollArea" name="scrollArea">
+        <property name="widgetResizable">
+         <bool>true</bool>
+        </property>
+        <widget class="QWidget" name="scrollAreaWidgetContents_6">
+         <property name="geometry">
+          <rect>
+           <x>0</x>
+           <y>0</y>
+           <width>342</width>
+           <height>389</height>
+          </rect>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_4">
+          <item row="0" column="0">
+           <layout class="QGridLayout" name="nameval_layout"/>
+          </item>
+         </layout>
+         <zorder></zorder>
+        </widget>
+       </widget>
       </item>
      </layout>
     </widget>

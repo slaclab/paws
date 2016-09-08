@@ -10,6 +10,7 @@ import numpy as np
 from core import slacximg 
 import core.operations as ops
 from ui import plotmaker
+from ui.opuiman import OpUiManager
 
 class UiManager(object):
     """
@@ -28,11 +29,12 @@ class UiManager(object):
         # load() produces a QMainWindow(QWidget).
         self.ui = QtUiTools.QUiLoader().load(ui_file)
         ui_file.close()
+        # Set up the self.ui widget to delete itself when closed
+        self.ui.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         self.imgman = None    
         self.opman = None    
         self.wfman = None
-        self.op_ui = None
-        self.op_input_widgets = {} 
+        #self.op_uimans = [] 
 
     def export_image(self):
         """export the image in the currently selected tab"""
@@ -41,6 +43,32 @@ class UiManager(object):
     def edit_image(self):
         """open an image editor for the current tab"""
         pass
+
+    def edit_op(self):
+        """
+        edit the selected operation in the workflow list 
+        """
+        pass
+
+    def rm_op(self):
+        """
+        remove the selected operation in the workflow list from the workflow
+        """
+        pass
+
+    def add_op(self):
+        """
+        interact with user to build an operation into the workflow
+        """
+        ui_file = QtCore.QFile(os.getcwd()+"/ui/op_builder.ui")
+        uiman = OpUiManager(ui_file)
+        uiman.imgman = self.imgman
+        uiman.wfman = self.wfman
+        uiman.set_op_manager(self.opman)
+        uiman.ui.setParent(self.ui,QtCore.Qt.Window)
+        # Need to save a ref to this widget so that it does not self-destruct.
+        #self.op_uimans.append( uiman )
+        uiman.ui.show()
 
     def close_image(self):
         """Remove selected items from the image tree"""
@@ -61,13 +89,13 @@ class UiManager(object):
             ins_row = self.imgman.rowCount(QtCore.QModelIndex())
             # create new SlacxImage object
             new_img = slacximg.SlacxImage(imgfile)
-            # Render the image pixel data
-            new_img.load_img_data()
             # Add this SlacxImage to ImgManager tree, self.imgman
             self.imgman.add_image(new_img)
             indx = self.imgman.index(ins_row,0,QtCore.QModelIndex())
+            # Render the image pixel data
+            new_img.load_img_data()
             # Add data and tags
-            self.imgman.add_image_data(new_img.img_data,indx,'img_data',new_img.size_tag())
+            self.imgman.add_image_data(indx,new_img.img_data,'img_data',new_img.size_tag())
             # set self.ui.image_tree selection to be the new image
             self.ui.image_tree.setCurrentIndex(
                 self.imgman.index(ins_row,0,QtCore.QModelIndex()))
@@ -115,7 +143,7 @@ class UiManager(object):
         self.ui.image_viewer.setMinimumWidth(600)
         # Leave the textual parts kinda skinny?
         #self.ui.left_panel.setMaximumWidth(400)
-        #self.ui.right_panel.setMaximumWidth(300)
+        self.ui.workflow_tree.setMinimumWidth(300)
 
     def connect_actions(self):
         """Set up the works for buttons and menu items"""
@@ -134,12 +162,6 @@ class UiManager(object):
         self.ui.image_viewer.tabCloseRequested.connect(self.close_tab)
         # Make self.ui.image_viewer tabs elide (arg is a Qt.TextElideMode)
         self.ui.image_viewer.setElideMode(QtCore.Qt.ElideRight)
-        # Connect self.ui.add_operation_button:
-        #self.ui.add_operation_button.setText("Add operation...")
-        #self.ui.add_operation_button.clicked.connect(self.add_operation)
-        # Connect self.ui.remove_operation_button:
-        #self.ui.remove_operation_button.setText("Remove operation")
-        #self.ui.remove_operation_button.clicked.connect(self.remove_operation)
         # Connect self.ui.add_op_button:
         self.ui.add_op_button.setText("Add Operation")
         self.ui.add_op_button.clicked.connect(self.add_op)
@@ -152,12 +174,6 @@ class UiManager(object):
         # Connect self.ui.apply_workflow_button:
         self.ui.apply_workflow_button.setText("Apply Workflow")
         self.ui.apply_workflow_button.clicked.connect(self.apply_workflow)
-        # Connect self.ui.export_image_button:
-        #self.ui.export_image_button.setText("Export Image")
-        #self.ui.export_image_button.clicked.connect(self.export_image)
-        # Connect self.ui.edit_image_button:
-        #self.ui.edit_image_button.setText("Edit Image")
-        #self.ui.edit_image_button.clicked.connect(self.edit_image)
         # Connect self.ui.image_tree (QListView) 
         # to self.imgman (ImgManager(QAbstractListModel))
         self.ui.image_tree.setModel(self.imgman)
@@ -201,146 +217,11 @@ class UiManager(object):
     def show_status(self,msg):
         self.ui.statusbar.showMessage(msg)
 
-    def edit_op(self):
-        """
-        edit the selected operation in the workflow list 
-        """
-        pass
-
-    def rm_op(self):
-        """
-        remove the selected operation in the workflow list from the workflow
-        """
-        pass
-
-    def add_op(self):
-        """
-        interact with user to build an operation into the workflow
-        """
-        # Load the op_builder popup
-        self.op_ui = self.activate_op_ui()
-        # Load initial op and args
-        if self.opman.rowCount() > 0:
-            self.create_op(opman.index(0,0))
-        # Connect self.op_ui.op_selector to opman (QAbstractListModel).
-        self.op_ui.op_selector.setModel(self.opman)
-        # Connect op selection with a slot that populates op_ui.op_info and op_ui.arg_frame
-        self.op_ui.op_selector.activated.connect(self.create_op)
-        # Connect op_ui.finish_button with self.opman.load_op 
-        self.op_ui.finish_button.clicked.connect(self.load_op)
-        # Show the op_builder popup
-        self.op_ui.show()
-
-    def load_op(self):
-        """
-        Parse the fields in self.op_ui, 
-        package Operation, ship to self.wfman
-        """ 
-        
-        self.op_ui.close()
-
-    def activate_op_ui(self):
-        # TODO: make so op_ui closes if main ui is closed
-        ui_file = QtCore.QFile(os.getcwd()+"/ui/op_builder.ui")
-        ui_file.open(QtCore.QFile.ReadOnly)
-        op_ui = QtUiTools.QUiLoader().load(ui_file)
-        ui_file.close()
-        #op_ui.setParent(self.ui)
-        op_ui.setTitle("slacx operation builder")
-        op_ui.load_op_button.setText("Finish / Load to Workflow")
-        op_ui.arg_frame.setMinimumWidth(400)
-        op_ui.op_frame.setMinimumWidth(300)
-        return op_ui
-
-    def clear_nameval_list(self):
-        self.nameval_dict = {}
-        # Count the items in the current layout
-        n_val_widgets = self.op_ui.nameval_layout.count()
-        # Loop through them, last to first, clear the frame
-        for i in range(n_val_widgets-1,-1,-1):
-            # QLayout.takeAt returns a LayoutItem
-            widg = self.op_ui.nameval_layout.takeAt(i)
-            # get the QWidget of that LayoutItem and set it to deleteLater()
-            widg.widget().deleteLater()
-
-    def build_nameval_list(self,op):
-        # Count the items in the current layout
-        n_val_widgets = self.op_ui.nameval_layout.count()
-        # Loop through them, last to first, clear the frame
-        for i in range(n_val_widgets-1,-1,-1):
-            # QLayout.takeAt returns a LayoutItem- set its widget to deleteLater()
-            item = self.op_ui.nameval_layout.takeAt(i)
-            item.widget().deleteLater()
-        i=0
-        self.op_ui.nameval_layout.addWidget(self.text_widget('--- INPUTS ---'),i,0,1,4) 
-        i+=1
-        self.op_ui.nameval_layout.addWidget(self.hdr_widget('(name)'),i,0,1,1) 
-        self.op_ui.nameval_layout.addWidget(self.hdr_widget('(source)'),i,2,1,1) 
-        self.op_ui.nameval_layout.addWidget(self.hdr_widget('(value)'),i,3,1,1) 
-        i+=1 
-        for name, val in op.inputs.items():
-            self.add_nameval_widget(name,val,i)
-            i+=1 
-        self.op_ui.nameval_layout.addWidget(self.smalltext_widget(' '),i,0,1,4) 
-        i+=1 
-        self.op_ui.nameval_layout.addWidget(self.text_widget('--- OUTPUTS ---'),i,0,1,4) 
-        i+=1 
-        self.op_ui.nameval_layout.addWidget(self.hdr_widget('(name)'),i,0,1,1) 
-        self.op_ui.nameval_layout.addWidget(self.hdr_widget('(value)'),i,2,1,2) 
-        i+=1 
-        for name, val in op.outputs.items():
-            self.add_nameval_widget(name,val,i,output=True)
-            i+=1 
-
-    def create_op(self,op_indx):
-        # TODO: align / distribute the widgets nicerly. 
-        # TODO: add scrolling for when shit gets out of hand. 
-        op = self.opman.get_op(op_indx)()
-        # Set self.op_ui.op_info to op.description
-        self.op_ui.op_info.setPlainText(op.description())
-        # Clear the view of name-value widgets
-        self.clear_nameval_list()
-        self.build_nameval_list(op)
-
-    def text_widget(self,text):
-        widg = QtGui.QLineEdit(text)
-        widg.setReadOnly(True)
-        widg.setAlignment(QtCore.Qt.AlignHCenter)
-        return widg 
-    def hdr_widget(self,text):
-        widg = QtGui.QLineEdit(text)
-        widg.setReadOnly(True)
-        widg.setAlignment(QtCore.Qt.AlignHCenter)
-        widg.setStyleSheet( "QLineEdit { background-color: transparent }" + widg.styleSheet() )
-        return widg 
-
-    def smalltext_widget(self,text):
-        widg = self.text_widget(text)
-        widg.setMaximumWidth( 20 )
-        widg.setStyleSheet( "QLineEdit { background-color: transparent }" + widg.styleSheet() )
-        return widg
-
-    def add_nameval_widget(self,name,val,row,output=False):
-        """a widget for name-value pairs"""
-        #widg = QtGui.QWidget()
-        name_widget = QtGui.QLineEdit(name)
-        name_widget.setReadOnly(True)
-        name_widget.setAlignment(QtCore.Qt.AlignRight)
-        self.op_ui.nameval_layout.addWidget(name_widget,row,0)
-        eq_widget = self.smalltext_widget('=')
-        self.op_ui.nameval_layout.addWidget(eq_widget,row,1)
-        val_widget = QtGui.QLineEdit('None')
-        if output:
-            val_widget.setReadOnly(True)
-            self.op_ui.nameval_layout.addWidget(val_widget,row,2,1,2)
-        else:
-            src_widget = QtGui.QLineEdit('None')
-            self.op_ui.nameval_layout.addWidget(src_widget,row,2,1,1)
-            self.op_ui.nameval_layout.addWidget(val_widget,row,3,1,1)
 
     def apply_workflow(self):
         """
         run the workflow
         """
         pass
+
 
