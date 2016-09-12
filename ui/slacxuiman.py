@@ -48,17 +48,30 @@ class UiManager(object):
         """
         edit the selected operation in the workflow list 
         """
-        pass
+        uiman = self.open_op_ui_manager()
+        selected_indxs = self.ui.workflow_tree.selectedIndexes()
+        uiman.load_op(selected_indxs[0])
 
     def rm_op(self):
         """
         remove the selected operation in the workflow list from the workflow
         """
-        pass
+        # TODO: implement multiple selection 
+        # TODO: take out the garbage
+        selected_indxs = self.ui.workflow_tree.selectedIndexes()
+        #for indx in selected_indxs:
+        self.wfman.remove_op(selected_indxs[0])
 
     def add_op(self):
         """
         interact with user to build an operation into the workflow
+        """
+        uiman = self.open_op_ui_manager()
+        uiman.ui.show()
+
+    def open_op_ui_manager(self):
+        """
+        Create a QFrame window from ui/op_builder.ui, then return it
         """
         ui_file = QtCore.QFile(os.getcwd()+"/ui/op_builder.ui")
         uiman = OpUiManager(ui_file)
@@ -66,17 +79,15 @@ class UiManager(object):
         uiman.wfman = self.wfman
         uiman.set_op_manager(self.opman)
         uiman.ui.setParent(self.ui,QtCore.Qt.Window)
-        # Need to save a ref to this widget so that it does not self-destruct.
-        #self.op_uimans.append( uiman )
-        uiman.ui.show()
+        return uiman
 
     def close_image(self):
         """Remove selected items from the image tree"""
-        # TODO: implement multiple selection in image tree? 
-        # TODO: close any related image_viewer tabs and take out the garbage
+        # TODO: implement multiple selection  
+        # TODO: take out the garbage
         selected_indxs = self.ui.image_tree.selectedIndexes()
-        for indx in selected_indxs:
-            self.imgman.remove_image(indx)
+        #for indx in selected_indxs:
+        self.imgman.remove_image(selected_indxs[0])
 
     def open_image(self):
         """Open an image, add it to image tree"""
@@ -143,7 +154,15 @@ class UiManager(object):
         self.ui.image_viewer.setMinimumWidth(600)
         # Leave the textual parts kinda skinny?
         #self.ui.left_panel.setMaximumWidth(400)
-        self.ui.workflow_tree.setMinimumWidth(300)
+        self.ui.workflow_tree.setMinimumWidth(350)
+        self.ui.workflow_tree.resizeColumnToContents(0)
+        self.ui.workflow_tree.resizeColumnToContents(1)
+        self.ui.image_tree.setMinimumWidth(350)
+        self.ui.image_tree.resizeColumnToContents(0)
+        self.ui.image_tree.resizeColumnToContents(1)
+        #self.ui.workflow_tree.setColumnWidth(0,200)
+        #self.ui.workflow_tree.setColumnWidth(1,150)
+        self.ui.image_tree.setColumnWidth(0,180)
 
     def connect_actions(self):
         """Set up the works for buttons and menu items"""

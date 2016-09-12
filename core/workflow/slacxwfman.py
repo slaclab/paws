@@ -74,22 +74,27 @@ class WfManager(TreeModel):
             outputs_treeitem.children.insert(ins_row,out_treeitem)
             self.endInsertRows()
 
-    # remove an Operation from the workflow tree
     def remove_op(self,rm_indx):
+        """Remove an Operation from the workflow tree"""
         rm_row = rm_indx.row()
         self.beginRemoveRows(
         QtCore.QModelIndex(),rm_row,rm_row)
         # Removal occurs between notification methods
-        item_removed = self.root_items.pop(removal_row)
+        item_removed = self.root_items.pop(rm_row)
         self.endRemoveRows()
+
+    def edit_op(self,indx):
+        """Edit selected Operation from the workflow tree"""
+        pass
 
     # QAbstractItemModel subclass should implement 
     # headerData(int section,Qt.Orientation orientation[,role=Qt.DisplayRole])
     # note: section arg indicates row or column number, depending on orientation
     def headerData(self,section,orientation,data_role):
-        if (data_role == QtCore.Qt.DisplayRole
-            and section == 0):
+        if (data_role == QtCore.Qt.DisplayRole and section == 0):
             return "{} operation(s) loaded".format(self.rowCount(QtCore.QModelIndex()))
+        elif (data_role == QtCore.Qt.DisplayRole and section == 1):
+            return "info".format(self.rowCount(QtCore.QModelIndex()))
         else:
             return None
 

@@ -57,10 +57,7 @@ class ImgManager(TreeModel):
         new_treeitem.data.append(data)
         new_treeitem.set_tag(tag)
         if long_tag:
-            print 'found long_tag: {}'.format(long_tag)
             new_treeitem.long_tag = long_tag 
-        else:
-            print 'image data has no long_tag'
         p_item = parent.internalPointer()
         self.beginInsertRows(parent,ins_row,ins_row)
         p_item.children.insert(ins_row,new_treeitem)
@@ -100,9 +97,10 @@ class ImgManager(TreeModel):
     # headerData(int section,Qt.Orientation orientation[,role=Qt.DisplayRole])
     # note: section arg indicates row or column number, depending on orientation
     def headerData(self,section,orientation,data_role):
-        if (data_role == QtCore.Qt.DisplayRole
-            and section == 0):
+        if (data_role == QtCore.Qt.DisplayRole and section == 0):
             return "{} image(s) open".format(self.rowCount(QtCore.QModelIndex()))
+        elif (data_role == QtCore.Qt.DisplayRole and section == 1):
+            return "info".format(self.rowCount(QtCore.QModelIndex()))
         else:
             return None
 

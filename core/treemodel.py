@@ -62,13 +62,16 @@ class TreeModel(QtCore.QAbstractItemModel):
     # Subclass of QAbstractItemModel must implement columnCount()
     def columnCount(self,parent):
         """
-        In current implementation, all TreeItems only have one column"""
+        Let TreeItems have two columns:
+        one displays TreeItem tag,
+        one displays TreeItem data[0] type
+        """
         #if not parent.isValid():
         #    if len(self.root_items) > 1:
         #        return self.root_items[0].n_data() 
         #    else:
         #        return 1
-        return 1
+        return 2
 
     # QAbstractItemModel subclass must implement 
     # data(QModelIndex[,role=Qt.DisplayRole])
@@ -76,16 +79,21 @@ class TreeModel(QtCore.QAbstractItemModel):
         if (not item_indx.isValid()):
             return None
         item = item_indx.internalPointer()
-        if data_role == QtCore.Qt.DisplayRole:
-            return item.tag()
-        #elif (data_role == QtCore.Qt.ToolTipRole) and len(item.data) > 0:
-        #    return type(item.data[0]).__name__ 
-        elif (data_role == QtCore.Qt.ToolTipRole 
-            or data_role == QtCore.Qt.StatusTipRole
-            or data_role == QtCore.Qt.WhatsThisRole):
-            return item.long_tag + '\n\n' + item.data_str()
+        if item_indx.column() == 1:
+            if len(item.data) > 0:
+                return type(item.data[0]).__name__ 
+            else:
+                return 'tree node'
         else:
-            return None
+            if data_role == QtCore.Qt.DisplayRole:
+                return item.tag()
+            elif (data_role == QtCore.Qt.ToolTipRole): 
+                return item.long_tag + '\n\n' + item.data_str()
+            elif (data_role == QtCore.Qt.StatusTipRole
+                or data_role == QtCore.Qt.WhatsThisRole):
+                return item.long_tag 
+            else:
+                return None
 
     # Expandable QAbstractItemModel subclass should implement
     # insertRows(row,count[,parent=QModelIndex()])
@@ -124,4 +132,33 @@ class TreeModel(QtCore.QAbstractItemModel):
     def get_item(self,indx):
         return indx.internalPointer() 
 
+    # QAbstractItemModel subclass should implement 
+    # headerData(int section,Qt.Orientation orientation[,role=Qt.DisplayRole])
+    # note: section arg indicates row or column number, depending on orientation
+    def headerData(self,section,orientation,data_role):
+        if (data_role == QtCore.Qt.DisplayRole and section == 0):
+            return "{} item(s) open".format(self.rowCount(QtCore.QModelIndex()))
+        elif (data_role == QtCore.Qt.DisplayRole and section == 1):
+            return "info".format(self.rowCount(QtCore.QModelIndex()))
+        else:
+            return None
+
+    def iter_indexes(self,parent=QtCore.QModelIndex()):
+        """Provide a list of the QModelIndexes held in the tree"""
+        # TODO: Make this return an iterator rather than a list?
+        if parent.isValid():
+            ixs = [parent]
+            # Loop through children of parent
+            items = self.get_item(parent).children
+        else:
+            ixs = []
+            # Loop through root_items
+            items = self.root_items
+        for j in range(len(items)):
+            item = items[j]
+            ix = self.index(j,0,parent)
+            # TODO: check for NoneType here!
+            if item.n_children > 0:
+                ixs = ixs + self.iter_indexes(ix)
+        return ixs
     

@@ -32,6 +32,11 @@ class OpUiManager(object):
         self.setup_ui()
 
     def set_op_manager(self,opman):
+        """
+        Set self.opman to input OpManager. 
+        Connect op_selector drop-down menu 
+        as a view for QAbstractListModel opman.
+        """
         self.opman = opman
         # Load initial op and args
         if self.opman.rowCount() > 0:
@@ -39,9 +44,18 @@ class OpUiManager(object):
         # Connect self.ui.op_selector to opman (QAbstractListModel).
         self.ui.op_selector.setModel(self.opman)
 
+    def set_op(self,op):
+        """
+        Set self.op to input Operation.
+        Set op_selector to the proper Operation subclass.
+        Load op.inputs and op.outputs into self.ui.arg_frame.
+        """
+        self.op = op
+        self.ui.op_se
+
     def setup_ui(self):
         self.ui.setWindowTitle("slacx operation builder")
-        self.ui.arg_frame.setMinimumWidth(600)
+        self.ui.arg_frame.setMinimumWidth(700)
         self.ui.op_frame.setMinimumWidth(300)
         self.ui.op_frame.setMaximumWidth(300)
         # Connect op selection with a slot that populates ui.op_info and ui.arg_frame
@@ -168,6 +182,7 @@ class OpUiManager(object):
 
     def load_raw_input(self,name,val_widg,edit_text=None):
         self.op.inputs[name] = val_widg.text()
+        self.ui.op_info.setPlainText(self.op.description())
 
     def fetch_data(self,name,src_selection,val_widg):
         """Use a QtGui.QTreeView popup to select the requested input data"""
@@ -183,6 +198,10 @@ class OpUiManager(object):
         elif src_selection == self.op_input_selection:
             trmod = self.wfman
         src_ui.tree.setModel(trmod)
+        src_ui.tree.resizeColumnToContents(0)
+        src_ui.tree.resizeColumnToContents(1)
+        for idx in trmod.iter_indexes():
+            src_ui.tree.setExpanded(idx,True)
         src_ui.load_button.setText('Load selected data')
         src_ui.load_button.clicked.connect(partial(self.load_from_tree,name,trmod,src_ui,val_widg))
         src_ui.show()
@@ -193,6 +212,7 @@ class OpUiManager(object):
         Construct a unique resource identifier (uri) for that item.
         Set self.op.inputs[name] to be that uri.
         Also set that uri to be the text of val_widg.
+        Finally, reset self.ui.op_info to reflect the changes.
         """
         trview = src_ui.tree
         # Get the selected item in QTreeView trview:
@@ -211,6 +231,7 @@ class OpUiManager(object):
         #print self.op.inputs
         src_ui.close()
         self.ui.nameval_layout.update()
+        self.ui.op_info.setPlainText(self.op.description())
 
     def text_widget(self,text):
         widg = QtGui.QLineEdit(text)
