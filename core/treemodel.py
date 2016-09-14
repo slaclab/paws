@@ -17,6 +17,9 @@ class TreeModel(QtCore.QAbstractItemModel):
         # keep root items in a TreeItem list
         self.root_items = []    
 
+    def get_item(self,indx):
+        return indx.internalPointer() 
+
     # Subclass of QAbstractItemModel must implement index()
     def index(self,row,col,parent):
         """
@@ -120,18 +123,15 @@ class TreeModel(QtCore.QAbstractItemModel):
         if parent.isValid():
             # Get the TreeItem referred to by QModelIndex parent:
             item = parent.internalPointer()
-            for j in range(row,row+count):
-                item.children.pop(j)
+            for j in range(row,row+count)[::-1]:
+                del item.children[j]
         else:
-            for j in range(row,row+count):
-                self.root_items.pop(j)
+            for j in range(row,row+count)[::-1]:
+                del self.root_items[j]
         # Signal listeners that we are done removing rows
         self.endRemoveRows()
 
     # get a TreeItem from the tree by its QModelIndex
-    def get_item(self,indx):
-        return indx.internalPointer() 
-
     # QAbstractItemModel subclass should implement 
     # headerData(int section,Qt.Orientation orientation[,role=Qt.DisplayRole])
     # note: section arg indicates row or column number, depending on orientation

@@ -48,36 +48,43 @@ class OpUiManager(object):
         """
         Set self.op to input Operation.
         Set op_selector to the proper Operation subclass.
+        Load op.description() into self.ui.op_info.
         Load op.inputs and op.outputs into self.ui.arg_frame.
         """
         self.op = op
-        self.ui.op_se
+        self.ui.op_selector.setCurrentIndex( self.opman.get_index_byname(type(op).__name__) )
+        # TODO: Don't let the user change the type of operation? For their own safety? 
+        self.ui.op_info.setPlainText(' ')
+        self.ui.op_info.setPlainText(op.description())
+        self.clear_nameval_list()
+        self.build_nameval_list()
 
-    def setup_ui(self):
+    def setup_ui(self,editmode=False):
         self.ui.setWindowTitle("slacx operation builder")
         self.ui.arg_frame.setMinimumWidth(700)
         self.ui.op_frame.setMinimumWidth(300)
         self.ui.op_frame.setMaximumWidth(300)
         # Connect op selection with a slot that populates ui.op_info and ui.arg_frame
-        self.ui.op_selector.activated.connect(self.create_op)
+        if editmode:
+            # Don't let the user change op type during editing?
+            self.ui.op_selector.setEditable(False)
+        else:
+            self.ui.op_selector.activated.connect(self.create_op)
         # Connect ui.finish_button with self.load_op 
         self.ui.finish_button.setText("Finish / Load to Workflow")
         self.ui.finish_button.clicked.connect(self.load_op)
         self.ui.setStyleSheet( "QLineEdit { border: none }" + self.ui.styleSheet() )
 
-    def create_op(self,selection_indx):
-        # TODO: align / distribute the widgets nicerly. 
+    def create_op(self,indx):
         # Clear description window 
         self.ui.op_info.setPlainText(' ')
         # Create op currently selected in ui.op_selector
-        self.op = self.opman.get_op(self.opman.index(selection_indx,0))()
+        self.op = self.opman.get_op(self.opman.index(indx,0))()
         # Set self.ui.op_info to op.description
         self.ui.op_info.setPlainText(self.op.description())
         # Clear the view of name-value widgets
         self.clear_nameval_list()
         self.build_nameval_list()
-        #print 'opuiman.create_op: created new op. description:'
-        #print self.op.description()
 
     def load_op(self):
         """
@@ -89,6 +96,11 @@ class OpUiManager(object):
         #    print 'input {}: {}'.format(name,val)
         #print self.op.description()
         self.wfman.add_op(self.op) 
+        self.ui.close()
+
+    def update_op(self,indx):
+        """Update the operation at indx in self.wfman with self.op"""
+        self.wfman.update_op(indx,self.op)
         self.ui.close()
 
     def clear_nameval_list(self):
@@ -228,7 +240,6 @@ class OpUiManager(object):
         val_widg.setText(item_uri)
         val_widg.setMinimumWidth(10*len(item_uri))
         self.op.inputs[name] = item_uri
-        #print self.op.inputs
         src_ui.close()
         self.ui.nameval_layout.update()
         self.ui.op_info.setPlainText(self.op.description())

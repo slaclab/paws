@@ -45,8 +45,8 @@ class TreeItem(object):
         """Build a string representing the items in self.data"""
         a = "data items:"
         for i in range(len(self.data)):
-            element = self.data[i]
-            a = a + '\n[{}]:'.format(i) + str(element)[:min((len(str(element)),40))]  
+            datstr = str(self.data[i])
+            a = a + '\n[{}]:'.format(i) + datstr[:min((len(datstr),60))]  
         return a
 
 

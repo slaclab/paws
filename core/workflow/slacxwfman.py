@@ -17,15 +17,15 @@ class WfManager(TreeModel):
         self._wf = {}       # this will be a dict managed by a dask graph 
         super(WfManager,self).__init__()
 
-    # add an Operation to the tree as a new top-level TreeItem.
     def add_op(self,new_op):
+        """Add an Operation to the tree as a new top-level TreeItem."""
         # Count top-level rows by passing parent=QModelIndex()
         ins_row = self.rowCount(QtCore.QModelIndex())
         # Make a new TreeItem, column 0, invalid parent 
         new_treeitem = TreeItem(ins_row,0,QtCore.QModelIndex())
         new_treeitem.data.append(new_op)
         new_treeitem.set_tag( 'op{}'.format(self._n_loaded) )
-        new_treeitem.long_tag = new_op.description()
+        new_treeitem.long_tag = new_op.__doc__
         self.beginInsertRows(
         QtCore.QModelIndex(),ins_row,ins_row)
         # Insertion occurs between notification methods
@@ -33,10 +33,24 @@ class WfManager(TreeModel):
         self.endInsertRows()
         # Render Operation inputs and outputs as children
         indx = self.index(ins_row,0,QtCore.QModelIndex())
-        self.add_op_subtree(new_op,indx)
+        self.io_subtree(new_op,indx)
         self._n_loaded += 1
 
-    def add_op_subtree(self,op,parent):
+    def update_op(self,indx,new_op):
+        """Replace Operation at indx with new_op"""
+        # Get the treeitem for indx
+        item = self.get_item(indx)
+        # Put the data in the treeitem
+        item.data[0] = new_op
+        item.long_tag = new_op.__doc__
+        # Wipe out the children
+        #for child in item.children:
+        #    del child
+        # Update the op subtree
+        self.build_io_subtrees(new_op,indx)
+        # TODO: update gui arg frames
+
+    def io_subtree(self,op,parent):
         """Add inputs and outputs subtrees as children of an Operation TreeItem"""
         # Get a reference to the parent item
         p_item = parent.internalPointer()
@@ -50,10 +64,36 @@ class WfManager(TreeModel):
         p_item.children.insert(0,inputs_treeitem)
         p_item.children.insert(1,outputs_treeitem)
         self.endInsertRows()
-        # Get the QModelIndexes of the new TreeItems
+        # Populate the new TreeItems with op.inputs and op.outputs
+        self.build_io_subtrees(op,parent)
+
+    def build_io_subtrees(self,op,parent):
+        # Get a reference to the parent item
+        p_item = parent.internalPointer()
+        # assume operation object is parent.data[0]
+        #op = p_item.data[0]
+        # Get references to the inputs and outputs subtrees
+        inputs_treeitem = p_item.children[0]
+        outputs_treeitem = p_item.children[1]
+        # Get the QModelIndexes of the subtrees 
         inputs_indx = self.index(0,0,parent)
         outputs_indx = self.index(1,0,parent)
-        # Populate inputs and outputs
+        # Eliminate their children
+        nc_i = inputs_treeitem.n_children()
+        nc_o = outputs_treeitem.n_children()
+        self.removeRows(0,nc_i,inputs_indx)
+        self.removeRows(0,nc_o,outputs_indx)
+        #self.beginRemoveRows(inputs_indx,0,nc_i-1)
+        #for i in range(nc_i-1):
+        #    #del self.get_item(inputs_indx).children[i]
+        #    self.get_item(inputs_indx).children.pop(i)
+        #self.endRemoveRows()
+        #self.beginRemoveRows(outputs_indx,0,nc_o-1)
+        #for i in range(nc_o-1):
+        #    #del self.get_item(outputs_indx).children[i]
+        #    self.get_item(outputs_indx).children.pop(i)
+        #self.endRemoveRows()
+        # Populate new inputs and outputs
         for name,val in op.inputs.items():
             ins_row = self.rowCount(inputs_indx)
             inp_treeitem = TreeItem(ins_row,0,inputs_indx)
@@ -82,10 +122,6 @@ class WfManager(TreeModel):
         # Removal occurs between notification methods
         item_removed = self.root_items.pop(rm_row)
         self.endRemoveRows()
-
-    def edit_op(self,indx):
-        """Edit selected Operation from the workflow tree"""
-        pass
 
     # QAbstractItemModel subclass should implement 
     # headerData(int section,Qt.Orientation orientation[,role=Qt.DisplayRole])

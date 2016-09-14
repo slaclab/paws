@@ -48,6 +48,14 @@ class OpManager(QtCore.QAbstractListModel):
                 return op
         return None
 
+    # get index of an operation by its name
+    def get_index_byname(self,op_name):
+        for i in range(len(self._op_list)):
+            op = self._op_list[i]
+            if op.__name__ == op_name:
+                return i 
+        return None
+
     # get an Operation from the list by its QModelIndex
     def get_op(self,indx):
         return self._op_list[indx.row()]

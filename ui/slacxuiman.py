@@ -2,13 +2,12 @@ import sys
 import os
 from datetime import datetime as dt
 import time
+from functools import partial
 
-from PIL import Image, ImageQt
 from PySide import QtGui, QtCore, QtUiTools
 import numpy as np
 
 from core import slacximg 
-import core.operations as ops
 from ui import plotmaker
 from ui.opuiman import OpUiManager
 
@@ -36,21 +35,28 @@ class UiManager(object):
         self.wfman = None
         #self.op_uimans = [] 
 
-    def export_image(self):
-        """export the image in the currently selected tab"""
-        pass
-
-    def edit_image(self):
-        """open an image editor for the current tab"""
+    def apply_workflow(self):
+        """
+        run the workflow
+        """
         pass
 
     def edit_op(self):
         """
-        edit the selected operation in the workflow list 
+        Edit the selected operation in the workflow list.
+        Do this by opening an OpUiManager,
+        loading it with the selected operation,
+        and then setting the finish/load button
+        to perform an update rather than appendage.
         """
         uiman = self.open_op_ui_manager()
+        # set OpUiManager's operation to the one selected in self.ui.workflow_tree
         selected_indxs = self.ui.workflow_tree.selectedIndexes()
-        uiman.load_op(selected_indxs[0])
+        uiman.set_op( self.wfman.get_item(selected_indxs[0]).data[0] )
+        # connect uiman.ui.finish_button to an operation updater method
+        uiman.ui.finish_button.clicked.disconnect()
+        uiman.ui.finish_button.clicked.connect( partial(uiman.update_op,selected_indxs[0]) )
+        uiman.ui.show()
 
     def rm_op(self):
         """
@@ -236,11 +242,12 @@ class UiManager(object):
     def show_status(self,msg):
         self.ui.statusbar.showMessage(msg)
 
+    def export_image(self):
+        """export the image in the currently selected tab"""
+        pass
 
-    def apply_workflow(self):
-        """
-        run the workflow
-        """
+    def edit_image(self):
+        """open an image editor for the current tab"""
         pass
 
 
