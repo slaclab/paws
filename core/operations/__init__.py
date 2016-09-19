@@ -3,12 +3,12 @@ import importlib
 
 from core.operations.slacxop import Operation
 
+#### BUILD OPERATIONS LIST
 # pkgutil.iter_modules returns module_loader, module_name, ispkg forall modules in path
 mods = pkgutil.iter_modules(__path__)
 # leave out the __init__ module, any modules that load core.operations, and the abc module slacxop 
 mods = [mod for mod in mods if mod[1] not in ['__init__','slacxop','slacxopman']]
 op_list = []
-
 for modloader, modname, ispkg in mods:
     try:
         #print '[{}] importing module {}...'.format(__name__,modname)
@@ -24,6 +24,4 @@ for modloader, modname, ispkg in mods:
     except ImportError:
         print '[{}] had trouble dealing with module attribute {}: {}'.format(__name__,name,item)
         raise
-
-
 

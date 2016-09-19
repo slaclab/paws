@@ -34,14 +34,14 @@ class ImgManager(TreeModel):
         + "MAR (*.mar*)"
         )
 
-    # add a SlacxImage object to the tree as a new top-level TreeItem.
-    def add_image(self,new_img):
+    # add an image object to the tree as a new top-level TreeItem.
+    def add_image(self,new_img,tag):
         # Count top-level rows by passing parent=QModelIndex()
         ins_row = self.rowCount(QtCore.QModelIndex())
         # Make a new TreeItem, column 0, invalid parent 
         new_treeitem = TreeItem(ins_row,0,QtCore.QModelIndex())
         new_treeitem.data.append(new_img)
-        new_treeitem.set_tag( 'img{}'.format(self._n_loaded) )
+        new_treeitem.set_tag( tag )
         new_treeitem.long_tag = new_img.img_url
         self.beginInsertRows(
         QtCore.QModelIndex(),ins_row,ins_row)
@@ -79,6 +79,7 @@ class ImgManager(TreeModel):
     def remove_image(self,removal_indx):
         # TODO: Make this a general item(+children) removal
         removal_row = removal_indx.row()
+        #print '[{}] removing root_items[{}]'.format(__name__,removal_row)
         self.beginRemoveRows(
         QtCore.QModelIndex(),removal_row,removal_row)
         # Image removal occurs between notification methods
@@ -88,10 +89,6 @@ class ImgManager(TreeModel):
         # 0. wipe out display tabs if using a gui - do this with slots/signals?
         # 1. implement TreeItem.close()?
         #item_removed.close()
-
-    # get a TreeItem from the tree by its QModelIndex
-    def get_item(self,indx):
-        return indx.internalPointer() 
 
     # QAbstractItemModel subclass should implement 
     # headerData(int section,Qt.Orientation orientation[,role=Qt.DisplayRole])

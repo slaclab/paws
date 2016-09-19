@@ -1,3 +1,5 @@
+import string 
+
 from PySide import QtCore
 
 class TreeModel(QtCore.QAbstractItemModel):
@@ -20,20 +22,49 @@ class TreeModel(QtCore.QAbstractItemModel):
     def get_item(self,indx):
         return indx.internalPointer() 
 
+    # get a list of root_item tags
+    def list_tags(self):
+        return [item.tag() for item in self.root_items]
+    
+    # test uniqueness and good form of a tag
+    def is_good_tag(self,testtag):
+        spec_chars = string.punctuation 
+        spec_chars = spec_chars.replace('_','')
+        spec_chars = spec_chars.replace('-','')
+        if testtag in self.list_tags():
+            return (False, 'Tag not unique')
+        elif any(map(lambda s: s in testtag,[' ','\t','\n'])):
+            return (False, 'Tag contains whitespace')
+        elif any(map(lambda s: s in testtag,spec_chars)):
+            return (False, 'Tag contains special characters')
+        else:
+            return (True, '')    
+
     # Subclass of QAbstractItemModel must implement index()
     def index(self,row,col,parent):
         """
         Returns QModelIndex address of int row, int col, under QModelIndex parent.
+        If a row, column, parent combination points to an invalid index, 
+        returns invalid QModelIndex().
         """
         if not parent.isValid():
             # If parent is not a valid index, a top level item is being queried.
-            return self.createIndex(row,col,self.root_items[row])
+            if row < len(self.root_items) and row >= 0:
+                # Return the index
+                return self.createIndex(row,col,self.root_items[row])
+            else:
+                # Bad row: return invalid index
+                return QtCore.QModelIndex()
         else:
             # We need to grab the parent from its QModelIndex...
             p_item = parent.internalPointer()
             # and return the index of the child at row
-            return self.createIndex(row,col,p_item.children[row])
-
+            if row < len(p_item.children) and row >= 0:
+                return self.createIndex(row,col,p_item.children[row])
+            else:
+                # Bad row: return invalid index
+                return QtCore.QModelIndex()
+                
     # Subclass of QAbstractItemModel must implement parent()
     def parent(self,index):
         """

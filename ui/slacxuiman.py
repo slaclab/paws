@@ -10,6 +10,7 @@ import numpy as np
 from core import slacximg 
 from ui import plotmaker
 from ui.opuiman import OpUiManager
+from ui.imgloaduiman import ImgLoadUiManager
 
 class UiManager(object):
     """
@@ -49,14 +50,18 @@ class UiManager(object):
         and then setting the finish/load button
         to perform an update rather than appendage.
         """
-        uiman = self.open_op_ui_manager()
-        # set OpUiManager's operation to the one selected in self.ui.workflow_tree
         selected_indxs = self.ui.workflow_tree.selectedIndexes()
-        uiman.set_op( self.wfman.get_item(selected_indxs[0]).data[0] )
-        # connect uiman.ui.finish_button to an operation updater method
-        uiman.ui.finish_button.clicked.disconnect()
-        uiman.ui.finish_button.clicked.connect( partial(uiman.update_op,selected_indxs[0]) )
-        uiman.ui.show()
+        if len(selected_indxs) > 0:
+            uiman = self.start_op_ui_manager()
+            # set OpUiManager's operation to the one selected in self.ui.workflow_tree
+            uiman.set_op( self.wfman.get_item(selected_indxs[0]).data[0] )
+            # connect uiman.ui.finish_button to an operation updater method
+            uiman.ui.finish_button.clicked.disconnect()
+            uiman.ui.finish_button.clicked.connect( partial(uiman.update_op,selected_indxs[0]) )
+            uiman.ui.show()
+        else:
+            # TODO: Inform user to select operation first
+            pass
 
     def rm_op(self):
         """
@@ -72,17 +77,24 @@ class UiManager(object):
         """
         interact with user to build an operation into the workflow
         """
-        uiman = self.open_op_ui_manager()
+        uiman = self.start_op_ui_manager()
         uiman.ui.show()
 
-    def open_op_ui_manager(self):
+    def start_imgload_ui_manager(self,imgfile):
+        """
+        Create a QFrame window from ui/tag_request.ui, then return it
+        """
+        ui_file = QtCore.QFile(os.getcwd()+"/ui/tag_request.ui")
+        uiman = ImgLoadUiManager(ui_file,self.imgman,imgfile)
+        uiman.ui.setParent(self.ui,QtCore.Qt.Window)
+        return uiman
+
+    def start_op_ui_manager(self):
         """
         Create a QFrame window from ui/op_builder.ui, then return it
         """
         ui_file = QtCore.QFile(os.getcwd()+"/ui/op_builder.ui")
-        uiman = OpUiManager(ui_file)
-        uiman.imgman = self.imgman
-        uiman.wfman = self.wfman
+        uiman = OpUiManager(ui_file,self.wfman,self.imgman)
         uiman.set_op_manager(self.opman)
         uiman.ui.setParent(self.ui,QtCore.Qt.Window)
         return uiman
@@ -102,20 +114,10 @@ class UiManager(object):
         imgfile, ext = QtGui.QFileDialog.getOpenFileName(
         self.ui, 'Open file', os.getcwd(), self.imgman.loader_extensions())
         if imgfile:
-            # get row where new image will be placed
-            ins_row = self.imgman.rowCount(QtCore.QModelIndex())
-            # create new SlacxImage object
-            new_img = slacximg.SlacxImage(imgfile)
-            # Add this SlacxImage to ImgManager tree, self.imgman
-            self.imgman.add_image(new_img)
-            indx = self.imgman.index(ins_row,0,QtCore.QModelIndex())
-            # Render the image pixel data
-            new_img.load_img_data()
-            # Add data and tags
-            self.imgman.add_image_data(indx,new_img.img_data,'img_data',new_img.size_tag())
-            # set self.ui.image_tree selection to be the new image
-            self.ui.image_tree.setCurrentIndex(
-                self.imgman.index(ins_row,0,QtCore.QModelIndex()))
+            # Start up a UI for tagging and loading the image
+            tag_uiman = self.start_imgload_ui_manager(imgfile)
+            tag_uiman.ui.show()
+            #self.get_img_tag(imgfile)
 
     def display_item(self):
         """
@@ -209,7 +211,8 @@ class UiManager(object):
     def make_title(self):
         """Display the slacx logo in the title box"""
         # Load the slacx graphic  
-        slacx_img_file = os.path.join(os.getcwd(), "ui/slacx_icon.png")
+        #slacx_img_file = os.path.join(os.getcwd(), "ui/slacx_icon.png")
+        slacx_img_file = os.path.join(os.getcwd(), "ui/slacx_icon_white.png")
         # Make a QtGui.QPixmap from this file
         slacx_pixmap = QtGui.QPixmap(slacx_img_file)
         # Make a QtGui.QGraphicsPixmapItem from this QPixmap

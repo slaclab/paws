@@ -2,6 +2,7 @@ from PySide import QtCore
 
 from core.treemodel import TreeModel
 from core.treeitem import TreeItem
+from core.operations import optools
 
 class WfManager(TreeModel):
     """
@@ -17,14 +18,14 @@ class WfManager(TreeModel):
         self._wf = {}       # this will be a dict managed by a dask graph 
         super(WfManager,self).__init__()
 
-    def add_op(self,new_op):
+    def add_op(self,new_op,tag):
         """Add an Operation to the tree as a new top-level TreeItem."""
         # Count top-level rows by passing parent=QModelIndex()
         ins_row = self.rowCount(QtCore.QModelIndex())
         # Make a new TreeItem, column 0, invalid parent 
         new_treeitem = TreeItem(ins_row,0,QtCore.QModelIndex())
         new_treeitem.data.append(new_op)
-        new_treeitem.set_tag( 'op{}'.format(self._n_loaded) )
+        new_treeitem.set_tag( tag )
         new_treeitem.long_tag = new_op.__doc__
         self.beginInsertRows(
         QtCore.QModelIndex(),ins_row,ins_row)
@@ -70,8 +71,6 @@ class WfManager(TreeModel):
     def build_io_subtrees(self,op,parent):
         # Get a reference to the parent item
         p_item = parent.internalPointer()
-        # assume operation object is parent.data[0]
-        #op = p_item.data[0]
         # Get references to the inputs and outputs subtrees
         inputs_treeitem = p_item.children[0]
         outputs_treeitem = p_item.children[1]
@@ -83,36 +82,30 @@ class WfManager(TreeModel):
         nc_o = outputs_treeitem.n_children()
         self.removeRows(0,nc_i,inputs_indx)
         self.removeRows(0,nc_o,outputs_indx)
-        #self.beginRemoveRows(inputs_indx,0,nc_i-1)
-        #for i in range(nc_i-1):
-        #    #del self.get_item(inputs_indx).children[i]
-        #    self.get_item(inputs_indx).children.pop(i)
-        #self.endRemoveRows()
-        #self.beginRemoveRows(outputs_indx,0,nc_o-1)
-        #for i in range(nc_o-1):
-        #    #del self.get_item(outputs_indx).children[i]
-        #    self.get_item(outputs_indx).children.pop(i)
-        #self.endRemoveRows()
         # Populate new inputs and outputs
-        for name,val in op.inputs.items():
-            ins_row = self.rowCount(inputs_indx)
-            inp_treeitem = TreeItem(ins_row,0,inputs_indx)
+        n_inputs = len(op.inputs)
+        input_items = op.inputs.items()
+        n_outputs = len(op.outputs)
+        output_items = op.outputs.items()
+        self.beginInsertRows(inputs_indx,0,n_inputs-1)
+        for i in range(n_inputs):
+            name,val = input_items[i]
+            inp_treeitem = TreeItem(i,0,inputs_indx)
             inp_treeitem.set_tag(name)
-            # generate long tag from Operation.parameter_doc(name,val,doc)
-            inp_treeitem.long_tag = p_item.data[0].parameter_doc(name,val,op.input_doc[name])
+            # generate long tag from optools.parameter_doc(name,val,doc)
+            inp_treeitem.long_tag = optools.parameter_doc(name,val,op.input_doc[name])
             inp_treeitem.data.append(val)
-            self.beginInsertRows(inputs_indx,ins_row,ins_row)
-            inputs_treeitem.children.insert(ins_row,inp_treeitem)
-            self.endInsertRows()
-        for name,val in op.outputs.items():
-            ins_row = self.rowCount(outputs_indx)
-            out_treeitem = TreeItem(ins_row,0,outputs_indx)
+            inputs_treeitem.children.insert(i,inp_treeitem)
+        self.endInsertRows()
+        self.beginInsertRows(outputs_indx,0,n_outputs-1)
+        for i in range(n_outputs):
+            name,val = output_items[i]
+            out_treeitem = TreeItem(i,0,outputs_indx)
             out_treeitem.set_tag(name)
-            out_treeitem.long_tag = p_item.data[0].parameter_doc(name,val,op.output_doc[name])
+            out_treeitem.long_tag = optools.parameter_doc(name,val,op.output_doc[name])
             out_treeitem.data.append(val)
-            self.beginInsertRows(outputs_indx,ins_row,ins_row)
-            outputs_treeitem.children.insert(ins_row,out_treeitem)
-            self.endInsertRows()
+            outputs_treeitem.children.insert(i,out_treeitem)
+        self.endInsertRows()
 
     def remove_op(self,rm_indx):
         """Remove an Operation from the workflow tree"""
@@ -138,9 +131,37 @@ class WfManager(TreeModel):
         """
         Check the dependencies of the workflow.
         Ensure that all loaded operations have inputs that make sense.
-        If everything is found to be ok,
-        load the self._wf dict for dask.get() functionality.
         """
         pass
+
+    def load_wf_dict(self):
+        """
+        Build a dask-compatible dictionary from the Operations in the workflow tree
+        """
+        pass
+
+    def locate_input(self,inplocator):
+        """Return the data pointed to by a given InputLocator object"""
+        src = inplocator.src
+        uri = inplocator.uri
+        if src in optools.valid_sources:
+            if src == optools.text_input_selection: 
+                # uri will be unicode rep of numerical input
+                # leave type casting to the Operation itself
+                return uri 
+            elif src == optools.image_input_selection: 
+                # follow uri in image tree
+                tag = uri.split('.')[0]
+                indx = self.imgman.list_tags().index(tag)
+                item = self.imgman.root_items[indx]
+            elif src == optools.op_input_selection: 
+                # follow uri in workflow tree
+                tag = uri.split('.')[0]
+                indx = self.imgman.list_tags().index(tag)
+                item = self.imgman.root_items[indx]
+        else: 
+            msg = 'found input source {}, should be one of {}'.format(
+            src, valid_sources)
+            raise ValueError(msg)
 
 

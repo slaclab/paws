@@ -15,6 +15,7 @@ class OpManager(QtCore.QAbstractListModel):
         # TODO: build operation list from core/operations/__init__.py 
         self._op_list = [] 
         super(OpManager,self).__init__()
+        self.load_ops(ops.op_list)
 
     def load_ops(self,op_list):
         for op in op_list:
@@ -32,8 +33,7 @@ class OpManager(QtCore.QAbstractListModel):
     # remove an Operation from the list 
     def remove_op(self,removal_indx):
         removal_row = removal_indx.row()
-        self.beginRemoveRows(
-        QtCore.QModelIndex(),removal_row,removal_row)
+        self.beginRemoveRows(QtCore.QModelIndex(),removal_row,removal_row)
         # Removal occurs between notification methods
         self._op_list.pop(removal_row)
         self.endRemoveRows()
@@ -101,7 +101,7 @@ class OpManager(QtCore.QAbstractListModel):
     def removeRows(self, row, count, parent=QtCore.QModelIndex()):
         # Signal listeners that rows are about to die
         self.beginRemoveRows(parent,row,row+count-1)
-        for indx in range(row,row+count):
+        for indx in range(row,row+count)[::-1]:
             self._op_list.pop(indx)
         # Signal listeners that we are done removing rows
         self.endRemoveRows()

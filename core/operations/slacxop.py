@@ -1,9 +1,11 @@
 import abc
 
+from core.operations import optools
+
 class Operation(object):
     __metaclass__ = abc.ABCMeta
     """
-    Metaclass template for implementing slacx operations.
+    Abstract class template for implementing slacx operations.
     """
 
     def __init__(self,input_vars,output_vars):
@@ -79,18 +81,14 @@ class Operation(object):
     def inputs_description(self):
         a = ""
         for name,val in self.inputs.items(): 
-            a = a + self.parameter_doc(name,val,self.input_doc[name]) + "\n"
+            a = a + optools.parameter_doc(name,val,self.input_doc[name]) + "\n"
         return a
 
     def outputs_description(self):
         a = ""
         for name,val in self.outputs.items(): 
-            a = a + self.parameter_doc(name,val,self.output_doc[name]) + "\n"
+            a = a + optools.parameter_doc(name,val,self.output_doc[name]) + "\n"
         return a
-
-    @staticmethod
-    def parameter_doc(name,val,doc):
-        return "name: {} \nvalue: {} \ndoc: {}".format(name,val,doc) 
 
 #    @abc.abstractmethod
 #    def tag(self):

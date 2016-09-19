@@ -6,7 +6,6 @@ import qdarkstyle
 
 from ui import slacxuiman
 from core import slacximgman
-import core.operations as ops
 from core.operations import slacxopman
 from core.workflow import slacxwfman
 
@@ -40,8 +39,6 @@ def main():
     imgman = slacximgman.ImgManager()
     # Start an OpManager to manage operations.
     opman = slacxopman.OpManager()
-    # Add core.operations.op_list to opman
-    opman.load_ops(ops.op_list)
     # Start a WfManager to manage workflows.
     wfman = slacxwfman.WfManager()
 
