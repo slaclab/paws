@@ -1,0 +1,110 @@
+\chapter{operation development}
+\label{ch:op_dev}
+
+Developing operations for use in the \verb|slacx| workflow engine 
+is meant to be as painless as possible.
+A continuing effort will be made to streamline this process.
+
+The most general description of an operation 
+is to treat it as a black box that takes some inputs (data and parameters),
+performs some processing with those inputs,
+and produces some output (data and other features).
+Users can choose to build their operations 
+in two ways in the current implementation of \verb|slacx|.
+
+One option is to write the function into a python class
+that defines names for its inputs and outputs
+and then stores the input and output data 
+within instances (objects) of that class.
+This process is most easily understood 
+by following the template and instructions 
+provided in section~\ref{sec:op_dev_by_class} below.
+
+Another option (not yet implemented)
+is to write the function into a python module 
+that contains formatted metadata 
+about how the function should be called,
+with input and output data 
+stored in the workflow engine itself.
+
+In either case, the user/developer writes their operation 
+into a module \verb|somefile.py|
+and then places this module in the \verb|slacx/core/operations/| directory.
+If the implementation obeys the specified format, 
+the operation will automatically be made available 
+to the \verb|slacx| workflow manager
+the next time \verb|slacx| is started.
+If the user/developer is not careful 
+about implementing their operation,
+\verb|slacx| will probably raise exceptions and exit. 
+This could happen at startup (when the operation is read),
+during workflow management (when the operations is loaded with inputs),
+or during execution (when the operation is called upon to compute things),
+depending on where (if any) errors were made.
+
+\section{operations as python classes}
+\label{sec:op_dev_by_class}
+
+The following code block gives a minimal, 
+commented template for developing
+operations as python classes.
+Users/developers with some programming background
+may find all the information they need in this template alone.
+Those requiring a more detailed walkthrough should read on.
+
+\begin{lstlisting}
+# Users and developers should remove all comments from this template.
+# All text outside comments that is meant to be removed or replaced 
+# is <written within angle brackets>.
+
+# Operations implemented as python classes 
+# have a common interface for communicating 
+# with the slacx workflow manager.
+# That common interface is ensured by inheriting it
+# from an abstract class called 'Operation'.
+from core.operations.slacxop import Operation
+
+# Name the operation, specify inheritance (Operation)
+class <OperationName>(Operation):
+    # Give a brief description of the operation
+    # bracketed by """triple-double-quotes"""
+    """<Description of Operation>"""
+
+    # Write an __init__() function for the Operation.
+    def __init__(self):
+        # Name the input and output data/parameters for your operation.
+        # Format names as 'single_quotes_without_spaces'.
+        input_names = ['<input_name_1>','<input_name_2>',...>]
+        output_names = ['<output_name_1>','<output_name_2>',...>]
+        # Call the __init__ method of the Operation abstract class.
+        # This instantiates {key:value} dictionaries of inputs and outputs, 
+        # which have keys generated from input_names and output_names.
+        # All values in the dictionary are initialized as None. 
+        super(Identity,self).__init__(input_names,output_names)
+        # Write a free-form documentation string describing each item
+        # that was named in input_names and output_names.
+        self.input_doc['<input_name_1>'] = '<expectations for input 1>'
+        self.input_doc['<input_name_2>'] = '<etc>'
+        self.output_doc['<output_name_1>'] = '<form of output 1>'
+        self.output_doc['<output_name_2>'] = '<etc>'
+        
+    # Write a run() function for this Operation.
+    def run(self):
+        # Optional- create references in the local namespace for cleaner code.
+        <inp1> = self.inputs['<input_name_1>']
+        <inp2> = self.inputs['<input_name_2>']
+        <etc>
+        # Perform the computation
+        < ... >
+        # Save the outputs
+        self.outputs['<output_name_1>'] = <computed_value_1>
+        self.outputs['<output_name_2>'] = <etc>
+\end{lstlisting}
+
+
+\section{operations as functions in a module}
+\label{sec:op_dev_by_function}
+
+ etc etc etc
+
+

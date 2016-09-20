@@ -1,0 +1,6 @@
+#!/bin/bash
+
+pdflatex top.tex
+cp top.pdf manual.pdf
+
+

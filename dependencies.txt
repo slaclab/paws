@@ -1,7 +1,11 @@
+--- system libs: ---
+virtualenv
+wheel
+setuptools
+
 --- definitely needed: ---
 numpy
 scipy
-setuptools
 PySide
 pyqtgraph
 pillow
