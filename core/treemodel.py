@@ -22,16 +22,19 @@ class TreeModel(QtCore.QAbstractItemModel):
     def get_item(self,indx):
         return indx.internalPointer() 
 
-    # get a list of root_item tags
-    def list_tags(self):
-        return [item.tag() for item in self.root_items]
+    # get a list of tags for TreeItems under parent
+    def list_tags(self,parent):
+        if not parent.isValid():
+            return [item.tag() for item in self.root_items]
+        else:
+            return [item.tag() for item in self.get_item(parent).children]
     
     # test uniqueness and good form of a tag
-    def is_good_tag(self,testtag):
+    def is_good_tag(self,testtag,parent=QtCore.QModelIndex()):
         spec_chars = string.punctuation 
         spec_chars = spec_chars.replace('_','')
         spec_chars = spec_chars.replace('-','')
-        if testtag in self.list_tags():
+        if testtag in self.list_tags(parent):
             return (False, 'Tag not unique')
         elif any(map(lambda s: s in testtag,[' ','\t','\n'])):
             return (False, 'Tag contains whitespace')

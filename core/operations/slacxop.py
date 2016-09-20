@@ -8,15 +8,15 @@ class Operation(object):
     Abstract class template for implementing slacx operations.
     """
 
-    def __init__(self,input_vars,output_vars):
+    def __init__(self,input_names,output_names):
         """
-        The input_vars and output_vars (lists of strings)
-        are used to specify names for the variables 
+        The input_names and output_names (lists of strings)
+        are used to specify names for the parameters 
         that will be used to perform the operation.
         When loading the operation into the workspace,
-        each name in input_vars becomes a variable 
+        each name in input_names becomes a variable 
         which must be assigned some value.
-        Meanwhile, the output_vars specification is used to build
+        Meanwhile, the output_names specification is used to build
         workflow connections with results that are not yet computed.
         """
         self.inputs = {}
@@ -24,10 +24,10 @@ class Operation(object):
         self.outputs = {}
         self.output_doc = {}
         # For each of the var names, assign to None 
-        for name in input_vars: 
+        for name in input_names: 
             self.inputs[name] = None
             self.input_doc[name] = None
-        for name in output_vars: 
+        for name in output_names: 
             self.outputs[name] = None
             self.output_doc[name] = None
 

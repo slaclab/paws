@@ -66,7 +66,7 @@ class ImgLoadUiManager(object):
         goodtag = False
         while not goodtag:
             testtag = 'img{}'.format(indx)
-            if not testtag in self.imgman.list_tags():
+            if not testtag in self.imgman.list_tags(QtCore.QModelIndex()):
                 goodtag = True
             else:
                 indx += 1

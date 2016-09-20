@@ -53,17 +53,12 @@ class OpUiManager(object):
         self.clear_nameval_list()
         self.build_nameval_list()
 
-    def setup_ui(self,editmode=False):
+    def setup_ui(self):
         self.ui.setWindowTitle("slacx operation builder")
         self.ui.arg_frame.setMinimumWidth(700)
         self.ui.op_frame.setMinimumWidth(300)
         self.ui.op_frame.setMaximumWidth(300)
-        # Connect op selection with a slot that populates ui.op_info and ui.arg_frame
-        if editmode:
-            # Don't let the user change op type during editing?
-            self.ui.op_selector.setEditable(False)
-        else:
-            self.ui.op_selector.activated.connect(self.create_op)
+        self.ui.op_selector.activated.connect(self.create_op)
         # Populate tag entry fields
         self.ui.tag_prompt.setText('enter a unique tag for this operation:')
         self.ui.tag_prompt.setMinimumWidth(200)
@@ -84,7 +79,7 @@ class OpUiManager(object):
         goodtag = False
         while not goodtag:
             testtag = 'op{}'.format(indx)
-            if not testtag in self.wfman.list_tags():
+            if not testtag in self.wfman.list_tags(QtCore.QModelIndex()):
                 goodtag = True
             else:
                 indx += 1

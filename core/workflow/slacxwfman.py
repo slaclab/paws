@@ -4,6 +4,8 @@ from core.treemodel import TreeModel
 from core.treeitem import TreeItem
 from core.operations import optools
 
+# TODO: See note on remove_op()
+
 class WfManager(TreeModel):
     """
     Class for managing a workflow built from slacx operations.
@@ -15,7 +17,9 @@ class WfManager(TreeModel):
         #if 'wf_loader' in kwargs:
         #    with f as open(wf_loader,'r'): 
         #        self.load_from_file(f)
-        self._wf = {}       # this will be a dict managed by a dask graph 
+        self._wf_dict = {}       # this will be a dict for a dask.threaded graph 
+        if 'imgman' in kwargs:
+            self.imgman = kwargs['imgman'] 
         super(WfManager,self).__init__()
 
     def add_op(self,new_op,tag):
@@ -115,6 +119,7 @@ class WfManager(TreeModel):
         # Removal occurs between notification methods
         item_removed = self.root_items.pop(rm_row)
         self.endRemoveRows()
+        # TODO: update any Operations that depended on the removed one
 
     # QAbstractItemModel subclass should implement 
     # headerData(int section,Qt.Orientation orientation[,role=Qt.DisplayRole])
@@ -134,34 +139,128 @@ class WfManager(TreeModel):
         """
         pass
 
+    def run_wf_serial(self):
+        """
+        Run the workflow by looping over Operations in self.root_items, 
+        finding which ones are ready, and running them. 
+        Repeat until no further Operations are ready.
+        """
+        ops_done = []
+        to_run = self.ops_ready(ops_done)
+        while len(to_run) > 0:
+            print 'ops to run: {}'.format(to_run)
+            for j in to_run:
+                item = self.root_items[j]
+                # Get QModelIndex of this item for later use in updating tree view
+                indx = self.index(j,0,QtCore.QModelIndex())
+                op = item.data[0]
+                #print 'op {}: {}'.format(j,type(op).__name__)
+                for name,val in op.inputs.items():
+                    op.inputs[name] = self.locate_input(val)
+                #print 'op {} inputs: {}'.format(j,op.inputs)
+                #print 'BEFORE: op {} outputs: {}'.format(j,op.outputs)
+                op.run()
+                #print 'op {} called run()'.format(j)
+                #print 'AFTER: op {} outputs: {}'.format(j,op.outputs)
+                ops_done.append(j)
+                self.update_op(indx,op)
+                # emit the dataChanged signal
+                #self.dataChanged.emit(QtCore.QModelIndex(),QtCore.QModelIndex()) 
+                #self.dataChanged.emit(indx,indx) 
+                #outputs_indx = self.index(1,0,indx)
+                #self.dataChanged.emit(outputs_indx,outputs_indx) 
+                #outputs_treeitem = item.children[1]
+                #for row in range(len(outputs_treeitem.children)):
+                #    indx = self.index(row,0,outputs_indx)
+                #    self.dataChanged.emit(indx,indx)
+            to_run = self.ops_ready(ops_done)
+
+    def ops_ready(self,ops_done):
+        """
+        Give a list of indices in self.root_items 
+        that contain Operations whose inputs are ready
+        """
+        indxs = []
+        for j in range(len(self.root_items)):
+            if not j in ops_done:
+                item = self.root_items[j]
+                op = item.data[0]
+                inps = [self.locate_input(val) for name,val in op.inputs.items()]
+                if not any([inp is None for inp in inps]):
+                    indxs.append(j)
+        return indxs
+
     def load_wf_dict(self):
         """
-        Build a dask-compatible dictionary from the Operations in the workflow tree
+        Build a dask-compatible dictionary from the Operations in this tree
         """
-        pass
+        self._wf_dict = {}
+        for j in range(len(self.root_items)):
+            item = self.root_items[j]
+            # Unpack the Operation
+            op = item.data[0]
+            keyindx = 0
+            input_keys = [] 
+            input_vals = ()
+            for name,val in op.inputs.items():
+                # Add a locate_input line for each input 
+                dask_key = 'op'+str(j)+'inp'+str(keyindx)
+                self._wf_dict[dask_key] = (self.locate_input, val)
+                keyindx += 1
+                input_keys.append(name)
+                input_vals = input_vals + (dask_key)
+            # Add a load_inputs line for each op
+            dask_key = 'op'+str(j)+'_load'
+            self._wf_dict[key] = (self.load_inputs, op, input_keys, input_vals) 
+            # Add a run_op line for each op
+            dask_key = 'op'+str(j)+'_run'
+            self._wf_dict[key] = (self.run_op, op) 
+
+    @staticmethod
+    def load_inputs(op,keys,vals):
+        # fetch Operation at op_row
+        for i in range(len(keys)):
+            key = keys[i]
+            val = vals[i] 
+            op.inputs[key] = val
+        return op 
+
+    @staticmethod
+    def run_op(op):
+        return op.run()
 
     def locate_input(self,inplocator):
         """Return the data pointed to by a given InputLocator object"""
-        src = inplocator.src
-        uri = inplocator.uri
-        if src in optools.valid_sources:
-            if src == optools.text_input_selection: 
-                # uri will be unicode rep of numerical input
-                # leave type casting to the Operation itself
-                return uri 
-            elif src == optools.image_input_selection: 
-                # follow uri in image tree
-                tag = uri.split('.')[0]
-                indx = self.imgman.list_tags().index(tag)
-                item = self.imgman.root_items[indx]
-            elif src == optools.op_input_selection: 
-                # follow uri in workflow tree
-                tag = uri.split('.')[0]
-                indx = self.imgman.list_tags().index(tag)
-                item = self.imgman.root_items[indx]
-        else: 
-            msg = 'found input source {}, should be one of {}'.format(
-            src, valid_sources)
-            raise ValueError(msg)
-
+        if type(inplocator).__name__ == 'InputLocator':
+            src = inplocator.src
+            uri = inplocator.uri
+            if src in optools.valid_sources:
+                if src == optools.text_input_selection: 
+                    # uri will be unicode rep of numerical input
+                    # return it directly, leave any type casting to the Operation itself
+                    return uri 
+                elif src == optools.image_input_selection: 
+                    # follow uri in image tree
+                    trmod = self.imgman
+                elif src == optools.op_input_selection: 
+                    # follow uri in workflow tree
+                    trmod = self
+                path = uri.split('.')
+                parent_indx = QtCore.QModelIndex()
+                for itemtag in path:
+                    # get QModelIndex of item from itemtag
+                    row = trmod.list_tags(parent_indx).index(itemtag)
+                    qindx = trmod.index(row,0,parent_indx)
+                    # get TreeItem from QModelIndex
+                    item = trmod.get_item(qindx)
+                    # set new parent in case the path continues...
+                    parent_indx = qindx
+                # item.data[0] should now be the desired piece of data
+                return item.data[0]
+            else: 
+                msg = 'found input source {}, should be one of {}'.format(
+                src, valid_sources)
+                raise ValueError(msg)
+        else:
+            return inplocator
 

@@ -40,7 +40,7 @@ class UiManager(object):
         """
         run the workflow
         """
-        pass
+        self.wfman.run_wf_serial()
 
     def edit_op(self):
         """
@@ -55,6 +55,9 @@ class UiManager(object):
             uiman = self.start_op_ui_manager()
             # set OpUiManager's operation to the one selected in self.ui.workflow_tree
             uiman.set_op( self.wfman.get_item(selected_indxs[0]).data[0] )
+            uiman.ui.op_selector.setEnabled(False)
+            uiman.ui.tag_entry.setText(self.wfman.get_item(selected_indxs[0]).tag())
+            uiman.ui.tag_entry.setReadOnly(True)
             # connect uiman.ui.finish_button to an operation updater method
             uiman.ui.finish_button.clicked.disconnect()
             uiman.ui.finish_button.clicked.connect( partial(uiman.update_op,selected_indxs[0]) )

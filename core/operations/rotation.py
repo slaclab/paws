@@ -6,18 +6,19 @@ class Rotation(Operation):
     """The Rotation(Operation) class: rotates an image by 90, 180, or 270 degrees"""
 
     def __init__(self):
-        input_vars = ['image_data','rotation_deg']
-        output_vars = ['image_data']
-        super(Rotation,self).__init__(input_vars,output_vars)        
+        input_names = ['image_data','rotation_deg']
+        output_names = ['image_data']
+        super(Rotation,self).__init__(input_names,output_names)        
         self.input_doc['image_data'] = '2d array representing intensity for each pixel'
         self.input_doc['rotation_deg'] = str('rotation in degrees counter-clockwise, '
                                     + 'must be either 90, 180, or 270')
         self.output_doc['image_data'] = '2d array representing rotated image'
 
     def run(self):
-        """Rotate self.input_vars['image_data'] and save as self.output_vars['image_data']"""
-        # load self.inputs into local vars 
-        self.load_vars()    
+        """
+        Rotate self.inputs['image_data'] and save as self.outputs['image_data']"""
+        img = self.inputs['image_data']
+        rot_deg = int(self.inputs['rotation_deg'])
         if rot_deg==90:
             img_rot = np.rot90(img)
         elif rot_deg==180:
@@ -29,6 +30,7 @@ class Rotation(Operation):
             raise ValueError(msg)
         # save results to self.outputs
         self.outputs['image_data'] = img_rot
+        return self
 
 #    @classmethod
 #    def description(cls):

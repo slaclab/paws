@@ -40,7 +40,7 @@ def main():
     # Start an OpManager to manage operations.
     opman = slacxopman.OpManager()
     # Start a WfManager to manage workflows.
-    wfman = slacxwfman.WfManager()
+    wfman = slacxwfman.WfManager(imgman=imgman)
 
     # Start a UiManager to create and manage a QMainWindow.
     # Takes ui file name as only argument.

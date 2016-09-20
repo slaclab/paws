@@ -5,6 +5,8 @@ from PySide import QtCore
 from core.treemodel import TreeModel
 from core.treeitem import TreeItem
 
+# TODO: See note on remove_image()
+
 class ImgManager(TreeModel):
     """
     Class for managing tree of images and image data for slacx.
@@ -85,10 +87,8 @@ class ImgManager(TreeModel):
         # Image removal occurs between notification methods
         item_removed = self.root_items.pop(removal_row)
         self.endRemoveRows()
-        # TODO: take out garbage
-        # 0. wipe out display tabs if using a gui - do this with slots/signals?
-        # 1. implement TreeItem.close()?
-        #item_removed.close()
+        # TODO: wipe out display tabs if using a gui
+        # TODO: update any Operations in workflow that depended on this image 
 
     # QAbstractItemModel subclass should implement 
     # headerData(int section,Qt.Orientation orientation[,role=Qt.DisplayRole])
