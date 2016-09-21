@@ -30,7 +30,6 @@ class Rotation(Operation):
             raise ValueError(msg)
         # save results to self.outputs
         self.outputs['image_data'] = img_rot
-        return self
 
 #    @classmethod
 #    def description(cls):

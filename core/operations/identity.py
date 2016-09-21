@@ -12,7 +12,6 @@ class Identity(Operation):
         
     def run(self):
         self.outputs['image_data'] = self.inputs['image_data']
-        return self
 
 #    def description(cls):
 #        return str(
