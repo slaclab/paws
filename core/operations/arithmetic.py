@@ -22,7 +22,7 @@ class Multiply(Operation):
     def __init__(self):
         input_names = ['multiplicand', 'multiplier']
         output_names = ['product']
-        super(Add, self).__init__(input_names, output_names)
+        super(Multiply, self).__init__(input_names, output_names)
         self.input_doc['multiplicand'] = 'array or number'
         self.input_doc['multiplier'] = 'array or number for which multiplication with multiplicand is defined'
         self.output_doc['product'] = 'multiplicand times multiplier'
@@ -37,7 +37,7 @@ class Subtract(Operation):
     def __init__(self):
         input_names = ['minuend', 'subtrahend']
         output_names = ['difference']
-        super(Add, self).__init__(input_names, output_names)
+        super(Subtract, self).__init__(input_names, output_names)
         self.input_doc['minuend'] = 'array or number'
         self.input_doc['subtrahend'] = 'array or number for which subtraction from minuend is defined'
         self.output_doc['difference'] = 'minuend minus subtrahend'
@@ -53,7 +53,7 @@ class Divide(Operation):
     def __init__(self):
         input_names = ['dividend', 'divisor']
         output_names = ['quotient']
-        super(Add, self).__init__(input_names, output_names)
+        super(Divide, self).__init__(input_names, output_names)
         self.input_doc['dividend'] = 'array or number'
         self.input_doc['divisor'] = 'array or number for which dividing dividend is defined'
         self.output_doc['quotient'] = 'dividend divided by divisor'
@@ -62,13 +62,13 @@ class Divide(Operation):
         self.outputs['product'] = self.inputs['multiplicand'] / self.inputs['multiplier']
 
 
-class Exponentiate(self):
+class Exponentiate(Operation):
     '''Exponentiate an object by another object.'''
 
     def __init__(self):
         input_names = ['base', 'exponent']
         output_names = ['power']
-        super(Add, self).__init__(input_names, output_names)
+        super(Exponentiate, self).__init__(input_names, output_names)
         self.input_doc['base'] = 'array or number'
         self.input_doc['exponent'] = 'array or number for which exponentiating base is defined'
         self.output_doc['power'] = 'base raised by exponent'
