@@ -12,15 +12,3 @@ class Identity(Operation):
         
     def run(self):
         self.outputs['image_data'] = self.inputs['image_data']
-
-#    def description(cls):
-#        return str(
-#        "An Identity operation takes one input argument: "
-#        + "inputs['image_data'] (a 2d pixel array). "
-#        + "When Identity.run() is called, "
-#        + "it saves the same pixel array in outputs['image_data']. "
-#        )
-
-#    def tag(self):
-#        return "Image-Identity"
-

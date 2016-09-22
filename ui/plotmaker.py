@@ -1,7 +1,7 @@
 import PySide   # importing this locally configures pyqtgraph to use PySide
-from matplotlib.backends import qt_compat
-from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigCanvas 
-from matplotlib.figure import Figure
+# from matplotlib.backends import qt_compat
+# from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigCanvas
+# from matplotlib.figure import Figure
 import pyqtgraph as pg
 
 def mpl_arraycontour(data_in):

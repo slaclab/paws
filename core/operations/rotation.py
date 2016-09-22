@@ -30,20 +30,3 @@ class Rotation(Operation):
             raise ValueError(msg)
         # save results to self.outputs
         self.outputs['image_data'] = img_rot
-
-#    @classmethod
-#    def description(cls):
-#        return str(
-#        "A Rotation operation takes two input arguments: "
-#        + "inputs['image_data'] (2d pixel array), "
-#        + "and inputs['rotation_deg'] (angle in degrees). "
-#        + "Calling run() populates the outputs['image_data'] "
-#        + "with a pixel array that is rotated CCW from the input. "
-#        + "Rotation angle must be 90, 180, or 270 degrees."
-#        )
-
-#    def tag(self):
-#        return "Image-Rotation"
-
-
-
