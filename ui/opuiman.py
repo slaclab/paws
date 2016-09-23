@@ -100,11 +100,6 @@ class OpUiManager(object):
         """
         Package self.op(Operation), ship to self.wfman
         """ 
-        #print 'loading {}(Operation)'.format(type(self.op).__name__)        
-        # Parse the inputs saved in self.op_input_widgets 
-        #for name, val in self.op.inputs.items():
-        #    print 'input {}: {}'.format(name,val)
-        #print self.op.description()
         tag = self.ui.tag_entry.text()
         result = self.wfman.is_good_tag(tag)
         if result[0]:
@@ -154,10 +149,12 @@ class OpUiManager(object):
         i+=1
         self.ui.nameval_layout.addWidget(self.hdr_widget('(name)'),i,0,1,1) 
         self.ui.nameval_layout.addWidget(self.hdr_widget('(source)'),i,2,1,1) 
-        self.ui.nameval_layout.addWidget(self.hdr_widget('(value)'),i,3,1,1) 
+        self.ui.nameval_layout.addWidget(self.hdr_widget('(type)'),i,3,1,1) 
+        self.ui.nameval_layout.addWidget(self.hdr_widget('(value)'),i,4,1,1) 
         i+=1 
         for name, val in self.op.inputs.items():
-            src_widg,val_widg = self.add_nameval_widgets(name,val,i)
+            self.add_nameval_widgets(name,val,i)
+            #src_widg,val_widg = self.add_nameval_widgets(name,val,i)
             #self.op_input_widgets[name] = val_widg
             i+=1 
         self.ui.nameval_layout.addWidget(self.smalltext_widget(' '),i,0,1,4) 
@@ -165,7 +162,8 @@ class OpUiManager(object):
         self.ui.nameval_layout.addWidget(self.text_widget('--- OUTPUTS ---'),i,0,1,5) 
         i+=1 
         self.ui.nameval_layout.addWidget(self.hdr_widget('(name)'),i,0,1,1) 
-        self.ui.nameval_layout.addWidget(self.hdr_widget('(value)'),i,2,1,2) 
+        self.ui.nameval_layout.addWidget(self.hdr_widget('(type)'),i,2,1,1) 
+        self.ui.nameval_layout.addWidget(self.hdr_widget('(value)'),i,3,1,2) 
         i+=1 
         for name, val in self.op.outputs.items():
             self.add_nameval_widgets(name,val,i,output=True)
@@ -177,54 +175,81 @@ class OpUiManager(object):
         name_widget = QtGui.QLineEdit(name)
         name_widget.setReadOnly(True)
         name_widget.setAlignment(QtCore.Qt.AlignRight)
-        name_widget.setMinimumWidth(10*len(name))
+        name_widget.setMinimumWidth(7*len(name))
         self.ui.nameval_layout.addWidget(name_widget,row,0)
         eq_widget = self.smalltext_widget('=')
         self.ui.nameval_layout.addWidget(eq_widget,row,1)
         val_widget = QtGui.QLineEdit(str(val))
-        val_widget.setReadOnly(True)
         if output:
             src_widget = None
-            self.ui.nameval_layout.addWidget(val_widget,row,2,1,2)
+            type_widget = QtGui.QLineEdit(type(val).__name__)
+            type_widget.setReadOnly(True)
+            val_widget.setReadOnly(True)
+            self.ui.nameval_layout.addWidget(type_widget,row,2,1,1)
+            self.ui.nameval_layout.addWidget(val_widget,row,3,1,2)
         else:
             src_widget = self.src_selection_widget() 
-            src_widget.setMinimumWidth(120)
+            src_widget.setMinimumWidth(90)
             self.ui.nameval_layout.addWidget(src_widget,row,2,1,1)
-            self.render_input_widgets(name,row,0) 
             # Note the widget.activated signal sends the index of the activated item.
             # This will be passed as the next (unspecified) arg to the partial.
             src_widget.activated.connect( partial(self.render_input_widgets,name,row) )
-        return src_widget,val_widget
+            # Now render the rest of the input line as raw text input, for starters
+            # TODO: A more elegant initialization
+            self.render_input_widgets(name,row,0) 
+        #return src_widget,val_widget
 
     def render_input_widgets(self,name,row,src_indx): 
         # If input widgets exist, close them.
-        for col in [3,4]:
+        for col in [3,4,5]:
             if self.ui.nameval_layout.itemAtPosition(row,col):
                 self.ui.nameval_layout.itemAtPosition(row,col).widget().destroy()
         if src_indx == optools.text_input_selection:
+            type_widget = QtGui.QComboBox()
+            type_widget.addItems(optools.input_types)
             val_widget = QtGui.QLineEdit()
             val_widget.setPlaceholderText('(enter value)')
-            val_widget.returnPressed.connect( partial(self.load_text_input,name,val_widget) )
-            val_widget.textChanged.connect( partial(self.load_text_input,name,val_widget) )
-            val_widget.textEdited.connect( partial(self.load_text_input,name,val_widget) )
+            #val_widget.returnPressed.connect( partial(self.load_text_input,name,type_widget,val_widget) )
+            #val_widget.textChanged.connect( partial(self.load_text_input,name,type_widget,val_widget) )
+            #val_widget.textEdited.connect( partial(self.load_text_input,name,type_widget,val_widget) )
+            # TODO: Make this a button that tests the type-casting and loading of the input?
+            btn_text = 'Load data...' 
+            btn_widget = QtGui.QPushButton(btn_text)
+            btn_widget.clicked.connect( partial(self.load_text_input,name,type_widget,val_widget) )
         elif (src_indx == optools.image_input_selection
             or src_indx == optools.op_input_selection):
             btn_text = 'Select data...'
+            type_widget = QtGui.QLineEdit('None')
+            type_widget.setReadOnly(True)
             val_widget = QtGui.QLineEdit('None')
             val_widget.setReadOnly(True)
             btn_widget = QtGui.QPushButton(btn_text)
-            self.ui.nameval_layout.addWidget(btn_widget,row,4,1,1)
-            btn_widget.clicked.connect( partial(self.fetch_data,name,src_indx,val_widget) )
+            btn_widget.clicked.connect( partial(self.fetch_data,name,src_indx,type_widget,val_widget) )
         else:
             msg = 'source selection {} not recognized'.format(src_indx)
             raise ValueError(msg)
-        self.ui.nameval_layout.addWidget(val_widget,row,3,1,1)
+        self.ui.nameval_layout.addWidget(type_widget,row,3,1,1)
+        self.ui.nameval_layout.addWidget(val_widget,row,4,1,1)
+        if btn_widget:
+            self.ui.nameval_layout.addWidget(btn_widget,row,5,1,1)
 
-    def load_text_input(self,name,val_widg,edit_text=None):
-        self.op.inputs[name] = optools.InputLocator(optools.text_input_selection,val_widg.text())
+    def load_text_input(self,name,type_widg,val_widg,edit_text=None):
+        src_indx = type_widg.currentIndex()
+        if src_indx == optools.int_type_selection:
+            val = int(val_widg.text())
+        elif src_indx == optools.float_type_selection:
+            val = float(val_widg.text())
+        elif src_indx == optools.array_type_selection:
+            val = np.array(val_widg.text())
+        elif src_indx == optools.unicode_type_selection:
+            val = val_widg.text()
+        else:
+            msg = 'type selection {}, should be between 0 and {}'.format(src_indx,len(optools.valid_types))
+            raise ValueError(msg)
+        self.op.inputs[name] = optools.InputLocator(optools.text_input_selection,val)
         self.update_op_info(self.op.description())
 
-    def fetch_data(self,name,src_indx,val_widg):
+    def fetch_data(self,name,src_indx,type_widg,val_widg):
         """Use a QtGui.QTreeView popup to select the requested input data"""
         # TODO: Allow only one of these popups to exist (one per val widget).
         ui_file = QtCore.QFile(os.getcwd()+"/ui/tree_browser.ui")
@@ -243,29 +268,25 @@ class OpUiManager(object):
         for idx in trmod.iter_indexes():
             src_ui.tree.setExpanded(idx,True)
         src_ui.load_button.setText('Load selected data')
-        src_ui.load_button.clicked.connect(partial(self.load_from_tree,name,trmod,src_ui,src_indx,val_widg))
+        src_ui.load_button.clicked.connect(partial(self.load_from_tree,name,trmod,src_ui,src_indx,type_widg,val_widg))
         src_ui.show()
 
-    def load_from_tree(self,name,trmod,src_ui,src_indx,val_widg):
+    def load_from_tree(self,name,trmod,src_ui,src_indx,type_widg,val_widg):
         """
         Load the item selected in QTreeView src_ui.tree.
         Construct a unique resource identifier (uri) for that item.
-        Set self.op.inputs[name] to be an optools.InputLocator(src,uri).
+        Set self.op.inputs[name] to be an optools.InputLocator(src_indx,uri).
         Also set that uri to be the text of val_widg.
         Finally, reset self.ui.op_info to reflect the changes.
         """
         trview = src_ui.tree
         # Get the selected item in QTreeView trview:
-        tree_item = trmod.get_item(trview.currentIndex())
+        item_indx = trview.currentIndex()
         # Build a unique URI for this item
-        item_ref = tree_item
-        item_uri = item_ref.tag()
-        while item_ref.parent.isValid():
-            #parent_stack.append(item_ref.parent)
-            item_ref = trmod.get_item(item_ref.parent)
-            item_uri = item_ref.tag()+"."+item_uri
+        item_uri = trmod.build_uri(item_indx)
         val_widg.setText(item_uri)
         val_widg.setMinimumWidth(10*len(item_uri))
+        type_widg.setText(type(trmod.get_item(item_indx).data[0]).__name__)
         self.op.inputs[name] = optools.InputLocator(src_indx,item_uri)
         src_ui.close()
         #self.ui.nameval_layout.update()

@@ -22,6 +22,15 @@ class TreeModel(QtCore.QAbstractItemModel):
     def get_item(self,indx):
         return indx.internalPointer() 
 
+    def build_uri(self,indx):
+        """Build a URI for the TreeItem at indx"""
+        item_ref = self.get_item(indx)
+        item_uri = item_ref.tag()
+        while item_ref.parent.isValid():
+            item_ref = self.get_item(item_ref.parent)
+            item_uri = item_ref.tag()+"."+item_uri
+        return item_uri
+
     # get a list of tags for TreeItems under parent
     def list_tags(self,parent):
         if not parent.isValid():

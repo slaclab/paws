@@ -233,19 +233,18 @@ class WfManager(TreeModel):
         """Return the data pointed to by a given InputLocator object"""
         if type(inplocator).__name__ == 'InputLocator':
             src = inplocator.src
-            uri = inplocator.uri
+            val = inplocator.val
             if src in optools.valid_sources:
                 if src == optools.text_input_selection: 
-                    # uri will be unicode rep of numerical input
-                    # return it directly, leave any type casting to the Operation itself
-                    return uri 
+                    # val will be already typecast during operation loading- return it directly
+                    return val 
                 elif src == optools.image_input_selection: 
-                    # follow uri in image tree
+                    # follow val as uri in image tree
                     trmod = self.imgman
                 elif src == optools.op_input_selection: 
-                    # follow uri in workflow tree
+                    # follow val as uri in workflow tree
                     trmod = self
-                path = uri.split('.')
+                path = val.split('.')
                 parent_indx = QtCore.QModelIndex()
                 for itemtag in path:
                     # get QModelIndex of item from itemtag
@@ -262,5 +261,7 @@ class WfManager(TreeModel):
                 src, valid_sources)
                 raise ValueError(msg)
         else:
+            # if this method gets called on an input that is not an InputLocator,
+            # do nothing.
             return inplocator
 

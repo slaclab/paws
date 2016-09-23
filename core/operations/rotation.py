@@ -18,7 +18,7 @@ class Rotation(Operation):
         """
         Rotate self.inputs['image_data'] and save as self.outputs['image_data']"""
         img = self.inputs['image_data']
-        rot_deg = int(self.inputs['rotation_deg'])
+        rot_deg = self.inputs['rotation_deg']
         if rot_deg==90:
             img_rot = np.rot90(img)
         elif rot_deg==180:

@@ -91,4 +91,3 @@ class SlacxImage(object):
     #            __name__,self.img_filename)
     #        raise slacxex.LazyCodeError(msg)
 
-

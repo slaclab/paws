@@ -122,15 +122,27 @@ class UiManager(object):
             tag_uiman.ui.show()
             #self.get_img_tag(imgfile)
 
-    def display_item(self):
+    def display_item(self,src='Images'):
         """
-        Display selected item from the image tree 
+        Display selected item from the image or workflow tree 
         in a new tab in image_viewer
         """
-        if len(self.ui.image_tree.selectedIndexes())>0:
-            # get selected item from image_tree
-            indx = self.ui.image_tree.selectedIndexes()[0]
-            to_display = self.imgman.get_item(indx)
+        if src == 'Images':
+            indxs = self.ui.image_tree.selectedIndexes()
+            trmod = self.imgman
+        elif src == 'Workflow':
+            indxs = self.ui.workflow_tree.selectedIndexes()
+            trmod = self.wfman
+        else:
+            msg = 'unrecognized image source {}'.format(src)
+            raise ValueError(msg)
+        #print indxs
+        #for indx in indxs:
+        #    print indx 
+        #    print trmod.get_item(indx).data
+        if len(indxs) > 0:
+            indx = indxs[0]
+            to_display = trmod.get_item(indx)
             # Don't proceed unless the item has something interesting to show.
             #if to_display.tag() == self.pix_data_tag():
             if True:
@@ -138,8 +150,7 @@ class UiManager(object):
                 # render a QWidget containing a surface plot
                 plot_widget = plotmaker.pqg_arraycontour(to_display.data[0])
                 # add a new tab to image_viewer labeled with parent.tag().
-                tab_indx = self.ui.image_viewer.addTab(
-                    plot_widget,to_display.parent.internalPointer().tag())
+                tab_indx = self.ui.image_viewer.addTab(plot_widget,trmod.build_uri(indx))
                 self.ui.image_viewer.setCurrentIndex(tab_indx)
             else:
                 # TODO: dialog box: tell user the selected item is uninteresting.
@@ -162,13 +173,17 @@ class UiManager(object):
         # Set image viewer tabs to be closeable
         self.ui.image_viewer.setTabsClosable(True)
         # Set the image viewer to be kinda fat
-        self.ui.image_viewer.setMinimumWidth(600)
+        self.ui.image_viewer.setMinimumHeight(400)
+        self.ui.image_viewer.setMinimumWidth(400)
         # Leave the textual parts kinda skinny?
         #self.ui.left_panel.setMaximumWidth(400)
-        self.ui.workflow_tree.setMinimumWidth(350)
+        self.ui.workflow_tree.setMinimumWidth(300)
         self.ui.workflow_tree.resizeColumnToContents(0)
         self.ui.workflow_tree.resizeColumnToContents(1)
-        self.ui.image_tree.setMinimumWidth(350)
+        self.ui.image_tree.setMinimumWidth(300)
+        self.ui.image_tree.setMinimumHeight(200)
+        self.ui.title_box.setMinimumHeight(200)
+        self.ui.message_board.setMinimumHeight(200)
         self.ui.image_tree.resizeColumnToContents(0)
         self.ui.image_tree.resizeColumnToContents(1)
         #self.ui.workflow_tree.setColumnWidth(0,200)
@@ -187,7 +202,9 @@ class UiManager(object):
         self.ui.close_images_button.clicked.connect(self.close_image)
         # Connect self.ui.display_item_button:
         self.ui.display_item_button.setText("&Display selected item")
-        self.ui.display_item_button.clicked.connect(self.display_item)
+        self.ui.display_item_button.clicked.connect( partial(self.display_item,src='Images') )
+        self.ui.display_workflowitem_button.setText("Display selected item")
+        self.ui.display_workflowitem_button.clicked.connect( partial(self.display_item,src='Workflow') )
         # Connect self.ui.image_viewer tabCloseRequested to local close_tab slot
         self.ui.image_viewer.tabCloseRequested.connect(self.close_tab)
         # Make self.ui.image_viewer tabs elide (arg is a Qt.TextElideMode)
