@@ -2,46 +2,80 @@
 
 `slacx` is designed to be a fast, lean, and modular 
 workflow manager for image-like data.
-Beginning with raw pixel data, 
-`slacx` operations can be written to perform calibration, 
-data cleaning, dimensionality reduction (e.g. integration),
-feature extraction, peak analysis, custom operations, 
-and packaging and visualization of results.
-The `slacx` engine and gui also drop in 
-as the batch processing plugin for `xi-cam`.
+It is written for users to design and execute workflows
+either from a GUI (for testing and debugging)
+or from text commands written into an input file
+(for rapid or large-scale batch processing).
+It also runs a network client 
+for packaging and storage of data
+on any accessible server specified by the user.
 
+Many native operations are pre-loaded into `slacx` 
+for performing routine analysis,
+and additional operations can be written 
+by following the templates included in the manual.  
+`slacx` also provides a plugin module
+so that it can be used as a component of other
+`Qt`-based applications, such as `xi-cam`.
+The complete documentation of `slacx`
+can be found in the `doc` directory 
+of this repository.
+
+ 
 ## Code Example
 
-There is no code.
+Instructions for using `slacx` 
+through the GUI and through input files
+are included in the user manual, which can be found
+in the `doc` directory of this repository.
+
 
 ## Motivation
 
-Too many graduate students spend too many hours 
-agonizing over highly repeatable operations
-for x-ray data analysis.
-A fast and easy-to-use software package
-for this purpose is long overdue.
+The main goal of `slacx` is to make processing of image-like data 
+a fast and intuitive process,
+including basic operations, visualization, 
+and structured storage of raw and processed data.
+An eventual goal is to leverage 
+processing capabilities and access to data stores
+to provide feedback to experimental parameter spaces. 
+
 
 ## Installation
 
-There is nothing to install.
+`slacx` is packaged as a Python wheel.
+TODO: put instructions here on how to install my wheel.
+
+Meanwhile, the full installation instructions for a variety of platforms,
+included in the user manual,
+will be continually updated.
+
 
 ## API Reference
 
-An API would be a really good idea.
+When the developers have added entry points
+for using the `slacx` libraries in other codes,
+it will be documented here and in the user manual.
+
 
 ## Tests
 
-Tests would be a really good idea.
+TODO: Write a test suite for `slacx`.
+Put instructions here on how to run and interpret the test suite.
+
 
 ## Contributors
 
-Instructions for adding modules to the workflow will go here.
+Contribution to `slacx` is encouraged!
+Please fork the repository and submit a pull request.
+It is suggested that any significant changes in architecture be addressed 
+by communicating with the `slacx` development team.
+
 
 ## License
 
 Currently this is a private repository.
-A distribution license should be chosen before it is shared.
+A distribution license will be chosen before it is shared.
 
 
 
