@@ -119,6 +119,7 @@ class UiManager(object):
         if imgfile:
             # Start up a UI for tagging and loading the image
             tag_uiman = self.start_imgload_ui_manager(imgfile)
+            tag_uiman.ui.raise_()
             tag_uiman.ui.show()
             #self.get_img_tag(imgfile)
 
@@ -142,19 +143,9 @@ class UiManager(object):
         #    print trmod.get_item(indx).data
         if len(indxs) > 0:
             indx = indxs[0]
-            to_display = trmod.get_item(indx)
-            # Don't proceed unless the item has something interesting to show.
-            #if to_display.tag() == self.pix_data_tag():
-            if True:
-                # TODO: run this portion in its own thread. 
-                # render a QWidget containing a surface plot
-                plot_widget = plotmaker.pqg_arraycontour(to_display.data[0])
-                # add a new tab to image_viewer labeled with parent.tag().
-                tab_indx = self.ui.image_viewer.addTab(plot_widget,trmod.build_uri(indx))
-                self.ui.image_viewer.setCurrentIndex(tab_indx)
-            else:
-                # TODO: dialog box: tell user the selected item is uninteresting.
-                pass
+            to_display = trmod.get_item(indx).data[0]
+            uri = trmod.build_uri(indx)
+            plotmaker.display_item(to_display,uri,self.ui.image_viewer,self.msg_board_log)
         else:
             # TODO: dialog box: tell user to select an item first
             pass
