@@ -13,7 +13,6 @@ from core.workflow import slacxwfman
 slacx main module.
 """
 
-
 def main():
     """
     slacx main execution method.
@@ -22,6 +21,13 @@ def main():
     # Instantiate QApplication, pass in cmd line args sys.argv.
     app = QtGui.QApplication(sys.argv)
 
+    root_qdir = QtCore.QDir(__file__)
+    #root_qdir.cdUp()
+    #root_qdir.cdUp()
+    #root_qdir.setCurrent(root_qdir.path())
+    #print root_qdir
+    rootdir = os.path.split( root_qdir.absolutePath() )[0]
+    
     # TODO: parse sys.argv for:
     #   running without a gui 
     #   image files to load  
@@ -44,8 +50,7 @@ def main():
 
     # Start a UiManager to create and manage a QMainWindow.
     # Takes ui file name as only argument.
-    ui_file = QtCore.QFile(os.getcwd()+"/ui/basic.ui")
-    uiman = slacxuiman.UiManager(ui_file)
+    uiman = slacxuiman.UiManager(rootdir)
     # UiManager needs to store references to the QAbstractItemModel objects
     # that are used to interact with the features of the gui
     # TODO: make this part of the UiManager constructor?
