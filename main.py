@@ -21,7 +21,7 @@ def main():
     # Instantiate QApplication, pass in cmd line args sys.argv.
     try:
         app = QtGui.QApplication(sys.argv)
-    except RunTimeError:
+    except RuntimeError:
         app = QtGui.QApplication.instance()
 
 
