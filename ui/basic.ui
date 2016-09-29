@@ -31,7 +31,7 @@
        </widget>
       </item>
       <item>
-       <widget class="QFrame" name="frame_4">
+       <widget class="QFrame" name="image_button_box">
         <property name="frameShape">
          <enum>QFrame::StyledPanel</enum>
         </property>
@@ -112,9 +112,9 @@
      </layout>
     </item>
     <item>
-     <layout class="QVBoxLayout" name="verticalLayout">
+     <layout class="QVBoxLayout" name="workflow_layout">
       <item>
-       <widget class="QFrame" name="io_button_box">
+       <widget class="QFrame" name="workflow_button_box">
         <property name="frameShape">
          <enum>QFrame::StyledPanel</enum>
         </property>
@@ -122,8 +122,8 @@
          <enum>QFrame::Raised</enum>
         </property>
         <layout class="QGridLayout" name="gridLayout_3">
-         <item row="2" column="0">
-          <widget class="QPushButton" name="rm_op_button">
+         <item row="2" column="1">
+          <widget class="QPushButton" name="apply_workflow_button">
            <property name="text">
             <string>PushButton</string>
            </property>
@@ -143,21 +143,21 @@
            </property>
           </widget>
          </item>
-         <item row="2" column="1">
-          <widget class="QPushButton" name="apply_workflow_button">
+         <item row="2" column="0">
+          <widget class="QPushButton" name="rm_op_button">
+           <property name="text">
+            <string>PushButton</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="0" colspan="2">
+          <widget class="QPushButton" name="display_workflowitem_button">
            <property name="text">
             <string>PushButton</string>
            </property>
           </widget>
          </item>
         </layout>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="display_workflowitem_button">
-        <property name="text">
-         <string>PushButton</string>
-        </property>
        </widget>
       </item>
       <item>
@@ -168,8 +168,8 @@
    </layout>
    <zorder>apply_workflow_button</zorder>
    <zorder>image_tree</zorder>
-   <zorder>frame_4</zorder>
-   <zorder>io_button_box</zorder>
+   <zorder>image_button_box</zorder>
+   <zorder>workflow_button_box</zorder>
    <zorder>add_op_button</zorder>
    <zorder>rm_op_button</zorder>
    <zorder>display_workflowitem_button</zorder>

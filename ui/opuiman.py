@@ -14,7 +14,9 @@ class OpUiManager(object):
     performs operations on it
     """
 
-    def __init__(self,ui_file,wfman,imgman):
+    def __init__(self,rootdir,wfman,imgman):
+        self.rootdir = rootdir
+        ui_file = QtCore.QFile(self.rootdir+"/ui/op_builder.ui")
         # Load the op_builder popup
         ui_file.open(QtCore.QFile.ReadOnly)
         self.ui = QtUiTools.QUiLoader().load(ui_file)
@@ -289,7 +291,7 @@ class OpUiManager(object):
     def fetch_data(self,name,src_indx,type_widg,val_widg):
         """Use a QtGui.QTreeView popup to select the requested input data"""
         # TODO: Allow only one of these popups to exist (one per val widget).
-        ui_file = QtCore.QFile(os.getcwd()+"/ui/tree_browser.ui")
+        ui_file = QtCore.QFile(self.rootdir+"/ui/tree_browser.ui")
         ui_file.open(QtCore.QFile.ReadOnly)
         src_ui = QtUiTools.QUiLoader().load(ui_file)
         ui_file.close()

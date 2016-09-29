@@ -22,9 +22,11 @@ class UiManager(object):
     # it will call QWidget.resizeEvent().
     # Try to use this to resize the images in the QImageView.
 
-    def __init__(self,ui_file):
+    def __init__(self,rootdir):
         """Make a UI from ui_file, save a reference to it"""
+        self.rootdir = rootdir
         # Pick a UI definition, load it up
+        ui_file = QtCore.QFile(self.rootdir+"/ui/basic.ui")
         ui_file.open(QtCore.QFile.ReadOnly)
         # load() produces a QMainWindow(QWidget).
         self.ui = QtUiTools.QUiLoader().load(ui_file)
@@ -87,7 +89,7 @@ class UiManager(object):
         """
         Create a QFrame window from ui/tag_request.ui, then return it
         """
-        ui_file = QtCore.QFile(os.getcwd()+"/ui/tag_request.ui")
+        ui_file = QtCore.QFile(self.rootdir+"/ui/tag_request.ui")
         uiman = ImgLoadUiManager(ui_file,self.imgman,imgfile)
         uiman.ui.setParent(self.ui,QtCore.Qt.Window)#|QtCore.Qt.WindowStaysOnTopHint)
         #uiman.ui.setWindowModality(QtCore.Qt.WindowModal)
@@ -104,8 +106,7 @@ class UiManager(object):
         """
         Create a QFrame window from ui/op_builder.ui, then return it
         """
-        ui_file = QtCore.QFile(os.getcwd()+"/ui/op_builder.ui")
-        uiman = OpUiManager(ui_file,self.wfman,self.imgman)
+        uiman = OpUiManager(self.rootdir,self.wfman,self.imgman)
         uiman.set_op_manager(self.opman)
         uiman.ui.setParent(self.ui,QtCore.Qt.Window)
         return uiman
@@ -123,7 +124,7 @@ class UiManager(object):
         # TODO: implement loading multiple images in one call? 
         # getOpenFileName(parent(Widget), caption, dir, extension(s) regexp)
         imgfile, ext = QtGui.QFileDialog.getOpenFileName(
-        self.ui, 'Open file', os.getcwd(), self.imgman.loader_extensions())
+        self.ui, 'Open file', self.rootdir, self.imgman.loader_extensions())
         if imgfile:
             # Start up a UI for tagging and loading the image
             self.start_imgload_ui_manager(imgfile)
@@ -228,8 +229,8 @@ class UiManager(object):
     def make_title(self):
         """Display the slacx logo in the title box"""
         # Load the slacx graphic  
-        #slacx_img_file = os.path.join(os.getcwd(), "ui/slacx_icon.png")
-        slacx_img_file = os.path.join(os.getcwd(), "ui/slacx_icon_white.png")
+        #slacx_img_file = os.path.join(self.rootdir, "ui/slacx_icon.png")
+        slacx_img_file = os.path.join(self.rootdir, "ui/slacx_icon_white.png")
         # Make a QtGui.QPixmap from this file
         slacx_pixmap = QtGui.QPixmap(slacx_img_file)
         # Make a QtGui.QGraphicsPixmapItem from this QPixmap

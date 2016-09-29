@@ -7,7 +7,7 @@ from core.operations.slacxop import Operation
 # pkgutil.iter_modules returns module_loader, module_name, ispkg forall modules in path
 mods = pkgutil.iter_modules(__path__)
 # leave out the __init__ module, any modules that load core.operations, and the abc module slacxop 
-mods = [mod for mod in mods if mod[1] not in ['__init__','slacxop','slacxopman']]
+mods = [mod for mod in mods if mod[1] not in ['__init__','slacxop','slacxopman','optools']]
 op_list = []
 for modloader, modname, ispkg in mods:
     try:
