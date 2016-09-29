@@ -235,13 +235,13 @@ class WfManager(TreeModel):
             src = inplocator.src
             val = inplocator.val
             if src in optools.valid_sources:
-                if src == optools.text_input_selection: 
+                if src == optools.text_input: 
                     # val will be already typecast during operation loading- return it directly
                     return val 
-                elif src == optools.image_input_selection: 
+                elif src == optools.image_input: 
                     # follow val as uri in image tree
                     trmod = self.imgman
-                elif src == optools.op_input_selection: 
+                elif src == optools.op_input: 
                     # follow val as uri in workflow tree
                     trmod = self
                 path = val.split('.')

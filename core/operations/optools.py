@@ -1,16 +1,21 @@
 ##### DEFINITIONS OF SOURCES FOR OPERATION INPUTS
-input_sources = ['Text','Images','Operations'] 
-text_input_selection = 0
-image_input_selection = 1
-op_input_selection = 2
-valid_sources = [text_input_selection,image_input_selection,op_input_selection]
+input_sources = ['(select)','Text','Images','Operations','Filesystem','List builder','Tree builder'] 
+text_input = 1
+image_input = 2
+op_input = 3
+fs_input = 4
+list_input = 5
+tree_input = 6
+valid_sources = [text_input,image_input,op_input,fs_input,list_input,tree_input]
 
-input_types = ['unicode','int','float','array']
-unicode_type_selection = 0
-int_type_selection = 1
-float_type_selection = 2
-array_type_selection = 3
-valid_types = [unicode_type_selection,int_type_selection,float_type_selection,array_type_selection]
+##### VALID TYPES FOR TEXT BASED OPERATION INPUTS 
+input_types = ['(select)','string','int','float','array','bool']
+string_type = 1
+int_type = 2
+float_type = 3
+array_type = 4
+bool_type = 5
+valid_types = [string_type,int_type,float_type,array_type,bool_type]
 
 ##### CONVENIENCE METHOD FOR PRINTING DOCUMENTATION
 def parameter_doc(name,val,doc):

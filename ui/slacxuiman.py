@@ -89,8 +89,16 @@ class UiManager(object):
         """
         ui_file = QtCore.QFile(os.getcwd()+"/ui/tag_request.ui")
         uiman = ImgLoadUiManager(ui_file,self.imgman,imgfile)
-        uiman.ui.setParent(self.ui,QtCore.Qt.Window)
-        return uiman
+        uiman.ui.setParent(self.ui,QtCore.Qt.Window)#|QtCore.Qt.WindowStaysOnTopHint)
+        #uiman.ui.setWindowModality(QtCore.Qt.WindowModal)
+        #uiman.ui.setParent(self.ui,QtCore.Qt.Popup)
+        uiman.ui.activateWindow()
+        self.ui.lower()
+        uiman.ui.raise_()
+        self.ui.stackUnder(uiman.ui)
+        #uiman.ui.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+        uiman.ui.show()
+        #return uiman
 
     def start_op_ui_manager(self):
         """
@@ -118,9 +126,7 @@ class UiManager(object):
         self.ui, 'Open file', os.getcwd(), self.imgman.loader_extensions())
         if imgfile:
             # Start up a UI for tagging and loading the image
-            tag_uiman = self.start_imgload_ui_manager(imgfile)
-            tag_uiman.ui.raise_()
-            tag_uiman.ui.show()
+            self.start_imgload_ui_manager(imgfile)
             #self.get_img_tag(imgfile)
 
     def display_item(self,src='Images'):

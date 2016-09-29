@@ -1,3 +1,4 @@
+import time
 import os
 from functools import partial
 
@@ -5,6 +6,7 @@ from PySide import QtCore, QtGui, QtUiTools
 
 from core.operations import optools
 from core import slacxex
+from ui import uitools
 
 class OpUiManager(object):
     """
@@ -17,8 +19,6 @@ class OpUiManager(object):
         ui_file.open(QtCore.QFile.ReadOnly)
         self.ui = QtUiTools.QUiLoader().load(ui_file)
         ui_file.close()
-        # Set up the ui widget to delete itself when closed
-        self.ui.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         self.wfman = wfman 
         self.imgman = imgman 
         self.opman = None
@@ -40,6 +40,7 @@ class OpUiManager(object):
 
     def set_op(self,op):
         """
+        For loading a fully or partially formed Operation into the UI.
         Set self.op to input Operation.
         Set op_selector to the proper Operation subclass.
         Load op.description() into self.ui.op_info.
@@ -69,10 +70,21 @@ class OpUiManager(object):
         self.ui.finish_button.setText("Finish")
         self.ui.finish_button.setMinimumWidth(100)
         self.ui.finish_button.clicked.connect(self.load_op)
+        # Also connect finish_button with data loader for any text inputs
+        #self.ui.finish_button.clicked.connect(self.load_all_text_inputs)
         # Set button to activate on Enter key?
         self.ui.finish_button.setDefault(True)
         self.ui.tag_entry.returnPressed.connect(self.load_op)
         self.ui.setStyleSheet( "QLineEdit { border: none }" + self.ui.styleSheet() )
+        # Set up the ui widget to delete itself when closed
+        self.ui.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+        # Define columns for i/o widget arrangement
+        self.name_col = 1
+        self.eq_col = 2
+        self.src_col = 3
+        self.type_col = 4
+        self.val_col = 5
+        self.btn_col = 6
 
     def default_tag(self):
         indx = 0
@@ -103,6 +115,14 @@ class OpUiManager(object):
         tag = self.ui.tag_entry.text()
         result = self.wfman.is_good_tag(tag)
         if result[0]:
+            # Make sure all text inputs are loaded
+            for row in self.input_rows:
+                src = self.ui.nameval_layout.itemAtPosition(row,self.src_col).widget().currentIndex()
+                if src == optools.text_input:
+                    name = self.ui.nameval_layout.itemAtPosition(row,self.name_col).widget().text()
+                    type_widget = self.ui.nameval_layout.itemAtPosition(row,self.type_col).widget()
+                    val_widget = self.ui.nameval_layout.itemAtPosition(row,self.val_col).widget()
+                    self.load_text_input(name,type_widget,val_widget) 
             self.wfman.add_op(self.op,tag) 
             self.ui.close()
         else:
@@ -136,7 +156,6 @@ class OpUiManager(object):
             widg.widget().deleteLater()
 
     def build_nameval_list(self):
-        #self.op_input_widgets = {}
         # Count the items in the current layout
         n_val_widgets = self.ui.nameval_layout.count()
         # Loop through them, last to first, clear the frame
@@ -145,25 +164,28 @@ class OpUiManager(object):
             item = self.ui.nameval_layout.takeAt(i)
             item.widget().deleteLater()
         i=0
-        self.ui.nameval_layout.addWidget(self.text_widget('--- INPUTS ---'),i,0,1,5) 
+        self.ui.nameval_layout.addWidget(self.text_widget('--- INPUTS ---'),i,0,1,6) 
         i+=1
-        self.ui.nameval_layout.addWidget(self.hdr_widget('(name)'),i,0,1,1) 
-        self.ui.nameval_layout.addWidget(self.hdr_widget('(source)'),i,2,1,1) 
-        self.ui.nameval_layout.addWidget(self.hdr_widget('(type)'),i,3,1,1) 
-        self.ui.nameval_layout.addWidget(self.hdr_widget('(value)'),i,4,1,1) 
+        self.ui.nameval_layout.addWidget(self.hdr_widget('(name)'),i,self.name_col,1,1) 
+        self.ui.nameval_layout.addWidget(self.hdr_widget('(source)'),i,self.src_col,1,1) 
+        self.ui.nameval_layout.addWidget(self.hdr_widget('(type)'),i,self.type_col,1,1) 
+        self.ui.nameval_layout.addWidget(self.hdr_widget('(value)'),i,self.val_col,1,1) 
         i+=1 
+        self.input_rows = []
         for name, val in self.op.inputs.items():
             self.add_nameval_widgets(name,val,i)
             #src_widg,val_widg = self.add_nameval_widgets(name,val,i)
             #self.op_input_widgets[name] = val_widg
-            i+=1 
+            i+=1
+            self.input_rows.append(i) 
         self.ui.nameval_layout.addWidget(self.smalltext_widget(' '),i,0,1,4) 
         i+=1 
-        self.ui.nameval_layout.addWidget(self.text_widget('--- OUTPUTS ---'),i,0,1,5) 
+        self.ui.nameval_layout.addWidget(self.text_widget('--- OUTPUTS ---'),i,0,1,6) 
         i+=1 
-        self.ui.nameval_layout.addWidget(self.hdr_widget('(name)'),i,0,1,1) 
-        self.ui.nameval_layout.addWidget(self.hdr_widget('(type)'),i,2,1,1) 
-        self.ui.nameval_layout.addWidget(self.hdr_widget('(value)'),i,3,1,2) 
+        self.ui.nameval_layout.addWidget(self.hdr_widget('(name)'),i,self.name_col,1,1) 
+        self.ui.nameval_layout.addWidget(self.hdr_widget('(source)'),i,self.src_col,1,1) 
+        self.ui.nameval_layout.addWidget(self.hdr_widget('(type)'),i,self.type_col,1,1) 
+        self.ui.nameval_layout.addWidget(self.hdr_widget('(value)'),i,self.val_col,1,1) 
         i+=1 
         for name, val in self.op.outputs.items():
             self.add_nameval_widgets(name,val,i,output=True)
@@ -176,77 +198,92 @@ class OpUiManager(object):
         name_widget.setReadOnly(True)
         name_widget.setAlignment(QtCore.Qt.AlignRight)
         name_widget.setMinimumWidth(7*len(name))
-        self.ui.nameval_layout.addWidget(name_widget,row,0)
+        self.ui.nameval_layout.addWidget(name_widget,row,self.name_col)
         eq_widget = self.smalltext_widget('=')
-        self.ui.nameval_layout.addWidget(eq_widget,row,1)
+        self.ui.nameval_layout.addWidget(eq_widget,row,self.eq_col)
         val_widget = QtGui.QLineEdit(str(val))
         if output:
-            src_widget = None
+            src_widget = QtGui.QLineEdit(self.ui.tag_entry.text())
             type_widget = QtGui.QLineEdit(type(val).__name__)
             type_widget.setReadOnly(True)
             val_widget.setReadOnly(True)
-            self.ui.nameval_layout.addWidget(type_widget,row,2,1,1)
-            self.ui.nameval_layout.addWidget(val_widget,row,3,1,2)
+            self.ui.nameval_layout.addWidget(src_widget,row,self.src_col,1,1)
+            self.ui.nameval_layout.addWidget(type_widget,row,self.type_col,1,1)
+            self.ui.nameval_layout.addWidget(val_widget,row,self.val_col,1,1)
         else:
             src_widget = self.src_selection_widget() 
             src_widget.setMinimumWidth(90)
-            self.ui.nameval_layout.addWidget(src_widget,row,2,1,1)
+            self.ui.nameval_layout.addWidget(src_widget,row,self.src_col,1,1)
             # Note the widget.activated signal sends the index of the activated item.
             # This will be passed as the next (unspecified) arg to the partial.
             src_widget.activated.connect( partial(self.render_input_widgets,name,row) )
-            # Now render the rest of the input line as raw text input, for starters
+            # Set up the input line for text input, for starters
             # TODO: A more elegant initialization
             self.render_input_widgets(name,row,0) 
         #return src_widget,val_widget
 
     def render_input_widgets(self,name,row,src_indx): 
         # If input widgets exist, close them.
-        for col in [3,4,5]:
+        for col in [self.btn_col,self.val_col,self.type_col]:
             if self.ui.nameval_layout.itemAtPosition(row,col):
-                self.ui.nameval_layout.itemAtPosition(row,col).widget().destroy()
-        if src_indx == optools.text_input_selection:
+                widg = self.ui.nameval_layout.itemAtPosition(row,col).widget()
+                widg.hide()
+                widg.deleteLater()
+                #widg.destroy()
+        if src_indx == 0:
+            type_widget = QtGui.QLineEdit('(select source)')
+            val_widget = QtGui.QLineEdit('(select source)')
+            type_widget.setReadOnly(True)
+            val_widget.setReadOnly(True)
+            btn_widget = None
+        elif src_indx == optools.text_input:
             type_widget = QtGui.QComboBox()
             type_widget.addItems(optools.input_types)
             val_widget = QtGui.QLineEdit()
-            val_widget.setPlaceholderText('(enter value)')
+            if uitools.have_qt47:
+                val_widget.setPlaceholderText('(enter value)')
+            else:
+                val_widget.setText('(enter value)')
             #val_widget.returnPressed.connect( partial(self.load_text_input,name,type_widget,val_widget) )
             #val_widget.textChanged.connect( partial(self.load_text_input,name,type_widget,val_widget) )
             #val_widget.textEdited.connect( partial(self.load_text_input,name,type_widget,val_widget) )
             # TODO: Make this a button that tests the type-casting and loading of the input?
-            btn_text = 'Load data...' 
+            btn_text = 'Load text...' 
             btn_widget = QtGui.QPushButton(btn_text)
             btn_widget.clicked.connect( partial(self.load_text_input,name,type_widget,val_widget) )
-        elif (src_indx == optools.image_input_selection
-            or src_indx == optools.op_input_selection):
+            # Also connect the finish button to load the text input
+            #self.ui.finish_button.clicked.connect( partial(self.load_text_input,name,type_widget,val_widget) )
+        elif (src_indx == optools.image_input
+            or src_indx == optools.op_input):
             btn_text = 'Select data...'
-            type_widget = QtGui.QLineEdit('None')
+            type_widget = QtGui.QLineEdit('auto')
             type_widget.setReadOnly(True)
-            val_widget = QtGui.QLineEdit('None')
+            val_widget = QtGui.QLineEdit('auto')
             val_widget.setReadOnly(True)
             btn_widget = QtGui.QPushButton(btn_text)
             btn_widget.clicked.connect( partial(self.fetch_data,name,src_indx,type_widget,val_widget) )
         else:
             msg = 'source selection {} not recognized'.format(src_indx)
             raise ValueError(msg)
-        self.ui.nameval_layout.addWidget(type_widget,row,3,1,1)
-        self.ui.nameval_layout.addWidget(val_widget,row,4,1,1)
+        self.ui.nameval_layout.addWidget(type_widget,row,self.type_col,1,1)
+        self.ui.nameval_layout.addWidget(val_widget,row,self.val_col,1,1)
         if btn_widget:
-            self.ui.nameval_layout.addWidget(btn_widget,row,5,1,1)
+            self.ui.nameval_layout.addWidget(btn_widget,row,self.btn_col,1,1)
 
     def load_text_input(self,name,type_widg,val_widg,edit_text=None):
         src_indx = type_widg.currentIndex()
-        if src_indx == optools.int_type_selection:
+        if src_indx == optools.int_type:
             val = int(val_widg.text())
-        elif src_indx == optools.float_type_selection:
+        elif src_indx == optools.float_type:
             val = float(val_widg.text())
-        elif src_indx == optools.array_type_selection:
+        elif src_indx == optools.array_type:
             val = np.array(val_widg.text())
-        elif src_indx == optools.unicode_type_selection:
+        elif src_indx == optools.string_type:
             val = val_widg.text()
         else:
-            msg = 'type selection {}, should be between 0 and {}'.format(src_indx,len(optools.valid_types))
+            msg = 'type selection {}, should be between 1 and {}'.format(src_indx,len(optools.valid_types))
             raise ValueError(msg)
-        self.op.inputs[name] = optools.InputLocator(optools.text_input_selection,val)
+        self.op.inputs[name] = optools.InputLocator(optools.text_input,val)
         self.update_op_info(self.op.description())
 
     def fetch_data(self,name,src_indx,type_widg,val_widg):
@@ -258,15 +295,16 @@ class OpUiManager(object):
         ui_file.close()
         src_ui.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         src_ui.setParent(self.ui,QtCore.Qt.Window)
-        if src_indx == optools.image_input_selection:
+        if src_indx == optools.image_input:
             trmod = self.imgman
-        elif src_indx == optools.op_input_selection:
+        elif src_indx == optools.op_input:
             trmod = self.wfman
         src_ui.tree.setModel(trmod)
         src_ui.tree.resizeColumnToContents(0)
         src_ui.tree.resizeColumnToContents(1)
-        for idx in trmod.iter_indexes():
-            src_ui.tree.setExpanded(idx,True)
+        #for idx in trmod.iter_indexes():
+        #    src_ui.tree.setExpanded(idx,True)
+        src_ui.tree.expandAll()
         src_ui.load_button.setText('Load selected data')
         src_ui.load_button.clicked.connect(partial(self.load_from_tree,name,trmod,src_ui,src_indx,type_widg,val_widg))
         src_ui.show()

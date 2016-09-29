@@ -18,9 +18,6 @@ class ImgLoadUiManager(object):
 
     def setup_ui(self):
         """Open a UI to request a tag for image before loading from imgfile"""
-        self.ui.setAttribute(QtCore.Qt.WA_DeleteOnClose)
-        self.ui.setWindowModality(QtCore.Qt.WindowModal)
-        self.ui.setWindowFlags(QtCore.Qt.Dialog)
         self.ui.prompt_box.setPlainText(
         'Enter a unique tag for: \n{}'.format(self.imgfile))
         self.ui.prompt_box.setMaximumHeight(200)

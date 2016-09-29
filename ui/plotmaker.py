@@ -7,21 +7,15 @@ from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigCanvas
 from matplotlib.figure import Figure
 from matplotlib.backends import qt_compat
 
-## Make sure we have Qt >= 4.7 in order to use pyqtgraph
-use_pqg = True
-versionReq = [4, 7]
-QtVersion = PySide.QtCore.__version__ 
-m = re.match(r'(\d+)\.(\d+).*', QtVersion)
-if m is not None and list(map(int, m.groups())) < versionReq:
-    use_pqg = False
+from ui import uitools
 
-if use_pqg: 
+if uitools.have_qt47: 
     import pyqtgraph as pg
 
 def display_item(item,uri,viewer,logmethod=None):
     # Don't proceed unless the item has something interesting to show.
     if logmethod:
-        msg = '[{}] trying to plot {} item'.format(__name__,type(item).__name__)
+        msg = '[{}] plotting {} item'.format(__name__,type(item).__name__)
         logmethod(msg)
     if type(item).__name__ == 'ndarray':
         dims = np.shape(item)
@@ -39,7 +33,7 @@ def display_item(item,uri,viewer,logmethod=None):
         viewer.setCurrentIndex(tab_indx)
     else:
         # TODO: dialog box: tell user the selected item is uninteresting.
-        print '[{}]: selected item ({}) has no display'.format(__name__,type(item).__name__)
+        print '[{}]: selected item ({}) has no display method'.format(__name__,type(item).__name__)
         pass
 
 def array_plot_2d(data_in):
