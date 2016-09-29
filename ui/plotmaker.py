@@ -2,6 +2,10 @@ import re
 
 import numpy as np
 import PySide   # importing this locally configures pyqtgraph to use PySide
+import matplotlib
+from matplotlib.figure import Figure
+from matplotlib.backends import qt_compat
+from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigCanvas
 
 from ui import uitools
 
@@ -41,20 +45,12 @@ def array_plot_2d(data_in):
         return mpl_array_plot_2d(data_in)
 
 def array_plot_1d(data_in):
-    import matplotlib
-    from matplotlib.figure import Figure
-    from matplotlib.backends import qt_compat
-    from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigCanvas
     fig = Figure(figsize=(100,100))
     axes = fig.add_subplot(111)
     axes.plot(data_in)
     return FigCanvas(fig)
 
 def mpl_array_plot_2d(data_in):
-    import matplotlib
-    from matplotlib.figure import Figure
-    from matplotlib.backends import qt_compat
-    from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigCanvas
     fig = Figure(figsize=(100,100))
     axes = fig.add_subplot(111)
     axes.contour(data_in)
@@ -62,10 +58,6 @@ def mpl_array_plot_2d(data_in):
     return FigCanvas(fig)
 
 def plot_mpl_fig(fig_in):
-    import matplotlib
-    from matplotlib.figure import Figure
-    from matplotlib.backends import qt_compat
-    from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigCanvas
     return FigCanvas(fig_in)
 
 def pqg_array_plot_2d(data_in):
@@ -74,4 +66,7 @@ def pqg_array_plot_2d(data_in):
     imv = pg.ImageView()
     imv.setImage(data_in)
     return imv
+
+
+
 

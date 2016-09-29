@@ -19,7 +19,11 @@ def main():
     """
 
     # Instantiate QApplication, pass in cmd line args sys.argv.
-    app = QtGui.QApplication(sys.argv)
+    try:
+        app = QtGui.QApplication(sys.argv)
+    except RunTimeError:
+        app = QtGui.QApplication.instance()
+
 
     root_qdir = QtCore.QDir(__file__)
     #root_qdir.cdUp()
