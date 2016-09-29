@@ -2,9 +2,6 @@ import re
 
 import numpy as np
 import PySide   # importing this locally configures pyqtgraph to use PySide
-import matplotlib
-from matplotlib.figure import Figure
-from matplotlib.backends import qt_compat
 
 from ui import uitools
 
@@ -44,6 +41,9 @@ def array_plot_2d(data_in):
         return mpl_array_plot_2d(data_in)
 
 def array_plot_1d(data_in):
+    import matplotlib
+    from matplotlib.figure import Figure
+    from matplotlib.backends import qt_compat
     from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigCanvas
     fig = Figure(figsize=(100,100))
     axes = fig.add_subplot(111)
@@ -51,6 +51,9 @@ def array_plot_1d(data_in):
     return FigCanvas(fig)
 
 def mpl_array_plot_2d(data_in):
+    import matplotlib
+    from matplotlib.figure import Figure
+    from matplotlib.backends import qt_compat
     from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigCanvas
     fig = Figure(figsize=(100,100))
     axes = fig.add_subplot(111)
@@ -59,6 +62,9 @@ def mpl_array_plot_2d(data_in):
     return FigCanvas(fig)
 
 def plot_mpl_fig(fig_in):
+    import matplotlib
+    from matplotlib.figure import Figure
+    from matplotlib.backends import qt_compat
     from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigCanvas
     return FigCanvas(fig_in)
 
