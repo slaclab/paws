@@ -1,16 +1,23 @@
 import re
 
 import numpy as np
-import PySide   # importing this locally configures pyqtgraph to use PySide
-import matplotlib
-from matplotlib.figure import Figure
-from matplotlib.backends import qt_compat
-from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigCanvas
 
 from ui import uitools
 
-if uitools.have_qt47: 
+def import_pqg():
+    import PySide   # importing this locally configures pyqtgraph to use PySide
     import pyqtgraph as pg
+
+def import_mpl():
+    import matplotlib
+    from matplotlib.figure import Figure
+    from matplotlib.backends import qt_compat
+    from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigCanvas
+
+if uitools.have_qt47: 
+    import_pqg()
+else:
+    import_mpl()
 
 def display_item(item,uri,viewer,logmethod=None):
     # Don't proceed unless the item has something interesting to show.
@@ -23,8 +30,8 @@ def display_item(item,uri,viewer,logmethod=None):
             plot_widget = array_plot_2d(item)
         elif len(dims) == 1:
             plot_widget = array_plot_1d(item)
-    elif type(item).__name__ == 'Figure':
-        plot_widget = plot_mpl_fig(item)
+    #elif type(item).__name__ == 'Figure':
+        #plot_widget = plot_mpl_fig(item)
     else:
         plot_widget = None
     if plot_widget:
@@ -37,14 +44,18 @@ def display_item(item,uri,viewer,logmethod=None):
         pass
 
 def array_plot_2d(data_in):
-    if use_pqg:
-        #print 'pqg plot'
+    if uitools.have_qt47:
         return pqg_array_plot_2d(data_in)
     else:
-        #print 'mpl plot'
         return mpl_array_plot_2d(data_in)
 
 def array_plot_1d(data_in):
+    if uitools.have_qt47:
+        return pqg_array_plot_1d(data_in)
+    else:
+        return mpl_array_plot_1d(data_in)
+
+def mpl_array_plot_1d(data_in):
     fig = Figure(figsize=(100,100))
     axes = fig.add_subplot(111)
     axes.plot(data_in)
@@ -57,15 +68,19 @@ def mpl_array_plot_2d(data_in):
     # FigCanvas is a subclass of QWidget
     return FigCanvas(fig)
 
-def plot_mpl_fig(fig_in):
-    return FigCanvas(fig_in)
+#def plot_mpl_fig(fig_in):
+#    return FigCanvas(fig_in)
 
 def pqg_array_plot_2d(data_in):
-    # ImageView is subclass of QWidget
-    # ImageView __init__(parent, name, view, imageItem, *args)
-    imv = pg.ImageView()
-    imv.setImage(data_in)
-    return imv
+    widg = pg.ImageView()
+    widg.setImage(data_in)
+    return widg 
+
+def pqg_array_plot_1d(data_in):
+    plt = pg.PlotItem()
+    plt.plot(data_in)
+    widg = pg.PlotWidget()
+    return widg 
 
 
 

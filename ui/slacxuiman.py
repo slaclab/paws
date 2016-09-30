@@ -95,7 +95,7 @@ class UiManager(object):
         #uiman.ui.setWindowModality(QtCore.Qt.WindowModal)
         #uiman.ui.setParent(self.ui,QtCore.Qt.Popup)
         uiman.ui.activateWindow()
-        self.ui.lower()
+        #self.ui.lower()
         uiman.ui.raise_()
         self.ui.stackUnder(uiman.ui)
         #uiman.ui.setAttribute(QtCore.Qt.WA_DeleteOnClose)

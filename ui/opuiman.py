@@ -176,10 +176,10 @@ class OpUiManager(object):
         self.input_rows = []
         for name, val in self.op.inputs.items():
             self.add_nameval_widgets(name,val,i)
+            self.input_rows.append(i) 
             #src_widg,val_widg = self.add_nameval_widgets(name,val,i)
             #self.op_input_widgets[name] = val_widg
             i+=1
-            self.input_rows.append(i) 
         self.ui.nameval_layout.addWidget(self.smalltext_widget(' '),i,0,1,4) 
         i+=1 
         self.ui.nameval_layout.addWidget(self.text_widget('--- OUTPUTS ---'),i,0,1,6) 
@@ -260,7 +260,7 @@ class OpUiManager(object):
             btn_text = 'Select data...'
             type_widget = QtGui.QLineEdit('auto')
             type_widget.setReadOnly(True)
-            val_widget = QtGui.QLineEdit('auto')
+            val_widget = QtGui.QLineEdit('select -->')
             val_widget.setReadOnly(True)
             btn_widget = QtGui.QPushButton(btn_text)
             btn_widget.clicked.connect( partial(self.fetch_data,name,src_indx,type_widget,val_widget) )
