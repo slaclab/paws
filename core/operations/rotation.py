@@ -3,7 +3,7 @@ import numpy as np
 from core.operations.slacxop import Operation
 
 class Rotation(Operation):
-    """The Rotation(Operation) class: rotates an image by 90, 180, or 270 degrees"""
+    """Rotate an image by 90, 180, or 270 degrees"""
 
     def __init__(self):
         input_names = ['image_data','rotation_deg']
@@ -13,6 +13,7 @@ class Rotation(Operation):
         self.input_doc['rotation_deg'] = str('rotation in degrees counter-clockwise, '
                                     + 'must be either 90, 180, or 270')
         self.output_doc['image_data'] = '2d array representing rotated image'
+        self.categories = ['TESTS','PROCESSING']
 
     def run(self):
         """

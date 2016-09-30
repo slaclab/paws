@@ -106,8 +106,7 @@ class UiManager(object):
         """
         Create a QFrame window from ui/op_builder.ui, then return it
         """
-        uiman = OpUiManager(self.rootdir,self.wfman,self.imgman)
-        uiman.set_op_manager(self.opman)
+        uiman = OpUiManager(self.rootdir,self.wfman,self.imgman,self.opman)
         uiman.ui.setParent(self.ui,QtCore.Qt.Window)
         return uiman
 

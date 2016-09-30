@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>572</width>
-    <height>451</height>
+    <width>678</width>
+    <height>411</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -30,7 +30,11 @@
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_4">
       <item>
-       <widget class="QComboBox" name="op_selector"/>
+       <widget class="QPushButton" name="op_selector">
+        <property name="text">
+         <string>PushButton</string>
+        </property>
+       </widget>
       </item>
       <item>
        <widget class="QPlainTextEdit" name="op_info">
@@ -46,44 +50,26 @@
     </widget>
    </item>
    <item row="0" column="1">
-    <widget class="QFrame" name="arg_frame">
-     <property name="minimumSize">
-      <size>
-       <width>300</width>
-       <height>0</height>
-      </size>
+    <widget class="QScrollArea" name="arg_frame">
+     <property name="widgetResizable">
+      <bool>true</bool>
      </property>
-     <property name="frameShape">
-      <enum>QFrame::StyledPanel</enum>
-     </property>
-     <property name="frameShadow">
-      <enum>QFrame::Raised</enum>
-     </property>
-     <layout class="QVBoxLayout" name="verticalLayout_3">
-      <item>
-       <widget class="QScrollArea" name="scrollArea">
-        <property name="widgetResizable">
-         <bool>true</bool>
-        </property>
-        <widget class="QWidget" name="scrollAreaWidgetContents_6">
-         <property name="geometry">
-          <rect>
-           <x>0</x>
-           <y>0</y>
-           <width>278</width>
-           <height>374</height>
-          </rect>
-         </property>
-         <layout class="QGridLayout" name="gridLayout_4">
-          <item row="0" column="0">
-           <layout class="QGridLayout" name="nameval_layout"/>
-          </item>
-         </layout>
-         <zorder></zorder>
-        </widget>
-       </widget>
-      </item>
-     </layout>
+     <widget class="QWidget" name="scrollAreaWidgetContents_6">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>0</y>
+        <width>324</width>
+        <height>354</height>
+       </rect>
+      </property>
+      <layout class="QGridLayout" name="gridLayout_4">
+       <item row="0" column="0">
+        <layout class="QGridLayout" name="nameval_layout"/>
+       </item>
+      </layout>
+      <zorder></zorder>
+     </widget>
     </widget>
    </item>
    <item row="1" column="0" colspan="2">

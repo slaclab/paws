@@ -14,7 +14,7 @@ class OpUiManager(object):
     performs operations on it
     """
 
-    def __init__(self,rootdir,wfman,imgman):
+    def __init__(self,rootdir,wfman,imgman,opman):
         self.rootdir = rootdir
         ui_file = QtCore.QFile(self.rootdir+"/ui/op_builder.ui")
         # Load the op_builder popup
@@ -23,33 +23,47 @@ class OpUiManager(object):
         ui_file.close()
         self.wfman = wfman 
         self.imgman = imgman 
-        self.opman = None
+        self.opman = opman 
         self.op = None
         self.setup_ui()
+        #self.fetch_op()
 
-    def set_op_manager(self,opman):
-        """
-        Set self.opman to input OpManager. 
-        Connect op_selector drop-down menu 
-        as a view for QAbstractListModel opman.
-        """
-        self.opman = opman
-        # Load initial op and args
-        if self.opman.rowCount() > 0:
-            self.create_op(0)
-        # Connect self.ui.op_selector to opman (QAbstractListModel).
-        self.ui.op_selector.setModel(self.opman)
+    def fetch_op(self):
+        """Use a QtGui.QTreeView popup to select an Operation"""
+        ui_file = QtCore.QFile(self.rootdir+"/ui/tree_browser.ui")
+        ui_file.open(QtCore.QFile.ReadOnly)
+        src_ui = QtUiTools.QUiLoader().load(ui_file)
+        ui_file.close()
+        src_ui.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+        src_ui.setParent(self.ui,QtCore.Qt.Window)
+        src_ui.tree.setModel(self.opman)
+        src_ui.tree.resizeColumnToContents(0)
+        src_ui.tree.resizeColumnToContents(1)
+        #src_ui.tree.expandAll()
+        src_ui.load_button.setText('Load selected Operation')
+        src_ui.load_button.clicked.connect( partial(self.get_op_from_tree,src_ui) )
+        src_ui.show()
+
+    def get_op_from_tree(self,src_ui):
+        # Get the selected item in QTreeView:
+        item_indx = src_ui.tree.currentIndex()
+        # get the Operation of this item 
+        # TODO: make sure the selection is an Operation
+        op = self.opman.get_item(item_indx).data[0]
+        self.create_op(op)
+        #self.update_op_info(self.op.description())
+        src_ui.close()
 
     def set_op(self,op):
         """
-        For loading a fully or partially formed Operation into the UI.
+        Load a fully or partially formed Operation into the UI.
         Set self.op to input Operation.
-        Set op_selector to the proper Operation subclass.
+        Set op_selector button text to the Operation name.
         Load op.description() into self.ui.op_info.
         Load op.inputs and op.outputs into self.ui.arg_frame.
         """
         self.op = op
-        self.ui.op_selector.setCurrentIndex( self.opman.get_index_byname(type(op).__name__) )
+        self.ui.op_selector.setText(op.__name__)
         # TODO: Don't let the user change the type of operation? For their own safety? 
         self.ui.op_info.setPlainText(' ')
         self.ui.op_info.setPlainText(op.description())
@@ -61,7 +75,8 @@ class OpUiManager(object):
         self.ui.arg_frame.setMinimumWidth(700)
         self.ui.op_frame.setMinimumWidth(300)
         self.ui.op_frame.setMaximumWidth(300)
-        self.ui.op_selector.activated.connect(self.create_op)
+        self.ui.op_selector.setText('Click to Select Operation')
+        self.ui.op_selector.clicked.connect( partial(self.fetch_op) )
         # Populate tag entry fields
         self.ui.tag_prompt.setText('enter a unique tag for this operation:')
         self.ui.tag_prompt.setMinimumWidth(200)
@@ -99,11 +114,13 @@ class OpUiManager(object):
                 indx += 1
         return testtag
 
-    def create_op(self,indx):
+    def create_op(self,op):
         # Clear description window 
         self.ui.op_info.setPlainText(' ')
-        # Create op currently selected in ui.op_selector
-        self.op = self.opman.get_op(self.opman.index(indx,0))()
+        # Create op 
+        self.op = op()
+        # Set self.ui.op_selector to operation name
+        self.ui.op_selector.setText(op.__name__)
         # Set self.ui.op_info to op.description
         self.ui.op_info.setPlainText(self.op.description())
         # Clear the view of name-value widgets
@@ -328,9 +345,9 @@ class OpUiManager(object):
         val_widg.setMinimumWidth(10*len(item_uri))
         type_widg.setText(type(trmod.get_item(item_indx).data[0]).__name__)
         self.op.inputs[name] = optools.InputLocator(src_indx,item_uri)
-        src_ui.close()
         #self.ui.nameval_layout.update()
         self.update_op_info(self.op.description())
+        src_ui.close()
 
     def update_op_info(self,text):
         self.ui.op_info.setPlainText(text)

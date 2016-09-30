@@ -121,9 +121,7 @@ class WfManager(TreeModel):
         self.endRemoveRows()
         # TODO: update any Operations that depended on the removed one
 
-    # QAbstractItemModel subclass should implement 
-    # headerData(int section,Qt.Orientation orientation[,role=Qt.DisplayRole])
-    # note: section arg indicates row or column number, depending on orientation
+    # Overloaded headerData for WfManager 
     def headerData(self,section,orientation,data_role):
         if (data_role == QtCore.Qt.DisplayRole and section == 0):
             return "{} operation(s) loaded".format(self.rowCount(QtCore.QModelIndex()))

@@ -18,6 +18,11 @@ class Operation(object):
         which must be assigned some value.
         Meanwhile, the output_names specification is used to build
         workflow connections with results that are not yet computed.
+        The categories attribute is a list that indicates
+        where the operation can be found in the OpManager tree.
+        The Operation will be listed under each category in the list.
+        Subcategories are indicated by a ".", for example:
+        self.categories = ['CAT1','CAT2.SUBCAT','CAT3']
         """
         self.inputs = {}
         self.input_doc = {}
@@ -30,6 +35,8 @@ class Operation(object):
         for name in output_names: 
             self.outputs[name] = None
             self.output_doc[name] = None
+        # Set default category to be 'MISC'
+        self.categories = ['MISC']
 
     def print_locals(self):
         # debug: print local namespace.

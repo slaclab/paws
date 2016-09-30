@@ -166,13 +166,6 @@
      </layout>
     </item>
    </layout>
-   <zorder>apply_workflow_button</zorder>
-   <zorder>image_tree</zorder>
-   <zorder>image_button_box</zorder>
-   <zorder>workflow_button_box</zorder>
-   <zorder>add_op_button</zorder>
-   <zorder>rm_op_button</zorder>
-   <zorder>display_workflowitem_button</zorder>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
@@ -183,12 +176,6 @@
      <height>25</height>
     </rect>
    </property>
-   <widget class="QMenu" name="menuTools">
-    <property name="title">
-     <string>Tools</string>
-    </property>
-    <addaction name="actionCalibrate"/>
-   </widget>
    <widget class="QMenu" name="menuFile">
     <property name="title">
      <string>File</string>
@@ -199,7 +186,6 @@
     <addaction name="actionExit"/>
    </widget>
    <addaction name="menuFile"/>
-   <addaction name="menuTools"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="actionCalibrate">

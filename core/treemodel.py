@@ -108,7 +108,7 @@ class TreeModel(QtCore.QAbstractItemModel):
     # Subclass of QAbstractItemModel must implement columnCount()
     def columnCount(self,parent):
         """
-        Let TreeItems have two columns:
+        Let TreeModels have two columns:
         one displays TreeItem tag,
         one displays TreeItem data[0] type
         """
@@ -129,7 +129,7 @@ class TreeModel(QtCore.QAbstractItemModel):
             if len(item.data) > 0:
                 return type(item.data[0]).__name__ 
             else:
-                return 'tree node'
+                return ' '
         else:
             if data_role == QtCore.Qt.DisplayRole:
                 return item.tag()
@@ -188,7 +188,6 @@ class TreeModel(QtCore.QAbstractItemModel):
 
     def iter_indexes(self,parent=QtCore.QModelIndex()):
         """Provide a list of the QModelIndexes held in the tree"""
-        # TODO: Make this return an iterator rather than a list?
         if parent.isValid():
             ixs = [parent]
             # Loop through children of parent
@@ -200,8 +199,33 @@ class TreeModel(QtCore.QAbstractItemModel):
         for j in range(len(items)):
             item = items[j]
             ix = self.index(j,0,parent)
-            # TODO: check for NoneType here!
+            # TODO: check for NoneType children here?
             if item.n_children > 0:
                 ixs = ixs + self.iter_indexes(ix)
         return ixs
-    
+
+    def print_tree(self,rowprefix='',parent=QtCore.QModelIndex()):
+        if parent.isValid():
+            item = self.get_item(parent)
+            print rowprefix+str(item.data[0])
+            for j in range(item.n_children()):
+                #print 'calling print_tree for {} more children'.format(item.n_children()-j)
+                #time.sleep(1)
+                self.print_tree(rowprefix+'\t',self.index(j,0,parent))
+        else:
+            for jroot in range(len(self.root_items)):
+                #print 'calling print_tree for {} more root items'.format(len(self.root_items)-jroot)
+                #time.sleep(1)
+                item = self.root_items[jroot]
+                #print rowprefix+str(item.data[0])
+                self.print_tree(rowprefix,self.index(jroot,0,parent))
+                #for j in range(item.n_children()):
+            
+
+    # Editable QAbstractItemModel subclasses must implement setData(index,value[,role])
+    # TODO: understand whether or not this is necessary and what it means for the tree.
+    def setData(self,idx,value,role=None):
+        # For the TreeItem at index, set data[0] to value
+        treeitem = self.get_item(idx)
+        treeitem.data[0] = value
+

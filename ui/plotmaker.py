@@ -4,9 +4,9 @@ import numpy as np
 
 from ui import uitools
 
-def import_pqg():
-    import PySide   # importing this locally configures pyqtgraph to use PySide
-    import pyqtgraph as pg
+#def import_pqg():
+import PySide   # importing this locally configures pyqtgraph to use PySide
+import pyqtgraph as pg
 
 def import_mpl():
     import matplotlib
@@ -14,10 +14,10 @@ def import_mpl():
     from matplotlib.backends import qt_compat
     from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigCanvas
 
-if uitools.have_qt47: 
-    import_pqg()
-else:
+if not uitools.have_qt47: 
     import_mpl()
+#else:
+#    import_pqg()
 
 def display_item(item,uri,viewer,logmethod=None):
     # Don't proceed unless the item has something interesting to show.
@@ -79,7 +79,7 @@ def pqg_array_plot_2d(data_in):
 def pqg_array_plot_1d(data_in):
     plt = pg.PlotItem()
     plt.plot(data_in)
-    widg = pg.PlotWidget()
+    widg = pg.PlotWidget(plt)
     return widg 
 
 
