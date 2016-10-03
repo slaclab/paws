@@ -15,8 +15,8 @@ for performing routine analysis,
 and additional operations can be written 
 by following the templates included in the manual.  
 `slacx` also provides a plugin module
-so that it can be used as a component of other
-`Qt`-based applications, such as `xi-cam`.
+so that it can be used as a component 
+the `xi-cam` software package.
 The complete documentation of `slacx`
 can be found in the `doc` directory 
 of this repository.
@@ -28,7 +28,7 @@ Instructions for using `slacx`
 through the GUI and through input files
 are included in the user manual, which can be found
 in the `doc` directory of this repository.
-
+A low-overhead usage example will eventually be posted here.
 
 ## Motivation
 
@@ -43,12 +43,11 @@ to provide feedback to experimental parameter spaces.
 
 ## Installation
 
-`slacx` is packaged as a Python wheel.
-TODO: put instructions here on how to install my wheel.
+`slacx` will soon be packaged as a Python wheel.
+TODO: put instructions here on how to install the wheel.
 
-Meanwhile, the full installation instructions for a variety of platforms,
-included in the user manual,
-will be continually updated.
+The installation instructions for a variety of platforms from source,
+included in the user manual, will be continually updated.
 
 
 ## API Reference
@@ -68,8 +67,9 @@ Put instructions here on how to run and interpret the test suite.
 
 Contribution to `slacx` is encouraged!
 Please fork the repository and submit a pull request.
-It is suggested that any significant changes in architecture be addressed 
-by communicating with the `slacx` development team.
+See the manual in the `doc` directory for detailed instructions.. 
+Get in touch with the `slacx` development team
+at `slacx-developers@slac.stanford.edu`.
 
 
 ## License
