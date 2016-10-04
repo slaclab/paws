@@ -1,10 +1,10 @@
-bin
-lib
-lib64
-local
-include
-share
-images
+bin/
+lib/
+lib64/
+local/
+include/
+share/
+images/
 pip-selfcheck.json
 *.pyc
 *.swp
