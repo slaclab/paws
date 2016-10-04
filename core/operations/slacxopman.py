@@ -1,6 +1,6 @@
 from PySide import QtCore
 
-from ...core import operations as ops
+from .. import operations as ops
 from ..treemodel import TreeModel
 from ..treeitem import TreeItem
 
