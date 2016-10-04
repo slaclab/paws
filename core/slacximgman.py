@@ -2,8 +2,8 @@ import time
 
 from PySide import QtCore
 
-from core.treemodel import TreeModel
-from core.treeitem import TreeItem
+from treemodel import TreeModel
+from treeitem import TreeItem
 
 # TODO: See note on remove_image()
 

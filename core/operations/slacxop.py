@@ -1,6 +1,6 @@
 import abc
 
-from core.operations import optools
+import optools
 
 class Operation(object):
     __metaclass__ = abc.ABCMeta
