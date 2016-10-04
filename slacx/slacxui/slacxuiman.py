@@ -15,7 +15,6 @@ if uitools.have_qt47:
     from . import plotmaker_pqg as plotmaker
 else:
     from . import plotmaker_mpl as plotmaker
-    
 
 class UiManager(object):
     """
