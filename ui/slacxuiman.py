@@ -8,9 +8,15 @@ from PySide import QtGui, QtCore, QtUiTools
 import numpy as np
 
 from core import slacximg 
-from ui import plotmaker
+from ui import uitools
 from ui.opuiman import OpUiManager
 from ui.imgloaduiman import ImgLoadUiManager
+
+if uitools.have_qt47:
+    from ui import plotmaker_qt47p as plotmaker
+else:
+    from ui import plotmaker_qt46m as plotmaker
+    
 
 class UiManager(object):
     """
