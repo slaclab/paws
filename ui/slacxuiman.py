@@ -1,4 +1,3 @@
-import sys
 import os
 from datetime import datetime as dt
 import time
@@ -12,10 +11,10 @@ from ui import uitools
 from ui.opuiman import OpUiManager
 from ui.imgloaduiman import ImgLoadUiManager
 
-if uitools.have_qt47:
-    from ui import plotmaker_qt47p as plotmaker
+if uitools.have_qt47 or uitools.have_windows:
+    from ui import plotmaker_mpl as plotmaker
 else:
-    from ui import plotmaker_qt46m as plotmaker
+    from ui import plotmaker_pqg as plotmaker
     
 
 class UiManager(object):
