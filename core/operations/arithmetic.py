@@ -1,4 +1,4 @@
-from core.operations.slacxop import Operation
+from slacxop import Operation
 
 
 class Add(Operation):
