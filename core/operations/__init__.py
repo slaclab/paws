@@ -1,7 +1,7 @@
 import pkgutil
 import importlib
 
-from core.operations.slacxop import Operation
+from slacxop import Operation
 
 # Begin by iterating through all modules.
 # pkgutil.iter_modules returns module_loader, module_name, ispkg forall modules in path

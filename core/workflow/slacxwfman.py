@@ -1,8 +1,8 @@
 from PySide import QtCore
 
-from core.treemodel import TreeModel
-from core.treeitem import TreeItem
-from core.operations import optools
+from ..treemodel import TreeModel
+from ..treeitem import TreeItem
+from ..operations import optools
 
 # TODO: See note on remove_op()
 

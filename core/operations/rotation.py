@@ -1,6 +1,6 @@
 import numpy as np
 
-from core.operations.slacxop import Operation
+from slacxop import Operation
 
 class Rotation(Operation):
     """Rotate an image by 90, 180, or 270 degrees"""
