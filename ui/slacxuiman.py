@@ -11,10 +11,10 @@ from ui import uitools
 from ui.opuiman import OpUiManager
 from ui.imgloaduiman import ImgLoadUiManager
 
-if uitools.have_qt47 or uitools.have_windows:
-    from ui import plotmaker_mpl as plotmaker
-else:
+if uitools.have_qt47:
     from ui import plotmaker_pqg as plotmaker
+else:
+    from ui import plotmaker_mpl as plotmaker
     
 
 class UiManager(object):
