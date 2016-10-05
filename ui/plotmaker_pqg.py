@@ -1,7 +1,7 @@
 import re
 
 import numpy as np
-from PySide import QtGui
+import PySide   # importing this locally configures pyqtgraph to use PySide
 import pyqtgraph as pg
 import matplotlib
 from matplotlib.figure import Figure
@@ -27,13 +27,7 @@ def display_item(item,uri,viewer,logmethod=None):
         plot_widget = None
     if plot_widget:
         # add a new tab to image_viewer labeled with uri of tree item 
-        # embed the plot_widget in a QFrame?
-        layout = QtGui.QVBoxLayout()
-        layout.addWidget(plot_widget)
-        frame = QtGui.QFrame()
-        frame.setLayout(layout)
-        #tab_indx = viewer.addTab(plot_widget,uri)
-        tab_indx = viewer.addTab(frame,uri)
+        tab_indx = viewer.addTab(plot_widget,uri)
         viewer.setCurrentIndex(tab_indx)
     else:
         # TODO: dialog box: tell user the selected item is uninteresting.
