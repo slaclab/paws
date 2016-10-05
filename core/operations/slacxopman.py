@@ -1,8 +1,8 @@
 from PySide import QtCore
 
-import core.operations as ops
-from core.treemodel import TreeModel
-from core.treeitem import TreeItem
+from .. import operations as ops
+from ..treemodel import TreeModel
+from ..treeitem import TreeItem
 
 class OpManager(TreeModel):
 #class OpManager(QtCore.QAbstractListModel):
