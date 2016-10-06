@@ -27,7 +27,8 @@ for modloader, modname, ispkg in mods:
                             cat_list.append(cat)
         except ImportError:
             print '[{}] had trouble dealing with module attribute {}: {}'.format(__name__,name,item)
-            raise
+            pass 
+            #raise
 
  
 
