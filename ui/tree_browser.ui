@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>318</width>
-    <height>411</height>
+    <width>579</width>
+    <height>460</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -30,8 +30,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>296</width>
-        <height>356</height>
+        <width>557</width>
+        <height>405</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout">
@@ -39,8 +39,6 @@
         <widget class="QTreeView" name="tree"/>
        </item>
       </layout>
-      <zorder>tree</zorder>
-      <zorder>tree</zorder>
      </widget>
     </widget>
    </item>
