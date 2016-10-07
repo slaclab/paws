@@ -26,8 +26,8 @@ def main():
     try:
         app = QtGui.QApplication(sys.argv)
     except RuntimeError:
-        app = QtGui.QApplication.instance()
- 
+        app = QtCore.QCoreApplication.instance()
+
     # If running with gui, load dark style:
     app.setStyleSheet(qdarkstyle.load_stylesheet() + app.styleSheet())
 
