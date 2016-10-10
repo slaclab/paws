@@ -59,7 +59,7 @@ class Divide(Operation):
         self.output_doc['quotient'] = 'dividend divided by divisor'
 
     def run(self):
-        self.outputs['quotient'] = self.inputs['divident'] / self.inputs['divisor']
+        self.outputs['quotient'] = self.inputs['dividend'] / self.inputs['divisor']
 
 
 class Exponentiate(Operation):
