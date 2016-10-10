@@ -7,7 +7,7 @@
 # with the slacx workflow manager.
 # That common interface is ensured by inheriting it
 # from an abstract class called 'Operation'.
-from core.operations.slacxop import Operation
+from slacxop import Operation
 
 # Name the operation, specify inheritance (Operation)
 class <OperationName>(Operation):
