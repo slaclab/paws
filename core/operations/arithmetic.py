@@ -32,7 +32,7 @@ class Multiply(Operation):
 
 
 class Subtract(Operation):
-    '''Subtract one object from another.'''
+    """Subtract one object from another."""
 
     def __init__(self):
         input_names = ['minuend', 'subtrahend']
@@ -59,11 +59,11 @@ class Divide(Operation):
         self.output_doc['quotient'] = 'dividend divided by divisor'
 
     def run(self):
-        self.outputs['product'] = self.inputs['multiplicand'] / self.inputs['multiplier']
+        self.outputs['quotient'] = self.inputs['divident'] / self.inputs['divisor']
 
 
 class Exponentiate(Operation):
-    '''Exponentiate an object by another object.'''
+    """Exponentiate an object by another object."""
 
     def __init__(self):
         input_names = ['base', 'exponent']

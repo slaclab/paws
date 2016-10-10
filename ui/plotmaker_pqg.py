@@ -52,9 +52,8 @@ def pqg_array_plot_2d(data_in):
     return widg 
 
 def pqg_array_plot_1d(data_in):
-    plt = pg.PlotItem()
-    plt.plot(data_in)
-    widg = pg.PlotWidget(plt)
+    widg = pg.PlotWidget()
+    widg.getPlotItem().plot(data_in)
     return widg 
 
 def plot_mpl_fig(fig_in):
