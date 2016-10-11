@@ -89,7 +89,7 @@
     <item>
      <layout class="QVBoxLayout" name="verticalLayout_3">
       <item>
-       <widget class="QFrame" name="frame_3">
+       <widget class="QFrame" name="center_frame">
         <property name="frameShape">
          <enum>QFrame::StyledPanel</enum>
         </property>
