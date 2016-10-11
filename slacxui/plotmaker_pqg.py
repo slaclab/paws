@@ -8,7 +8,7 @@ from matplotlib.figure import Figure
 from matplotlib.backends import qt_compat
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigCanvas
 
-from ui import uitools
+from slacxui import uitools
 
 def display_item(item,uri,viewer,logmethod=None):
     # Don't proceed unless the item has something interesting to show.

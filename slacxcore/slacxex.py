@@ -12,7 +12,7 @@ class LazyCodeError(Exception):
         super(LazyCodeError,self).__init__(self,msg)
 
 def start_message_ui(rootdir):
-    ui_file = QtCore.QFile(rootdir+"/ui/message.ui")
+    ui_file = QtCore.QFile(rootdir+"/slacxui/message.ui")
     ui_file.open(QtCore.QFile.ReadOnly)
     msg_ui = QtUiTools.QUiLoader().load(ui_file)
     ui_file.close()
