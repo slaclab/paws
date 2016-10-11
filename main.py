@@ -4,10 +4,10 @@ import sys
 from PySide import QtGui, QtCore
 import qdarkstyle
 
-from ui import slacxuiman
-from core import slacximgman
-from core.operations import slacxopman
-from core.workflow import slacxwfman
+from slacxui import slacxuiman
+from slacxcore import slacximgman
+from slacxcore.operations import slacxopman
+from slacxcore.workflow import slacxwfman
 
 """
 slacx main module.

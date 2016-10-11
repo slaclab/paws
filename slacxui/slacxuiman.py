@@ -6,15 +6,15 @@ from functools import partial
 from PySide import QtGui, QtCore, QtUiTools
 import numpy as np
 
-from core import slacximg 
-from ui import uitools
-from ui.opuiman import OpUiManager
-from ui.imgloaduiman import ImgLoadUiManager
+from slacxcore import slacximg 
+from slacxui import uitools
+from slacxui.opuiman import OpUiManager
+from slacxui.imgloaduiman import ImgLoadUiManager
 
 if uitools.have_qt47:
-    from ui import plotmaker_pqg as plotmaker
+    from slacxui import plotmaker_pqg as plotmaker
 else:
-    from ui import plotmaker_mpl as plotmaker
+    from slacxui import plotmaker_mpl as plotmaker
     
 
 class UiManager(object):
@@ -31,7 +31,7 @@ class UiManager(object):
         """Make a UI from ui_file, save a reference to it"""
         self.rootdir = rootdir
         # Pick a UI definition, load it up
-        ui_file = QtCore.QFile(self.rootdir+"/ui/basic.ui")
+        ui_file = QtCore.QFile(self.rootdir+"/slacxui/basic.ui")
         ui_file.open(QtCore.QFile.ReadOnly)
         # load() produces a QMainWindow(QWidget).
         self.ui = QtUiTools.QUiLoader().load(ui_file)
@@ -94,7 +94,7 @@ class UiManager(object):
         """
         Create a QFrame window from ui/tag_request.ui, then return it
         """
-        ui_file = QtCore.QFile(self.rootdir+"/ui/tag_request.ui")
+        ui_file = QtCore.QFile(self.rootdir+"/slacxui/tag_request.ui")
         uiman = ImgLoadUiManager(ui_file,self.imgman,imgfile)
         uiman.ui.setParent(self.ui,QtCore.Qt.Window)#|QtCore.Qt.WindowStaysOnTopHint)
         #uiman.ui.setWindowModality(QtCore.Qt.WindowModal)

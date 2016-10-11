@@ -11,7 +11,7 @@ mods = [mod for mod in mods if mod[1] not in ['__init__','slacxop','slacxopman',
 op_list = []
 cat_list = []
 for modloader, modname, ispkg in mods:
-    mod = importlib.import_module('.'+modname,'core.operations')
+    mod = importlib.import_module('.'+modname,'slacxcore.operations')
     # iterate through the module's __dict__, find Operations 
     for name, item in mod.__dict__.items():
         try:
