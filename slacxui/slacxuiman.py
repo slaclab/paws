@@ -236,7 +236,7 @@ class UiManager(object):
         """Display the slacx logo in the title box"""
         # Load the slacx graphic  
         #slacx_img_file = os.path.join(self.rootdir, "ui/slacx_icon.png")
-        slacx_img_file = os.path.join(self.rootdir, "ui/slacx_icon_white.png")
+        slacx_img_file = os.path.join(self.rootdir, "slacxui/slacx_icon_white.png")
         # Make a QtGui.QPixmap from this file
         slacx_pixmap = QtGui.QPixmap(slacx_img_file)
         # Make a QtGui.QGraphicsPixmapItem from this QPixmap
