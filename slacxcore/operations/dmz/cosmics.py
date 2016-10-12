@@ -67,8 +67,11 @@ import pyfits
 laplkernel = np.array([[0.0, -1.0, 0.0], [-1.0, 4.0, -1.0], [0.0, -1.0, 0.0]])
 
 
-class cosmicsimage:
-    def __init__(self, rawarray, gain=1.0, readnoise=0.0, satlevel=65536, pssl=0.0, sigclip=5.0, sigfrac=0.3,
+class Cosmics(Operation):
+    def __init__(self):
+        pass
+
+    def secondInit(self, rawarray, gain=1.0, readnoise=0.0, satlevel=65536, pssl=0.0, sigclip=5.0, sigfrac=0.3,
                  objlim=5.0, premask=np.zeros(1), verbose=True):
         """
 

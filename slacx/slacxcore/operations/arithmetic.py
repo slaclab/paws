@@ -1,3 +1,5 @@
+import numpy as np
+
 from slacxop import Operation
 
 
@@ -76,3 +78,19 @@ class Exponentiate(Operation):
 
     def run(self):
         self.outputs['power'] = self.inputs['base'] ** self.inputs['exponent']
+
+
+class Logarithm(Operation):
+    """Take the logarithm of an object by some base."""
+
+    def __init__(self):
+        input_names = ['power', 'base']
+        output_names = ['exponent']
+        super(Logarithm, self).__init__(input_names, output_names)
+        self.input_doc['power'] = 'array or number whose logarithm will be taken'
+        self.input_doc['base'] = 'array or number'
+        self.output_doc['exponent'] = 'array or number'
+
+
+    def run(self):
+        self.outputs['exponent'] = np.log(self.inputs['power'])/np.log(self.inputs['base'])
