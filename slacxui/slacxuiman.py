@@ -6,15 +6,15 @@ from functools import partial
 from PySide import QtGui, QtCore, QtUiTools
 import numpy as np
 
-from slacxcore import slacximg 
-from slacxui import uitools
-from slacxui.opuiman import OpUiManager
-from slacxui.imgloaduiman import ImgLoadUiManager
+from ..slacxcore import slacximg 
+from . import uitools
+from .opuiman import OpUiManager
+from .imgloaduiman import ImgLoadUiManager
 
 if uitools.have_qt47:
-    from slacxui import plotmaker_pqg as plotmaker
+    from . import plotmaker_pqg as plotmaker
 else:
-    from slacxui import plotmaker_mpl as plotmaker
+    from . import plotmaker_mpl as plotmaker
     
 
 class UiManager(object):

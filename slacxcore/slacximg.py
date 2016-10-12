@@ -5,7 +5,7 @@ from PIL import Image, ImageQt
 import fabio
 import numpy as np
 
-from slacxcore import slacxex
+from . import slacxex
 
 class SlacxImage(object):
     """

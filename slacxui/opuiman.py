@@ -4,9 +4,9 @@ from functools import partial
 
 from PySide import QtCore, QtGui, QtUiTools
 
-from slacxcore.operations import optools
-from slacxcore import slacxex
-from slacxui import uitools
+from ..slacxcore.operations import optools
+from ..slacxcore import slacxex
+from . import uitools
 
 class OpUiManager(object):
     """

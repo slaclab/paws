@@ -3,8 +3,8 @@ from functools import partial
 
 from PySide import QtCore, QtGui, QtUiTools
 
-from slacxcore import slacximg 
-from slacxcore import slacxex
+from ..slacxcore import slacximg 
+from ..slacxcore import slacxex
 
 class ImgLoadUiManager(object):
 
