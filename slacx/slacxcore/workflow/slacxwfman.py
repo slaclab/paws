@@ -126,7 +126,7 @@ class WfManager(TreeModel):
         if (data_role == QtCore.Qt.DisplayRole and section == 0):
             return "{} operation(s) loaded".format(self.rowCount(QtCore.QModelIndex()))
         elif (data_role == QtCore.Qt.DisplayRole and section == 1):
-            return "info".format(self.rowCount(QtCore.QModelIndex()))
+            return "info"
         else:
             return None
 

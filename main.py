@@ -4,10 +4,10 @@ import sys
 from PySide import QtGui, QtCore
 import qdarkstyle
 
-from slacxui import slacxuiman
-from slacxcore import slacximgman
-from slacxcore.operations import slacxopman
-from slacxcore.workflow import slacxwfman
+from slacx.slacxui import slacxuiman
+from slacx.slacxcore import slacximgman
+from slacx.slacxcore.operations import slacxopman
+from slacx.slacxcore.workflow import slacxwfman
 
 """
 slacx main module.
@@ -30,8 +30,9 @@ def main():
     #root_qdir.cdUp()
     #root_qdir.setCurrent(root_qdir.path())
     #print root_qdir
-    rootdir = os.path.split( root_qdir.absolutePath() )[0]
-    
+    rootdir = os.path.split( root_qdir.absolutePath() )[0]+'/slacx'
+    print rootdir   
+ 
     # TODO: parse sys.argv for:
     #   running without a gui 
     #   image files to load  
