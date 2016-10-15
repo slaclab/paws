@@ -6,10 +6,10 @@ from PySide import QtGui, QtCore, QtUiTools
 from xicam import config
 from xicam import xglobals
 from pipeline import msg
-from slacxbase.slacxui import slacxuiman
-from slacxbase.slacxcore import slacximgman
-from slacxbase.slacxcore.operations import slacxopman
-from slacxbase.slacxcore.workflow import slacxwfman
+from slacx.slacxui import slacxuiman
+from slacx.slacxcore import slacximgman
+from slacx.slacxcore.operations import slacxopman
+from slacx.slacxcore.workflow import slacxwfman
 
 class SlacxPlugin(base.plugin):
     # The display name in the xi-cam plugin bar
@@ -24,7 +24,7 @@ class SlacxPlugin(base.plugin):
 
         # start slacx ui objects
         root_qdir = QtCore.QDir(__file__)
-        rootdir = os.path.split( root_qdir.absolutePath() )[0]+'/slacxbase'
+        rootdir = os.path.split( root_qdir.absolutePath() )[0]+'/slacx'
         uiman = slacxuiman.UiManager(rootdir)
 
         # set up ui-core refs    
