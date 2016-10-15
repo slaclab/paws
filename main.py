@@ -18,35 +18,22 @@ def main():
     slacx main execution method.
     """
 
+    # TODO: parse sys.argv for an input file.
+    # Input images, operations, workflows to load,  
+    # as well as flags for batch mode, real-time mode, gui mode.
+    
     # Instantiate QApplication, pass in cmd line args sys.argv.
     try:
         app = QtGui.QApplication(sys.argv)
     except RuntimeError:
         app = QtGui.QApplication.instance()
-
-
-    root_qdir = QtCore.QDir(__file__)
-    #root_qdir.cdUp()
-    #root_qdir.cdUp()
-    #root_qdir.setCurrent(root_qdir.path())
-    #print root_qdir
-    rootdir = os.path.split( root_qdir.absolutePath() )[0]+'/slacx'
-    print rootdir   
  
-    # TODO: parse sys.argv for:
-    #   running without a gui 
-    #   image files to load  
-    #   Operations to load 
-    #   loading a workflow
-    #   batch mode
-    #   real-time mode
-
     # If running with gui, load dark style:
-    #print qdarkstyle.load_stylesheet()+app.styleSheet()
     app.setStyleSheet(qdarkstyle.load_stylesheet() + app.styleSheet())
 
     # TODO: give kwargs to these init routines to rebuild saved jobs?
-    # Start an ImgManager to manage input files.
+    # Start an ImgManager to manage input images.
+    # TODO: deprecate image manager, do everything in ops and workflows.
     imgman = slacximgman.ImgManager()
     # Start an OpManager to manage operations.
     opman = slacxopman.OpManager()
@@ -54,10 +41,13 @@ def main():
     wfman = slacxwfman.WfManager(imgman=imgman)
 
     # Start a UiManager to create and manage a QMainWindow.
-    # Takes ui file name as only argument.
+    # Takes the rootdir of the top-level package to find the UI files.
+    root_qdir = QtCore.QDir(__file__)
+    rootdir = os.path.split( root_qdir.absolutePath() )[0]+'/slacx'
     uiman = slacxuiman.UiManager(rootdir)
+
     # UiManager needs to store references to the QAbstractItemModel objects
-    # that are used to interact with the features of the gui
+    # that interact with the features of the gui
     # TODO: make this part of the UiManager constructor?
     uiman.imgman = imgman
     uiman.opman = opman
@@ -77,21 +67,8 @@ def main():
     uiman.ui.show()
     # sys.exit gracefully after app.exec_() returns its exit code
     sys.exit(app.exec_())
-
     
-# Run the main() function if this module is the top level.
+# Run the main() function if this module is invoked 
 if __name__ == '__main__':
     main()
-
-
-### ARCHIVES ###
-#For win32 execution:
-#if sys.platform == 'win32':
-#    sys.stdout = open(os.path.join(os.path.expanduser('~'),'out.log'),'w')
-#    sys.stderr = open(os.path.join(os.path.expanduser('~'),'err.log'),'w')
-#
-#For making printouts of obj structure:
-#import pprint
-#pprint.PrettyPrinter().pprint(uiman.ui.__dict__)
-
 
