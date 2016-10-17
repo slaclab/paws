@@ -1,4 +1,5 @@
 from PySide import QtCore
+import dask.threaded
 
 from ..treemodel import TreeModel
 from ..treeitem import TreeItem
@@ -152,26 +153,26 @@ class WfManager(TreeModel):
                 # Get QModelIndex of this item for later use in updating tree view
                 indx = self.index(j,0,QtCore.QModelIndex())
                 op = item.data[0]
-                #print 'op {}: {}'.format(j,type(op).__name__)
                 for name,val in op.inputs.items():
                     op.inputs[name] = self.locate_input(val)
-                #print 'op {} inputs: {}'.format(j,op.inputs)
-                #print 'BEFORE: op {} outputs: {}'.format(j,op.outputs)
                 op.run()
-                #print 'op {} called run()'.format(j)
-                #print 'AFTER: op {} outputs: {}'.format(j,op.outputs)
                 ops_done.append(j)
                 self.update_op(indx,op)
-                # emit the dataChanged signal
-                #self.dataChanged.emit(QtCore.QModelIndex(),QtCore.QModelIndex()) 
-                #self.dataChanged.emit(indx,indx) 
-                #outputs_indx = self.index(1,0,indx)
-                #self.dataChanged.emit(outputs_indx,outputs_indx) 
-                #outputs_treeitem = item.children[1]
-                #for row in range(len(outputs_treeitem.children)):
-                #    indx = self.index(row,0,outputs_indx)
-                #    self.dataChanged.emit(indx,indx)
             to_run = self.ops_ready(ops_done)
+
+    def run_wf_graph(self):
+        """
+        Run the workflow by building a dask-compatible dict,
+        then calling dask.threaded.get(dict, key)
+        for each of the keys corresponding to operation outputs.
+        TODO: optimize the execution of this by making the smallest
+        possible number of calls to get().
+        """
+        # build the graph, get the list of outputs
+        outputs_list = self.load_wf_dict()
+        print 'workflow graph as dict:'
+        print self._wf_dict
+        
 
     def ops_ready(self,ops_done):
         """
@@ -207,16 +208,28 @@ class WfManager(TreeModel):
                 keyindx += 1
                 input_keys.append(name)
                 input_vals = input_vals + (dask_key)
-            # Add a load_inputs line for each op
+            # Add a load_inputs line for op j
             dask_key = 'op'+str(j)+'_load'
             self._wf_dict[key] = (self.load_inputs, op, input_keys, input_vals) 
-            # Add a run_op line for each op
+            # Add a run_op line for op j
             dask_key = 'op'+str(j)+'_run'
             self._wf_dict[key] = (self.run_op, op) 
+            # Keep track of the keys corresponding to operation outputs.
+            keyindx = 0
+            output_keys = []
+            for name,val in op.outputs.items():
+                # Add a get_output line for each output
+                dask_key = 'op'+str(j)+'out'+str()
+                self._wf_dict[dask_key] = (self.get_output, val)
+                keyindx += 1
+                output_keys.append(name)
 
     @staticmethod
     def load_inputs(op,keys,vals):
-        # fetch Operation at op_row
+        """
+        By the time this is called, vals should be bound to actual input values by dask.
+        Each dask key should have been assigned to a (self.locate_input, val)
+        """
         for i in range(len(keys)):
             key = keys[i]
             val = vals[i] 
