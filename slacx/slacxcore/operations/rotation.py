@@ -13,7 +13,7 @@ class Rotation(Operation):
         self.input_doc['rotation_deg'] = str('rotation in degrees counter-clockwise, '
                                     + 'must be either 90, 180, or 270')
         self.output_doc['image_data'] = '2d array representing rotated image'
-        self.categories = ['TESTS','PROCESSING']
+        self.categories = ['TESTS','2D DATA PROCESSING']
 
     def run(self):
         """

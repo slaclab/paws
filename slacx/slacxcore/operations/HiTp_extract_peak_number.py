@@ -5,16 +5,15 @@ Created on Wed Aug 03 15:00:51 2016
 @author: fangren
 """
 
-from core.operations.slacxop import Operation
+from os.path import basename
+import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
-from os.path import basename
-import sys
 from numpy import NaN, Inf, arange, isscalar, asarray, array
 from scipy.optimize import curve_fit
 
-
+from slacxop import Operation
 
 def peakdet(v, delta, x = None):
     """
@@ -97,12 +96,9 @@ class extract_peak_num(Operation):
         super(extract_peak_num, self).__init__(input_names, output_names)
         self.input_doc['Intensity'] = 'Integrated intensity averaged by pixels #'
         self.input_doc['Qlist'] = 'momentum transfer in a list'
-
         self.output_doc['peaks'] = 'list of peaks'
         self.output_doc['peak_num'] = 'peak numbers'
-
-        self.categories = ['TESTS', 'PROCESSING']
-
+        self.categories = ['1D DATA PROCESSING']
 
     def run(self):
         maxtab, mintab = peakdet.peakdet(self.inputs['IntAve'], self.inputs['criterion'])

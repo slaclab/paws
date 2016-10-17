@@ -13,6 +13,7 @@ class Add(Operation):
         self.input_doc['augend'] = 'array or number'
         self.input_doc['addend'] = 'array or number for which addition with augend is defined'
         self.output_doc['sum'] = 'augend plus addend'
+        self.categories = ['ARITHMETIC']
 
     def run(self):
         self.outputs['sum'] = self.inputs['augend'] + self.inputs['addend']
@@ -28,6 +29,7 @@ class Multiply(Operation):
         self.input_doc['multiplicand'] = 'array or number'
         self.input_doc['multiplier'] = 'array or number for which multiplication with multiplicand is defined'
         self.output_doc['product'] = 'multiplicand times multiplier'
+        self.categories = ['ARITHMETIC']
 
     def run(self):
         self.outputs['product'] = self.inputs['multiplicand'] * self.inputs['multiplier']
@@ -43,7 +45,7 @@ class Subtract(Operation):
         self.input_doc['minuend'] = 'array or number'
         self.input_doc['subtrahend'] = 'array or number for which subtraction from minuend is defined'
         self.output_doc['difference'] = 'minuend minus subtrahend'
-
+        self.categories = ['ARITHMETIC']
 
     def run(self):
         self.outputs['difference'] = self.inputs['minuend'] - self.inputs['subtrahend']
@@ -59,6 +61,7 @@ class Divide(Operation):
         self.input_doc['dividend'] = 'array or number'
         self.input_doc['divisor'] = 'array or number for which dividing dividend is defined'
         self.output_doc['quotient'] = 'dividend divided by divisor'
+        self.categories = ['ARITHMETIC']
 
     def run(self):
         self.outputs['quotient'] = self.inputs['dividend'] / self.inputs['divisor']
@@ -74,7 +77,7 @@ class Exponentiate(Operation):
         self.input_doc['base'] = 'array or number'
         self.input_doc['exponent'] = 'array or number for which exponentiating base is defined'
         self.output_doc['power'] = 'base raised by exponent'
-
+        self.categories = ['ARITHMETIC']
 
     def run(self):
         self.outputs['power'] = self.inputs['base'] ** self.inputs['exponent']
@@ -92,7 +95,7 @@ class Logarithm(Operation):
         self.input_doc['power'] = 'array or number whose logarithm will be taken'
         self.input_doc['base'] = 'array or number'
         self.output_doc['exponent'] = 'array or number'
-
+        self.categories = ['ARITHMETIC']
 
     def run(self):
         self.outputs['exponent'] = np.log(self.inputs['power'])/np.log(self.inputs['base'])
