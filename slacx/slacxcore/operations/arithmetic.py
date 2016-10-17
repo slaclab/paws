@@ -80,6 +80,8 @@ class Exponentiate(Operation):
         self.outputs['power'] = self.inputs['base'] ** self.inputs['exponent']
 
 
+#  Testing 1 2 3
+
 class Logarithm(Operation):
     """Take the logarithm of an object by some base."""
 
