@@ -4,12 +4,13 @@ import dask.threaded
 from ..treemodel import TreeModel
 from ..treeitem import TreeItem
 from ..operations import optools
+from .slacxwf import Workflow
 
 # TODO: See note on remove_op()
 
 class WfManager(TreeModel):
     """
-    Class for managing a workflow built from slacx operations.
+    Class for managing a Workflow(Operation) built from slacx Operations.
     """
 
     def __init__(self,**kwargs):
@@ -135,6 +136,7 @@ class WfManager(TreeModel):
         """
         Check the dependencies of the workflow.
         Ensure that all loaded operations have inputs that make sense.
+        Return a status code and message for each of the Operations.
         """
         pass
 
@@ -241,7 +243,11 @@ class WfManager(TreeModel):
         return op.run()
 
     def locate_input(self,inplocator):
-        """Return the data pointed to by a given InputLocator object"""
+        """
+        Return the data pointed to by a given InputLocator object.
+        If this is called on anything other than an InputLocator,
+        it returns the input argument.
+        """
         if type(inplocator).__name__ == 'InputLocator':
             src = inplocator.src
             val = inplocator.val

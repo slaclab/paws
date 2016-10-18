@@ -38,10 +38,6 @@ class Operation(object):
         # Set default category to be 'MISC'
         self.categories = ['MISC']
 
-    def print_locals(self):
-        # debug: print local namespace.
-        print self.locals()
-
     @abc.abstractmethod
     def run(self):
         """
@@ -51,25 +47,6 @@ class Operation(object):
         set for all items in inputs before calling run().
         """
         pass
-
-#    @abc.abstractmethod
-#    def inputs(self):
-#        """
-#        Operation.inputs() should return a dict 
-#        containing the operation's inputs.  
-#        """
-#        return self.inputs
-
-#    def set_input(self,inputname,source,value):
-#        self.inputs[inputname] = (source, value)
-
-#    @abc.abstractmethod
-#    def outputs(self):
-#        """
-#        Operation.outputs() should return a dict 
-#        containing the operation's outputs.  
-#        """
-#        return self.outputs 
 
     def description(self):
         """
@@ -104,5 +81,28 @@ class Operation(object):
 #        containing a human-readable name for this operation.
 #        """
 #        pass
+
+#    @abc.abstractmethod
+#    def inputs(self):
+#        """
+#        Operation.inputs() should return a dict 
+#        containing the operation's inputs.  
+#        """
+#        return self.inputs
+
+#    def set_input(self,inputname,source,value):
+#        self.inputs[inputname] = (source, value)
+
+#    @abc.abstractmethod
+#    def outputs(self):
+#        """
+#        Operation.outputs() should return a dict 
+#        containing the operation's outputs.  
+#        """
+#        return self.outputs 
+
+#    def print_locals(self):
+#        # debug: print local namespace.
+#        print self.locals()
 
 
