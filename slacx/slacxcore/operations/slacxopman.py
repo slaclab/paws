@@ -145,7 +145,14 @@ class OpManager(TreeModel):
                     return ' ' 
                 else:
                     # Should be an operation
-                    return item.data[0].__doc__ 
+                    if item.data[0].__doc__:
+                        # Note: commas are used as delimiters when loading strings to Qt views,
+                        # so they should be removed to avoid warning messages.
+                        # This will munge the description a bit.
+                        # TODO: A more elegant solution would be welcome.
+                        return item.data[0].__doc__.replace(',',' ')
+                    else:
+                        return 'no description'
             else:
                 return ' '
         else:

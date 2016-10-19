@@ -279,7 +279,7 @@ class OpUiManager(object):
             #btn_text = 'Select data...'
             type_widget = QtGui.QLineEdit('auto')
             type_widget.setReadOnly(True)
-            val_widget = QtGui.QLineEdit('select -->')
+            val_widget = QtGui.QLineEdit('select in browser')
             val_widget.setReadOnly(True)
             #btn_widget = QtGui.QPushButton(btn_text)
             #btn_widget.clicked.connect( partial(self.fetch_data,name,src_indx,type_widget,val_widget) )
