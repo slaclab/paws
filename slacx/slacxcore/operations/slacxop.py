@@ -1,4 +1,5 @@
 import abc
+import re
 
 import optools
 
@@ -55,24 +56,37 @@ class Operation(object):
         and usage instructions for the Operation
         """
         return str(
-        "Operation description: \n"
-        + self.__doc__ 
-        + "\n\nInputs: \n"
-        + self.inputs_description()
-        + "\nOutputs: \n"
+        "Operation description: "
+        + self.doc_as_string()
+        + "\n\n--- Inputs ---"
+        + self.inputs_description() 
+        + "\n\n--- Outputs ---"
         + self.outputs_description())
+
+    def doc_as_string(self):
+        return re.sub("\s\s+"," ",self.__doc__.replace('\n','')) 
 
     def inputs_description(self):
         a = ""
+        inp_indx = 0
         for name,val in self.inputs.items(): 
-            a = a + optools.parameter_doc(name,val,self.input_doc[name]) + "\n"
+            a = a + str("\n\nInput {}:\n".format(inp_indx) 
+            + optools.parameter_doc(name,val,self.input_doc[name]))
+            inp_indx += 1
         return a
 
     def outputs_description(self):
         a = ""
+        out_indx = 0
         for name,val in self.outputs.items(): 
-            a = a + optools.parameter_doc(name,val,self.output_doc[name]) + "\n"
+            a = a + str("\n\nOutput {}:\n".format(out_indx) 
+            + optools.parameter_doc(name,val,self.output_doc[name]))
+            out_indx += 1
         return a
+                
+    def set_outputs_to_none(self):
+        for name,val in self.outputs.items(): 
+            self.outputs[name] = None
 
 #    @abc.abstractmethod
 #    def tag(self):

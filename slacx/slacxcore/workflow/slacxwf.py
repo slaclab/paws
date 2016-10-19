@@ -1,4 +1,6 @@
 
+from ..operations.slacxop import Operation
+
 class Workflow(Operation):
     """
     A Workflow has the same interface as an Operation

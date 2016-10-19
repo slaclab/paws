@@ -1,12 +1,10 @@
 ##### DEFINITIONS OF SOURCES FOR OPERATION INPUTS
-input_sources = ['(select)','Text','Images','Operations','Filesystem','List builder','Tree builder'] 
+input_sources = ['(select)','Text','Images','Operations','Filesystem'] 
 text_input = 1
 image_input = 2
 op_input = 3
 fs_input = 4
-list_input = 5
-tree_input = 6
-valid_sources = [text_input,image_input,op_input,fs_input,list_input,tree_input]
+valid_sources = [text_input,image_input,op_input,fs_input]
 
 ##### VALID TYPES FOR TEXT BASED OPERATION INPUTS 
 input_types = ['(select)','string','int','float','array','bool']
@@ -17,9 +15,18 @@ array_type = 4
 bool_type = 5
 valid_types = [string_type,int_type,float_type,array_type,bool_type]
 
+##### IMAGE LOADER EXTENSIONS    
+def loader_extensions():
+    return str(
+    "ALL (*.*);;"
+    + "TIFF (*.tif *.tiff);;"
+    + "RAW (*.raw);;"
+    + "MAR (*.mar*)"
+    )
+
 ##### CONVENIENCE METHOD FOR PRINTING DOCUMENTATION
 def parameter_doc(name,val,doc):
-    return "name: {} \nvalue: {} \ndoc: {}".format(name,val,doc) 
+    return "- name: {} \n- value: {} \n- doc: {}".format(name,val,doc) 
 
 ##### CONVENIENCE CLASS FOR STORING OR LOCATING OPERATION INPUTS
 class InputLocator(object):

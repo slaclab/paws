@@ -3,6 +3,7 @@ import os
 from functools import partial
 
 from PySide import QtCore, QtGui, QtUiTools
+import qdarkstyle
 
 from ..slacxcore.operations import optools
 from ..slacxcore import slacxex
@@ -262,32 +263,34 @@ class OpUiManager(object):
             if uitools.have_qt47:
                 val_widget.setPlaceholderText('(enter value)')
             else:
-                val_widget.setText('(enter value)')
+                val_widget.setText(' ')
             #val_widget.returnPressed.connect( partial(self.load_text_input,name,type_widget,val_widget) )
             #val_widget.textChanged.connect( partial(self.load_text_input,name,type_widget,val_widget) )
             #val_widget.textEdited.connect( partial(self.load_text_input,name,type_widget,val_widget) )
             # TODO: Make this a button that tests the type-casting and loading of the input?
-            btn_text = 'Load text...' 
-            btn_widget = QtGui.QPushButton(btn_text)
-            btn_widget.clicked.connect( partial(self.load_text_input,name,type_widget,val_widget) )
+            #btn_text = 'Load text...' 
+            #btn_widget = QtGui.QPushButton(btn_text)
+            #btn_widget.clicked.connect( partial(self.load_text_input,name,type_widget,val_widget) )
             # Also connect the finish button to load the text input
             #self.ui.finish_button.clicked.connect( partial(self.load_text_input,name,type_widget,val_widget) )
         elif (src_indx == optools.image_input
-            or src_indx == optools.op_input):
-            btn_text = 'Select data...'
+            or src_indx == optools.op_input
+            or src_indx == optools.fs_input):
+            #btn_text = 'Select data...'
             type_widget = QtGui.QLineEdit('auto')
             type_widget.setReadOnly(True)
             val_widget = QtGui.QLineEdit('select -->')
             val_widget.setReadOnly(True)
-            btn_widget = QtGui.QPushButton(btn_text)
-            btn_widget.clicked.connect( partial(self.fetch_data,name,src_indx,type_widget,val_widget) )
+            #btn_widget = QtGui.QPushButton(btn_text)
+            #btn_widget.clicked.connect( partial(self.fetch_data,name,src_indx,type_widget,val_widget) )
         else:
             msg = 'source selection {} not recognized'.format(src_indx)
             raise ValueError(msg)
         self.ui.nameval_layout.addWidget(type_widget,row,self.type_col,1,1)
         self.ui.nameval_layout.addWidget(val_widget,row,self.val_col,1,1)
-        if btn_widget:
-            self.ui.nameval_layout.addWidget(btn_widget,row,self.btn_col,1,1)
+        self.fetch_data(name,src_indx,type_widget,val_widget)
+        #if btn_widget:
+        #    self.ui.nameval_layout.addWidget(btn_widget,row,self.btn_col,1,1)
 
     def load_text_input(self,name,type_widg,val_widg,edit_text=None):
         src_indx = type_widg.currentIndex()
@@ -306,27 +309,41 @@ class OpUiManager(object):
         self.update_op_info(self.op.description())
 
     def fetch_data(self,name,src_indx,type_widg,val_widg):
-        """Use a QtGui.QTreeView popup to select the requested input data"""
+        """Use a popup to select the requested input data"""
         # TODO: Allow only one of these popups to exist (one per val widget).
-        ui_file = QtCore.QFile(self.rootdir+"/slacxui/tree_browser.ui")
-        ui_file.open(QtCore.QFile.ReadOnly)
-        src_ui = QtUiTools.QUiLoader().load(ui_file)
-        ui_file.close()
-        src_ui.setAttribute(QtCore.Qt.WA_DeleteOnClose)
-        src_ui.setParent(self.ui,QtCore.Qt.Window)
-        if src_indx == optools.image_input:
-            trmod = self.imgman
-        elif src_indx == optools.op_input:
-            trmod = self.wfman
-        src_ui.tree.setModel(trmod)
-        src_ui.tree.resizeColumnToContents(0)
-        src_ui.tree.resizeColumnToContents(1)
-        #for idx in trmod.iter_indexes():
-        #    src_ui.tree.setExpanded(idx,True)
-        src_ui.tree.expandAll()
-        src_ui.load_button.setText('Load selected data')
-        src_ui.load_button.clicked.connect(partial(self.load_from_tree,name,trmod,src_ui,src_indx,type_widg,val_widg))
-        src_ui.show()
+        if src_indx == optools.image_input or src_indx == optools.op_input:
+            ui_file = QtCore.QFile(self.rootdir+"/slacxui/tree_browser.ui")
+            ui_file.open(QtCore.QFile.ReadOnly)
+            src_ui = QtUiTools.QUiLoader().load(ui_file)
+            ui_file.close()
+            src_ui.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+            src_ui.setParent(self.ui,QtCore.Qt.Window)
+            if src_indx == optools.image_input:
+                trmod = self.imgman
+            elif src_indx == optools.op_input:
+                trmod = self.wfman
+            src_ui.tree.setModel(trmod)
+            src_ui.tree.resizeColumnToContents(0)
+            src_ui.tree.resizeColumnToContents(1)
+            #for idx in trmod.iter_indexes():
+            #    src_ui.tree.setExpanded(idx,True)
+            src_ui.tree.expandAll()
+            src_ui.load_button.setText('Load selected data')
+            src_ui.load_button.clicked.connect(partial(self.load_from_tree,name,trmod,src_ui,src_indx,type_widg,val_widg))
+            src_ui.tree.doubleClicked.connect(partial(self.load_from_tree,name,trmod,src_ui,src_indx,type_widg,val_widg))
+            src_ui.show()
+        elif src_indx == optools.fs_input:
+            # Open a Qt filesystem browser and select a path
+            widg = QtGui.QFileDialog()
+            widg.setStyleSheet(qdarkstyle.load_stylesheet() + widg.styleSheet())
+            imgfile, ext = widg.getOpenFileName(
+            self.ui, 'Load file path', '.', optools.loader_extensions(), options=QtCore.Qt.WA_StyleSheet)
+            fs_path = imgfile
+            val_widg.setText(fs_path)
+            val_widg.setMinimumWidth(min([10*len(fs_path),200]))
+            type_widg.setText('file')
+            self.op.inputs[name] = optools.InputLocator(src_indx,fs_path)
+            self.update_op_info(self.op.description())
 
     def load_from_tree(self,name,trmod,src_ui,src_indx,type_widg,val_widg):
         """

@@ -252,8 +252,12 @@ class WfManager(TreeModel):
             src = inplocator.src
             val = inplocator.val
             if src in optools.valid_sources:
-                if src == optools.text_input: 
-                    # val will be already typecast during operation loading- return it directly
+                if src == optools.fs_input:
+                    # val is the filesystem path- return it directly
+                    # data from the fs will be loaded by their operations
+                    return val 
+                elif src == optools.text_input: 
+                    # val will be handled during operation loading- return it directly
                     return val 
                 elif src == optools.image_input: 
                     # follow val as uri in image tree
