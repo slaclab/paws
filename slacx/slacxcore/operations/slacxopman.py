@@ -10,7 +10,7 @@ class OpManager(TreeModel):
     Class for managing operations.
     Should be able to add operations to the tree 
     and remove selected operations from the tree.
-    Operations will be displayed in operation builder ui.
+    Tree is displayed in operation builder ui.
     """
 
     def __init__(self,**kwargs):

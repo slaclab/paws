@@ -32,6 +32,9 @@ class Multiply(Operation):
         self.categories = ['ARITHMETIC']
 
     def run(self):
+        print self.inputs
+        print self.inputs['multiplicand']
+        print self.inputs['multiplier']
         self.outputs['product'] = self.inputs['multiplicand'] * self.inputs['multiplier']
 
 

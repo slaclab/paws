@@ -4,8 +4,10 @@ from functools import partial
 
 from PySide import QtCore, QtGui, QtUiTools
 import qdarkstyle
+import numpy as np
 
 from ..slacxcore.operations import optools
+from ..slacxcore.operations.slacxop import Operation 
 from ..slacxcore import slacxex
 from . import uitools
 
@@ -27,69 +29,51 @@ class OpUiManager(object):
         self.opman = opman 
         self.op = None
         self.setup_ui()
-        #self.fetch_op()
 
-    def fetch_op(self):
-        """Use a QtGui.QTreeView popup to select an Operation"""
-        ui_file = QtCore.QFile(self.rootdir+"/slacxui/tree_browser.ui")
-        ui_file.open(QtCore.QFile.ReadOnly)
-        src_ui = QtUiTools.QUiLoader().load(ui_file)
-        ui_file.close()
-        src_ui.setAttribute(QtCore.Qt.WA_DeleteOnClose)
-        src_ui.setParent(self.ui,QtCore.Qt.Window)
-        src_ui.tree.setModel(self.opman)
-        src_ui.tree.resizeColumnToContents(0)
-        src_ui.tree.resizeColumnToContents(1)
-        #src_ui.tree.expandAll()
-        src_ui.load_button.setText('Load selected Operation')
-        src_ui.load_button.clicked.connect( partial(self.get_op_from_tree,src_ui) )
-        src_ui.show()
-
-    def get_op_from_tree(self,src_ui):
-        # Get the selected item in QTreeView:
-        item_indx = src_ui.tree.currentIndex()
-        # get the Operation of this item 
-        # TODO: make sure the selection is an Operation
-        op = self.opman.get_item(item_indx).data[0]
-        self.create_op(op)
-        #self.update_op_info(self.op.description())
-        src_ui.close()
+    def get_op_from_tree(self,item_indx):
+        x = self.opman.get_item(item_indx).data[0]
+        # TODO: better type checking
+        if not type(x).__name__ == 'str':  
+            if issubclass(x,Operation):
+                # TODO: if this op has had some set-up done, don't create a new one.
+                self.create_op(x)
+        else:
+            self.ui.op_info.setPlainText('Operation category {}'.format(x))
 
     def set_op(self,op):
         """
         Load a fully or partially formed Operation into the UI.
         Set self.op to input Operation.
-        Set op_selector button text to the Operation name.
         Load op.description() into self.ui.op_info.
         Load op.inputs and op.outputs into self.ui.arg_frame.
         """
         self.op = op
-        self.ui.op_selector.setText(op.__name__)
-        # TODO: Don't let the user change the type of operation? For their own safety? 
-        self.ui.op_info.setPlainText(' ')
         self.ui.op_info.setPlainText(op.description())
-        self.clear_nameval_list()
         self.build_nameval_list()
 
     def setup_ui(self):
         self.ui.setWindowTitle("slacx operation builder")
-        self.ui.arg_frame.setMinimumWidth(700)
-        self.ui.op_frame.setMinimumWidth(300)
-        self.ui.op_frame.setMaximumWidth(300)
-        self.ui.op_selector.setText('Click to Select Operation')
-        self.ui.op_selector.clicked.connect( partial(self.fetch_op) )
+        self.ui.arg_frame.setMinimumWidth(600)
+        self.ui.op_frame.setMinimumWidth(400)
+        self.ui.op_frame.setMaximumWidth(400)
+        self.ui.op_selector.setModel(self.opman)
+        #self.ui.op_selector.setColumnWidth(0,300)
+        self.ui.op_selector.hideColumn(1)
+        self.ui.op_selector.clicked.connect( partial(self.get_op_from_tree) )
         # Populate tag entry fields
-        self.ui.tag_prompt.setText('enter a unique tag for this operation:')
-        self.ui.tag_prompt.setMinimumWidth(200)
+        self.ui.tag_prompt.setText('operation tag:')
+        self.ui.tag_prompt.setMinimumWidth(100)
+        self.ui.tag_prompt.setMaximumWidth(150)
+        self.ui.tag_entry.setMaximumWidth(150)
         self.ui.tag_prompt.setReadOnly(True)
         self.ui.tag_prompt.setAlignment(QtCore.Qt.AlignRight)
         self.ui.tag_entry.setText(self.default_tag())
-        # Connect ui.finish_button with self.load_op 
+        self.ui.test_button.setText("Test")
+        self.ui.test_button.setMinimumWidth(100)
+        self.ui.test_button.clicked.connect(self.test_op)
         self.ui.finish_button.setText("Finish")
         self.ui.finish_button.setMinimumWidth(100)
         self.ui.finish_button.clicked.connect(self.load_op)
-        # Also connect finish_button with data loader for any text inputs
-        #self.ui.finish_button.clicked.connect(self.load_all_text_inputs)
         # Set button to activate on Enter key?
         self.ui.finish_button.setDefault(True)
         self.ui.tag_entry.returnPressed.connect(self.load_op)
@@ -102,7 +86,9 @@ class OpUiManager(object):
         self.src_col = 3
         self.type_col = 4
         self.val_col = 5
-        self.btn_col = 6
+
+    def test_op(self):
+        print 'Operation testing not yet implemented'
 
     def default_tag(self):
         indx = 0
@@ -121,11 +107,11 @@ class OpUiManager(object):
         # Create op 
         self.op = op()
         # Set self.ui.op_selector to operation name
-        self.ui.op_selector.setText(op.__name__)
+        #self.ui.op_selector.setText(op.__name__)
         # Set self.ui.op_info to op.description
         self.ui.op_info.setPlainText(self.op.description())
         # Clear the view of name-value widgets
-        self.clear_nameval_list()
+        #self.clear_nameval_list()
         self.build_nameval_list()
 
     def load_op(self):
@@ -183,29 +169,20 @@ class OpUiManager(object):
             # QLayout.takeAt returns a LayoutItem- set its widget to deleteLater()
             item = self.ui.nameval_layout.takeAt(i)
             item.widget().deleteLater()
-        i=0
-        self.ui.nameval_layout.addWidget(self.text_widget('--- INPUTS ---'),i,0,1,6) 
-        i+=1
-        self.ui.nameval_layout.addWidget(self.hdr_widget('(name)'),i,self.name_col,1,1) 
-        self.ui.nameval_layout.addWidget(self.hdr_widget('(source)'),i,self.src_col,1,1) 
-        self.ui.nameval_layout.addWidget(self.hdr_widget('(type)'),i,self.type_col,1,1) 
-        self.ui.nameval_layout.addWidget(self.hdr_widget('(value)'),i,self.val_col,1,1) 
-        i+=1 
+        inp_count = len(self.op.inputs.items())
+        out_count = len(self.op.outputs.items())
+        self.ui.nameval_layout.addWidget(self.hdr_widget('INPUTS'),0,0,1,5) 
+        i=1
         self.input_rows = []
         for name, val in self.op.inputs.items():
             self.add_nameval_widgets(name,val,i)
+            # save a ref to the row of inputs for op loading later
             self.input_rows.append(i) 
-            #src_widg,val_widg = self.add_nameval_widgets(name,val,i)
-            #self.op_input_widgets[name] = val_widg
             i+=1
-        self.ui.nameval_layout.addWidget(self.smalltext_widget(' '),i,0,1,4) 
-        i+=1 
-        self.ui.nameval_layout.addWidget(self.text_widget('--- OUTPUTS ---'),i,0,1,6) 
-        i+=1 
-        self.ui.nameval_layout.addWidget(self.hdr_widget('(name)'),i,self.name_col,1,1) 
-        self.ui.nameval_layout.addWidget(self.hdr_widget('(source)'),i,self.src_col,1,1) 
-        self.ui.nameval_layout.addWidget(self.hdr_widget('(type)'),i,self.type_col,1,1) 
-        self.ui.nameval_layout.addWidget(self.hdr_widget('(value)'),i,self.val_col,1,1) 
+        #self.ui.nameval_layout.addWidget(self.smalltext_widget(' '),i,0,1,4) 
+        #i+=1 
+        #self.ui.nameval_layout.addWidget(self.vert_hdr_widget('OUTPUTS'),i,0,1,6) 
+        self.ui.nameval_layout.addWidget(self.hdr_widget('OUTPUTS'),i,0,1,5) 
         i+=1 
         for name, val in self.op.outputs.items():
             self.add_nameval_widgets(name,val,i,output=True)
@@ -243,6 +220,7 @@ class OpUiManager(object):
         #return src_widget,val_widget
 
     def render_input_widgets(self,name,row,src_indx): 
+        # TODO: check for default source, type, value, and load accordingly
         # If input widgets exist, close them.
         for col in [self.btn_col,self.val_col,self.type_col]:
             if self.ui.nameval_layout.itemAtPosition(row,col):
@@ -251,8 +229,8 @@ class OpUiManager(object):
                 widg.deleteLater()
                 #widg.destroy()
         if src_indx == 0:
-            type_widget = QtGui.QLineEdit('(select source)')
-            val_widget = QtGui.QLineEdit('(select source)')
+            type_widget = QtGui.QLineEdit('(type)')
+            val_widget = QtGui.QLineEdit('(value)')
             type_widget.setReadOnly(True)
             val_widget.setReadOnly(True)
             btn_widget = None
@@ -264,15 +242,7 @@ class OpUiManager(object):
                 val_widget.setPlaceholderText('(enter value)')
             else:
                 val_widget.setText(' ')
-            #val_widget.returnPressed.connect( partial(self.load_text_input,name,type_widget,val_widget) )
-            #val_widget.textChanged.connect( partial(self.load_text_input,name,type_widget,val_widget) )
-            #val_widget.textEdited.connect( partial(self.load_text_input,name,type_widget,val_widget) )
-            # TODO: Make this a button that tests the type-casting and loading of the input?
-            #btn_text = 'Load text...' 
-            #btn_widget = QtGui.QPushButton(btn_text)
-            #btn_widget.clicked.connect( partial(self.load_text_input,name,type_widget,val_widget) )
-            # Also connect the finish button to load the text input
-            #self.ui.finish_button.clicked.connect( partial(self.load_text_input,name,type_widget,val_widget) )
+            val_widget.returnPressed.connect( partial(self.load_text_input,name,type_widget,val_widget) )
         elif (src_indx == optools.image_input
             or src_indx == optools.op_input
             or src_indx == optools.fs_input):
@@ -298,8 +268,8 @@ class OpUiManager(object):
             val = int(val_widg.text())
         elif src_indx == optools.float_type:
             val = float(val_widg.text())
-        elif src_indx == optools.array_type:
-            val = np.array(val_widg.text())
+        #elif src_indx == optools.array_type:
+        #    val = np.array(val_widg.text())
         elif src_indx == optools.string_type:
             val = val_widg.text()
         else:
@@ -384,6 +354,14 @@ class OpUiManager(object):
     def item_selection_widget(self):
         widg = QtGui.QPushButton('Select...')
         return widg
+
+    def vert_hdr_widget(self,text):
+        # TODO: Fix this, some day.
+        widg = optools.VertQLineEdit(text)
+        #widg.setReadOnly(True)
+        #widg.setAlignment(QtCore.Qt.AlignHCenter)
+        #widg.setStyleSheet( "QLineEdit { background-color: transparent }" + widg.styleSheet() )
+        return widg 
 
     def hdr_widget(self,text):
         widg = QtGui.QLineEdit(text)

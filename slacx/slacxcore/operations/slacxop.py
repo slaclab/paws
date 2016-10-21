@@ -64,7 +64,10 @@ class Operation(object):
         + self.outputs_description())
 
     def doc_as_string(self):
-        return re.sub("\s\s+"," ",self.__doc__.replace('\n','')) 
+        if self.__doc__:
+            return re.sub("\s\s+"," ",self.__doc__.replace('\n','')) 
+        else:
+            return "no documentation found"
 
     def inputs_description(self):
         a = ""
