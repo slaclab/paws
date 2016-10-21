@@ -17,7 +17,7 @@ class OpUiManager(object):
     performs operations on it
     """
 
-    def __init__(self,rootdir,wfman,imgman,opman):
+    def __init__(self,rootdir,wfman,opman):
         self.rootdir = rootdir
         ui_file = QtCore.QFile(self.rootdir+"/slacxui/op_builder.ui")
         # Load the op_builder popup
@@ -25,7 +25,6 @@ class OpUiManager(object):
         self.ui = QtUiTools.QUiLoader().load(ui_file)
         ui_file.close()
         self.wfman = wfman 
-        self.imgman = imgman 
         self.opman = opman 
         self.op = None
         self.setup_ui()
@@ -222,7 +221,7 @@ class OpUiManager(object):
     def render_input_widgets(self,name,row,src_indx): 
         # TODO: check for default source, type, value, and load accordingly
         # If input widgets exist, close them.
-        for col in [self.btn_col,self.val_col,self.type_col]:
+        for col in [self.val_col,self.type_col]:
             if self.ui.nameval_layout.itemAtPosition(row,col):
                 widg = self.ui.nameval_layout.itemAtPosition(row,col).widget()
                 widg.hide()
@@ -243,8 +242,7 @@ class OpUiManager(object):
             else:
                 val_widget.setText(' ')
             val_widget.returnPressed.connect( partial(self.load_text_input,name,type_widget,val_widget) )
-        elif (src_indx == optools.image_input
-            or src_indx == optools.op_input
+        elif (src_indx == optools.op_input
             or src_indx == optools.fs_input):
             #btn_text = 'Select data...'
             type_widget = QtGui.QLineEdit('auto')
@@ -259,8 +257,6 @@ class OpUiManager(object):
         self.ui.nameval_layout.addWidget(type_widget,row,self.type_col,1,1)
         self.ui.nameval_layout.addWidget(val_widget,row,self.val_col,1,1)
         self.fetch_data(name,src_indx,type_widget,val_widget)
-        #if btn_widget:
-        #    self.ui.nameval_layout.addWidget(btn_widget,row,self.btn_col,1,1)
 
     def load_text_input(self,name,type_widg,val_widg,edit_text=None):
         src_indx = type_widg.currentIndex()
@@ -281,17 +277,14 @@ class OpUiManager(object):
     def fetch_data(self,name,src_indx,type_widg,val_widg):
         """Use a popup to select the requested input data"""
         # TODO: Allow only one of these popups to exist (one per val widget).
-        if src_indx == optools.image_input or src_indx == optools.op_input:
+        if src_indx == optools.op_input:
             ui_file = QtCore.QFile(self.rootdir+"/slacxui/tree_browser.ui")
             ui_file.open(QtCore.QFile.ReadOnly)
             src_ui = QtUiTools.QUiLoader().load(ui_file)
             ui_file.close()
             src_ui.setAttribute(QtCore.Qt.WA_DeleteOnClose)
             src_ui.setParent(self.ui,QtCore.Qt.Window)
-            if src_indx == optools.image_input:
-                trmod = self.imgman
-            elif src_indx == optools.op_input:
-                trmod = self.wfman
+            trmod = self.wfman
             src_ui.tree.setModel(trmod)
             src_ui.tree.resizeColumnToContents(0)
             src_ui.tree.resizeColumnToContents(1)

@@ -1,21 +1,21 @@
 from PySide import QtGui
 
 ##### DEFINITIONS OF SOURCES FOR OPERATION INPUTS
-input_sources = ['(select source)','Text','Images','Operations','Filesystem'] 
-text_input = 1
-image_input = 2
-op_input = 3
-fs_input = 4
-valid_sources = [text_input,image_input,op_input,fs_input]
+input_sources = ['(select source)','Filesystem','Operations','Text'] 
+fs_input = 1
+op_input = 2
+text_input = 3
+valid_sources = [fs_input,op_input,text_input]
 
 ##### VALID TYPES FOR TEXT BASED OPERATION INPUTS 
-input_types = ['(select type)','string','int','float','array','bool']
+input_types = ['(select type)','string','int','float','bool']
 string_type = 1
 int_type = 2
 float_type = 3
-array_type = 4
-bool_type = 5
-valid_types = [string_type,int_type,float_type,array_type,bool_type]
+bool_type = 4
+valid_types = [string_type,int_type,float_type,bool_type]
+# TODO: implement some kind of builder/loader for data structs, like arrays or dicts
+#array_type = 5
 
 ##### IMAGE LOADER EXTENSIONS    
 def loader_extensions():

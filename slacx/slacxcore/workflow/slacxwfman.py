@@ -20,8 +20,6 @@ class WfManager(TreeModel):
         #    with f as open(wf_loader,'r'): 
         #        self.load_from_file(f)
         self._wf_dict = {}       # this will be a dict for a dask.threaded graph 
-        if 'imgman' in kwargs:
-            self.imgman = kwargs['imgman'] 
         super(WfManager,self).__init__()
 
     def add_op(self,new_op,tag):
@@ -246,37 +244,30 @@ class WfManager(TreeModel):
         """
         Return the data pointed to by a given InputLocator object.
         If this is called on anything other than an InputLocator,
-        it returns the input argument.
+        it does nothing and returns the input argument.
         """
         if type(inplocator).__name__ == 'InputLocator':
             src = inplocator.src
             val = inplocator.val
             if src in optools.valid_sources:
-                if src == optools.fs_input:
-                    # val is the filesystem path- return it directly
-                    # data from the fs will be loaded by their operations
-                    return val 
-                elif src == optools.text_input: 
+                if (src == optools.fs_input
+                   or src == optools.text_input): 
                     # val will be handled during operation loading- return it directly
                     return val 
-                elif src == optools.image_input: 
-                    # follow val as uri in image tree
-                    trmod = self.imgman
                 elif src == optools.op_input: 
                     # follow val as uri in workflow tree
-                    trmod = self
-                path = val.split('.')
-                parent_indx = QtCore.QModelIndex()
-                for itemtag in path:
-                    # get QModelIndex of item from itemtag
-                    row = trmod.list_tags(parent_indx).index(itemtag)
-                    qindx = trmod.index(row,0,parent_indx)
-                    # get TreeItem from QModelIndex
-                    item = trmod.get_item(qindx)
-                    # set new parent in case the path continues...
-                    parent_indx = qindx
-                # item.data[0] should now be the desired piece of data
-                return item.data[0]
+                    path = val.split('.')
+                    parent_indx = QtCore.QModelIndex()
+                    for itemtag in path:
+                        # get QModelIndex of item from itemtag
+                        row = self.list_tags(parent_indx).index(itemtag)
+                        qindx = self.index(row,0,parent_indx)
+                        # get TreeItem from QModelIndex
+                        item = self.get_item(qindx)
+                        # set new parent in case the path continues...
+                        parent_indx = qindx
+                    # item.data[0] should now be the desired piece of data
+                    return item.data[0]
             else: 
                 msg = 'found input source {}, should be one of {}'.format(
                 src, valid_sources)
