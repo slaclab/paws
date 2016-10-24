@@ -13,7 +13,7 @@ class ReadTxtSSRL15(Operation):
         input_names = ['file']
         output_names = ['header']
         super(ReadTxtSSRL15, self).__init__(input_names, output_names)
-        self.input_doc['file'] = 'a text file header produced by beamline 1-5 at SSRL'
+        self.input_doc['file'] = 'path to a text file header produced by beamline 1-5 at SSRL'
         self.output_doc['header'] = 'the header file as a python dictionary'
         self.categories = ['INPUT']
 
@@ -30,7 +30,7 @@ class ImageAndHeaderSSRL15(Operation):
         input_names = ['file']
         output_names = ['image', 'header']
         super(ImageAndHeaderSSRL15, self).__init__(input_names, output_names)
-        self.input_doc['file'] = 'a tif file image produced by beamline 1-5 at SSRL'
+        self.input_doc['file'] = 'path to a tif file image produced by beamline 1-5 at SSRL'
         self.output_doc['image'] = 'the image as an ndarray'
         self.output_doc['header'] = 'the header file as a python dictionary'
         self.categories = ['INPUT']
@@ -90,7 +90,7 @@ def read_header(txtfile):
     firstline_to_dict_entries(line, header)
     for i in range(3):
         line = file.readline()  # scroll forward to temp line
-    header['temp_celsius'] = float(line[:-1])  # read temperature
+    header['temp_celsius'] = float(line[:-2])  # read temperature
     line = file.readline()
     while len(line) > 0:
         if not (line[0] == '#'):
