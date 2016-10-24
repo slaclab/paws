@@ -300,7 +300,7 @@ class OpUiManager(object):
             widg = QtGui.QFileDialog()
             widg.setStyleSheet(qdarkstyle.load_stylesheet() + widg.styleSheet())
             imgfile, ext = widg.getOpenFileName(
-            self.ui, 'Load file path', '.', optools.loader_extensions(), options=QtCore.Qt.WA_StyleSheet)
+            self.ui, 'Load file path', '.')
             fs_path = imgfile
             val_widg.setText(fs_path)
             val_widg.setMinimumWidth(min([10*len(fs_path),200]))
