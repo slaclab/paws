@@ -35,11 +35,15 @@ def display_item(item,uri,qlayout,logmethod=None):
     
     # Produce widgets for displaying strings, dicts, etc.
     if type(item).__name__ in ['str','unicode']:
-        display_text = 'UNICODE PRINTOUT: \n{}'.format(item)
+        display_text = 'UNICODE PRINTOUT: <br>{}'.format(item)
         text_widget = QtGui.QTextEdit(display_text)
     elif type(item).__name__ == 'dict':
-        display_text = 'DICT PRINTOUT: \n{}'.format(item)
+        display_text = 'DICT PRINTOUT: '
+        for k,v in item.items():
+            display_text += '<br> {}: {}'.format(k,v)
         text_widget = QtGui.QTextEdit(display_text)
+    else:
+        text_widget = None
 
     # Assemble whatever widgets were produced, add them to the layout    
     if plot_widget:
