@@ -7,7 +7,6 @@ from xicam import config
 from xicam import xglobals
 from pipeline import msg
 from slacx.slacxui import slacxuiman
-from slacx.slacxcore import slacximgman
 from slacx.slacxcore.operations import slacxopman
 from slacx.slacxcore.workflow import slacxwfman
 
@@ -18,7 +17,6 @@ class SlacxPlugin(base.plugin):
     def __init__(self, *args, **kwargs):
 
         # start slacx core objects    
-        imgman = slacximgman.ImgManager()
         opman = slacxopman.OpManager()
         wfman = slacxwfman.WfManager(imgman=imgman)
 
@@ -28,7 +26,6 @@ class SlacxPlugin(base.plugin):
         uiman = slacxuiman.UiManager(rootdir)
 
         # set up ui-core refs    
-        uiman.imgman = imgman
         uiman.opman = opman
         uiman.wfman = wfman
 
