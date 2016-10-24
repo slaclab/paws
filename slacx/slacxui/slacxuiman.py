@@ -9,12 +9,8 @@ import numpy as np
 from . import uitools
 from .opuiman import OpUiManager
 from ..slacxcore.operations.slacxop import Operation
+from . import data_viewer
 
-if uitools.have_qt47:
-    from . import plotmaker_pqg as plotmaker
-else:
-    from . import plotmaker_mpl as plotmaker
-    
 class UiManager(object):
     """
     Stores a reference to a QMainWindow,
@@ -114,7 +110,7 @@ class UiManager(object):
         if indx:
             to_display = self.wfman.get_item(indx).data[0]
             uri = self.wfman.build_uri(indx)
-            plotmaker.display_item(to_display,uri,self.ui.image_viewer,None)
+            data_viewer.display_item(to_display,uri,self.ui.image_viewer,None)
         else:
             # TODO: dialog box: tell user to select an item first
             pass
