@@ -9,7 +9,7 @@ Created on Tue Oct 4
 import pyFAI
 import numpy as np
 
-from core.operations.slacxop import Operation
+from slacxop import Operation
 
 class image_to_Qchi(Operation):
     """
