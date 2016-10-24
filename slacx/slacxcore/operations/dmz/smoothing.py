@@ -50,6 +50,52 @@ class RectangularUnweightedSmooth(Operation):
         self.categories = ['1D DATA PROCESSING']
 
     def run(self):
+
         self.outputs['sum'] = self.inputs['augend'] + self.inputs['addend']
 
+
+def rectangular_unweighted_smooth(data, m):
+
+
+
+
+def masked_mean_2d_axis_0(y2d, mask2d):
+    '''
+    Takes the mean of masked data along axis 0.
+
+    :param y2d: 2d numpy float array
+    :param mask2d: 2d numpy bool array
+    :return mean: 1d numpy float array
+
+    *y2d* is data; *mask2d* is its corresponding mask
+    with values *True* for legitimate data, *False* otherwise.
+    Assumes that each column of *y2d* has at least one valid element;
+    otherwise the mean along axis 0 is not defined.
+    Returns *mean*, the mean of *y2d* along axis 0.
+    '''
+    sum = (y2d * mask2d).sum(axis=0)
+    num_elements = mask2d.sum(axis=0)
+    mean = sum / num_elements
+    return mean
+
+
+def masked_variance_2d_axis_0(y2d, mask2d):
+    '''
+    Takes the variance of masked data along axis 0.
+
+    :param y2d: 2d numpy float array
+    :param mask2d: 2d numpy bool array
+    :return variance: 1d numpy float array
+
+    *y2d* is data; *mask2d* is its corresponding mask
+    with values *True* for legitimate data, *False* otherwise.
+    Assumes that each column of *y2d* has at least two valid elements;
+    otherwise the variance along axis 0 is not defined.
+    Returns *variance*, the variance of *y2d* along axis 0.
+    '''
+    mean = masked_mean_2d_axis_0(y2d, mask2d)
+    difference = (y2d - mean) * mask2d
+    num_elements = mask2d.sum(axis=0)
+    variance = (difference ** 2).sum(axis=0) / (num_elements - 1)
+    return variance
 

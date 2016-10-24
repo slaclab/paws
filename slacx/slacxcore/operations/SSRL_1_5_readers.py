@@ -2,6 +2,7 @@ from slacxop import Operation
 
 import time
 import tifffile
+from os.path import splitext as splitext
 
 
 class ReadTxtSSRL15(Operation):
@@ -42,7 +43,7 @@ class ImageAndHeaderSSRL15(Operation):
 
 
 def txtname_from_tifname(tifname):
-    txtname = tifname[:-4] + '.txt'
+    txtname = splitext(tifname)[0] + '.txt'
     return txtname
 
 
