@@ -1,6 +1,7 @@
 import re
 
 import numpy as np
+from PySide import QtGui
 
 from . import uitools
 if uitools.have_qt47:

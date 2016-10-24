@@ -57,7 +57,6 @@ class UiManager(object):
             if issubclass(x,Operation):
                 uiman = self.start_op_ui_manager(x())
                 uiman.ui.show()
-
             # set OpUiManager's operation to the one selected in self.ui.workflow_tree
             uiman.set_op( self.wfman.get_item(selected_indxs[0]).data[0] )
             uiman.ui.op_selector.setEnabled(False)
@@ -81,11 +80,12 @@ class UiManager(object):
         #for indx in selected_indxs:
         self.wfman.remove_op(selected_indxs[0])
 
-    def add_op(self):
+    def add_op(self,item_indx=None):
         """
         interact with user to build an operation into the workflow
         """
-        item_indx = self.ui.op_tree.currentIndex()
+        if not item_indx:
+            item_indx = self.ui.op_tree.currentIndex()
         x = self.opman.get_item(item_indx).data[0]
         if not type(x).__name__ == 'str':  
             if issubclass(x,Operation):
@@ -146,6 +146,7 @@ class UiManager(object):
 
     def connect_actions(self):
         """Set up the works for buttons and menu items"""
+        #self.ui.workflow_tree.activated.connect(self.display_item)
         self.ui.workflow_tree.clicked.connect(self.display_item)
         # Connect self.ui.image_viewer tabCloseRequested to local close_tab slot
         #self.ui.image_viewer.tabCloseRequested.connect(self.close_tab)
@@ -168,6 +169,7 @@ class UiManager(object):
         # Connect self.ui.op_tree (QTreeView) to self.opman (OpManager(TreeModel))
         self.ui.op_tree.setModel(self.opman)
         self.ui.op_tree.hideColumn(1)
+        self.ui.op_tree.doubleClicked.connect(self.add_op)
 
     def make_title(self):
         """Display the slacx logo in the title box"""
