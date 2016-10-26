@@ -122,18 +122,18 @@ class UiManager(object):
         # Set image viewer tabs to be closeable
         #self.ui.image_viewer.setTabsClosable(True)
         # Set the image viewer to be kinda fat
-        self.ui.center_frame.setMinimumHeight(400)
-        self.ui.center_frame.setMinimumWidth(400)
+        #self.ui.center_frame.setMinimumHeight(400)
+        #self.ui.center_frame.setMinimumWidth(400)
         # Leave the textual parts kinda skinny?
         #self.ui.left_panel.setMaximumWidth(400)
-        self.ui.right_frame.setMinimumWidth(300)
-        self.ui.right_frame.setMaximumWidth(400)
+        #self.ui.right_frame.setMinimumWidth(300)
+        #self.ui.right_frame.setMaximumWidth(400)
         self.ui.workflow_tree.resizeColumnToContents(0)
         self.ui.workflow_tree.resizeColumnToContents(1)
-        self.ui.left_frame.setMinimumWidth(300)
-        self.ui.left_frame.setMaximumWidth(400)
-        self.ui.title_box.setMinimumHeight(200)
-        self.ui.message_board.setMinimumHeight(200)
+        #self.ui.left_frame.setMinimumWidth(300)
+        #self.ui.left_frame.setMaximumWidth(400)
+        #self.ui.title_box.setMinimumHeight(200)
+        #self.ui.message_board.setMinimumHeight(200)
         #self.ui.workflow_tree.setColumnWidth(0,200)
         #self.ui.workflow_tree.setColumnWidth(1,150)
 
