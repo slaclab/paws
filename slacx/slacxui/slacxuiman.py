@@ -9,6 +9,7 @@ import numpy as np
 from . import uitools
 from .opuiman import OpUiManager
 from ..slacxcore.operations.slacxop import Operation
+from ..slacxcore import slacxtools
 from . import data_viewer
 
 class UiManager(object):
@@ -167,7 +168,6 @@ class UiManager(object):
     def make_title(self):
         """Display the slacx logo in the title box"""
         # Load the slacx graphic  
-        #slacx_img_file = os.path.join(self.rootdir, "ui/slacx_icon.png")
         slacx_img_file = os.path.join(self.rootdir, "slacxui/slacx_icon_white.png")
         # Make a QtGui.QPixmap from this file
         slacx_pixmap = QtGui.QPixmap(slacx_img_file)
@@ -176,6 +176,9 @@ class UiManager(object):
         # Add this QtGui.QGraphicsPixmapItem to a QtGui.QGraphicsScene 
         slacx_scene = QtGui.QGraphicsScene()
         slacx_scene.addItem(slacx_pixmap_item)
+        #qwhite = QtGui.QColor(255,255,255,255)
+        textitem = slacx_scene.addText('v{}'.format(slacxtools.version))
+        textitem.setPos(100,35)
         # Add the QGraphicsScene to the QGraphicsView
         self.ui.title_box.setScene(slacx_scene)
         # Set the main window title and icon
