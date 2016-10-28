@@ -30,19 +30,17 @@ def main():
     # If running with gui, load dark style:
     app.setStyleSheet(qdarkstyle.load_stylesheet() + app.styleSheet())
 
-    # TODO: give kwargs to these init routines to rebuild saved jobs?
-    # Start an ImgManager to manage input images.
-    # TODO: deprecate image manager, do everything in ops and workflows.
-    # Start an OpManager to manage operations.
-    opman = slacxopman.OpManager()
-    # Start a WfManager to manage workflows.
-    wfman = slacxwfman.WfManager()
-
     # Start a UiManager to create and manage a QMainWindow.
     # Takes the rootdir of the top-level package to find the UI files.
     root_qdir = QtCore.QDir(__file__)
     rootdir = os.path.split( root_qdir.absolutePath() )[0]+'/slacx'
     uiman = slacxuiman.UiManager(rootdir)
+
+    # TODO: give kwargs to these init routines to rebuild saved jobs?
+    # Start an OpManager to manage operations.
+    opman = slacxopman.OpManager()
+    # Start a WfManager to manage workflows.
+    wfman = slacxwfman.WfManager(logmethod=uiman.msg_board_log)
 
     # UiManager needs to store references to the QAbstractItemModel objects
     # that interact with the features of the gui

@@ -80,7 +80,9 @@ class UiManager(object):
         if item_indx.isValid(): 
             if self.opman.get_item(item_indx).n_data() > 0:
                 x = self.opman.get_item(item_indx).data[0]
-                if issubclass(x,Operation):
+                if isinstance(x,str):
+                    pass
+                elif issubclass(x,Operation):
                     uiman = self.start_op_ui_manager(x(),self.wfman,self.opman)
                     uiman.ui.op_selector.setCurrentIndex(item_indx)
                     uiman.ui.show()
@@ -117,26 +119,14 @@ class UiManager(object):
         # Tell the status bar that we are ready.
         self.show_status('Ready')
         # Tell the message board that we are ready.
+        self.ui.message_board.insertPlainText('--- MESSAGE BOARD ---\n\n') 
         self.msg_board_log('slacx is ready') 
         # Clear any default tabs out of image_viewer
-        #self.ui.image_viewer.clear()
-        # Set image viewer tabs to be closeable
-        #self.ui.image_viewer.setTabsClosable(True)
-        # Set the image viewer to be kinda fat
-        #self.ui.center_frame.setMinimumHeight(400)
-        #self.ui.center_frame.setMinimumWidth(400)
-        # Leave the textual parts kinda skinny?
-        #self.ui.left_panel.setMaximumWidth(400)
-        #self.ui.right_frame.setMinimumWidth(300)
-        #self.ui.right_frame.setMaximumWidth(400)
+        #self.ui.center_frame.setMinimumWidth(200)
+        self.ui.op_tree.resizeColumnToContents(0)
         self.ui.workflow_tree.resizeColumnToContents(0)
         self.ui.workflow_tree.resizeColumnToContents(1)
-        #self.ui.left_frame.setMinimumWidth(300)
-        #self.ui.left_frame.setMaximumWidth(400)
-        #self.ui.title_box.setMinimumHeight(200)
-        #self.ui.message_board.setMinimumHeight(200)
-        #self.ui.workflow_tree.setColumnWidth(0,200)
-        #self.ui.workflow_tree.setColumnWidth(1,150)
+        self.ui.splitter.setStretchFactor(1,24)    
 
     def connect_actions(self):
         """Set up the works for buttons and menu items"""
@@ -144,8 +134,6 @@ class UiManager(object):
         self.ui.workflow_tree.clicked.connect(self.display_item)
         # Connect self.ui.image_viewer tabCloseRequested to local close_tab slot
         #self.ui.image_viewer.tabCloseRequested.connect(self.close_tab)
-        # Make self.ui.image_viewer tabs elide (arg is a Qt.TextElideMode)
-        #self.ui.image_viewer.setElideMode(QtCore.Qt.ElideRight)
         # Connect self.ui.add_op_button:
         self.ui.add_op_button.setText("&Add")
         self.ui.add_op_button.clicked.connect(self.add_op)
@@ -166,7 +154,7 @@ class UiManager(object):
         self.ui.op_tree.doubleClicked.connect(self.add_op)
 
     def make_title(self):
-        """Display the slacx logo in the title box"""
+        """Display the slacx logo in the image viewer"""
         # Load the slacx graphic  
         slacx_img_file = os.path.join(self.rootdir, "slacxui/slacx_icon_white.png")
         # Make a QtGui.QPixmap from this file
@@ -176,19 +164,23 @@ class UiManager(object):
         # Add this QtGui.QGraphicsPixmapItem to a QtGui.QGraphicsScene 
         slacx_scene = QtGui.QGraphicsScene()
         slacx_scene.addItem(slacx_pixmap_item)
-        #qwhite = QtGui.QColor(255,255,255,255)
-        textitem = slacx_scene.addText('v{}'.format(slacxtools.version))
+        qwhite = QtGui.QColor(255,255,255,255)
+        textitem = slacx_scene.addText("v{}".format(slacxtools.version))
         textitem.setPos(100,35)
-        # Add the QGraphicsScene to the QGraphicsView
-        self.ui.title_box.setScene(slacx_scene)
+        textitem.setDefaultTextColor(qwhite)
+        # Add the QGraphicsScene to self.ui.image_viewer layout 
+        logo_view = QtGui.QGraphicsView()
+        logo_view.setScene(slacx_scene)
+        #logo_view.setStyleSheet( "QTextEdit { color: white  }" + self.ui.styleSheet() )
+        #logo_view.setStyleSheet( "QGraphicsTextItem { color: white  }" + self.ui.styleSheet() )
+        #logo_view.setStyleSheet( "QGraphicsView { color: white  }" + self.ui.styleSheet() )
+        #textitem.setStyleSheet( "QGraphicsTextItem { color: white  }" + self.ui.styleSheet() )
+        self.ui.image_viewer.addWidget(logo_view,0,0,1,1)
+        #self.ui.title_box.setScene(slacx_scene)
         # Set the main window title and icon
-        self.ui.setWindowTitle("slacx")
+        self.ui.setWindowTitle("slacx v{}".format(slacxtools.version))
         self.ui.setWindowIcon(slacx_pixmap)
  
-    # A QtCore.Slot for closing tabs from image_viewer
-    #@QtCore.Slot(int)
-    #def close_tab(self,indx):
-    #    self.ui.image_viewer.removeTab(indx)
 
     # Various simple utilities
     @staticmethod 
@@ -211,4 +203,9 @@ class UiManager(object):
     def edit_image(self):
         """open an image editor for the current tab"""
         pass
+
+    # A QtCore.Slot for closing tabs from image_viewer
+    #@QtCore.Slot(int)
+    #def close_tab(self,indx):
+    #    self.ui.image_viewer.removeTab(indx)
 

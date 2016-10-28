@@ -21,6 +21,10 @@ class WfManager(TreeModel):
         #        self.load_from_file(f)
         self._wf_dict = {}       # this will be a dict for a dask.threaded graph 
         super(WfManager,self).__init__()
+        if 'logmethod' in kwargs:
+            self.logmethod = kwargs['logmethod']
+        else:
+            self.logmethod = None
 
     def add_op(self,new_op,tag):
         """Add an Operation to the tree as a new top-level TreeItem."""
@@ -144,10 +148,12 @@ class WfManager(TreeModel):
         finding which ones are ready, and running them. 
         Repeat until no further Operations are ready.
         """
+        # TODO: Execute workflow in its own thread.
         ops_done = []
         to_run = self.ops_ready(ops_done)
         while len(to_run) > 0:
-            print 'ops to run: {}'.format(to_run)
+            if self.logmethod:
+                self.logmethod('Executing operations: {}'.format(to_run))
             for j in to_run:
                 item = self.root_items[j]
                 # Get QModelIndex of this item for later use in updating tree view
@@ -159,6 +165,8 @@ class WfManager(TreeModel):
                 ops_done.append(j)
                 self.update_op(indx,op)
             to_run = self.ops_ready(ops_done)
+            if len(to_run) == 0 and self.logmethod:
+                self.logmethod('All operations complete.')
 
     def run_wf_graph(self):
         """

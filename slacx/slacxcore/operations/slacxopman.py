@@ -129,7 +129,7 @@ class OpManager(TreeModel):
     # Overloaded headerData() for OpManager 
     def headerData(self,section,orientation,data_role):
         if (data_role == QtCore.Qt.DisplayRole and section == 0):
-            return "{} operation(s) loaded".format(len(self._op_list))
+            return "{} operation(s) available".format(len(self._op_list))
         else:
             return None
 

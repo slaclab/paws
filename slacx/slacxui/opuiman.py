@@ -34,7 +34,7 @@ class OpUiManager(object):
     def get_op_from_tree(self,item_indx):
         x = self.opman.get_item(item_indx).data[0]
         # TODO: better type checking
-        if not type(x).__name__ == 'str':  
+        if not isinstance(x,str):  
             if issubclass(x,Operation):
                 # TODO: if this op has had some set-up done, don't create a new one.
                 self.create_op(x)
@@ -194,6 +194,7 @@ class OpUiManager(object):
             self.ui.input_layout.addWidget(src_widget,row,optools.src_col,1,1)
             if self.op.input_src[name]:
                 self.render_input_widgets(name,row,self.op.input_src[name]) 
+                src_widget.setCurrentIndex(self.op.input_src[name])
             else:
                 self.render_input_widgets(name,row,0) 
             # Note the widget.activated signal sends the index of the activated item.
@@ -212,6 +213,7 @@ class OpUiManager(object):
             val_widget = QtGui.QLineEdit('(value)')
             type_widget.setReadOnly(True)
             val_widget.setReadOnly(True)
+            btn_widget = None
         elif src_indx == optools.text_input:
             type_widget = QtGui.QComboBox()
             type_widget.addItems(optools.input_types)
@@ -225,18 +227,22 @@ class OpUiManager(object):
             else:
                 val_widget.setText(' ')
             #val_widget.returnPressed.connect( partial(self.load_text_input,name,type_widget,val_widget) )
+            btn_widget = None
         elif (src_indx == optools.op_input
             or src_indx == optools.fs_input):
-            type_widget = QtGui.QLineEdit('auto')
+            type_widget = QtGui.QLineEdit('type: auto')
             type_widget.setReadOnly(True)
-            val_widget = QtGui.QPushButton('browse...')
-            val_widget.clicked.connect( partial(self.fetch_data,name,src_indx,type_widget,val_widget) )
-            #val_widget.setReadOnly(True)
+            val_widget = QtGui.QLineEdit('value: select ->')
+            val_widget.setReadOnly(True)
+            btn_widget = QtGui.QPushButton('browse...')
+            btn_widget.clicked.connect( partial(self.fetch_data,name,src_indx,type_widget,val_widget) )
         else:
             msg = 'source selection {} not recognized'.format(src_indx)
             raise ValueError(msg)
         self.ui.input_layout.addWidget(type_widget,row,optools.type_col,1,1)
         self.ui.input_layout.addWidget(val_widget,row,optools.val_col,1,1)
+        if btn_widget:
+            self.ui.input_layout.addWidget(btn_widget,row,optools.btn_col,1,1)
         self.fetch_data(name,src_indx,type_widget,val_widget)
 
     def load_text_input(self,name,type_widg,val_widg,edit_text=None):
@@ -258,8 +264,15 @@ class OpUiManager(object):
     def fetch_data(self,name,src_indx,type_widg,val_widg):
         """Use a popup to select the requested input data"""
         if name in [k for k,v in self.inp_src_windows.items()]:
-            self.inp_src_windows[name].show()
-        elif src_indx == 0 or src_indx == optools.text_input:
+            # TODO: make sure the source is still the same! If not, close existing src window and make a new one.
+            if src_indx == self.inp_src_windows[name][0]:
+                self.inp_src_windows[name][1].raise_()
+                self.inp_src_windows[name][1].activateWindow()
+                return
+            else:
+                self.inp_src_windows[name][1].close()
+                del self.inp_src_windows[name]
+        if src_indx == 0 or src_indx == optools.text_input:
             pass
         else:
             ui_file = QtCore.QFile(self.rootdir+"/slacxui/tree_browser.ui")
@@ -279,8 +292,9 @@ class OpUiManager(object):
                 raise ValueError(msg)
             src_ui.tree.setModel(trmod)
             src_ui.tree_box.setTitle(name)
-            self.inp_src_windows[name] = src_ui
+            self.inp_src_windows[name] = (src_indx,src_ui)
             src_ui.tree.expandAll()
+            src_ui.tree.resizeColumnToContents(0)
             src_ui.load_button.setText('Load selected data')
             src_ui.load_button.clicked.connect(partial(self.load_from_tree,name,trmod,src_ui,src_indx,type_widg,val_widg))
             src_ui.tree.doubleClicked.connect(partial(self.load_from_tree,name,trmod,src_ui,src_indx,type_widg,val_widg))
@@ -289,6 +303,8 @@ class OpUiManager(object):
                 src_ui.tree.hideColumn(3)
                 src_ui.tree.setColumnWidth(0,400)
             src_ui.show()
+            src_ui.raise_()
+            src_ui.activateWindow()
 
     def load_from_tree(self,name,trmod,src_ui,src_indx,type_widg,val_widg,item_indx=None):
         """
@@ -315,10 +331,12 @@ class OpUiManager(object):
             msg = '[{}] Trying to fetch URI for data source {}: not implemented'.format(__name__,src_indx)
             raise ValueError(msg)
         val_widg.setText(item_uri)
-        val_widg.setMinimumWidth(10*len(item_uri))
+        val_widg.setMinimumWidth(min([10*len(item_uri),200]))
+        val_widg.setMaximumWidth(200)
         self.op.inputs[name] = optools.InputLocator(src_indx,item_uri)
         self.update_op_info(self.op.description())
-        del self.inp_src_windows[name]
+        #self.inp_src_windows[name][1].close()
+        #del self.inp_src_windows[name]
         src_ui.close()
 
     def update_op_info(self,text):

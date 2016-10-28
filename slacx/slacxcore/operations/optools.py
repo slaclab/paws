@@ -23,6 +23,7 @@ eq_col = 2
 src_col = 3
 type_col = 4
 val_col = 5
+btn_col = 6
 
 ##### IMAGE LOADER EXTENSIONS    
 def loader_extensions():

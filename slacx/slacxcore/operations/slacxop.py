@@ -89,7 +89,7 @@ class Operation(object):
             out_indx += 1
         return a
                 
-#    def set_output_to_none(self):
-#        for name,val in self.outputs.items(): 
-#            self.outputs[name] = None
+    def set_outputs_to_none(self):
+        for name,val in self.outputs.items(): 
+            self.outputs[name] = None
 
