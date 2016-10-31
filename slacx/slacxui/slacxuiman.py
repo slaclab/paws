@@ -37,11 +37,18 @@ class UiManager(object):
         self.wfman = None
         #self.op_uimans = [] 
 
-    def apply_workflow(self):
+    def apply_workflow(self,logmethod=None):
         """
         run the workflow
         """
-        self.wfman.run_wf_serial()
+        self.msg_board_log('Starting workflow executor...')
+        # Check for a batch executor...
+        if 'EXECUTION.BATCH' in [op.categories for op in self.wfman.root_items]:
+            self.msg_board_log('Beginning BATCH execution')
+            self.wfman.run_wf_batch()
+        else:
+            self.msg_board_log('Beginning serial execution')
+            self.wfman.run_wf_serial()
 
     def edit_op(self,item_indx=None):
         """

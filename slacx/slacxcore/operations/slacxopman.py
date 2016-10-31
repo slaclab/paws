@@ -96,7 +96,11 @@ class OpManager(TreeModel):
         op_treeitem.long_tag = op.__doc__
         self.beginInsertRows(parent,ins_row,ins_row)
         # Insertion occurs between notification methods
-        self.get_item(parent).children.insert(ins_row,op_treeitem)
+        try:
+            self.get_item(parent).children.insert(ins_row,op_treeitem)
+        except:
+            print op
+            raise
         self.endInsertRows()
 
     # remove an Operation from the tree? 

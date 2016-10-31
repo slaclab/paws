@@ -26,7 +26,7 @@ class <OperationName>(Operation):
         # This instantiates {key:value} dictionaries of inputs and outputs, 
         # which have keys generated from input_names and output_names.
         # All values in the dictionary are initialized as None. 
-        super(Identity,self).__init__(input_names,output_names)
+        super(<OperationName>,self).__init__(input_names,output_names)
         # Write a free-form documentation string describing each item
         # that was named in input_names and output_names.
         self.input_doc['<input_name_1>'] = '<expectations for input 1>'
@@ -37,7 +37,7 @@ class <OperationName>(Operation):
         # Indicate subcategories with a '.' character.
         self.categories = ['<CAT1>','<CAT2>.<SUBCAT1>',<...>]
         # OPTIONAL: set default sources and types for the operation inputs.
-        # This is only used for building/executing Operations in the GUI.
+        # Default types are only used for textual inputs.
         # Valid sources: optools.fs_input (read input from filesystem), 
         #   optools.op_input (input from another operation's output), 
         #   optools.text_input (manual text input)
