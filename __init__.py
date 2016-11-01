@@ -16,22 +16,15 @@ class SlacxPlugin(base.plugin):
         # start slacx core objects    
         opman = slacxopman.OpManager()
         wfman = slacxwfman.WfManager()
-
         # start slacx ui objects
-        #root_qdir = QtCore.QDir(__file__)
-        #rootdir = os.path.split( root_qdir.absolutePath() )[0]+'/slacx'
         uiman = slacxuiman.UiManager()
-
         # set up ui-core refs    
         uiman.opman = opman
         uiman.wfman = wfman
-
         # Make the slacx title box
         uiman.make_title()    
-
         # Connect the menu actions to UiManager functions
         uiman.connect_actions()
-
         # Take care of remaining details
         uiman.final_setup()
 
