@@ -19,9 +19,8 @@ class OpUiManager(object):
     performs operations on it
     """
 
-    def __init__(self,rootdir,wfman,opman):
-        self.rootdir = rootdir
-        ui_file = QtCore.QFile(self.rootdir+"/slacxui/op_builder.ui")
+    def __init__(self,wfman,opman):
+        ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/op_builder.ui")
         # Load the op_builder popup
         ui_file.open(QtCore.QFile.ReadOnly)
         self.ui = QtUiTools.QUiLoader().load(ui_file)
@@ -276,7 +275,7 @@ class OpUiManager(object):
         if src_indx == 0 or src_indx == optools.text_input:
             pass
         else:
-            ui_file = QtCore.QFile(self.rootdir+"/slacxui/tree_browser.ui")
+            ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/tree_browser.ui")
             ui_file.open(QtCore.QFile.ReadOnly)
             src_ui = QtUiTools.QUiLoader().load(ui_file)
             ui_file.close()

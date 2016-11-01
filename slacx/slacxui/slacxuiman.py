@@ -22,11 +22,10 @@ class UiManager(object):
     # it will call QWidget.resizeEvent().
     # Try to use this to resize the images in the QImageView.
 
-    def __init__(self,rootdir):
+    def __init__(self):
         """Make a UI from ui_file, save a reference to it"""
-        self.rootdir = rootdir
         # Pick a UI definition, load it up
-        ui_file = QtCore.QFile(self.rootdir+"/slacxui/basic.ui")
+        ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/basic.ui")
         ui_file.open(QtCore.QFile.ReadOnly)
         # load() produces a QMainWindow(QWidget).
         self.ui = QtUiTools.QUiLoader().load(ui_file)
@@ -63,7 +62,6 @@ class UiManager(object):
                 uiman.ui.op_selector.setCurrentIndex(item_indx)
                 # TODO: add ways to 'save' edited ops, or do it automatically
                 uiman.ui.show()
-
             uiman.ui.finish_button.clicked.disconnect()
             uiman.ui.finish_button.clicked.connect( partial(uiman.update_op,selected_indxs[0]) )
             uiman.ui.show()
@@ -102,7 +100,7 @@ class UiManager(object):
         """
         Create a QFrame window from ui/op_builder.ui, then return it
         """
-        uiman = OpUiManager(self.rootdir,wfm,opm)
+        uiman = OpUiManager(slacxtools.rootdir,wfm,opm)
         if current_op:
             uiman.set_op(current_op)
         uiman.ui.setParent(self.ui,QtCore.Qt.Window)
@@ -163,7 +161,7 @@ class UiManager(object):
     def make_title(self):
         """Display the slacx logo in the image viewer"""
         # Load the slacx graphic  
-        slacx_img_file = os.path.join(self.rootdir, "slacxui/slacx_icon_white.png")
+        slacx_img_file = os.path.join(slacxtools.rootdir, "slacxui/slacx_icon_white.png")
         # Make a QtGui.QPixmap from this file
         slacx_pixmap = QtGui.QPixmap(slacx_img_file)
         # Make a QtGui.QGraphicsPixmapItem from this QPixmap
