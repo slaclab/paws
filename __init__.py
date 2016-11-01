@@ -18,9 +18,9 @@ class SlacxPlugin(base.plugin):
         wfman = slacxwfman.WfManager()
 
         # start slacx ui objects
-        root_qdir = QtCore.QDir(__file__)
-        rootdir = os.path.split( root_qdir.absolutePath() )[0]+'/slacx'
-        uiman = slacxuiman.UiManager(rootdir)
+        #root_qdir = QtCore.QDir(__file__)
+        #rootdir = os.path.split( root_qdir.absolutePath() )[0]+'/slacx'
+        uiman = slacxuiman.UiManager()
 
         # set up ui-core refs    
         uiman.opman = opman
