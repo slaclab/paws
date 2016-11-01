@@ -33,6 +33,18 @@ class SlacxPlugin(base.plugin):
         self.leftwidget = uiman.ui.left_frame
         self.rightwidget = uiman.ui.right_frame
 
+        # There seems to be a problem with this plugin loading approach,
+        # where the frames, *in some circumstances, not always*, 
+        # mysteriously fail to bring their children with them.
+        # Adding these calls to findChildren() 
+        # seems to force the frames to find their children.
+        # Curious. TODO: Sort this out. -LAP
+        uiman.ui.left_frame.findChildren(object)
+        uiman.ui.right_frame.findChildren(object)
+        uiman.ui.center_frame.findChildren(object)
+        #import pdb
+        #pdb.set_trace()
+
         super(SlacxPlugin, self).__init__(*args, **kwargs)
 
 
