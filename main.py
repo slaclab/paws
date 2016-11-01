@@ -31,14 +31,8 @@ def main():
     # If running with gui, load dark style:
     app.setStyleSheet(qdarkstyle.load_stylesheet() + app.styleSheet())
 
-<<<<<<< Updated upstream
-    # Start a UiManager to create and manage a QMainWindow.
-    # Takes the rootdir of the top-level package to find the UI files.
-    uiman = slacxuiman.UiManager(slacxtools.rootdir)
-=======
     #root_qdir = QtCore.QDir(__file__)
     #rootdir = os.path.split( root_qdir.absolutePath() )[0]+'/slacx'
->>>>>>> Stashed changes
 
     # TODO: give kwargs to these init routines to rebuild saved jobs?
     # Start a UiManager to create and manage a QMainWindow.

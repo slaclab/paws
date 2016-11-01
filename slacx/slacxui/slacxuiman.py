@@ -100,7 +100,7 @@ class UiManager(object):
         """
         Create a QFrame window from ui/op_builder.ui, then return it
         """
-        uiman = OpUiManager(slacxtools.rootdir,wfm,opm)
+        uiman = OpUiManager(wfm,opm)
         if current_op:
             uiman.set_op(current_op)
         uiman.ui.setParent(self.ui,QtCore.Qt.Window)
