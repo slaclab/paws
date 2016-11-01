@@ -9,6 +9,7 @@ import numpy as np
 from ..slacxcore.operations import optools
 from ..slacxcore.operations.slacxop import Operation 
 from ..slacxcore.workflow.slacxwfman import WfManager
+from ..slacxcore import slacxtools
 from ..slacxcore import slacxex
 from . import uitools
 
@@ -125,7 +126,7 @@ class OpUiManager(object):
             self.ui.close()
         else:
             # Request a different tag
-            msg_ui = slacxex.start_message_ui()
+            msg_ui = slacxex.start_message_ui(slacxtools.rootdir)
             msg_ui.setParent(self.ui,QtCore.Qt.Window)
             msg_ui.setWindowTitle("Tag Error")
             msg_ui.message_box.setPlainText(

@@ -43,7 +43,7 @@ class UiManager(object):
         """
         self.msg_board_log('Starting workflow executor...')
         # Check for a batch executor...
-        if 'EXECUTION.BATCH' in [op.categories for op in self.wfman.root_items]:
+        if 'EXECUTION.BATCH' in [item.data[0].categories for item in self.wfman.root_items]:
             self.msg_board_log('Beginning BATCH execution')
             self.wfman.run_wf_batch()
         else:
@@ -126,7 +126,7 @@ class UiManager(object):
         # Tell the status bar that we are ready.
         self.show_status('Ready')
         # Tell the message board that we are ready.
-        self.ui.message_board.insertPlainText('--- MESSAGE BOARD ---\n\n') 
+        self.ui.message_board.insertPlainText('--- MESSAGE BOARD ---\n') 
         self.msg_board_log('slacx is ready') 
         # Clear any default tabs out of image_viewer
         #self.ui.center_frame.setMinimumWidth(200)
@@ -193,13 +193,15 @@ class UiManager(object):
     @staticmethod 
     def dtstr():
         """Return date and time as a string"""
-        return dt.strftime(dt.now(),'%Y %m %d, %H:%M:%S')
+        #return dt.strftime(dt.now(),'%Y %m %d, %H:%M:%S')
+        return dt.strftime(dt.now(),'%m %d, %H:%M:%S')
 
     def msg_board_log(self,msg):
         """Print timestamped message with space to msg board"""
         self.ui.message_board.insertPlainText(
-        self.dtstr() + '\n' + msg + '\n\n') 
-
+        '- ' + self.dtstr() + ': ' + msg + '\n') 
+        self.ui.message_board.verticalScrollBar().setValue(99)
+      
     def show_status(self,msg):
         self.ui.statusbar.showMessage(msg)
 
