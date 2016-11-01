@@ -2,7 +2,7 @@ from slacxop import Operation
 
 import time
 import tifffile
-from os.path import splitext as splitext
+from os.path import splitext
 
 
 class ReadTxtSSRL15(Operation):

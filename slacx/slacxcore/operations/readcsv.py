@@ -1,4 +1,4 @@
-from core.operations.slacxop import Operation
+from slacxop import Operation
 
 import numpy as np
 
@@ -9,15 +9,16 @@ class ReadCSV1(Operation):
     """Read R13 file."""
 
     def __init__(self):
-        input_names = ['file']
+        input_names = []
         output_names = ['list_of_x_y_dy_bg_dbg_name']
         super(ReadCSV1, self).__init__(input_names, output_names)
-        self.input_doc['file'] = ''
         self.output_doc['list_of_x_y_dy_bg_dbg_name'] = 'blank'
+        self.categories = ['INPUT']
 
     def run(self):
+        filename = '/Users/Amanda/Desktop/Travails/Programming/ImageProcessing/SampleData/Liheng/SolventCorrection/R13.csv'
         cols = (0,1,2, 5,6, 9,10, 13,14, 17,18, 21,22)
-        arr = np.loadtxt(self.inputs['file'], delimiter=',', skiprows=2, usecols=cols)
+        arr = np.loadtxt(filename, delimiter=',', skiprows=2, usecols=cols)
         x = arr[:,0]
         bg1 = arr[:,1]
         dbg1 = arr[:,2]
@@ -41,15 +42,16 @@ class ReadCSV2(Operation):
     """Read R4 file."""
 
     def __init__(self):
-        input_names = ['file']
+        input_names = []
         output_names = ['list_of_x_y_dy_bg_dbg_name']
         super(ReadCSV2, self).__init__(input_names, output_names)
-        self.input_doc['file'] = ''
         self.output_doc['list_of_x_y_dy_bg_dbg_name'] = 'blank'
+        self.categories = ['INPUT']
 
     def run(self):
+        filename = '/Users/Amanda/Desktop/Travails/Programming/ImageProcessing/SampleData/Liheng/SolventCorrection/R4.csv'
         cols = (0,1,2, 5,6, 9,10, 13,14, 17,18, 21,22, 25,26, 29,30, 33,34)
-        arr = np.loadtxt(self.inputs['file'], delimiter=',', skiprows=2, usecols=cols)
+        arr = np.loadtxt(filename, delimiter=',', skiprows=2, usecols=cols)
         x = arr[:, 0]
         y1 = arr[:, 1]
         dy1 = arr[:, 2]
