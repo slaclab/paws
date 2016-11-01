@@ -1,5 +1,6 @@
 import abc
 import re
+from collections import OrderedDict
 
 import optools
 
@@ -25,11 +26,11 @@ class Operation(object):
         Subcategories are indicated by a ".", for example:
         self.categories = ['CAT1','CAT2.SUBCAT','CAT3']
         """
-        self.inputs = {}
+        self.inputs = OrderedDict()
         self.input_src = {}
         self.input_type = {}
         self.input_doc = {}
-        self.outputs = {}
+        self.outputs = OrderedDict() 
         self.output_doc = {}
         # For each of the var names, assign to None 
         for name in input_names: 
