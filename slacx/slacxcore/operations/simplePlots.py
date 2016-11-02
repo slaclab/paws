@@ -9,7 +9,7 @@ class SimplePlot(Operation):
 
     def __init__(self):
         input_names = ['x', 'y']
-        output_names = ['figure']
+        output_names = ['figure', 'axis']
         super(SimplePlot, self).__init__(input_names, output_names)
         self.input_doc['x'] = '1d ndarray; independent variable'
         self.input_doc['y'] = '1d ndarray; dependent variable'
@@ -18,7 +18,7 @@ class SimplePlot(Operation):
         self.categories = ['DISPLAY']
 
     def run(self):
-        self.outputs['sum'] = self.inputs['augend'] + self.inputs['addend']
+        self.outputs['figure'], self.outputs['axis'] = simple_plot(self.inputs['x'], self.inputs['y'])
 
 def simple_plot(x, y):
     fig, ax = plt.subplots(1)

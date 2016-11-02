@@ -38,6 +38,31 @@ class ReadCSV_13(Operation):
         self.outputs['list_of_x_y_dy_bg_dbg_name'].append((x, y3, dy3, bg3, dbg3, 'R13 50'))
 
 
+class ReadCSV_13_alt(Operation):
+    """Read R13 file."""
+
+    def __init__(self):
+        input_names = []
+        output_names = ['x', 'y', 'dy', 'bg', 'dbg']
+        super(ReadCSV_13_alt, self).__init__(input_names, output_names)
+        self.output_doc['x'] = ''
+        self.output_doc['y'] = ''
+        self.output_doc['dy'] = ''
+        self.output_doc['bg'] = ''
+        self.output_doc['dbg'] = ''
+        self.categories = ['INPUT']
+
+    def run(self):
+        filename = '/Users/Amanda/Desktop/Travails/Programming/ImageProcessing/SampleData/Liheng/SolventCorrection/R13.csv'
+        cols = (0,1,2, 5,6, 9,10, 13,14, 17,18, 21,22)
+        arr = np.loadtxt(filename, delimiter=',', skiprows=2, usecols=cols)
+        self.outputs['x'] = arr[:,0]
+        self.outputs['bg'] = arr[:,1]
+        self.outputs['dbg'] = arr[:,2]
+        self.outputs['y'] = arr[:,7]
+        self.outputs['dy'] = arr[:,8]
+
+
 class ReadCSV_4_6(Operation):
     """Read R4 file."""
 
