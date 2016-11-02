@@ -1,19 +1,21 @@
 from PySide import QtGui
 
 ##### DEFINITIONS OF SOURCES FOR OPERATION INPUTS
-input_sources = ['(select source)','Filesystem','Operations','Text'] 
+input_sources = ['(select source)','Filesystem','Operations','Text','None'] 
 fs_input = 1
 op_input = 2
 text_input = 3
-valid_sources = [fs_input,op_input,text_input]
+no_input = 4
+valid_sources = [fs_input,op_input,text_input,no_input]
 
 ##### VALID TYPES FOR TEXT BASED OPERATION INPUTS 
-input_types = ['(select type)','string','integer','float','boolean']
+input_types = ['(select type)','string','integer','float','boolean','none']
 str_type = 1
 int_type = 2
 float_type = 3
 bool_type = 4
-valid_types = [str_type,int_type,float_type,bool_type]
+none_type = 5
+valid_types = [str_type,int_type,float_type,bool_type,none_type]
 # TODO: implement some kind of builder/loader for data structs, like arrays or dicts
 #array_type = 5
         
