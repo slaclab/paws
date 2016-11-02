@@ -56,9 +56,9 @@ def type_check_item_range_from_sequence(start_index, end_index):
 
 
 class ItemFromMap(Operation):
-    """Extract an item from a sequence.
+    """Extract an item from a key-value map.
 
-    Intended for use with lists and tuples, but may work with other data types."""
+    Intended for use with dictionaries, but may work with other data types."""
 
     def __init__(self):
         input_names = ['map', 'key']
@@ -72,6 +72,32 @@ class ItemFromMap(Operation):
     def run(self):
         self.outputs['value'] = self.inputs['map'][ self.inputs['key'] ]
 
+
+class ItemToMap(Operation):
+    """Add an item to a key-value map.
+
+    Works IN PLACE, meaning that later functions calling on *map* may find the key-value pair, even if they do not
+    explicitly reference *new_map*.  Reference *new_map* to be absolutely certain that the operation has been
+    performed.
+
+    Intended for use with dictionaries, but may work with other data types."""
+
+    def __init__(self):
+        input_names = ['map', 'key', 'value']
+        output_names = ['new_map']
+        super(ItemToMap, self).__init__(input_names, output_names)
+        self.input_doc['map'] = 'dictionary or other map'
+        self.input_doc['key'] = 'key to the item you wish to add'
+        self.input_doc['value'] = 'value of the item with key *key* in object *map*'
+        self.output_doc['value'] = 'map with added key-value pair'
+        self.categories = ['MISC']
+
+    def run(self):
+        self.inputs['map'][ self.inputs['key'] ] = self.inputs['value']
+        self.outputs['new_map'] = self.inputs['map']
+
+
+
 class DummySequences(Operation):
     def __init__(self):
         input_names = []
@@ -80,7 +106,7 @@ class DummySequences(Operation):
         self.output_doc['list'] = ''
         self.output_doc['tuple'] = ''
         self.output_doc['string'] = ''
-        self.categories = ['TEST']
+        self.categories = ['TESTS']
 
     def run(self):
         self.outputs['list'] = ['ab','ra','ca','dab','ra']
