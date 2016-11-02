@@ -72,6 +72,7 @@ class ItemFromMap(Operation):
     def run(self):
         self.outputs['value'] = self.inputs['map'][ self.inputs['key'] ]
 
+
 class DummySequences(Operation):
     def __init__(self):
         input_names = []
@@ -80,7 +81,7 @@ class DummySequences(Operation):
         self.output_doc['list'] = ''
         self.output_doc['tuple'] = ''
         self.output_doc['string'] = ''
-        self.categories = ['TEST']
+        self.categories = ['TESTS']
 
     def run(self):
         self.outputs['list'] = ['ab','ra','ca','dab','ra']

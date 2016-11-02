@@ -5,13 +5,13 @@ import numpy as np
 #'/Users/Amanda/Desktop/Travails/Programming/ImageProcessing/SampleData/Liheng/SolventCorrection/R13.csv'
 #'/Users/Amanda/Desktop/Travails/Programming/ImageProcessing/SampleData/Liheng/SolventCorrection/R4.csv'
 
-class ReadCSV1(Operation):
+class ReadCSV_13(Operation):
     """Read R13 file."""
 
     def __init__(self):
         input_names = []
         output_names = ['list_of_x_y_dy_bg_dbg_name']
-        super(ReadCSV1, self).__init__(input_names, output_names)
+        super(ReadCSV_13, self).__init__(input_names, output_names)
         self.output_doc['list_of_x_y_dy_bg_dbg_name'] = 'blank'
         self.categories = ['INPUT']
 
@@ -38,13 +38,13 @@ class ReadCSV1(Operation):
         self.outputs['list_of_x_y_dy_bg_dbg_name'].append((x, y3, dy3, bg3, dbg3, 'R13 50'))
 
 
-class ReadCSV2(Operation):
+class ReadCSV_4_6(Operation):
     """Read R4 file."""
 
     def __init__(self):
         input_names = []
         output_names = ['list_of_x_y_dy_bg_dbg_name']
-        super(ReadCSV2, self).__init__(input_names, output_names)
+        super(ReadCSV_4_6, self).__init__(input_names, output_names)
         self.output_doc['list_of_x_y_dy_bg_dbg_name'] = 'blank'
         self.categories = ['INPUT']
 
