@@ -70,11 +70,11 @@ class UiManager(object):
         """
         remove the selected operation in the workflow list from the workflow
         """
-        # TODO: implement multiple selection 
-        # TODO: take out the garbage
-        selected_indxs = self.ui.workflow_tree.selectedIndexes()
+        #selected_indxs = self.ui.workflow_tree.selectedIndexes()
         #for indx in selected_indxs:
-        self.wfman.remove_op(selected_indxs[0])
+        #self.wfman.remove_op(selected_indxs[0])
+        current_indx = self.ui.workflow_tree.currentIndex()
+        self.wfman.remove_op(current_indx)
 
     def add_op(self,item_indx=None):
         """
@@ -86,6 +86,7 @@ class UiManager(object):
             if self.opman.get_item(item_indx).n_data() > 0:
                 x = self.opman.get_item(item_indx).data[0]
                 if isinstance(x,str):
+                    # this is a category- do nothing meaningful
                     pass
                 elif issubclass(x,Operation):
                     uiman = self.start_op_ui_manager(x(),self.wfman,self.opman)
