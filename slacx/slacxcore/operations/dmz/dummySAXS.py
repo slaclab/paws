@@ -2,7 +2,7 @@ xmin = 0.1
 xmax = 50
 xstep = 0.1
 
-# blep
+# unblep
 
 def fullFunction(x):
     y = ((np.sin(x) - x * np.cos(x)) * x**-3)**2
