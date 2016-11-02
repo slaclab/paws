@@ -1,7 +1,7 @@
 import numpy as np
 
 from slacxop import Operation
-
+import optools
 
 class ItemFromSequence(Operation):
     """Extract an item from a sequence.
@@ -18,6 +18,9 @@ class ItemFromSequence(Operation):
         self.input_doc['index'] = 'index of the item you wish to extract'
         self.output_doc['item'] = 'item extracted from *sequence* at position *index*'
         self.categories = ['MISC']
+        self.input_src['sequence'] = optools.op_input
+        self.input_src['index'] = optools.text_input
+        self.input_type['index'] = optools.int_type
 
     def run(self):
         self.outputs['item'] = self.inputs['sequence'][self.inputs['index']]

@@ -325,9 +325,12 @@ class WfManager(TreeModel):
 
     def get_from_uri(self, uri):
         # follow uri in workflow tree
+        #print 'get item from uri {}'.format(uri)
         path = uri.split('.')
+        #print path
         parent_indx = QtCore.QModelIndex()
         for itemtag in path:
+            #print itemtag
             # get QModelIndex of item from itemtag
             row = self.list_tags(parent_indx).index(itemtag)
             qindx = self.index(row,0,parent_indx)
@@ -335,6 +338,6 @@ class WfManager(TreeModel):
             item = self.get_item(qindx)
             # set new parent in case the path continues...
             parent_indx = qindx
-
+        return item
                     
 
