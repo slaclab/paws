@@ -1,5 +1,4 @@
 import os
-from datetime import datetime as dt
 import time
 from functools import partial
 
@@ -71,11 +70,9 @@ class UiManager(object):
         """
         remove the selected operation in the workflow list from the workflow
         """
-        #selected_indxs = self.ui.workflow_tree.selectedIndexes()
-        #for indx in selected_indxs:
-        #self.wfman.remove_op(selected_indxs[0])
         current_indx = self.ui.workflow_tree.currentIndex()
-        self.wfman.remove_op(current_indx)
+        if current_indx.isValid(): 
+            self.wfman.remove_op(current_indx)
 
     def add_op(self,item_indx=None):
         """
@@ -94,12 +91,14 @@ class UiManager(object):
                     uiman.ui.op_selector.setCurrentIndex(item_indx)
                     uiman.ui.show()
                 else:
-                    msg = '[{}] tried to add operation on object {} of type {}'.format(
-                        __name__,x,type(x).__name__)
-                    raise ValueError(msg)
+                    # may as well just pass
+                    pass
+                    #msg = '[{}] tried to add operation on object {} of type {}'.format(
+                    #    __name__,x,type(x).__name__)
+                    #raise ValueError(msg)
         else:
-                    uiman = self.start_op_ui_manager(None,None,QtCore.QModelIndex())
-                    uiman.ui.show()
+            uiman = self.start_op_ui_manager(None,None,QtCore.QModelIndex())
+            uiman.ui.show()
             
 
     def start_op_ui_manager(self,trmod,indx):
@@ -126,12 +125,12 @@ class UiManager(object):
         # Let the message board be read-only
         self.ui.message_board.setReadOnly(True)
         # Let the message board ignore line wrapping
-        self.ui.message_board.setLineWrapMode(self.ui.message_board.NoWrap)
+        #self.ui.message_board.setLineWrapMode(self.ui.message_board.NoWrap)
         # Tell the status bar that we are ready.
         self.show_status('Ready')
         # Tell the message board that we are ready.
         self.ui.message_board.insertPlainText('--- MESSAGE BOARD ---\n') 
-        self.msg_board_log('slacx is ready') 
+        self.msg_board_log('slacx is ready',timestamp=slacxtools.dtstr) 
         # Clear any default tabs out of image_viewer
         #self.ui.center_frame.setMinimumWidth(200)
         self.ui.op_tree.resizeColumnToContents(0)
@@ -159,6 +158,7 @@ class UiManager(object):
         self.ui.apply_workflow_button.clicked.connect(self.apply_workflow)
         # Connect self.ui.workflow_tree (QTreeView) to self.wfman (WfManager(TreeModel))
         self.ui.workflow_tree.setModel(self.wfman)
+        self.ui.workflow_tree.hideColumn(1)
         # Connect self.ui.op_tree (QTreeView) to self.opman (OpManager(TreeModel))
         self.ui.op_tree.setModel(self.opman)
         self.ui.op_tree.hideColumn(1)
@@ -191,31 +191,24 @@ class UiManager(object):
         # Set the main window title and icon
         self.ui.setWindowTitle("slacx v{}".format(slacxtools.version))
         self.ui.setWindowIcon(slacx_pixmap)
- 
 
-    # Various simple utilities
-    @staticmethod 
-    def dtstr():
-        """Return date and time as a string"""
-        #return dt.strftime(dt.now(),'%Y %m %d, %H:%M:%S')
-        return dt.strftime(dt.now(),'%m %d, %H:%M:%S')
 
-    def msg_board_log(self,msg):
+    def msg_board_log(self,msg,timestamp=slacxtools.timestr):
         """Print timestamped message with space to msg board"""
         self.ui.message_board.insertPlainText(
-        '- ' + self.dtstr() + ': ' + msg + '\n') 
+        '- ' + timestamp() + ': ' + msg + '\n') 
         self.ui.message_board.verticalScrollBar().setValue(99)
       
     def show_status(self,msg):
         self.ui.statusbar.showMessage(msg)
 
-    def export_image(self):
-        """export the image in the currently selected tab"""
-        pass
+    #def export_image(self):
+    #    """export the image in the currently selected tab"""
+    #    pass
 
-    def edit_image(self):
-        """open an image editor for the current tab"""
-        pass
+    #def edit_image(self):
+    #    """open an image editor for the current tab"""
+    #    pass
 
     # A QtCore.Slot for closing tabs from image_viewer
     #@QtCore.Slot(int)

@@ -225,8 +225,6 @@ class OpUiManager(object):
     def fetch_data(self,name,src_indx,type_widg,val_widg):
         """Use a popup to select the input data"""
         if name in [k for k,v in self.inp_src_windows.items()]:
-            # TODO: make sure the source is still the same! 
-            # If not, close existing src window and make a new one.
             if src_indx == self.inp_src_windows[name][0]:
                 self.inp_src_windows[name][1].raise_()
                 self.inp_src_windows[name][1].activateWindow()
@@ -287,7 +285,7 @@ class OpUiManager(object):
             msg = '[{}] Trying to fetch URI for data source {}: not implemented'.format(__name__,src_indx)
             raise ValueError(msg)
         val_widg.setText(item_uri)
-        val_widg.setMinimumWidth(min([10*len(item_uri),200]))
+        val_widg.setMinimumWidth(min([8*len(item_uri),200]))
         val_widg.setMaximumWidth(200)
         self.op.inputs[name] = optools.InputLocator(src_indx,item_uri)
         self.ui.op_info.setPlainText(self.op.description())
@@ -298,13 +296,17 @@ class OpUiManager(object):
     #def update_op_info(self,text):
     #    self.ui.op_info.setPlainText(text)
 
+    #def update_op_selector(self,sel_indx,desel_indx):
+    #    # Send a signal to op_selector to set currentIndex to sel_indx
+    #    self.ui.op_selector.setCurrentIndex(sel_indx)
+
     def setup_ui(self):
         self.ui.setWindowTitle("operation setup")
         self.ui.input_box.setTitle("INPUTS")
         self.ui.output_box.setTitle("OUTPUTS")
         self.ui.finish_box.setTitle("FINISH / LOAD")
-        self.ui.input_box.setMinimumWidth(600)
-        self.ui.op_frame.setMinimumWidth(400)
+        #self.ui.input_box.setMinimumWidth(600)
+        #self.ui.op_frame.setMinimumWidth(400)
         #self.ui.op_frame.setMaximumWidth(400)
         self.ui.wf_selector.setModel(self.wfman)
         self.ui.wf_selector.hideColumn(1)
@@ -312,6 +314,7 @@ class OpUiManager(object):
         self.ui.op_selector.setModel(self.opman)
         self.ui.op_selector.hideColumn(1)
         self.ui.op_selector.clicked.connect( partial(self.get_op_from_tree,self.opman) )
+        self.ui.op_selector.activated.connect( partial(self.ui.op_selector.setCurrentIndex) )
         # Populate uri entry fields
         self.ui.uri_prompt.setText('operation uri:')
         #self.ui.uri_prompt.setMinimumWidth(100)
@@ -321,21 +324,18 @@ class OpUiManager(object):
         self.ui.uri_prompt.setAlignment(QtCore.Qt.AlignRight)
         self.ui.uri_prompt.setStyleSheet( "QLineEdit { background-color: transparent }" 
         + self.ui.uri_prompt.styleSheet() )
-        # If we are editing an existing operation, use its existing uri 
-        #if isinstance(self.opman,WfManager):    
-        #    self.ui.uri_entry.setText(self.opman.get_item(self.ui.op_selector.currentIndex()).tag())
-        #    # Don't let uri change after already being loaded to the workflow manager.
-        #    self.ui.uri_entry.setReadOnly(True)
-        #else:
-        #    self.ui.uri_entry.setText(self.wfman.next_uri())
         self.ui.test_button.setText("&Test")
         self.ui.test_button.setEnabled(False)
-        self.ui.test_button.setMinimumWidth(100)
+        #self.ui.test_button.setMinimumWidth(100)
         self.ui.test_button.clicked.connect(self.test_op)
-        self.ui.finish_button.setText("&Load")
-        self.ui.finish_button.setMinimumWidth(100)
-        self.ui.finish_button.clicked.connect(self.load_op)
-        self.ui.finish_button.setDefault(True)
+        self.ui.load_button.setText("&Load")
+        #self.ui.load_button.setMinimumWidth(100)
+        self.ui.load_button.clicked.connect(self.load_op)
+        self.ui.load_button.setDefault(True)
+        self.ui.exit_button.setText("E&xit")
+        #self.ui.exit_button.setMinimumWidth(100)
+        self.ui.exit_button.clicked.connect(self.ui.close)
+        self.ui.exit_button.clicked.connect(self.ui.deleteLater)
         #self.ui.returnPressed.connect(self.load_op)
         self.ui.setStyleSheet( "QLineEdit { border: none }" + self.ui.styleSheet() )
         self.ui.setAttribute(QtCore.Qt.WA_DeleteOnClose)

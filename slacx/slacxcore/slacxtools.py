@@ -1,4 +1,5 @@
 import os
+from datetime import datetime as dt
 
 from PySide import QtCore, QtUiTools
 from PySide import QtCore
@@ -31,5 +32,15 @@ def start_message_ui():
     msg_ui.ok_button.clicked.connect(msg_ui.deleteLater)
     msg_ui.ok_button.setDefault(True)
     return msg_ui
+
+def dtstr():
+    """Return date and time as a string"""
+    return dt.strftime(dt.now(),'%Y %m %d, %H:%M:%S')
+
+def timestr():
+    """Return time as a string"""
+    return dt.strftime(dt.now(),'%H:%M:%S')
+
+
 
 
