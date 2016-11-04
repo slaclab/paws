@@ -26,15 +26,15 @@ class WfManager(TreeModel):
         else:
             self.logmethod = None
 
-    def add_op(self,new_op,tag):
+    def add_op(self,new_op,uri):
         """Add an Operation to the tree as a new top-level TreeItem."""
         # Count top-level rows by passing parent=QModelIndex()
         ins_row = self.rowCount(QtCore.QModelIndex())
         # Make a new TreeItem, column 0, invalid parent 
         new_treeitem = TreeItem(ins_row,0,QtCore.QModelIndex())
         new_treeitem.data.append(new_op)
-        new_treeitem.set_tag( tag )
-        new_treeitem.long_tag = new_op.__doc__
+        new_treeitem.set_tag( uri )
+        new_treeitem.long_tag = new_op.description()
         self.beginInsertRows(
         QtCore.QModelIndex(),ins_row,ins_row)
         # Insertion occurs between notification methods
@@ -45,10 +45,10 @@ class WfManager(TreeModel):
         self.io_subtree(new_op,indx)
         self._n_loaded += 1
 
-    def update_op(self,indx,new_op):
-        """Replace Operation at indx with new_op"""
-        # Get the treeitem for indx
-        item = self.get_item(indx)
+    def update_op(self,uri,new_op):
+        """Replace Operation in treeitem indicated by uri with new_op"""
+        # Get the treeitem for uri 
+        item, indx = self.get_from_uri(uri)
         # Put the data in the treeitem
         item.data[0] = new_op
         item.long_tag = new_op.__doc__
@@ -57,7 +57,6 @@ class WfManager(TreeModel):
         #    del child
         # Update the op subtree
         self.build_io_subtrees(new_op,indx)
-        # TODO: update gui arg frames
 
     def io_subtree(self,op,parent):
         """Add inputs and outputs subtrees as children of an Operation TreeItem"""
@@ -167,7 +166,7 @@ class WfManager(TreeModel):
             try:
                 next_input = batch_maker.outputs['batch_iterator'].next()
                 # Plug in next_input
-                batch_entry_op = self.get_from_uri(batch_tag+'')
+                batch_entry_op, indx = self.get_from_uri(batch_tag+'')
                 # Run the workflow in serial mode
                 self.run_wf_serial()
                 # Harvest all outputs
@@ -205,13 +204,14 @@ class WfManager(TreeModel):
             for j in to_run:
                 item = self.root_items[j]
                 # Get QModelIndex of this item for later use in updating tree view
-                indx = self.index(j,0,QtCore.QModelIndex())
+                #indx = self.index(j,0,QtCore.QModelIndex())
                 op = item.data[0]
                 for name,val in op.inputs.items():
-                    op.inputs[name] = self.locate_input(val)
+                    val.data = self.locate_input(val)
+                    op.inputs[name] = val.data
                 op.run()
                 ops_done.append(j)
-                self.update_op(indx,op)
+                self.update_op(item.tag(),op)
             to_run = self.ops_ready(ops_done)
             if len(to_run) == 0 and self.logmethod:
                 self.logmethod('All operations complete.')
@@ -307,11 +307,10 @@ class WfManager(TreeModel):
             val = inplocator.val
             if src in optools.valid_sources:
                 if (src == optools.fs_input
-                   or src == optools.text_input): 
-                    # val will be handled during operation loading- return it directly
+                or src == optools.text_input): 
                     return val 
                 elif src == optools.op_input: 
-                    item = self.get_from_uri(val)
+                    item, indx = self.get_from_uri(val)
                     # item.data[0] should now be the desired piece of data
                     return item.data[0]
             else: 
@@ -329,15 +328,26 @@ class WfManager(TreeModel):
         path = uri.split('.')
         #print path
         parent_indx = QtCore.QModelIndex()
-        for itemtag in path:
-            #print itemtag
-            # get QModelIndex of item from itemtag
-            row = self.list_tags(parent_indx).index(itemtag)
+        for itemuri in path:
+            #print itemuri
+            # get QModelIndex of item 
+            row = self.list_tags(parent_indx).index(itemuri)
             qindx = self.index(row,0,parent_indx)
             # get TreeItem from QModelIndex
             item = self.get_item(qindx)
             # set new parent in case the path continues...
             parent_indx = qindx
-        return item
+        return item, qindx
+
+    def next_tag(self):
+        indx = 0
+        goodtag = False
+        while not goodtag:
+            testtag = 'op{}'.format(indx)
+            if not testtag in self.list_tags(QtCore.QModelIndex()):
+                goodtag = True
+            else:
+                indx += 1
+        return testtag
                     
 

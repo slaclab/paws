@@ -34,9 +34,9 @@ class Operation(object):
         self.output_doc = {}
         # For each of the var names, assign to None 
         for name in input_names: 
+            self.input_src[name] = optools.no_input
+            self.input_type[name] = optools.none_type
             self.inputs[name] = None
-            self.input_src[name] = None
-            self.input_type[name] = None
             self.input_doc[name] = None
         for name in output_names: 
             self.outputs[name] = None

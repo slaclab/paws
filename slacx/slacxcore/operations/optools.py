@@ -1,32 +1,26 @@
-from PySide import QtGui
+from PySide import QtGui, QtCore
+
+# TODO: Get QtGui out of this module - it is a core module
 
 ##### DEFINITIONS OF SOURCES FOR OPERATION INPUTS
-input_sources = ['(select source)','Filesystem','Operations','Text','None'] 
+input_sources = ['None','Filesystem','Operations','Text'] 
+no_input = 0
 fs_input = 1
 op_input = 2
 text_input = 3
-no_input = 4
-valid_sources = [fs_input,op_input,text_input,no_input]
+valid_sources = [no_input,fs_input,op_input,text_input]
 
 ##### VALID TYPES FOR TEXT BASED OPERATION INPUTS 
-input_types = ['(select type)','string','integer','float','boolean','none']
+input_types = ['None','string','integer','float','boolean']
+none_type = 0
 str_type = 1
 int_type = 2
 float_type = 3
 bool_type = 4
-none_type = 5
-valid_types = [str_type,int_type,float_type,bool_type,none_type]
+valid_types = [none_type,str_type,int_type,float_type,bool_type]
 # TODO: implement some kind of builder/loader for data structs, like arrays or dicts
 #array_type = 5
         
-##### COLUMN DEFINITIONS FOR I/O WIDGET ARRANGEMENT IN OP_BUILDER UI
-name_col = 1
-eq_col = 2
-src_col = 3
-type_col = 4
-val_col = 5
-btn_col = 6
-
 ##### IMAGE LOADER EXTENSIONS    
 def loader_extensions():
     return str(
@@ -47,8 +41,7 @@ def parameter_doc(name,value,doc):
 ##### CONVENIENCE CLASS FOR STORING OR LOCATING OPERATION INPUTS
 class InputLocator(object):
     """
-    The presence of an object of this type as input to an Operation 
-    indicates that this input has not yet been loaded or computed.
+    This object is used as a container for an input to an Operation.
     Objects of this class contain the information needed to find the relevant input data.
     If raw textual input is provided, it is stored in self.val after typecasting.
     """
@@ -59,6 +52,57 @@ class InputLocator(object):
             raise ValueError(msg)
         self.src = src
         self.val = val 
+        self.data = None 
+
+def text_widget(text):
+    widg = QtGui.QLineEdit(text)
+    widg.setReadOnly(True)
+    widg.setAlignment(QtCore.Qt.AlignHCenter)
+    return widg 
+
+def src_selection_widget():
+    widg = QtGui.QComboBox()
+    widg.addItems(input_sources)
+    widg.setMinimumWidth(120)
+    return widg 
+
+#def item_selection_widget(self):
+#    widg = QtGui.QPushButton('Select...')
+#    return widg
+
+#def vert_hdr_widget(self,text):
+#    # TODO: Fix this, some day.
+#    widg = VertQLineEdit(text)
+#    return widg 
+
+def hdr_widget(text):
+    widg = QtGui.QLineEdit(text)
+    widg.setReadOnly(True)
+    widg.setAlignment(QtCore.Qt.AlignHCenter)
+    widg.setStyleSheet( "QLineEdit { background-color: transparent }" + widg.styleSheet() )
+    return widg 
+
+def smalltext_widget(text):
+    widg = text_widget(text)
+    widg.setMaximumWidth( 20 )
+    widg.setStyleSheet( "QLineEdit { background-color: transparent }" + widg.styleSheet() )
+    return widg
+
+def bigtext_widget(text):
+    widg = QtGui.QLineEdit(text)
+    widg.setReadOnly(True)
+    widg.setMinimumWidth(7*len(text))
+    # TODO: Truncate the text?
+    widg.setAlignment(QtCore.Qt.AlignLeft)
+    return widg
+
+def namewidget(name):
+    name_widget = QtGui.QLineEdit(name)
+    name_widget.setReadOnly(True)
+    name_widget.setAlignment(QtCore.Qt.AlignRight)
+    name_widget.setMinimumWidth(7*len(name))
+    #name_widget.setMaximumWidth(15*len(name))
+    return name_widget
 
 ##### MINIMAL CLASS FOR VERTICAL HEADERS
 #class VertQLineEdit(QtGui.QLineEdit):

@@ -55,15 +55,16 @@ class UiManager(object):
         """
         if not item_indx:
             item_indx = self.ui.workflow_tree.currentIndex()
-        if item_indx:
-            x = self.opman.get_item(item_indx).data[0]
-            if issubclass(type(x),Operation):
-                uiman = self.start_op_ui_manager(x,self.wfman,self.wfman)
-                uiman.ui.op_selector.setCurrentIndex(item_indx)
+        if item_indx.isValid() and self.wfman.get_item(item_indx):
+            x = self.wfman.get_item(item_indx).data[0]
+            #if issubclass(type(x),Operation):
+            if isinstance(x,Operation):
+                uiman = self.start_op_ui_manager(self.wfman,item_indx)
+                uiman.ui.wf_selector.setCurrentIndex(item_indx)
                 # TODO: add ways to 'save' edited ops, or do it automatically
                 uiman.ui.show()
-            uiman.ui.finish_button.clicked.disconnect()
-            uiman.ui.finish_button.clicked.connect( partial(uiman.update_op,selected_indxs[0]) )
+            #uiman.ui.finish_button.clicked.disconnect()
+            #uiman.ui.finish_button.clicked.connect( partial(uiman.update_op,selected_indxs[0]) )
             uiman.ui.show()
 
     def rm_op(self):
@@ -89,21 +90,25 @@ class UiManager(object):
                     # this is a category- do nothing meaningful
                     pass
                 elif issubclass(x,Operation):
-                    uiman = self.start_op_ui_manager(x(),self.wfman,self.opman)
+                    uiman = self.start_op_ui_manager(self.opman,item_indx)
                     uiman.ui.op_selector.setCurrentIndex(item_indx)
                     uiman.ui.show()
+                else:
+                    msg = '[{}] tried to add operation on object {} of type {}'.format(
+                        __name__,x,type(x).__name__)
+                    raise ValueError(msg)
         else:
-                    uiman = self.start_op_ui_manager(None,self.wfman,self.opman)
+                    uiman = self.start_op_ui_manager(None,None,QtCore.QModelIndex())
                     uiman.ui.show()
             
 
-    def start_op_ui_manager(self,current_op,wfm,opm):
+    def start_op_ui_manager(self,trmod,indx):
         """
         Create a QFrame window from ui/op_builder.ui, then return it
         """
-        uiman = OpUiManager(wfm,opm)
-        if current_op:
-            uiman.set_op(current_op)
+        uiman = OpUiManager(self.wfman,self.opman)
+        if trmod and indx.isValid():
+            uiman.get_op_from_tree(trmod,indx)
         uiman.ui.setParent(self.ui,QtCore.Qt.Window)
         return uiman
 

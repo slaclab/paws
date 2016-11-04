@@ -43,7 +43,9 @@ class TreeModel(QtCore.QAbstractItemModel):
         spec_chars = string.punctuation 
         spec_chars = spec_chars.replace('_','')
         spec_chars = spec_chars.replace('-','')
-        if testtag in self.list_tags(parent):
+        if not testtag:
+            return (False, 'Tag is blank')
+        elif testtag in self.list_tags(parent):
             return (False, 'Tag not unique')
         elif any(map(lambda s: s in testtag,[' ','\t','\n'])):
             return (False, 'Tag contains whitespace')
