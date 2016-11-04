@@ -104,7 +104,7 @@ class OpUiManager(object):
         for i in range(n_inp_widgets-1,-1,-1):
             item = self.ui.input_layout.takeAt(i)
             item.widget().deleteLater()
-        n_out_widgets = self.ui.input_layout.count()
+        n_out_widgets = self.ui.output_layout.count()
         for i in range(n_out_widgets-1,-1,-1):
             item = self.ui.output_layout.takeAt(i)
             item.widget().deleteLater()
@@ -114,7 +114,6 @@ class OpUiManager(object):
             src_tup = self.inp_src_windows.pop(name)
             src_tup[1].close()
             src_tup[1].deleteLater()
-        
 
     def build_nameval_list(self):
         self.clear_nameval_list()
