@@ -64,7 +64,7 @@ class UiManager(object):
                 uiman.ui.show()
             #uiman.ui.finish_button.clicked.disconnect()
             #uiman.ui.finish_button.clicked.connect( partial(uiman.update_op,selected_indxs[0]) )
-            uiman.ui.show()
+            #uiman.ui.show()
 
     def rm_op(self):
         """

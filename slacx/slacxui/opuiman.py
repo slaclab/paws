@@ -109,8 +109,16 @@ class OpUiManager(object):
             item = self.ui.output_layout.takeAt(i)
             item.widget().deleteLater()
 
+    def clear_input_widgets(self):
+        for name,widg in self.inp_src_windows.items():
+            src_tup = self.inp_src_windows.pop(name)
+            src_tup[1].close()
+            src_tup[1].deleteLater()
+        
+
     def build_nameval_list(self):
         self.clear_nameval_list()
+        self.clear_input_widgets()
         inp_count = len(self.op.inputs.items())
         out_count = len(self.op.outputs.items())
         #self.input_rows = []
@@ -141,8 +149,11 @@ class OpUiManager(object):
 
     def add_input_widgets(self,name,val,row):
         """Loads a set of widgets for setting or reading input or output data"""
-        self.ui.input_layout.addWidget( optools.namewidget(name),row,self.name_col,1,1 )
-        self.ui.input_layout.addWidget(optools.smalltext_widget('='),row,self.eq_col,1,1)
+        name_widget = optools.namewidget(name)
+        self.ui.input_layout.addWidget( name_widget,row,self.name_col,1,1 )
+        eq_widget = optools.smalltext_widget('=')
+        eq_widget.setMaximumWidth(20)
+        self.ui.input_layout.addWidget(eq_widget,row,self.eq_col,1,1)
         src_widget = optools.src_selection_widget() 
         self.src_widgets[name] = src_widget 
         #val_widget = QtGui.QLineEdit(str(val))
@@ -150,12 +161,24 @@ class OpUiManager(object):
         src_widget.activated.connect( partial(self.render_input_widgets,name,val,row) )
         src_widget.setCurrentIndex(self.op.input_src[name])
         self.render_input_widgets(name,val,row,self.op.input_src[name]) 
+        #name_widget.resize(10,name_widget.size().height())
+        ht = name_widget.sizeHint().height()
+        name_widget.sizeHint = lambda: QtCore.QSize(8*len(name_widget.text()),ht)
+        name_widget.setSizePolicy(QtGui.QSizePolicy.Minimum,QtGui.QSizePolicy.Fixed)
 
     def add_output_widgets(self,name,row):
-        self.ui.output_layout.addWidget(optools.namewidget(name),row,self.name_col)
-        self.ui.output_layout.addWidget(optools.smalltext_widget('='),row,self.eq_col)
+        name_widget = optools.namewidget(name)
+        self.ui.output_layout.addWidget(name_widget,row,self.name_col)
+        eq_widget = optools.smalltext_widget('=')
+        eq_widget.setMaximumWidth(20)
+        self.ui.output_layout.addWidget(eq_widget,row,self.eq_col)
         desc_widget = optools.bigtext_widget(self.op.output_doc[name])
         self.ui.output_layout.addWidget(desc_widget,row,self.src_col,1,self.btn_col-self.src_col)
+        ht = desc_widget.sizeHint().height()
+        name_widget.sizeHint = lambda: QtCore.QSize(8*len(name_widget.text()),ht)
+        desc_widget.sizeHint = lambda: QtCore.QSize(20*len(desc_widget.text()),ht)
+        name_widget.setSizePolicy(QtGui.QSizePolicy.Minimum,QtGui.QSizePolicy.Fixed)
+        desc_widget.setSizePolicy(QtGui.QSizePolicy.Maximum,QtGui.QSizePolicy.Fixed)
 
     def render_input_widgets(self,name,val,row,src_indx): 
         # If input widgets exist, close them.
@@ -263,13 +286,13 @@ class OpUiManager(object):
 
     def load_from_tree(self,name,trmod,src_ui,src_indx,type_widg,val_widg,item_indx=None):
         """
-        Construct a unique resource identifier (uri) for that item.
+        Construct a unique resource identifier (uri) for the selected item.
         Set self.op.inputs[name] to be an optools.InputLocator(src_indx,uri).
         Also set that uri to be the text of val_widg.
         Finally, reset self.ui.op_info to reflect the changes.
         """
         trview = src_ui.tree
-        if not item_indx:
+        if not item_indx or not item_indx.isValid():
             # Get the selected item in QTreeView trview:
             item_indx = trview.currentIndex()
         if src_indx == optools.fs_input:
@@ -280,12 +303,8 @@ class OpUiManager(object):
             # Build a unique URI for this item
             item_uri = trmod.build_uri(item_indx)
             type_widg.setText(type(trmod.get_item(item_indx).data[0]).__name__)
-        else:
-            # This should never happen
-            msg = '[{}] Trying to fetch URI for data source {}: not implemented'.format(__name__,src_indx)
-            raise ValueError(msg)
         val_widg.setText(item_uri)
-        val_widg.setMinimumWidth(min([8*len(item_uri),200]))
+        #val_widg.setMinimumWidth(min([8*len(item_uri),200]))
         val_widg.setMaximumWidth(200)
         self.op.inputs[name] = optools.InputLocator(src_indx,item_uri)
         self.ui.op_info.setPlainText(self.op.description())
@@ -314,10 +333,9 @@ class OpUiManager(object):
         self.ui.op_selector.setModel(self.opman)
         self.ui.op_selector.hideColumn(1)
         self.ui.op_selector.clicked.connect( partial(self.get_op_from_tree,self.opman) )
-        self.ui.op_selector.activated.connect( partial(self.ui.op_selector.setCurrentIndex) )
+        self.ui.op_selector.activated.connect( partial(self.get_op_from_tree,self.opman) )
         # Populate uri entry fields
         self.ui.uri_prompt.setText('operation uri:')
-        #self.ui.uri_prompt.setMinimumWidth(100)
         #self.ui.uri_prompt.setMaximumWidth(150)
         #self.ui.uri_entry.setMaximumWidth(150)
         self.ui.uri_prompt.setReadOnly(True)
@@ -326,14 +344,14 @@ class OpUiManager(object):
         + self.ui.uri_prompt.styleSheet() )
         self.ui.test_button.setText("&Test")
         self.ui.test_button.setEnabled(False)
-        #self.ui.test_button.setMinimumWidth(100)
         self.ui.test_button.clicked.connect(self.test_op)
         self.ui.load_button.setText("&Load")
-        #self.ui.load_button.setMinimumWidth(100)
         self.ui.load_button.clicked.connect(self.load_op)
         self.ui.load_button.setDefault(True)
+        self.ui.test_button.setMinimumWidth(100)
+        self.ui.load_button.setMinimumWidth(100)
         self.ui.exit_button.setText("E&xit")
-        #self.ui.exit_button.setMinimumWidth(100)
+        self.ui.exit_button.hide()
         self.ui.exit_button.clicked.connect(self.ui.close)
         self.ui.exit_button.clicked.connect(self.ui.deleteLater)
         #self.ui.returnPressed.connect(self.load_op)

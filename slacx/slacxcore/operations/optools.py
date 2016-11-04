@@ -63,7 +63,7 @@ def text_widget(text):
 def src_selection_widget():
     widg = QtGui.QComboBox()
     widg.addItems(input_sources)
-    widg.setMinimumWidth(120)
+    #widg.setMinimumWidth(120)
     return widg 
 
 #def item_selection_widget(self):
@@ -84,15 +84,19 @@ def hdr_widget(text):
 
 def smalltext_widget(text):
     widg = text_widget(text)
-    widg.setMaximumWidth( 20 )
+    #widg.setMaximumWidth( 20 )
     widg.setStyleSheet( "QLineEdit { background-color: transparent }" + widg.styleSheet() )
     return widg
 
-def bigtext_widget(text):
-    widg = QtGui.QLineEdit(text)
+def bigtext_widget(text,trunc_limit=70):
+    if len(text) > trunc_limit:
+        display_text = text[:trunc_limit]+'...'
+    else:
+        display_text = text
+    widg = QtGui.QLineEdit(display_text)
     widg.setReadOnly(True)
-    widg.setMinimumWidth(7*len(text))
-    # TODO: Truncate the text?
+    #widg.setMinimumWidth(500)
+    #widg.setMaximumWidth(10*len(display_text))
     widg.setAlignment(QtCore.Qt.AlignLeft)
     return widg
 
@@ -100,8 +104,8 @@ def namewidget(name):
     name_widget = QtGui.QLineEdit(name)
     name_widget.setReadOnly(True)
     name_widget.setAlignment(QtCore.Qt.AlignRight)
-    name_widget.setMinimumWidth(7*len(name))
-    #name_widget.setMaximumWidth(15*len(name))
+    #name_widget.setMinimumWidth(7*len(name))
+    #name_widget.setMaximumWidth(10*len(name))
     return name_widget
 
 ##### MINIMAL CLASS FOR VERTICAL HEADERS
