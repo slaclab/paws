@@ -146,23 +146,23 @@ class OpUiManager(object):
                 i+=1 
 
     def input_header_widgets(self,row):
-        self.ui.input_layout.addWidget(optools.hdr_widget('name'),row,self.name_col,1,1)
-        self.ui.input_layout.addWidget(optools.hdr_widget('source'),row,self.src_col,1,1)
-        self.ui.input_layout.addWidget(optools.hdr_widget('type'),row,self.type_col,1,1)
-        self.ui.input_layout.addWidget(optools.hdr_widget('value'),row,self.val_col,1,1)
+        self.ui.input_layout.addWidget(uitools.hdr_widget('name'),row,self.name_col,1,1)
+        self.ui.input_layout.addWidget(uitools.hdr_widget('source'),row,self.src_col,1,1)
+        self.ui.input_layout.addWidget(uitools.hdr_widget('type'),row,self.type_col,1,1)
+        self.ui.input_layout.addWidget(uitools.hdr_widget('value'),row,self.val_col,1,1)
 
     def output_header_widgets(self,row):
-        self.ui.output_layout.addWidget(optools.hdr_widget('name'),row,self.name_col,1,1)
-        self.ui.output_layout.addWidget(optools.hdr_widget('description'),row,self.src_col,1,self.btn_col-self.src_col)
+        self.ui.output_layout.addWidget(uitools.hdr_widget('name'),row,self.name_col,1,1)
+        self.ui.output_layout.addWidget(uitools.hdr_widget('description'),row,self.src_col,1,self.btn_col-self.src_col)
 
     def add_input_widgets(self,name,val,row):
         """Loads a set of widgets for setting or reading input or output data"""
-        name_widget = optools.namewidget(name)
+        name_widget = uitools.namewidget(name)
         self.ui.input_layout.addWidget( name_widget,row,self.name_col,1,1 )
-        eq_widget = optools.smalltext_widget('=')
+        eq_widget = uitools.smalltext_widget('=')
         eq_widget.setMaximumWidth(20)
         self.ui.input_layout.addWidget(eq_widget,row,self.eq_col,1,1)
-        src_widget = optools.src_selection_widget() 
+        src_widget = uitools.src_selection_widget() 
         self.src_widgets[name] = src_widget 
         #val_widget = QtGui.QLineEdit(str(val))
         self.ui.input_layout.addWidget(src_widget,row,self.src_col,1,1)
@@ -175,12 +175,12 @@ class OpUiManager(object):
         name_widget.setSizePolicy(QtGui.QSizePolicy.Minimum,QtGui.QSizePolicy.Fixed)
 
     def add_output_widgets(self,name,row):
-        name_widget = optools.namewidget(name)
+        name_widget = uitools.namewidget(name)
         self.ui.output_layout.addWidget(name_widget,row,self.name_col)
-        eq_widget = optools.smalltext_widget('=')
+        eq_widget = uitools.smalltext_widget('=')
         eq_widget.setMaximumWidth(20)
         self.ui.output_layout.addWidget(eq_widget,row,self.eq_col)
-        desc_widget = optools.bigtext_widget(self.op.output_doc[name])
+        desc_widget = uitools.bigtext_widget(self.op.output_doc[name])
         self.ui.output_layout.addWidget(desc_widget,row,self.src_col,1,self.btn_col-self.src_col)
         ht = desc_widget.sizeHint().height()
         name_widget.sizeHint = lambda: QtCore.QSize(8*len(name_widget.text()),ht)

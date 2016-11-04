@@ -1,6 +1,4 @@
-from PySide import QtGui, QtCore
-
-# TODO: Get QtGui out of this module - it is a core module
+from PySide import QtCore
 
 ##### DEFINITIONS OF SOURCES FOR OPERATION INPUTS
 input_sources = ['None','Filesystem','Operations','Text'] 
@@ -53,79 +51,4 @@ class InputLocator(object):
         self.src = src
         self.val = val 
         self.data = None 
-
-def text_widget(text):
-    widg = QtGui.QLineEdit(text)
-    widg.setReadOnly(True)
-    widg.setAlignment(QtCore.Qt.AlignHCenter)
-    return widg 
-
-def src_selection_widget():
-    widg = QtGui.QComboBox()
-    widg.addItems(input_sources)
-    #widg.setMinimumWidth(120)
-    return widg 
-
-#def item_selection_widget(self):
-#    widg = QtGui.QPushButton('Select...')
-#    return widg
-
-#def vert_hdr_widget(self,text):
-#    # TODO: Fix this, some day.
-#    widg = VertQLineEdit(text)
-#    return widg 
-
-def hdr_widget(text):
-    widg = QtGui.QLineEdit(text)
-    widg.setReadOnly(True)
-    widg.setAlignment(QtCore.Qt.AlignHCenter)
-    widg.setStyleSheet( "QLineEdit { background-color: transparent }" + widg.styleSheet() )
-    return widg 
-
-def smalltext_widget(text):
-    widg = text_widget(text)
-    #widg.setMaximumWidth( 20 )
-    widg.setStyleSheet( "QLineEdit { background-color: transparent }" + widg.styleSheet() )
-    return widg
-
-def bigtext_widget(text,trunc_limit=70):
-    if len(text) > trunc_limit:
-        display_text = text[:trunc_limit]+'...'
-    else:
-        display_text = text
-    widg = QtGui.QLineEdit(display_text)
-    widg.setReadOnly(True)
-    #widg.setMinimumWidth(500)
-    #widg.setMaximumWidth(10*len(display_text))
-    widg.setAlignment(QtCore.Qt.AlignLeft)
-    return widg
-
-def namewidget(name):
-    name_widget = QtGui.QLineEdit(name)
-    name_widget.setReadOnly(True)
-    name_widget.setAlignment(QtCore.Qt.AlignRight)
-    #name_widget.setMinimumWidth(7*len(name))
-    #name_widget.setMaximumWidth(10*len(name))
-    return name_widget
-
-##### MINIMAL CLASS FOR VERTICAL HEADERS
-#class VertQLineEdit(QtGui.QLineEdit):
-class VertQLineEdit(QtGui.QWidget):
-    """QLineEdit, but vertical"""
-    def __init__(self,text):
-        super(VertQLineEdit,self).__init__()
-        self.text = text
-        #wid = self.geometry().width()
-        #ht = self.geometry().height()
-        #rt = self.geometry().right()
-        #t = self.geometry().top()
-        # QWidget.setGeometry(left,top,width,height)
-        #self.setGeometry(t, rt, ht, wid)
-
-    def paintEvent(self,event):
-        qp = QtGui.QPainter()
-        qp.begin(self)
-        qp.rotate(90)
-        qp.drawText(0,0,self.text)
-        qp.end()
 

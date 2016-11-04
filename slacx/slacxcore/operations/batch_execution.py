@@ -11,19 +11,18 @@ class BatchFromFiles(Operation):
 
     def __init__(self):
         input_names = ['dir_path','regex','substitutions']
-        output_names = ['batch_list','batch_outputs']
+        output_names = ['batch_iterator','batch_outputs']
         super(BatchFromFiles,self).__init__(input_names,output_names)
         self.input_doc['dir_path'] = 'path to directory containing batch of files to be used as input'
         self.input_doc['regex'] = 'string with * wildcards that will be substituted to indicate input files'
         self.input_doc['substitutions'] = 'list of substitutions for regex to build file names'
-        self.output_doc['batch_list'] = 'list of file paths to be used as input'
+        self.output_doc['batch_iterator'] = 'iterator whose next() method emits the next file path'
         self.output_doc['batch_outputs'] = 'Dict of dicts containing the workflow outputs for each input file'
         self.categories = ['EXECUTION.BATCH']
         self.input_src['dir_path'] = optools.fs_input
         self.input_src['regex'] = optools.text_input 
         self.input_src['substitutions'] = optools.op_input 
         self.input_type['regex'] = optools.str_type
-        self.inputs['regex'] = '*.tif'
         
     def run(self):
         """
@@ -34,10 +33,10 @@ class BatchFromFiles(Operation):
         rx = self.inputs['regex']
         subs = self.inputs['substitutions']
         # Perform the computation
-        batch_list = [dirpath+'/'+rx.replace('*',sub) for sub in subs]
+        batch_list = [dirpath+'/'*rx.replace('*',sub) for sub in subs]
         # Save the output
         #self.outputs['batch_iterator'] = iter(batch_list) 
-        self.outputs['batch_list'] = batch_list 
+        self.outputs['batch_iterator'] = batch_list 
         # Instantiate the batch_output dict
         self.outputs['batch_outputs'] = dict.fromkeys(batch_list)
 
