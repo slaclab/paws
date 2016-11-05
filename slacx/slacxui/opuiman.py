@@ -10,6 +10,7 @@ from ..slacxcore.operations import optools
 from ..slacxcore.operations.slacxop import Operation 
 from ..slacxcore.workflow.slacxwfman import WfManager
 from ..slacxcore import slacxtools
+from ..slacxcore.operations.optools import InputLocator
 from . import uitools
 
 class OpUiManager(object):
@@ -37,18 +38,26 @@ class OpUiManager(object):
 
     def get_op_from_tree(self,trmod,item_indx):
         xitem = trmod.get_item(item_indx)
-        if xitem.data:
+        if xitem.n_data() > 0:
             x = xitem.data[0]
-            if x:
-                # TODO: cleaner type checking?
-                if isinstance(x,str):  
-                    self.ui.op_info.setPlainText('Operation category {}'.format(x))
-                elif issubclass(x,Operation):
-                    # Create a new Operation 
-                    self.create_op(x)
-                elif isinstance(x,Operation):
-                    # Load existing Operation
-                    self.set_op(x,xitem.tag())
+            # TODO: cleaner type checking?
+            try:
+                new_op_flag = issubclass(x,Operation)
+            except:
+                new_op_flag = False
+            try:
+                existing_op_flag = isinstance(x,Operation)
+            except:
+                existing_op_flag = False
+            if not new_op_flag and not existing_op_flag:  
+                self.clear_nameval_list()
+                self.ui.op_info.setPlainText('Selected item: {}'.format(x))
+            elif new_op_flag:
+                # Create a new Operation 
+                self.create_op(x)
+            elif existing_op_flag:
+                # Load existing Operation
+                self.set_op(x,xitem.tag())
 
     def set_op(self,op,uri):
         self.op = op
@@ -207,13 +216,22 @@ class OpUiManager(object):
             btn_widget = None
         elif (src_indx == optools.op_input
             or src_indx == optools.fs_input):
-            type_widget = QtGui.QLineEdit('type: auto')
-            type_widget.setReadOnly(True)
             if self.op.inputs[name]:
-                # op.inputs[name] should be an InputLocator with a uri stored as its val
-                val_widget = QtGui.QLineEdit(self.op.inputs[name].val)
+                if isinstance(self.op.inputs[name],InputLocator):
+                    # op.inputs[name] should have a uri stored as its val
+                    val = self.op.inputs[name].val
+                else:
+                    # op.inputs[name] has already been loaded from its InputLocator
+                    val = self.op.inputs[name]
+                val_widget = QtGui.QLineEdit(str(val))
+                if src_indx == optools.fs_input:
+                    type_widget = QtGui.QLineEdit('file path')
+                elif src_indx == optools.op_input:
+                    type_widget = QtGui.QLineEdit(type(val).__name__)
             else:
+                type_widget = QtGui.QLineEdit('type: auto')
                 val_widget = QtGui.QLineEdit('value: select ->')
+            type_widget.setReadOnly(True)
             val_widget.setReadOnly(True)
             btn_widget = QtGui.QPushButton('browse...')
             btn_widget.clicked.connect( partial(self.fetch_data,name,src_indx,type_widget,val_widget) )
@@ -236,7 +254,7 @@ class OpUiManager(object):
             val = float(val_widg.text())
         #elif src_indx == optools.array_type:
         #    val = np.array(val_widg.text())
-        elif type_indx == optools.string_type:
+        elif type_indx == optools.str_type:
             val = val_widg.text()
         else:
             msg = 'type selection {}, should be between 1 and {}'.format(type_indx,len(optools.valid_types))
@@ -304,7 +322,7 @@ class OpUiManager(object):
             type_widg.setText(type(trmod.get_item(item_indx).data[0]).__name__)
         val_widg.setText(item_uri)
         #val_widg.setMinimumWidth(min([8*len(item_uri),200]))
-        val_widg.setMaximumWidth(200)
+        #val_widg.setMaximumWidth(200)
         self.op.inputs[name] = optools.InputLocator(src_indx,item_uri)
         self.ui.op_info.setPlainText(self.op.description())
         src_ui.close()
@@ -326,6 +344,10 @@ class OpUiManager(object):
         #self.ui.input_box.setMinimumWidth(600)
         #self.ui.op_frame.setMinimumWidth(400)
         #self.ui.op_frame.setMaximumWidth(400)
+        ht = self.ui.op_frame.sizeHint().height()
+        self.ui.op_frame.sizeHint = lambda: QtCore.QSize(400,ht)
+        self.ui.op_frame.setSizePolicy(
+        QtGui.QSizePolicy.Minimum,self.ui.op_frame.sizePolicy().verticalPolicy())
         self.ui.wf_selector.setModel(self.wfman)
         self.ui.wf_selector.hideColumn(1)
         self.ui.wf_selector.clicked.connect( partial(self.get_op_from_tree,self.wfman) )
@@ -353,6 +375,7 @@ class OpUiManager(object):
         self.ui.exit_button.hide()
         self.ui.exit_button.clicked.connect(self.ui.close)
         self.ui.exit_button.clicked.connect(self.ui.deleteLater)
+        self.ui.splitter.setStretchFactor(0,1000)    
         #self.ui.returnPressed.connect(self.load_op)
         self.ui.setStyleSheet( "QLineEdit { border: none }" + self.ui.styleSheet() )
         self.ui.setAttribute(QtCore.Qt.WA_DeleteOnClose)

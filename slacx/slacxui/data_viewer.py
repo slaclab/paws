@@ -14,8 +14,8 @@ def display_item(item,uri,qlayout,logmethod=None):
         logmethod('Log messages for data viewer not yet implemented')
 
     # Loop through the layout, last to first, clear the frame
-    n_val_widgets = qlayout.count()
-    for i in range(n_val_widgets-1,-1,-1):
+    n_widgets = qlayout.count()
+    for i in range(n_widgets-1,-1,-1):
         # QLayout.takeAt returns a LayoutItem
         widg = qlayout.takeAt(i)
         # get the QWidget of that LayoutItem and set it to deleteLater()
@@ -41,6 +41,14 @@ def display_item(item,uri,qlayout,logmethod=None):
         display_text = 'DICT PRINTOUT: '
         for k,v in item.items():
             display_text += '<br> {}: {}'.format(k,v)
+        text_widget = QtGui.QTextEdit(display_text)
+    elif type(item).__name__ == 'list':
+        display_text = 'LIST PRINTOUT: '
+        for x in item:
+            display_text += '<br> {}: {}'.format(x)
+        text_widget = QtGui.QTextEdit(display_text)
+    elif type(item).__name__ == 'listiterator':
+        display_text = 'ITERATOR PRINTOUT: <br> (cannot print without mutating iterator)'
         text_widget = QtGui.QTextEdit(display_text)
     else:
         text_widget = None

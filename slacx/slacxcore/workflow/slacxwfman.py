@@ -4,6 +4,7 @@ import dask.threaded
 from ..treemodel import TreeModel
 from ..treeitem import TreeItem
 from ..operations import optools
+from ..operations.optools import InputLocator
 from .slacxwf import Workflow
 
 # TODO: See note on remove_op()
@@ -207,8 +208,9 @@ class WfManager(TreeModel):
                 #indx = self.index(j,0,QtCore.QModelIndex())
                 op = item.data[0]
                 for name,val in op.inputs.items():
-                    val.data = self.locate_input(val)
-                    op.inputs[name] = val.data
+                    if isinstance(val,InputLocator):
+                        val.data = self.locate_input(val)
+                        op.inputs[name] = val.data
                 op.run()
                 ops_done.append(j)
                 self.update_op(item.tag(),op)

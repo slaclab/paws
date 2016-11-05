@@ -83,22 +83,19 @@ class UiManager(object):
         if item_indx.isValid(): 
             if self.opman.get_item(item_indx).n_data() > 0:
                 x = self.opman.get_item(item_indx).data[0]
-                if isinstance(x,str):
-                    # this is a category- do nothing meaningful
-                    pass
-                elif issubclass(x,Operation):
+                try:
+                    new_op_flag = issubclass(x,Operation)
+                except:
+                    new_op_flag = False
+                if new_op_flag:
                     uiman = self.start_op_ui_manager(self.opman,item_indx)
                     uiman.ui.op_selector.setCurrentIndex(item_indx)
                     uiman.ui.show()
-                else:
-                    # may as well just pass
-                    pass
-                    #msg = '[{}] tried to add operation on object {} of type {}'.format(
-                    #    __name__,x,type(x).__name__)
-                    #raise ValueError(msg)
-        else:
-            uiman = self.start_op_ui_manager(None,None,QtCore.QModelIndex())
-            uiman.ui.show()
+                    return
+        # if we are here, there was either an invalid index selected,
+        # or the selection was not an Operation
+        uiman = self.start_op_ui_manager(None,QtCore.QModelIndex())
+        uiman.ui.show()
             
 
     def start_op_ui_manager(self,trmod,indx):
@@ -136,7 +133,7 @@ class UiManager(object):
         self.ui.op_tree.resizeColumnToContents(0)
         self.ui.workflow_tree.resizeColumnToContents(0)
         self.ui.workflow_tree.resizeColumnToContents(1)
-        self.ui.splitter.setStretchFactor(1,24)    
+        self.ui.splitter.setStretchFactor(1,2)    
 
     def connect_actions(self):
         """Set up the works for buttons and menu items"""
