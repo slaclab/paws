@@ -4,7 +4,7 @@ from os.path import join
 
 xmin = 0.02
 xmax = 50
-xstep = 0.02
+xstep = 0.01
 
 outloc = 'slacx/slacxcore/operations/dmz/testplots'
 
@@ -47,9 +47,7 @@ def blur(x, factor):
     for ii in range(len(factorVals)):
         y = factorStretched(x, factorVals[ii])
         ysum += rhoVals[ii]*y*deltaFactor
-    #print rhoVals.sum()
-    #ymean = ysum/rhoVals.sum()
-    return ysum # ymean
+    return ysum
 
 
 
@@ -63,7 +61,6 @@ def makeForPlots():
     y20 = blur(x, 0.2)
     return x, y1, y2, y02, y05, y10, y20
 
-#x, y1, y2, y02, y05, y10, y20 = makeForPlots()
 
 def coPlots(x, y1, y2, y02, y05, y10, y20):
     fig1 = plt.figure()
@@ -74,7 +71,18 @@ def coPlots(x, y1, y2, y02, y05, y10, y20):
     ax1.set_xlabel('q * const')
     ax1.set_ylabel('I * const')
     fig1.suptitle('Exact monodisperse spectrum')
-    fig1.savefig(join(outloc, 'exact.pdf'))
+    plt.close()
+
+    fig2 = plt.figure()
+    xsmall = (x > 0.1) & (x < 1)
+    ax2 = fig2.add_subplot(111)
+    ax2.plot(x[xsmall], y1[xsmall], c='k', lw=2)
+    ysmall = (1 - 0.2*x[xsmall]**2)/9.
+    ax2.plot(x[xsmall], ysmall, c='b', lw=1)
+    ax2.set_xlabel('q * const')
+    ax2.set_ylabel('I * const')
+    fig2.suptitle('Low-q approximation')
+    fig2.savefig(join(outloc, 'small_approx.pdf'))
     plt.close()
 
     fig4 = plt.figure()
@@ -84,8 +92,8 @@ def coPlots(x, y1, y2, y02, y05, y10, y20):
     p05, = ax4.plot(x, y05, c='g', lw=1)
     p10, = ax4.plot(x, y10, c='r', lw=1)
     p20, = ax4.plot(x, y20, c='purple', lw=1)
-    ax4.legend((px, p02, p05, p10, p20), ('Monodisperse relation', '2% size variation', '5% size variation', '10% size variation',
-                                          '20% size variation'), loc='lower left')
+    ax4.legend((px, p02, p05, p10, p20), ('Monodisperse relation', '2% size variation', '5% size variation',
+                                          '10% size variation', '20% size variation'), loc='lower left')
     ax4.set_xscale('log')
     ax4.set_yscale('log')
     ax4.set_xlabel('q * const')
@@ -94,24 +102,28 @@ def coPlots(x, y1, y2, y02, y05, y10, y20):
     fig4.savefig(join(outloc, 'polydispersity.pdf'))
     plt.close()
 
+#x, y1, y2, y02, y05, y10, y20 = makeForPlots()
 #coPlots(x, y1, y2, y02, y05, y10, y20)
 
 
 
 def makeForCalcs():
     maxFactorPercent = 35
-    factorVals = np.arange(1, maxFactorPercent+1, dtype=int)*0.01
+    step = 0.5
+    factorVals = np.arange(1, maxFactorPercent+step, step)*0.01
     x = np.arange(xmin, xmax, xstep)
     y0 = fullFunction(x)
-    xFirstDip = np.zeros(maxFactorPercent)
-    powerLaw = np.zeros((maxFactorPercent,2))
-    depthFirstDip = np.zeros(maxFactorPercent)
-    sigmaFirstDip = np.zeros(maxFactorPercent)
-    for ii in range(maxFactorPercent):
+    num_tests = len(factorVals)
+    xFirstDip = np.zeros(num_tests)
+    powerLaw = np.zeros((num_tests,2))
+    depthFirstDip = np.zeros(num_tests)
+    sigmaFirstDip = np.zeros(num_tests)
+    y_x4_inf = np.zeros(num_tests)
+    for ii in range(num_tests):
         factor = factorVals[ii]
         y = blur(x, factor)
-        x_high = np.arange(1e5, 1e5+100)
-        y_inf_scaled = (blur(x_high, factor) * x_high**4).mean()
+        x_high = np.arange(1e5, 1e5+1e3)
+        y_x4_inf[ii] = (blur(x_high, factor) * x_high**4).mean()
         #logcurv = noiseless_curvature(np.log(x), np.log(y))
         scaled_y = y * x**4
         scaled_curv = noiseless_curvature(x, scaled_y)
@@ -120,16 +132,16 @@ def makeForCalcs():
         #dips = local_minima_detector(y/(x**-4))
         #shoulders = local_maxima_detector(y/(x**-4))
         dips, shoulders = clean_extrema(dips, shoulders)
-        plot_diagnostics(x, y, y0, y_inf_scaled, dips, shoulders, factor)
-        xFirstDip[ii], quadCoefficients = firstDipLoc(x, scaled_y, dips)
-        print ii+1, quadCoefficients
+        plot_diagnostics(x, y, y0, y_x4_inf[ii], dips, shoulders, factor)
+        xFirstDip[ii], quadCoefficients = firstDipLoc(x, scaled_y, dips)  ###
+        print str(factorVals[ii]*100), quadCoefficients
         linCoefficients = linear_fit(np.log(x[shoulders]), np.log(y[shoulders]))
         powerLaw[ii,0] = np.e**(linCoefficients[0])
         powerLaw[ii,1] = linCoefficients[1]
         powerLawAtFirstDip = np.e**(linCoefficients[0] + np.log(xFirstDip[ii]) * linCoefficients[1])
-
-        depthFirstDip[ii] = powerLawAtFirstDip - (quadCoefficients[0] + quadCoefficients[1]*xFirstDip[ii] +
-                                                  quadCoefficients[2]*(xFirstDip[ii]**2))*(xFirstDip[ii]**-4)
+        heightAtFirstDip = (quadCoefficients[0] + quadCoefficients[1]*xFirstDip[ii] +
+                            (quadCoefficients[2]*(xFirstDip[ii]**2)))*(xFirstDip[ii]**-4)
+        depthFirstDip[ii] = (powerLawAtFirstDip - heightAtFirstDip)
         _, sigmaFirstDipLog = gauss_guess(depthFirstDip[ii], 2*quadCoefficients[2])
         sigmaFirstDip[ii] = np.e**sigmaFirstDipLog
         plot_factor(x, y, y0, dips, shoulders, linCoefficients, factor)
@@ -156,8 +168,8 @@ def plot_diagnostics(x, y, y0, y_inf_scaled, dips, shoulders, factor):
     scaled_y0 = y0 * x**4
     scaled_curv = noiseless_curvature(x, scaled_y)
     scaled_curv0 = noiseless_curvature(x, scaled_y0)
-    curv = noiseless_curvature(x, y)
-    curv0 = noiseless_curvature(x, y0)
+    #curv = noiseless_curvature(x, y)
+    #curv0 = noiseless_curvature(x, y0)
     fig, axarray = plt.subplots(4, sharex=True)
     axarray[0].plot(x, y0, c='k', lw=2, marker=None)
     axarray[0].plot(x, y, c='b', lw=1, marker=None)
@@ -179,12 +191,14 @@ def plot_diagnostics(x, y, y0, y_inf_scaled, dips, shoulders, factor):
     axarray[2].set_ylabel('$\delta_q^2 (I \cdot q^4)$')
     axarray[3].plot(x[dips], (y_inf_scaled - scaled_y[dips]), c='r', lw=0, marker='x')
     axarray[3].plot(x[shoulders], (scaled_y[shoulders] - y_inf_scaled), c='purple', lw=0, marker='x')
-    axarray[3].set_ylabel('A thing')
+    axarray[3].set_ylabel('Extrema vs $y_\inf$')
     axarray[3].set_yscale('log')
     fig.suptitle('$\Delta x / x_0 = $ %f' % factor)
-    factorstring = str(int(factor*100))
-    if len(factorstring) == 1:
-        factorstring = '0' + factorstring
+    factorstring = str(factor)[2:]
+    while len(factorstring) < 3:
+        factorstring = factorstring + '0'
+    if len(factorstring) > 3:
+        factorstring = factorstring[:3]
     filename = 'diagnostic_factor%s.pdf' % factorstring
     fig.savefig(join(outloc, filename))
     plt.close()
@@ -205,9 +219,11 @@ def plot_factor(x, y, y0, dips, shoulders, coefficients, factor):
     ax.set_xlabel('q * const')
     ax.set_ylabel('I * const')
     fig.suptitle('$\Delta x / x_0 = $ %f' % factor)
-    factorstring = str(int(factor*100))
-    if len(factorstring) == 1:
-        factorstring = '0' + factorstring
+    factorstring = str(factor)[2:]
+    while len(factorstring) < 3:
+        factorstring = factorstring + '0'
+    if len(factorstring) > 3:
+        factorstring = factorstring[:3]
     filename = 'factor%s.pdf' % factorstring
     fig.savefig(join(outloc, filename))
     plt.close()
@@ -430,7 +446,7 @@ def plot_progression(factorVals, xFirstDip, powerLaw, depthFirstDip, sigmaFirstD
     ax3 = fig3.add_subplot(111)
     ax3.plot(factorVals*100, sigmaFirstDip, c='k', lw=1, marker='.')
     ax3.set_xlabel('$\Delta r / r_0 \cdot 100$')
-    ax3.set_ylabel('Width of first dip in units of $x = q \cdot r0$')
+    ax3.set_ylabel('Sigma "width" of first dip in units of $x = q \cdot r0$')
     fig3.savefig(join(outloc, 'dip_width.pdf'))
     plt.close()
 
@@ -460,3 +476,5 @@ def plot_progression(factorVals, xFirstDip, powerLaw, depthFirstDip, sigmaFirstD
 
 
 plot_progression(factorVals, xFirstDip, powerLaw, depthFirstDip, sigmaFirstDip)
+
+print 'Done!'
