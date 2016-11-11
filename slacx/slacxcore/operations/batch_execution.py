@@ -53,4 +53,7 @@ class BatchFromFiles(Batch):
     def output_list(self):
         return self.outputs['batch_outputs']
 
+    def input_routes(self):
+        return [ self.inputs['input_route'] ]
+
 

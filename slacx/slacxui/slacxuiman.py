@@ -42,7 +42,7 @@ class UiManager(object):
         #self.msg_board_log('Executing current workflow')
         # Check for a batch executor...
         #self.msg_board_log('Determining execution method...')
-        if self.wfman.find_batch_item():
+        if self.wfman.find_batch_items():
             #self.msg_board_log('Start BATCH execution')
             self.wfman.run_wf_batch()
         else:

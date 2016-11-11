@@ -102,6 +102,7 @@ class Operation(object):
             self.outputs[name] = None
 
 
+
 class Batch(Operation):
     __metaclass__ = abc.ABCMeta
     """
@@ -124,24 +125,60 @@ class Batch(Operation):
         Each dict should be populated with [input_uri:input_value] pairs.
         """
         pass
+    @abc.abstractmethod
+    def input_routes(self):
+        """
+        Produce a list of the input routes used by the Batch
+        """
+        pass
 
-    def set_input_at_uri(self,uri,val):
+
+
+class Workflow(Operation):
+    """
+    A Workflow has the same interface as an Operation
+    but is in fact a tree (describing a graph) of Operations,
+    as implemented in the slacx workflow manager (slacxwfman.WfManager).
+    The Inputs to a Workflow are the set of all inputs
+    to the Operations in the graph that are in the "INPUT" category.
+    The run() method of an Workflow calls on the WfManager
+    to execute the Operations by whatever means.
+    """
+
+    def __init__(self,wfman,wfname,desc):
+        # TODO: Find input and output names from the wfman
+        super(Workflow,self).__init__(input_names,output_names)
+        self.categories = ['WORKFLOW']
+        self.wfname = wfname 
+        self.quick_desc = desc
+        self.wfman = wfman
+
+    def description(self):
         """
-        Set an item in self.inputs, indicated by uri, to the value indicated by val.
+        self.description() returns a string 
+        documenting the input and output structure 
+        and usage instructions for the Workflow.
         """
-        path = uri.split('.')
-        # assume path[0] is this operation's TreeItem tag().
-        try:
-            if not path[1] == 'Inputs':
-                msg = 'path {} does not point to operation inputs'.format(uri)
-                raise ValueError(msg)
-            elif not path[2] in self.input_names:
-                msg = 'path {} specifies a non-existent operation input field'.format(uri)
-                raise ValueError(msg)
-            else:
-                self.inputs[name] = val
-        except Exception as ex:
-            msg = '-----\nbad path: {}\n-----'.format(path)
-            raise ex(msg+ex.message)
+        msg = "Workflow: "+self.quick_desc+"\n"
+        # TODO: Loop through the Operations tree
+        # Would be cool to just print this tree eventually. 
+        return msg
+
+    def run(self):
+        self.wfman.run_wf_serial()
+
+    def inputs_description(self):
+        msg = ""
+        # TODO: Loop through the Operations tree
+        return msg 
+
+    def outputs_description(self):
+        msg = ""
+        # TODO: Loop through the Operations tree
+        return msg 
+
+
+
+
 
 

@@ -1,6 +1,8 @@
+import traceback
+from collections import OrderedDict
+
 from PySide import QtCore
 import dask.threaded
-from collections import OrderedDict
 
 from ..treemodel import TreeModel
 from ..treeitem import TreeItem
@@ -130,8 +132,6 @@ class WfManager(TreeModel):
             item.set_long_tag( optools.parameter_doc(name,val,op.output_doc[name]) )
 
     def build_from_dict(self,d,parent):
-        print 'called build_from_dict on:'
-        print d
         n_items = len(d)
         self.beginInsertRows(parent,0,n_items-1)
         p_item = parent.internalPointer()
@@ -146,8 +146,6 @@ class WfManager(TreeModel):
         self.endInsertRows()
 
     def build_from_list(self,l,parent):
-        print 'called build_from_list on:'
-        print l
         n_items = len(l)
         self.beginInsertRows(parent,0,n_items-1)
         p_item = parent.internalPointer()
@@ -226,84 +224,84 @@ class WfManager(TreeModel):
         """
         pass
 
-    def find_batch_item(self):
-        #hasbatch = False
+    def find_batch_items(self):
+        batch_items = [] 
         for item in self.root_items:
-            #if item.data:
             if isinstance(item.data,Batch):
-                return item 
-        return None
+               batch_items.append(item)
+        return batch_items 
 
     def run_wf_batch(self):
         """
-        Executes the workflow for each of the inputs provided by a Batch(Operation)
+        Executes the workflow under the control of the local Batch(Operation) instances
         """
-        # Find the batch input maker
-        # TODO: Deal with multiple batch executors
-        batch_maker_item = self.find_batch_item() 
-        if not batch_maker_item:
+        batch_items = self.find_batch_items() 
+        if not batch_items:
             msg = '[{}] Attempted batch execution, could not find batch input'.format(__name__)
             if self.logmethod:
                 self.logmethod(msg)
             raise ValueError(msg)
         else:
-            batch_maker = batch_maker_item.data
-        # Run any dependencies of the batch inputs
-        dep = self.dependency_list(batch_maker_item)
-        if self.logmethod:
-            self.logmethod('Running batch execution dependencies: {}'.format([item.tag() for item in dep]))
-        for item in dep:
-            op = item.data
-            #if self.logmethod:
-            #    self.logmethod('Loading inputs for {}: {}'.format(str(item.tag()),type(op).__name__))
-            self.load_inputs(op)
-            if self.logmethod:
-                self.logmethod('Running {}: {}'.format(str(item.tag()),type(op).__name__))
-            op.run()
-            #if self.logmethod:
-            #    self.logmethod('Updating {}: {}'.format(str(item.tag()),type(op).__name__))
-            self.update_op(item.tag(),op)
-        # Build the batch. After batch_maker.run(), it is expected that batch_maker.input_list()
-        # will produce a list of dicts, where each dict has the form [workflow tree uri:input value]. 
-        if self.logmethod:
-            self.logmethod('Running batch maker {}: {}'.format(
-                str(batch_maker_item.tag()),type(batch_maker).__name__))
-        self.load_inputs(batch_maker)
-        batch_maker.run()
-        self.update_op(batch_maker_item.tag(),batch_maker)
-        try:
-            for i in range(len(batch_maker.input_list())):
-                input_dict = batch_maker.input_list()[i]
-                #print 'input dict {}:'.format(i)
-                #print input_dict
-                for uri,val in input_dict.items():
-                    optag = uri.split('.')[0]
-                    inptag = uri.split('.')[2]
-                    item, indx = self.get_from_uri(optag)
-                    op = item.data
-                    op.inputs[inptag] = val
-                # Inputs are set, run in serial 
+            for batch_item in batch_items:
+                batch_maker = batch_item.data
+                dep = self.upstream_list(batch_item)
+                if dep and self.logmethod:
+                    self.logmethod('Running batch execution dependencies: {}'.format([item.tag() for item in dep]))
+                    for item in dep:
+                        op = item.data
+                        self.load_inputs(op)
+                        if self.logmethod:
+                            self.logmethod('Running {}'.format(str(item.tag())))
+                        op.run()
+                        self.update_op(item.tag(),op)
+                # Build the batch. After batch_maker.run(), it is expected that batch_maker.input_list()
+                # will produce a list of dicts, where each dict has the form [workflow tree uri:input value]. 
                 if self.logmethod:
-                    self.logmethod( 'Running batch {} / {}'.format(i,len(batch_maker.input_list())-1) )
-                to_run = self.dependency_list()
-                # Remove batch maker from the operations to run
-                to_run.pop(to_run.index(self.find_batch_item()))
-                # Execute the remaining ops in serial
-                self.run_wf_serial(to_run)
-                # Save dict of outputs in batch_maker.output_list()
-                batch_maker.output_list()[i]=self.wf_as_dict(to_run)
-            # Update batch maker to load results
-            self.update_op(batch_maker_item.tag(),batch_maker)
-        except Exception as ex:
-            msg = 'Batch seems to have failed. Error message: {}'.format(ex.message)
-            # Save any work that did finish:
-            self.update_op(batch_maker_item.tag(),batch_maker)
-            if self.logmethod:
-                self.logmethod(msg)
-            print msg
-            raise ex
+                    self.logmethod('Running batch maker {}'.format(str(batch_item.tag())))
+                self.load_inputs(batch_maker)
+                batch_maker.run()
+                self.update_op(batch_item.tag(),batch_maker)
+                try:
+                    for i in range(len(batch_maker.input_list())):
+                        input_dict = batch_maker.input_list()[i]
+                        for uri,val in input_dict.items():
+                            self.set_op_input_at_uri(uri,val)
+                        # Inputs are set, run in serial 
+                        if self.logmethod:
+                            self.logmethod( 'Running batch {} / {}'.format(i,len(batch_maker.input_list())-1) )
+                        to_run = self.downstream_from_batch(batch_item)
+                        #print 'ops to run for this batch: {}'.format([item.tag() for item in to_run])
+                        self.run_wf_serial(to_run)
+                        batch_maker.output_list()[i]=self.ops_as_dict(to_run)
+                    # Update batch maker to load results
+                    self.update_op(batch_item.tag(),batch_maker)
+                    if self.logmethod:
+                        self.logmethod( 'Batch execution complete.' )
+                except Exception as ex:
+                    msg = 'Batch seems to have failed. Error message: {}'.format(ex.message)
+                    # Save any work that did finish:
+                    self.update_op(batch_item.tag(),batch_maker)
+                    tb = traceback.format_exc()
+                    if self.logmethod:
+                        self.logmethod(msg)
+                        self.logmethod(tb)
+                    raise ex
 
-    def wf_as_dict(self,op_items=None):
+    def set_op_input_at_uri(self,uri,val):
+        """Set an op input, indicated by uri, to provided value."""
+        path = uri.split('.')
+        if not len(path) == 3:
+            msg = 'uri {} should have format Operation.Inputs.inputname'.format(uri)
+            raise ValueError(msg)
+        op_itm, idx = self.get_from_uri(path[0])
+        op = op_itm.data
+        if path[1] == 'Inputs' and path[2] in op.inputs.keys():
+            op.inputs[path[2]] = val
+        else:
+            msg = 'uri {} does not specify Inputs, or specifies an invalid inputname'.format(uri)
+            raise ValueError(msg)
+
+    def ops_as_dict(self,op_items=None):
         od = OrderedDict()
         if not op_items:
             op_items = self.root_items
@@ -316,54 +314,67 @@ class WfManager(TreeModel):
             #    uri = uri+'.'+output_item.tag()
             #    od[uri] = output_item.data
 
-    def dependency_list(self,root_item=None):
+    def upstream_list(self,root_item):
         """
         Get an ordered list of Operation-containing items, 
         such that their serial execution will provide consistent dependencies,
-        satisfying eventually the dependencies of provided Operation-containing root_item. 
-        If no root_item is given, a serial execution list for the entire workflow is returned.
+        satisfying eventually the dependencies of provided root_item. 
         """
-        ordered_items = []
-        if root_item:
-            ordered_items.insert(0,root_item)
-            done = False
-            while not done:
-                #print 'ordered items:'
-                #print [item.tag() for item in ordered_items]
-                done = True
-                for item in ordered_items:
-                    #print 'seeking dependencies for item {}'.format(item.tag())
-                    op = item.data
-                    #print 'item.data type: {}'.format(type(op).__name__)
-                    for name in op.inputs.keys():
-                        src = op.input_src[name]
-                        if src == optools.op_input:
-                            op_tag = op.input_locator[name].val.split('.')[0]
-                            io_tag = op.input_locator[name].val.split('.')[1]
-                            if io_tag == 'Outputs':
-                                op_item, indx = self.get_from_uri(op_tag)
-                                if not op_item in ordered_items:
-                                    #print 'item {} depends on item {}'.format(item.tag(),op_item.tag())
-                                    ordered_items.insert(0,op_item)
-                                    done = False
-                                #else:
-                                #    print 'item {} is already in the dependency list'.format(op_item.tag())
-            # At the end, remove root_item from the end, so it does not appear self-dependent.
-            ordered_items.pop(-1)
-        else:
-            # Loop through operations. If no input source is optools.op_input, append.
-            for item in self.root_items:
+        ordered_items = [root_item]
+        done = False
+        while not done:
+            done = True
+            for item in ordered_items:
                 op = item.data
-                if not optools.op_input in [src for name,src in op.input_src.items()]:
-                    ordered_items.append(item)
-                    #print '[{}] item {} has no workflow-dependent inputs'.format(__name__,item)
-            next_items = self.items_ready(ordered_items)
-            while next_items:
-                for item in next_items:
-                    #print '[{}] item {} has satisfied input dependencies'.format(__name__,item)
-                    ordered_items.append(item)
-                next_items = self.items_ready(ordered_items)
+                for name in op.inputs.keys():
+                    # Check if this input is supposed to come from a field in another Operation
+                    src = op.input_src[name]
+                    if src == optools.op_input:
+                        # Check whether or not this is an Output field 
+                        uri = op.input_locator[name].val
+                        op_tag = uri.split('.')[0]
+                        io_tag = uri.split('.')[1]
+                        op_item, indx = self.get_from_uri(op_tag)
+                        if io_tag == 'Outputs' and not op_item in ordered_items:
+                            ordered_items.insert(0,op_item)
+                            done = False
+        # Remove root_item from the end
+        ordered_items.pop(-1)
         return ordered_items
+
+    def serial_execution_list(self):
+        for item in self.root_items:
+            op = item.data
+            if not optools.op_input in [src for name,src in op.input_src.items()]:
+                ordered_items.append(item)
+        next_items = self.items_ready(ordered_items)
+        while next_items:
+            ordered_items = ordered_items + next_items
+            next_items = self.items_ready(ordered_items)
+        return ordered_items
+
+    def downstream_from_batch(self,batch_item):
+        ds_items = []
+        batch_maker = batch_item.data
+        # Get uris of inputs that will be set by the batch maker
+        inroutes = batch_maker.input_routes()
+        for uri in inroutes:
+            op_tag = uri.split('.')[0]
+            op_item, indx = self.get_from_uri(op_tag)
+            # Exclude Batches from downstream ops.
+            # TODO: Consider whether or not we want embedded Batches to work
+            if not isinstance(op_item.data,Batch):
+                ds_items.append(op_item)
+        next_items = self.items_ready(ds_items)
+        while next_items:
+            next_items = self.items_ready(ds_items)
+            for i in range(len(next_items)):
+                item = next_items[i]
+                if isinstance(item.data,Batch):
+                    next_items.pop(i)
+                else:
+                    ds_items.append(item)
+        return ds_items
 
     def items_ready(self,items_done):
         """
@@ -373,11 +384,11 @@ class WfManager(TreeModel):
         for item in self.root_items:
             op = item.data
             op_rdy = True
-            for inpname in op.inputs.keys():
-                if op.input_src[inpname] == optools.op_input:
+            for name,src in op.input_src.items():
+                if src == optools.op_input:
                     # Get the uri for this input
-                    inp_uri = op.input_locator[inpname].val
-                    # Check that the uri points to a thing that exists in this workflow
+                    inp_uri = op.input_locator[name].val
+                    # Check that the uri points to a thing that exists in this WfManager(TreeModel) 
                     if not self.is_good_uri(inp_uri):
                         op_rdy = False
             if not item in items_done and op_rdy:
@@ -393,13 +404,9 @@ class WfManager(TreeModel):
         if self.logmethod:
             self.logmethod('starting serial execution.')
         if not to_run:
-            to_run = self.dependency_list()
-        #if self.logmethod:
-        #    self.logmethod('Order of operations: {}'.format([str(item.tag()) for item in to_run]))
+            to_run = self.serial_execution_list()
         for item in to_run:
             op = item.data
-            #if self.logmethod:
-            #    self.logmethod('Loading inputs for {}: {}'.format(item.tag(),type(op).__name__))
             self.load_inputs(op)
             if self.logmethod:
                 self.logmethod('Running {}: {}'.format(item.tag(),type(op).__name__))
@@ -409,17 +416,16 @@ class WfManager(TreeModel):
             self.logmethod('finished serial execution.')
 
     def load_inputs(self,op):
-        print '--- load inputs ---'
+        """
+        Loads data for an Operation from that Operation's input_locator.
+        If op.input_locator[name] is not an InputLocator,
+        this does nothing and trusts that the input is managed by another means 
+        (e.g. explicitly setting that input from a Batch executor module)
+        """
         for name,val in op.input_locator.items():
-            print 'before load: input {} = {}'.format(name,op.inputs[name])
             if isinstance(val,InputLocator):
                 val.data = self.locate_input(val)
                 op.inputs[name] = val.data
-            #else:
-            # No inputLocator for this input. 
-            # Do nothing and trust the input to be set by other means.
-            print 'after load: input {} = {}'.format(name,op.inputs[name])
-        print '--- end load inputs ---'
 
     def run_wf_graph(self):
         """
@@ -506,11 +512,10 @@ class WfManager(TreeModel):
         If this is called on anything other than an InputLocator,
         it does nothing and returns the input argument.
         """
-        #if type(inplocator).__name__ == 'InputLocator':
         if isinstance(inplocator,InputLocator):
             src = inplocator.src
             val = inplocator.val
-            print 'called locate_input for src {}, val {}'.format(src,val)
+            #print 'called locate_input for src {}, val {}'.format(src,val)
             if src in optools.valid_sources:
                 if (src == optools.fs_input
                 or src == optools.text_input): 
@@ -534,27 +539,33 @@ class WfManager(TreeModel):
         else:
             # if this method gets called on an input that is not an InputLocator,
             # do nothing, return the input.
-            print 'called locate_input on non-InputLocator: {}'.format(inplocator)
+            #print 'called locate_input on non-InputLocator: {}'.format(inplocator)
             return inplocator
 
     def get_from_uri(self, uri):
+        """Get from this tree the item at the given uri."""
         path = uri.split('.')
         parent_indx = QtCore.QModelIndex()
-        for itemuri in path:
-            # get QModelIndex of item 
-            row = self.list_tags(parent_indx).index(itemuri)
-            qindx = self.index(row,0,parent_indx)
-            # get TreeItem from QModelIndex
-            item = self.get_item(qindx)
-            # set new parent in case the path continues...
-            parent_indx = qindx
-        return item, qindx
+        try:
+            for itemuri in path:
+                # get QModelIndex of item 
+                row = self.list_tags(parent_indx).index(itemuri)
+                qindx = self.index(row,0,parent_indx)
+                # get TreeItem from QModelIndex
+                item = self.get_item(qindx)
+                # set new parent in case the path continues...
+                parent_indx = qindx
+            return item, qindx
+        except Exception as ex:
+            msg = '-----\nbad uri: {}\n-----'.format(uri)
+            raise ex(msg+ex.message)
+        
 
     def next_uri(self,prefix):
         indx = 0
         goodtag = False
         while not goodtag:
-            testtag = prefix+'{}'.format(indx)
+            testtag = prefix+'_{}'.format(indx)
             if not testtag in self.list_tags(QtCore.QModelIndex()):
                 goodtag = True
             else:
