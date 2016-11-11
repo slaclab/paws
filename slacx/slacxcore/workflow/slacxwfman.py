@@ -9,7 +9,6 @@ from ..treeitem import TreeItem
 from ..operations import optools
 from ..operations.slacxop import Operation, Batch
 from ..operations.optools import InputLocator
-from .slacxwf import Workflow
 
 # TODO: See note on remove_op()
 
@@ -368,12 +367,15 @@ class WfManager(TreeModel):
         next_items = self.items_ready(ds_items)
         while next_items:
             next_items = self.items_ready(ds_items)
+            pop_list = []
             for i in range(len(next_items)):
                 item = next_items[i]
                 if isinstance(item.data,Batch):
-                    next_items.pop(i)
+                    pop_list.append(i)
                 else:
                     ds_items.append(item)
+            for idx in pop_list:
+                next_items.pop(idx)
         return ds_items
 
     def items_ready(self,items_done):
