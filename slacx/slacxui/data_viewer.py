@@ -35,7 +35,7 @@ def display_item(item,uri,qlayout,logmethod=None):
     
     # Produce widgets for displaying strings, dicts, etc.
     if type(item).__name__ in ['str','unicode']:
-        display_text = 'UNICODE PRINTOUT: <br>{}'.format(item)
+        display_text = 'STRING PRINTOUT: <br>{}'.format(item)
         text_widget = QtGui.QTextEdit(display_text)
     elif type(item).__name__ == 'dict':
         display_text = 'DICT PRINTOUT: '
@@ -44,14 +44,15 @@ def display_item(item,uri,qlayout,logmethod=None):
         text_widget = QtGui.QTextEdit(display_text)
     elif type(item).__name__ == 'list':
         display_text = 'LIST PRINTOUT: '
-        for x in item:
-            display_text += '<br> {}: {}'.format(x)
+        for i in range(len(item)):
+            display_text += '<br> {}: {}'.format(i,item[i])
         text_widget = QtGui.QTextEdit(display_text)
-    elif type(item).__name__ == 'listiterator':
-        display_text = 'ITERATOR PRINTOUT: <br> (cannot print without mutating iterator)'
-        text_widget = QtGui.QTextEdit(display_text)
+    #elif type(item).__name__ == 'listiterator':
+    #    display_text = 'ITERATOR PRINTOUT: <br> (skipping- cannot print without mutating iterator)'
+    #    text_widget = QtGui.QTextEdit(display_text)
     else:
-        text_widget = None
+        display_text = 'ITEM PRINTOUT: <br>{}'.format(item)
+        text_widget = QtGui.QTextEdit(display_text)
 
     # Assemble whatever widgets were produced, add them to the layout    
     if plot_widget:

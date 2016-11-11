@@ -35,17 +35,18 @@ class UiManager(object):
         self.wfman = None
         #self.op_uimans = [] 
 
-    def apply_workflow(self,logmethod=None):
+    def apply_workflow(self):
         """
         run the workflow
         """
-        self.msg_board_log('Starting workflow executor...')
+        #self.msg_board_log('Executing current workflow')
         # Check for a batch executor...
-        if 'EXECUTION.BATCH' in [item.data[0].categories for item in self.wfman.root_items]:
-            self.msg_board_log('Beginning BATCH execution')
+        #self.msg_board_log('Determining execution method...')
+        if self.wfman.find_batch_item():
+            #self.msg_board_log('Start BATCH execution')
             self.wfman.run_wf_batch()
         else:
-            self.msg_board_log('Beginning serial execution')
+            #self.msg_board_log('Start SERIAL execution')
             self.wfman.run_wf_serial()
 
     def edit_op(self,item_indx=None):
@@ -55,7 +56,7 @@ class UiManager(object):
         if not item_indx:
             item_indx = self.ui.workflow_tree.currentIndex()
         if item_indx.isValid() and self.wfman.get_item(item_indx):
-            x = self.wfman.get_item(item_indx).data[0]
+            x = self.wfman.get_item(item_indx).data
             #if issubclass(type(x),Operation):
             if isinstance(x,Operation):
                 uiman = self.start_op_ui_manager(self.wfman,item_indx)
@@ -81,8 +82,8 @@ class UiManager(object):
         if not item_indx:
             item_indx = self.ui.op_tree.currentIndex()
         if item_indx.isValid(): 
-            if self.opman.get_item(item_indx).n_data() > 0:
-                x = self.opman.get_item(item_indx).data[0]
+            if self.opman.get_item(item_indx).data is not None:
+                x = self.opman.get_item(item_indx).data
                 try:
                     new_op_flag = issubclass(x,Operation)
                 except:
@@ -104,7 +105,7 @@ class UiManager(object):
         """
         uiman = OpUiManager(self.wfman,self.opman)
         if trmod and indx.isValid():
-            uiman.get_op_from_tree(trmod,indx)
+            uiman.get_op(trmod,indx)
         uiman.ui.setParent(self.ui,QtCore.Qt.Window)
         return uiman
 
@@ -113,8 +114,8 @@ class UiManager(object):
         Display selected item from the workflow tree in image_viewer 
         """
         if indx: 
-            if self.wfman.get_item(indx).n_data() > 0:
-                to_display = self.wfman.get_item(indx).data[0]
+            if self.wfman.get_item(indx).data is not None:
+                to_display = self.wfman.get_item(indx).data
                 uri = self.wfman.build_uri(indx)
                 data_viewer.display_item(to_display,uri,self.ui.image_viewer,None)
 
@@ -155,7 +156,7 @@ class UiManager(object):
         self.ui.apply_workflow_button.clicked.connect(self.apply_workflow)
         # Connect self.ui.workflow_tree (QTreeView) to self.wfman (WfManager(TreeModel))
         self.ui.workflow_tree.setModel(self.wfman)
-        self.ui.workflow_tree.hideColumn(1)
+        #self.ui.workflow_tree.hideColumn(1)
         # Connect self.ui.op_tree (QTreeView) to self.opman (OpManager(TreeModel))
         self.ui.op_tree.setModel(self.opman)
         self.ui.op_tree.hideColumn(1)
@@ -191,10 +192,10 @@ class UiManager(object):
 
 
     def msg_board_log(self,msg,timestamp=slacxtools.timestr):
-        """Print timestamped message with space to msg board"""
+        """Print timestamped message to msg board"""
         self.ui.message_board.insertPlainText(
         '- ' + timestamp() + ': ' + msg + '\n') 
-        self.ui.message_board.verticalScrollBar().setValue(99)
+        self.ui.message_board.verticalScrollBar().setValue(self.ui.message_board.verticalScrollBar().maximum())
       
     def show_status(self,msg):
         self.ui.statusbar.showMessage(msg)

@@ -12,7 +12,7 @@ class BuildList(Operation):
         input_names = ['text']
         output_names = ['list']
         super(BuildList,self).__init__(input_names,output_names) 
-        self.input_doc['text'] = 'string to be split and made into an array'
+        self.input_doc['text'] = 'comma-separated text to be packaged as an array'
         self.output_doc['list'] = 'output from array constructor'
         self.categories = ['INPUT.TESTS'] 
         self.input_src['text'] = optools.text_input

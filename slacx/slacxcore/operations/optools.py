@@ -28,14 +28,6 @@ def loader_extensions():
     + "MAR (*.mar*)"
     )
 
-##### CONVENIENCE METHOD FOR PRINTING DOCUMENTATION
-def parameter_doc(name,value,doc):
-    if type(value).__name__ == 'InputLocator':
-        val_str = str(value.val)
-    else:
-        val_str = str(value)
-    return "- name: {} \n- value: {} \n- doc: {}".format(name,val_str,doc) 
-
 ##### CONVENIENCE CLASS FOR STORING OR LOCATING OPERATION INPUTS
 class InputLocator(object):
     """
@@ -51,4 +43,13 @@ class InputLocator(object):
         self.src = src
         self.val = val 
         self.data = None 
+
+##### CONVENIENCE METHOD FOR PRINTING DOCUMENTATION
+def parameter_doc(name,value,doc):
+    #if type(value).__name__ == 'InputLocator':
+    if isinstance(value, InputLocator):
+        val_str = str(value.val)
+    else:
+        val_str = str(value)
+    return "- name: {} \n- value: {} \n- doc: {}".format(name,val_str,doc) 
 

@@ -30,10 +30,17 @@ def src_selection_widget():
     widg.addItems(optools.input_sources)
     return widg 
 
+def r_hdr_widget(text):
+    widg = QtGui.QLineEdit(text)
+    widg.setReadOnly(True)
+    widg.setAlignment(QtCore.Qt.AlignRight)
+    widg.setStyleSheet( "QLineEdit { background-color: transparent }" + widg.styleSheet() )
+    return widg 
+
 def hdr_widget(text):
     widg = QtGui.QLineEdit(text)
     widg.setReadOnly(True)
-    widg.setAlignment(QtCore.Qt.AlignHCenter)
+    widg.setAlignment(QtCore.Qt.AlignLeft)
     widg.setStyleSheet( "QLineEdit { background-color: transparent }" + widg.styleSheet() )
     return widg 
 
@@ -52,7 +59,7 @@ def bigtext_widget(text,trunc_limit=70):
     widg.setAlignment(QtCore.Qt.AlignLeft)
     return widg
 
-def namewidget(name):
+def name_widget(name):
     name_widget = QtGui.QLineEdit(name)
     name_widget.setReadOnly(True)
     name_widget.setAlignment(QtCore.Qt.AlignRight)
