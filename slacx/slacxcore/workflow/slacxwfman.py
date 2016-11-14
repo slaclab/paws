@@ -25,12 +25,30 @@ class WfManager(TreeModel):
         #        self.load_from_file(f)
         self._wf_dict = {}       # this will be a dict for a dask.threaded graph 
         super(WfManager,self).__init__()
+        self.inputs_child_index = 0
+        self.outputs_child_index = 1
         if 'logmethod' in kwargs:
             self.logmethod = kwargs['logmethod']
         else:
             self.logmethod = None
-        self.inputs_child_index = 0
-        self.outputs_child_index = 1
+        if 'wfl' in kwargs:
+            self.load_from_file( kwargs['wfl'] )
+
+    def load_from_file(self,wfl):
+        """
+        Load things in to the Workflow from a YAML with .wfl extension
+        """
+        pass 
+        
+       
+    def save_to_file(self):
+        """
+        Save the current image of the Workflow as a YAML with .wfl extension
+        """
+        filename = 'test.wfl'
+        f = open(filename, "w")
+        yaml.dump(self.root_items, f)
+        f.close()
 
     def add_op(self,uri,new_op):
         """Add an Operation to the tree as a new top-level TreeItem."""
@@ -342,6 +360,7 @@ class WfManager(TreeModel):
         return ordered_items
 
     def serial_execution_list(self):
+        ordered_items = []
         for item in self.root_items:
             op = item.data
             if not optools.op_input in [src for name,src in op.input_src.items()]:

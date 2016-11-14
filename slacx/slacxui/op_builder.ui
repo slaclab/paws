@@ -40,6 +40,13 @@
         <widget class="QTreeView" name="wf_selector"/>
        </item>
        <item>
+        <widget class="QPushButton" name="rm_op_button">
+         <property name="text">
+          <string>PushButton</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QPlainTextEdit" name="op_info">
          <property name="readOnly">
           <bool>true</bool>

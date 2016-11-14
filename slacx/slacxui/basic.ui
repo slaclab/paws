@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1619</width>
-    <height>956</height>
+    <width>1256</width>
+    <height>928</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -30,18 +30,22 @@
        <property name="frameShadow">
         <enum>QFrame::Raised</enum>
        </property>
-       <layout class="QVBoxLayout" name="verticalLayout">
-        <item>
-         <widget class="QTreeView" name="op_tree"/>
-        </item>
-        <item>
+       <layout class="QGridLayout" name="gridLayout_4">
+        <item row="1" column="0">
          <widget class="QPushButton" name="add_op_button">
           <property name="text">
            <string>PushButton</string>
           </property>
          </widget>
         </item>
-        <item>
+        <item row="1" column="1">
+         <widget class="QPushButton" name="edit_op_button">
+          <property name="text">
+           <string>PushButton</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0" colspan="2">
          <widget class="QPlainTextEdit" name="message_board">
           <property name="undoRedoEnabled">
            <bool>false</bool>
@@ -50,6 +54,9 @@
            <bool>false</bool>
           </property>
          </widget>
+        </item>
+        <item row="0" column="0" colspan="2">
+         <widget class="QTreeView" name="op_tree"/>
         </item>
        </layout>
       </widget>
@@ -74,35 +81,38 @@
         <enum>QFrame::Raised</enum>
        </property>
        <layout class="QGridLayout" name="gridLayout">
-        <item row="2" column="0" colspan="2">
-         <widget class="QTreeView" name="workflow_tree"/>
-        </item>
-        <item row="3" column="1">
-         <widget class="QPushButton" name="edit_op_button">
+        <item row="4" column="0">
+         <widget class="QPushButton" name="load_wf_button">
           <property name="text">
            <string>PushButton</string>
           </property>
          </widget>
         </item>
         <item row="3" column="0">
-         <widget class="QPushButton" name="rm_op_button">
+         <widget class="QPushButton" name="edit_wf_button">
           <property name="text">
            <string>PushButton</string>
           </property>
          </widget>
         </item>
-        <item row="4" column="0" colspan="2">
-         <widget class="QPushButton" name="apply_workflow_button">
+        <item row="3" column="1">
+         <widget class="QPushButton" name="run_wf_button">
           <property name="text">
            <string>PushButton</string>
           </property>
          </widget>
+        </item>
+        <item row="4" column="1">
+         <widget class="QPushButton" name="save_wf_button">
+          <property name="text">
+           <string>PushButton</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0" colspan="2">
+         <widget class="QTreeView" name="wf_tree"/>
         </item>
        </layout>
-       <zorder>workflow_tree</zorder>
-       <zorder>edit_op_button</zorder>
-       <zorder>apply_workflow_button</zorder>
-       <zorder>rm_op_button</zorder>
       </widget>
      </widget>
     </item>
@@ -113,7 +123,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1619</width>
+     <width>1256</width>
      <height>25</height>
     </rect>
    </property>

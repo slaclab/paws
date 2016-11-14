@@ -17,10 +17,8 @@ class SlacxPlugin(base.plugin):
         opman = slacxopman.OpManager()
         wfman = slacxwfman.WfManager()
         # start slacx ui objects
-        uiman = slacxuiman.UiManager()
-        # set up ui-core refs    
-        uiman.opman = opman
-        uiman.wfman = wfman
+        uiman = slacxuiman.UiManager(opman,wfman)
+        wfman.logmethod = uiman.msg_board_log
         # Make the slacx title box
         uiman.make_title()    
         # Connect the menu actions to UiManager functions

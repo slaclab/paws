@@ -141,6 +141,14 @@ class OpUiManager(object):
             self.op.input_locator[name] = None
         self.srcwindow_safe_close(name)
         self.ui.op_info.setPlainText(self.op.description())
+
+    def rm_op(self):
+        """
+        remove the selected operation from the workflow
+        """
+        current_indx = self.ui.wf_selector.currentIndex()
+        if current_indx.isValid(): 
+            self.wfman.remove_op(current_indx)
  
     def load_op(self):
         """
@@ -388,6 +396,8 @@ class OpUiManager(object):
         self.ui.wf_selector.setModel(self.wfman)
         #self.ui.wf_selector.hideColumn(1)
         self.ui.wf_selector.clicked.connect( partial(self.get_op,self.wfman) )
+        self.ui.rm_op_button.setText("&Delete")
+        self.ui.rm_op_button.clicked.connect(self.rm_op)
         self.ui.op_selector.setModel(self.opman)
         self.ui.op_selector.hideColumn(1)
         self.ui.op_selector.clicked.connect( partial(self.get_op,self.opman) )
