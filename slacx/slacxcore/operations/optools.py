@@ -1,23 +1,24 @@
 from PySide import QtCore
 
 ##### DEFINITIONS OF SOURCES FOR OPERATION INPUTS
-input_sources = ['None','Filesystem','Operations','Text'] 
+input_sources = ['None','Filesystem','Operations','User','Batch'] 
 no_input = 0
-fs_input = 1
-op_input = 2
-text_input = 3
-valid_sources = [no_input,fs_input,op_input,text_input]
+user_input = 1
+fs_input = 2
+op_input = 3
+batch_input = 4 
+valid_sources = [no_input,user_input,fs_input,op_input,batch_input]
 
-##### VALID TYPES FOR TEXT BASED OPERATION INPUTS 
-input_types = ['None','string','integer','float','boolean']
+##### VALID TYPES FOR OPERATION INPUTS
+input_types = ['None','string','integer','float','boolean','list']
 none_type = 0
-str_type = 1
-int_type = 2
-float_type = 3
-bool_type = 4
-valid_types = [none_type,str_type,int_type,float_type,bool_type]
-# TODO: implement some kind of builder/loader for data structs, like arrays or dicts
-#array_type = 5
+auto_type = 1
+str_type = 2
+int_type = 3
+float_type = 4
+bool_type = 5
+list_type = 6
+valid_types = [none_type,auto_type,str_type,int_type,float_type,bool_type,list_type]
         
 ##### IMAGE LOADER EXTENSIONS    
 def loader_extensions():
@@ -35,12 +36,13 @@ class InputLocator(object):
     Objects of this class contain the information needed to find the relevant input data.
     If raw textual input is provided, it is stored in self.val after typecasting.
     """
-    def __init__(self,src,val):
+    def __init__(self,src,tp,val):
         if src < 0 or src > len(input_sources):
             msg = 'found input source {}, should be between 0 and {}'.format(
             src, len(input_sources))
             raise ValueError(msg)
         self.src = src
+        self.tp = tp
         self.val = val 
         self.data = None 
 
