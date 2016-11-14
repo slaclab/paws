@@ -82,9 +82,10 @@ class OpUiManager(object):
         src = self.src_widgets[name].currentIndex()
         # If source is none, easy job.
         if src == optools.no_input:
-            tp = optools.none_type
+            #tp = optools.none_type
+            self.type_widgets[name].setCurrentIndex(optools.none_type)
             val = None
-            self.op.input_locator[name] = None 
+            self.op.input_locator[name] = optools.InputLocator(src,val) 
         # If source is text, load text.
         elif src == optools.text_input:
             tp = self.type_widgets[name].currentIndex()
@@ -125,6 +126,7 @@ class OpUiManager(object):
             item_indx = trview.currentIndex()
         if item_indx:
             type_widg = self.type_widgets[name]
+            val_widg = self.val_widgets[name]
             if src == optools.fs_input:
                 # Get the path of the selection
                 item_uri = trview.model().filePath(item_indx)
@@ -133,12 +135,13 @@ class OpUiManager(object):
                 # Build a unique URI for this item
                 item_uri = trview.model().build_uri(item_indx)
                 type_widg.setText('workflow uri')
-            self.val_widgets[name].setText(item_uri)
+            val_widg.setText(item_uri)
             self.op.input_locator[name] = optools.InputLocator(src,item_uri)
         else:
-            # if nothing is selected, load the input as none, 
-            # leave type and val widgets as they are
-            self.op.input_locator[name] = None
+            # if nothing is selected, load the input as None. 
+            self.op.input_locator[name] = optools.InputLocator(src,None) 
+            val_widg.setText('None')
+            type_widg.setText('None')
         self.srcwindow_safe_close(name)
         self.ui.op_info.setPlainText(self.op.description())
 
@@ -283,8 +286,8 @@ class OpUiManager(object):
             self.srcwindow_safe_close(name)
             #old_widg.deleteLater()
         if src == optools.no_input:
-            type_widget = QtGui.QLineEdit('none')
-            val_widget = QtGui.QLineEdit('none')
+            type_widget = QtGui.QLineEdit('None')
+            val_widget = QtGui.QLineEdit('None')
             type_widget.setReadOnly(True)
             val_widget.setReadOnly(True)
             btn_widget = None
@@ -337,7 +340,7 @@ class OpUiManager(object):
             
     @staticmethod
     def new_type_val_widgets():
-        type_widget = QtGui.QLineEdit('type: none')
+        type_widget = QtGui.QLineEdit('type: None')
         val_widget = QtGui.QLineEdit('value: select ->')
         return type_widget, val_widget
 

@@ -73,35 +73,46 @@ class WfManager(TreeModel):
     def update_op(self,uri,new_op):
         """
         Replace Operation in treeitem indicated by uri with new_op.
-        Then, ensure that any dependencies broken in the process are reset to their defaults.
+        Clean up any dependencies that are broken in the process.
         """
         item, indx = self.get_from_uri(uri)
         # If an updated op has different io structure, 
         # go through and clobber any broken dependencies.
         current_op = item.data
         for nm in current_op.inputs.keys():
-            if not nm in new_op.inputs.keys():
+            # check if new_op has different inputs...
+            if not nm in new_op.inputs.keys() or (
+            nm in new_op.inputs.keys() and not (
+            current_op.input_src[name] == new_op.input_src[name]
+            and current_op.input_type[name] == new_op.input_type[name]
+            and current_op.input_locator[name].val == new_op.input_locator[name].val )):
+                # if so, go through the tree and remove any other Operation inputs
+                # that are currently linked to the current_op input
                 inp_uri = uri+'.Inputs.'+nm
-                self.remove_input_locators(inp_uri)
+                self.remove_inputs(inp_uri)
         for nm in current_op.outputs.keys():
-            if not nm in new_op.outputs.keys():
+            # repeat the process for new_op outputs...
+            if not nm in new_op.outputs.keys() or (
+            nm in new_op.inputs.keys() and not (
+            current_op.input_src[name] == new_op.input_src[name]
+            and current_op.input_type[name] == new_op.input_type[name]
+            and current_op.input_locator[name].val == new_op.input_locator[name].val )):
                 out_uri = uri+'.Outputs.'+nm
-                self.remove_input_locators(out_uri)
+                self.remove_inputs(out_uri)
         # Put the new op in the treeitem
         item.data = new_op
         item.set_long_tag( new_op.__doc__ )
         # Update the op subtrees
         self.build_io_subtrees(new_op,indx)
 
-    def remove_input_locators(self,uri):
+    def remove_inputs(self,uri):
         # Loop through the ops.
         for item in self.root_items:
             op = item.data
             # If any input locators are set to this uri, clobber them.
             for name,il in op.input_locator.items():
-                if il:
-                    if il.val == uri:
-                        op.input_locator[name] = None             
+                if il.val == uri:
+                    op.input_locator[name] = optools.InputLocator(optools.no_input,None)
 
     def io_subtree(self,op,parent):
         """Add inputs and outputs subtrees as children of an Operation TreeItem"""
@@ -440,14 +451,16 @@ class WfManager(TreeModel):
     def load_inputs(self,op):
         """
         Loads data for an Operation from that Operation's input_locator.
-        If op.input_locator[name] is not an InputLocator,
-        this does nothing and trusts that the input is managed by another means 
-        (e.g. explicitly setting that input from a Batch executor module)
+        It is expected that op.input_locator[name] will refer to an InputLocator,
         """
         for name,val in op.input_locator.items():
             if isinstance(val,InputLocator):
                 val.data = self.locate_input(val)
                 op.inputs[name] = val.data
+            else:
+                msg = '[{}] Found broken Operation.input_locator for {}: {}'.format(
+                __name__, name, val)
+                raise ValueError(msg)
 
     def run_wf_graph(self):
         """

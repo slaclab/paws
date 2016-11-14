@@ -178,6 +178,16 @@ class Workflow(Operation):
         return msg 
 
 
+    def yaml_load(self):
+        # Load self from YAML
+        pass
+
+
+    def yaml_save(self):
+        # Serialize self as YAML
+        pass
+
+
 
 
 
