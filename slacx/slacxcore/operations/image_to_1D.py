@@ -10,6 +10,8 @@ import pyFAI
 import numpy as np
 
 from slacxop import Operation
+import optools
+
 
 class image_to_1D(Operation):
     """
@@ -50,8 +52,67 @@ class image_to_1D(Operation):
         d = self.inputs['d_pixel'] * pixelsize * 0.001
 
         s = int(imArray.shape[0])
-
         # define detector mask, alternatively, can be another input
+        # 1 for masked pixels, and 0 for valid pixels
+        detector_mask = np.ones((s,s))*(imArray <= 0)
+
+        p = pyFAI.AzimuthalIntegrator(wavelength=lamda)
+        p.setFit2D(d,x0,y0,tilt,Rot,pixelsize,pixelsize)
+
+        Qlist, IntAve = p.integrate1d(imArray, 1000, mask=detector_mask, polarization_factor=PP)
+        Qlist = Qlist * 10e8
+
+        # save results to self.outputs
+        self.outputs['Intensity'] = IntAve
+        self.outputs['Qlist'] = Qlist
+
+class image_to_1D_simple(Operation):
+    """
+    The input is a raw image and calibration parameters in WxDiff format
+    return cake (2D array), Q, chi, Integrated intensity (1D array), Qlist
+    """
+    def __init__(self):
+        input_names = ['image_data', 'calib_file', 'PP', 'pixel_size']
+        output_names = ['Intensity', 'Qlist']
+        super(image_to_1D_simple,self).__init__(input_names,output_names)
+        # docstrings
+        self.input_doc['image_data'] = '2d array representing intensity for each pixel'
+        self.input_doc['calib_file'] = 'detector to sample distance (in pixels) along x-ray direction (WxDiff)'
+        self.input_doc['PP'] = 'polarization factor'
+        self.input_doc['pixel_size'] = 'detector pixel size in microns'
+        self.output_doc['Intensity'] = 'Integrated intensity averaged by pixels #'
+        self.output_doc['Qlist'] = 'momentum transfer in a list'
+        # source & type
+        self.input_src['image_data'] = optools.op_input
+        self.input_src['calib_file'] = optools.fs_input
+        self.input_src['PP'] = optools.text_input
+        self.input_src['pixel_size'] = optools.text_input
+        self.input_type['PP'] = optools.float_type
+        self.input_type['pixel_size'] = optools.float_type
+        self.categories = ['2D DATA PROCESSING']
+
+    def run(self):
+        """
+        transform self.inputs['image_data'] and save as self.outputs['image_data']
+        """
+        imArray = self.inputs['image_data']
+
+        from parsing_calib import parse_calib_dictionary
+        parameters = parse_calib_dictionary(self.inputs['calib_file'])
+
+        # initialization parameters, change into Fit2D format
+        Rot = (2*np.pi-parameters['rotation_rad'])/(2*np.pi)*360
+        tilt = parameters['tilt_rad']/ (2 * np.pi) * 360
+        lamda = parameters['lamda']
+        x0 = parameters['x0_pixel']
+        y0 = parameters['y0_pixel']
+        PP = self.inputs['PP']
+        pixelsize = self.inputs['pixel_size']
+        d = parameters['d_pixel'] * pixelsize * 0.001
+
+        s = int(imArray.shape[0])
+        # define detector mask, alternatively, can be another input
+        # 1 for masked pixels, and 0 for valid pixels
         detector_mask = np.ones((s,s))*(imArray <= 0)
 
         p = pyFAI.AzimuthalIntegrator(wavelength=lamda)

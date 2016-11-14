@@ -16,7 +16,7 @@ class ReadTxtSSRL15(Operation):
         super(ReadTxtSSRL15, self).__init__(input_names, output_names)
         self.input_doc['file'] = 'path to a text file header produced by beamline 1-5 at SSRL'
         self.output_doc['header'] = 'the header file as a python dictionary'
-        self.categories = ['INPUT']
+        self.categories = ['INPUT.SSRL 1-5']
 
     def run(self):
         self.outputs['header'] = read_header(self.inputs['file'])
@@ -34,12 +34,13 @@ class ImageAndHeaderSSRL15(Operation):
         self.input_doc['file'] = 'path to a tif file image produced by beamline 1-5 at SSRL'
         self.output_doc['image'] = 'the image as an ndarray'
         self.output_doc['header'] = 'the header file as a python dictionary'
-        self.categories = ['INPUT']
+        self.categories = ['INPUT.SSRL 1-5']
 
     def run(self):
         self.outputs['image'] = tifffile.imread(self.inputs['file'])
         txtname = txtname_from_tifname(self.inputs['file'])
         self.outputs['header'] = read_header(txtname)
+
 
 
 def txtname_from_tifname(tifname):
