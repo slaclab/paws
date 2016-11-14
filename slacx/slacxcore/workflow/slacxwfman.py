@@ -9,6 +9,7 @@ from ..treeitem import TreeItem
 from ..operations import optools
 from ..operations.slacxop import Operation, Batch
 from ..operations.optools import InputLocator
+from .. import slacxtools
 
 # TODO: See note on remove_op()
 
@@ -45,7 +46,7 @@ class WfManager(TreeModel):
         """
         Save the current image of the Workflow as a YAML with .wfl extension
         """
-        filename = 'test.wfl'
+        filename = slacxtools.rootdir+'/'+'test.wfl'
         f = open(filename, "w")
         yaml.dump(self.root_items, f)
         f.close()

@@ -70,13 +70,13 @@ class UiManager(object):
         interact with user to edit operations in the workflow
         """
         if item_indx.isValid():
-            print 'valid'
             idx = item_indx
             if trmod == self.wfman:
                 while idx.parent().isValid():
                     idx = idx.parent()
             x = trmod.get_item(idx).data
         else:
+            x = None
             idx = self.ui.wf_tree.currentIndex()
             if idx.isValid():
                 while idx.parent().isValid():
@@ -84,7 +84,7 @@ class UiManager(object):
                 x = self.wfman.get_item(idx).data
             else:
                 idx = self.ui.op_tree.currentIndex()
-                if idx.isValid() and self.opman.get_item(idx).data is not None:
+                if idx.isValid():# and self.opman.get_item(idx).data is not None:
                     x = self.opman.get_item(idx).data
         existing_op_flag = isinstance(x,Operation)
         try:
@@ -105,11 +105,11 @@ class UiManager(object):
             uiman.ui.wf_selector.setCurrentIndex(idx)
             uiman.ui.show()
             return
-        #else:
-        #    # if we are here, there was either an invalid index selected,
-        #    # or the selection did not point to a valid Operation
-        #    uiman = self.start_op_ui_manager(None,QtCore.QModelIndex())
-        #    uiman.ui.show()
+        else:
+            # if we are here, there was either an invalid index selected,
+            # or the selection did not point to a valid Operation
+            uiman = self.start_op_ui_manager(None,QtCore.QModelIndex())
+            uiman.ui.show()
 
     def edit_op(self,item_indx=None):
         """
