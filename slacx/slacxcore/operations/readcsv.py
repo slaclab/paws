@@ -127,3 +127,32 @@ class concatCSV1CSV2(Operation):
             self.outputs['full_list'].append(ii)
         for ii in self.inputs['list2']:
             self.outputs['full_list'].append(ii)
+
+
+class ReadMegaSAXS(Operation):
+    """Read seven diffractograms from csv."""
+
+    def __init__(self):
+        input_names = []
+        #output_names = ['q1','I1','dI1', 'q2','I2','dI2', 'q3','I3','dI3', 'q4','I4','dI4', 'q5','I5','dI5', 'q6','I6','dI6', 'q7','I7','dI7']
+        output_names = ['list_of_x_y_dy']
+        super(ReadMegaSAXS, self).__init__(input_names, output_names)
+        self.output_doc['list_of_x_y_dy'] = 'blank'
+        self.categories = ['INPUT']
+
+    def run(self):
+        fileloc = '/Users/Amanda/Desktop/Travails/Programming/ImageProcessing/SampleData/Liheng/megaSAXSspreadsheet/megaSAXSspreadsheet.csv'
+        data1 = np.loadtxt(fileloc, delimiter=',', skiprows=2, comments=',,,',
+                           usecols=(0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14, 16, 17, 18, 20, 21, 22, 24, 25, 26))
+        data2 = np.loadtxt(fileloc, delimiter=',', skiprows=2, usecols=(24, 25, 26))
+        self.outputs['list_of_x_y_dy'] = []
+        self.outputs['list_of_x_y_dy'].append([data1[:,0], data1[:,1], data1[:,2]])
+        self.outputs['list_of_x_y_dy'].append([data1[:,3], data1[:,4], data1[:,5]])
+        self.outputs['list_of_x_y_dy'].append([data1[:,6], data1[:,7], data1[:,8]])
+        self.outputs['list_of_x_y_dy'].append([data1[:,9], data1[:,10], data1[:,11]])
+        self.outputs['list_of_x_y_dy'].append([data1[:,12], data1[:,13], data1[:,14]])
+        self.outputs['list_of_x_y_dy'].append([data1[:,15], data1[:,16], data1[:,17]])
+        self.outputs['list_of_x_y_dy'].append([data2[:,0], data2[:,1], data2[:,2]])
+        #self.outputs['q1'] = data1[:,0]
+        #self.outputs['I1'] = data1[:, 0]
+        #self.outputs['dI1'] = data1[:, 0]

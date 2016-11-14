@@ -17,7 +17,7 @@ class ItemFromSequence(Operation):
         self.input_doc['sequence'] = 'list, tuple, string, or other indexable sequence'
         self.input_doc['index'] = 'index of the item you wish to extract'
         self.output_doc['item'] = 'item extracted from *sequence* at position *index*'
-        self.categories = ['MISC']
+        self.categories = ['MISC.PYTHON OBJECT MANIPULATION']
         self.input_src['sequence'] = optools.op_input
         self.input_src['index'] = optools.text_input
         self.input_type['index'] = optools.int_type
@@ -42,7 +42,7 @@ class ItemRangeFromSequence(Operation):
         self.input_doc['start_index'] = 'starting index of the slice you wish to extract'
         self.input_doc['end_index'] = 'ending index of the slice you wish to extract'
         self.output_doc['slice'] = 'items extracted from *sequence*'
-        self.categories = ['MISC']
+        self.categories = ['MISC.PYTHON OBJECT MANIPULATION']
 
     def run(self):
         start_index, end_index = type_check_item_range_from_sequence(self.inputs['start_index'], self.inputs['end_index'])
@@ -70,7 +70,7 @@ class ItemFromMap(Operation):
         self.input_doc['map'] = 'dictionary or other map'
         self.input_doc['key'] = 'key to the item you wish to extract'
         self.output_doc['value'] = 'value of the item with key *key* in object *map*'
-        self.categories = ['MISC']
+        self.categories = ['MISC.PYTHON OBJECT MANIPULATION']
 
     def run(self):
         self.outputs['value'] = self.inputs['map'][ self.inputs['key'] ]
@@ -93,7 +93,7 @@ class ItemToMap(Operation):
         self.input_doc['key'] = 'key to the item you wish to add'
         self.input_doc['value'] = 'value of the item with key *key* in object *map*'
         self.output_doc['value'] = 'map with added key-value pair'
-        self.categories = ['MISC']
+        self.categories = ['MISC.PYTHON OBJECT MANIPULATION']
 
     def run(self):
         self.inputs['map'][ self.inputs['key'] ] = self.inputs['value']
@@ -109,7 +109,7 @@ class DummySequences(Operation):
         self.output_doc['list'] = ''
         self.output_doc['tuple'] = ''
         self.output_doc['string'] = ''
-        self.categories = ['TESTS']
+        self.categories = ['TESTS.OBJECT GENERATION']
 
     def run(self):
         self.outputs['list'] = ['ab','ra','ca','dab','ra']
