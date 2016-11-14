@@ -1,12 +1,40 @@
 import numpy as np
 from matplotlib import pyplot as plt
 from os.path import join
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
 
+# Values of x
 xmin = 0.02
 xmax = 50
-xstep = 0.01
+xstep = 0.02
+# Values of factor
+minPercent = 1
+maxPercent = 35
+step = 1
 
 outloc = 'slacx/slacxcore/operations/dmz/testplots'
+reference_outloc = 'slacx/slacxcore/operations/dmz/references/polydispersity_guess_references.pickle'
+
+def load_samples():
+    fileloc = '/Users/Amanda/Desktop/Travails/Programming/ImageProcessing/SampleData/Liheng/megaSAXSspreadsheet/megaSAXSspreadsheet.csv'
+    data1 = np.loadtxt(fileloc, delimiter=',', skiprows=2, comments=',,,',
+                   usecols=(0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14, 16, 17, 18, 20, 21, 22, 24, 25, 26))
+    data2 = np.loadtxt(fileloc, delimiter=',', skiprows=2, usecols=(24, 25, 26))
+    list_of_x_y_dy = []
+    list_of_x_y_dy.append([data1[:, 0], data1[:, 1], data1[:, 2]])
+    list_of_x_y_dy.append([data1[:, 3], data1[:, 4], data1[:, 5]])
+    list_of_x_y_dy.append([data1[:, 6], data1[:, 7], data1[:, 8]])
+    list_of_x_y_dy.append([data1[:, 9], data1[:, 10], data1[:, 11]])
+    list_of_x_y_dy.append([data1[:, 12], data1[:, 13], data1[:, 14]])
+    list_of_x_y_dy.append([data1[:, 15], data1[:, 16], data1[:, 17]])
+    list_of_x_y_dy.append([data2[:, 0], data2[:, 1], data2[:, 2]])
+    return list_of_x_y_dy
+
+list_of_x_y_dy = load_samples()
+
 
 def fullFunction(x):
     y = ((np.sin(x) - x * np.cos(x)) * x**-3)**2
@@ -108,9 +136,7 @@ def coPlots(x, y1, y2, y02, y05, y10, y20):
 
 
 def makeForCalcs():
-    maxFactorPercent = 35
-    step = 0.5
-    factorVals = np.arange(1, maxFactorPercent+step, step)*0.01
+    factorVals = np.arange(minPercent, maxPercent+step, step)*0.01
     x = np.arange(xmin, xmax, xstep)
     y0 = fullFunction(x)
     num_tests = len(factorVals)
@@ -119,6 +145,8 @@ def makeForCalcs():
     depthFirstDip = np.zeros(num_tests)
     sigmaFirstDip = np.zeros(num_tests)
     y_x4_inf = np.zeros(num_tests)
+    heightFirstDip = np.zeros(num_tests)
+    lowQApprox = np.zeros((num_tests,2))
     for ii in range(num_tests):
         factor = factorVals[ii]
         y = blur(x, factor)
@@ -139,9 +167,9 @@ def makeForCalcs():
         powerLaw[ii,0] = np.e**(linCoefficients[0])
         powerLaw[ii,1] = linCoefficients[1]
         powerLawAtFirstDip = np.e**(linCoefficients[0] + np.log(xFirstDip[ii]) * linCoefficients[1])
-        heightAtFirstDip = (quadCoefficients[0] + quadCoefficients[1]*xFirstDip[ii] +
+        heightFirstDip[ii] = (quadCoefficients[0] + quadCoefficients[1]*xFirstDip[ii] +
                             (quadCoefficients[2]*(xFirstDip[ii]**2)))*(xFirstDip[ii]**-4)
-        depthFirstDip[ii] = (powerLawAtFirstDip - heightAtFirstDip)
+        depthFirstDip[ii] = (powerLawAtFirstDip - heightFirstDip[ii])
         _, sigmaFirstDipLog = gauss_guess(depthFirstDip[ii], 2*quadCoefficients[2])
         sigmaFirstDip[ii] = np.e**sigmaFirstDipLog
         plot_factor(x, y, y0, dips, shoulders, linCoefficients, factor)
@@ -476,5 +504,23 @@ def plot_progression(factorVals, xFirstDip, powerLaw, depthFirstDip, sigmaFirstD
 
 
 plot_progression(factorVals, xFirstDip, powerLaw, depthFirstDip, sigmaFirstDip)
+
+def prep_for_pickle():
+    references = []
+    references['factorVals'] = factorVals
+    references['xFirstDip'] = xFirstDip
+    references['powerLaw'] = powerLaw
+    references['depthFirstDip'] = depthFirstDip
+    references['sigmaFirstDip'] = sigmaFirstDip
+    return references
+
+def dump_references(references):
+    with open(reference_outloc, 'wb') as handle:
+        pickle.dump(references, handle)
+
+references = prep_for_pickle()
+dump_references(references)
+
+
 
 print 'Done!'
