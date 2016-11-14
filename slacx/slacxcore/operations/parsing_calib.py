@@ -7,6 +7,7 @@ Created on Nov 10
 """
 import numpy as np
 #from os.path import join
+from os import linesep
 
 from slacxop import Operation
 import optools
@@ -60,8 +61,9 @@ def parse_calib_dictionary(filename):
     data = []
     with file as inputfile:
         for line in inputfile:
-            data.append(line.strip().split('\n'))
-    #print data
+            data.append(line.strip().split(linesep))
+    print data
+    print data[6][0][10:]
     bcenter_x = float(data[6][0][10:])
     bcenter_y = float(data[7][0][10:])
     detector_dist = float(data[8][0][12:])
@@ -76,5 +78,5 @@ def parse_calib_dictionary(filename):
     parameters['rotation_rad'] = detect_tilt_alpha
     parameters['tilt_rad'] = detect_tilt_delta
     parameters['lamda'] = wavelength
-    #print parameters
+    print parameters
     return parameters
