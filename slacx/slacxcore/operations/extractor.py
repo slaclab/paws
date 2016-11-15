@@ -18,7 +18,7 @@ class ItemFromSequence(Operation):
         self.input_doc['index'] = 'index of the item you wish to extract'
         self.output_doc['item'] = 'item extracted from *sequence* at position *index*'
         self.categories = ['MISC.PYTHON OBJECT MANIPULATION']
-        self.input_src['sequence'] = optools.op_input
+        self.input_src['sequence'] = optools.wf_input
         self.input_src['index'] = optools.user_input
         self.input_type['index'] = optools.int_type
 

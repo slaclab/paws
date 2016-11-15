@@ -1,16 +1,16 @@
 from PySide import QtCore
 
 ##### DEFINITIONS OF SOURCES FOR OPERATION INPUTS
-input_sources = ['None','User Input','Filesystem','Operations','Batch'] 
+input_sources = ['None','User Input','Filesystem','Workflow','Batch'] 
 no_input = 0
 user_input = 1
 fs_input = 2
-op_input = 3
+wf_input = 3
 batch_input = 4 
-valid_sources = [no_input,user_input,fs_input,op_input,batch_input]
+valid_sources = [no_input,user_input,fs_input,wf_input,batch_input]
 
 ##### VALID TYPES FOR OPERATION INPUTS
-input_types = ['None','auto','string','integer','float','boolean','list']
+input_types = ['none','auto','string','integer','float','boolean','list']
 none_type = 0
 auto_type = 1
 str_type = 2

@@ -13,14 +13,14 @@ from ..slacxcore import slacxtools
 from ..slacxcore.operations.optools import InputLocator
 from . import uitools
 
-class OpUiManager(object):
+class WfUiManager(object):
     """
     Stores a reference to the op_builder QGroupBox, 
     performs operations on it
     """
 
     def __init__(self,wfman,opman):
-        ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/op_builder.ui")
+        ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/wf_editor.ui")
         # Load the op_builder popup
         ui_file.open(QtCore.QFile.ReadOnly)
         self.ui = QtUiTools.QUiLoader().load(ui_file)
@@ -82,11 +82,17 @@ class OpUiManager(object):
         src = self.src_widgets[name].currentIndex()
         # If source is none, easy job.
         if src == optools.no_input:
-            self.type_widgets[name].setCurrentIndex(optools.none_type)
-            val = None
             tp = optools.none_type
+            val = None
+            self.type_widgets[name].setCurrentIndex(tp)
             self.op.input_locator[name] = optools.InputLocator(src,tp,val) 
-        # If source is text, load text.
+        # If source is batch...
+        elif src == optools.batch_input:
+            tp = optools.auto_type
+            val = None
+            self.type_widgets[name].setCurrentIndex(tp)
+            self.op.input_locator[name] = optools.InputLocator(src,tp,val) 
+        # If source is user input, load user input. 
         elif src == optools.user_input:
             tp = self.type_widgets[name].currentIndex()
             val_widg = self.val_widgets[name]
@@ -100,12 +106,14 @@ class OpUiManager(object):
                 val = str(val_widg.text())
             elif tp == optools.bool_type:
                 val = bool(val_widg.text())
+            elif tp == optools.list_type:
+                val = self.list_from_widget(val_widg) 
             else:
                 msg = 'type selection {}, should be one of {}'.format(src,optools.valid_types)
                 raise ValueError(msg)
             self.op.input_locator[name] = optools.InputLocator(src,tp,val)
         # If source is op or fs, check if tree browser exists, load its input.
-        elif (src == optools.op_input or src == optools.fs_input):
+        elif (src == optools.wf_input or src == optools.fs_input):
             if name in self.inp_src_windows.keys():
                 self.load_from_tree(name,item_indx)            
         self.ui.op_info.setPlainText(self.op.description())
@@ -124,24 +132,24 @@ class OpUiManager(object):
         if not item_indx or not item_indx.isValid():
             # Get the selected item in QTreeView trview:
             item_indx = trview.currentIndex()
-        if item_indx:
+        if item_indx.isValid():
             type_widg = self.type_widgets[name]
             val_widg = self.val_widgets[name]
             if src == optools.fs_input:
                 # Get the path of the selection
                 item_uri = trview.model().filePath(item_indx)
-                type_widg.setText('file path')
-            elif src == optools.op_input:
+                #type_widg.setText('file path')
+            elif src == optools.wf_input:
                 # Build a unique URI for this item
                 item_uri = trview.model().build_uri(item_indx)
-                type_widg.setText('workflow uri')
+                #type_widg.setText('workflow uri')
             self.val_widgets[name].setText(item_uri)
             self.op.input_locator[name] = optools.InputLocator(src,optools.auto_type,item_uri)
         else:
             # if nothing is selected, load the input as None. 
             self.op.input_locator[name] = optools.InputLocator(src,optools.auto_type,None) 
             val_widg.setText('None')
-            type_widg.setText('None')
+            type_widg.setCurrentIndex(optools.none_type)
         self.srcwindow_safe_close(name)
         self.ui.op_info.setPlainText(self.op.description())
 
@@ -199,8 +207,8 @@ class OpUiManager(object):
     def srcwindow_safe_close(self,name):
         old_widg = self.inp_src_windows.pop(name)[1]
         try:
-            old_widg.close()
-            old_widg.deleteLater()
+            old_widg.hide()
+            #old_widg.deleteLater()
         except RuntimeError as ex:
             # I presume that old_widg has already been deleted, 
             # probably by the user pushing the "X" button
@@ -281,22 +289,27 @@ class OpUiManager(object):
                 widg.hide()
                 #widg.deleteLater()
         #import pdb; pdb.set_trace()
-        # if input source windows exist, close those too.
+        type_widget = uitools.type_selection_widget() 
+        # if input source windows exist, hide / close those too.
         if name in self.inp_src_windows.keys():
             self.srcwindow_safe_close(name)
-            #old_widg.deleteLater()
         if src == optools.no_input:
-            type_widget = QtGui.QLineEdit('None')
+            type_widget.setCurrentIndex(optools.none_type)
+            type_widget.setEditable(False)
             val_widget = QtGui.QLineEdit('None')
-            type_widget.setReadOnly(True)
+            val_widget.setReadOnly(True)
+            btn_widget = None
+        elif src == optools.batch_input:
+            type_widget.setCurrentIndex(optools.auto_type)
+            type_widget.setEditable(False)
+            val_widget = QtGui.QLineEdit('-')
             val_widget.setReadOnly(True)
             btn_widget = None
         elif src == optools.user_input:
-            type_widget = QtGui.QComboBox()
-            type_widget.addItems(optools.input_types)
             #if self.op.input_type[name]:
             type_widget.setCurrentIndex(self.op.input_type[name])
             val_widget = QtGui.QLineEdit()
+            btn_widget = None
             if self.op.input_locator[name]:
                 val_widget.setText(str(self.op.input_locator[name].val))
             elif self.op.inputs[name]:
@@ -305,29 +318,16 @@ class OpUiManager(object):
                 val_widget.setPlaceholderText('(enter value)')
             else:
                 val_widget.setText('')
-            btn_widget = None
-        elif (src == optools.op_input and self.op.input_locator[name]):
-            if src == self.op.input_locator[name].src:
-                type_widget = QtGui.QLineEdit('workflow uri')
-                val_widget = QtGui.QLineEdit(str(self.op.input_locator[name].val))
-            else:
-                type_widget, val_widget = self.new_type_val_widgets()
+        elif (src == optools.wf_input or src == optools.fs_input):
+            type_widget, val_widget = uitools.treesource_typval_widgets()
             btn_widget = QtGui.QPushButton('browse...')
             btn_widget.clicked.connect( partial(self.fetch_data,name) )
-        elif (src == optools.fs_input and self.op.input_locator[name]):
-            if src == self.op.input_locator[name].src:
-                type_widget = QtGui.QLineEdit('file path')
-                val_widget = QtGui.QLineEdit(self.op.input_locator[name].val)
-            else:
-                type_widget, val_widget = self.new_type_val_widgets()
-            btn_widget = QtGui.QPushButton('browse...')
-            btn_widget.clicked.connect( partial(self.fetch_data,name) )
-        else:
-            type_widget, val_widget = self.new_type_val_widgets()
-            type_widget.setReadOnly(True)
-            val_widget.setReadOnly(True)
-            btn_widget = QtGui.QPushButton('browse...')
-            btn_widget.clicked.connect( partial(self.fetch_data,name) )
+            if (src == optools.wf_input and self.op.input_locator[name]):
+                if src == self.op.input_locator[name].src:
+                    val_widget.setText(str(self.op.input_locator[name].val))
+            elif (src == optools.fs_input and self.op.input_locator[name]):
+                if src == self.op.input_locator[name].src:
+                    val_widget.setText(str(self.op.input_locator[name].val))
         #else:
         #    msg = 'source selection {} not recognized'.format(src)
         #    raise ValueError(msg)
@@ -338,12 +338,6 @@ class OpUiManager(object):
         if btn_widget:
             self.ui.input_layout.addWidget(btn_widget,row,self.btn_col,1,1)
             
-    @staticmethod
-    def new_type_val_widgets():
-        type_widget = QtGui.QLineEdit('type: None')
-        val_widget = QtGui.QLineEdit('value: select ->')
-        return type_widget, val_widget
-
     def fetch_data(self,name):
         """Use a popup to select the input data"""
         src = self.src_widgets[name].currentIndex()
@@ -362,7 +356,7 @@ class OpUiManager(object):
         ui_file.close()
         src_ui.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         src_ui.setParent(self.ui,QtCore.Qt.Window)
-        if src == optools.op_input:
+        if src == optools.wf_input:
             trmod = self.wfman
         elif src == optools.fs_input:
             trmod = QtGui.QFileSystemModel()
@@ -382,7 +376,6 @@ class OpUiManager(object):
         src_ui.show()
         src_ui.raise_()
         src_ui.activateWindow()
-
         
     def setup_ui(self):
         self.ui.setWindowTitle("operation setup")

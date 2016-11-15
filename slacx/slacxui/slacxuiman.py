@@ -6,7 +6,7 @@ from PySide import QtGui, QtCore, QtUiTools
 import numpy as np
 
 from . import uitools
-from .opuiman import OpUiManager
+from .wfuiman import WfUiManager
 from ..slacxcore.operations.slacxop import Operation
 from ..slacxcore import slacxtools
 from . import data_viewer
@@ -67,7 +67,9 @@ class UiManager(object):
 
     def edit_wf(self,trmod,item_indx=QtCore.QModelIndex()):
         """
-        interact with user to edit operations in the workflow
+        Interact with user to edit the workflow.
+        Pass in a TreeModel and index to open the editor 
+        with the item at that index loaded.
         """
         if item_indx.isValid():
             idx = item_indx
@@ -95,58 +97,39 @@ class UiManager(object):
         #print 'new op: {}'.format(new_op_flag)
         if new_op_flag: 
             #print 'new op'
-            uiman = self.start_op_ui_manager(self.opman,idx)
+            uiman = self.start_wf_editor(self.opman,idx)
             uiman.ui.op_selector.setCurrentIndex(idx)
             uiman.ui.show()
             return
         elif existing_op_flag: 
             #print 'existing op'
-            uiman = self.start_op_ui_manager(self.wfman,idx)
+            uiman = self.start_wf_editor(self.wfman,idx)
             uiman.ui.wf_selector.setCurrentIndex(idx)
             uiman.ui.show()
             return
         else:
             # if we are here, there was either an invalid index selected,
             # or the selection did not point to a valid Operation
-            uiman = self.start_op_ui_manager(None,QtCore.QModelIndex())
+            uiman = self.start_wf_editor()
             uiman.ui.show()
 
-    def edit_op(self,item_indx=None):
+    def edit_ops(self,item_indx=None):
         """
-        interact with user to edit and re-save an existing Operation 
+        interact with user to edit and develop new Operations 
         """
         print 'Operation editing is not yet implemented'
 
-    def add_op(self,item_indx=None):
+    def add_ops(self,item_indx=None):
         """
-        interact with user to enable an existing Operation 
+        interact with user to add existing Operations to the tree of available Operations 
         """
-    #    if not item_indx:
-    #        item_indx = self.ui.op_tree.currentIndex()
-    #    if item_indx.isValid(): 
-    #        if self.opman.get_item(item_indx).data is not None:
-    #            x = self.opman.get_item(item_indx).data
-    #            try:
-    #                new_op_flag = issubclass(x,Operation)
-    #            except:
-    #                new_op_flag = False
-    #            if new_op_flag:
-    #                uiman = self.start_op_ui_manager(self.opman,item_indx)
-    #                uiman.ui.op_selector.setCurrentIndex(item_indx)
-    #                uiman.ui.show()
-    #                return
-    #    # if we are here, there was either an invalid index selected,
-    #    # or the selection was not an Operation
-    #    uiman = self.start_op_ui_manager(None,QtCore.QModelIndex())
-    #    uiman.ui.show()
-        print 'this function is now deprecated. use the Edit button in the right panel. '
-        print 'soon this button will be repurposed to add Operations to the Operation tree.'    
+        print 'All Operations are enabled- this will change in a near future version'    
 
-    def start_op_ui_manager(self,trmod,indx):
+    def start_wf_editor(self,trmod=None,indx=QtCore.QModelIndex()):
         """
-        Create a QFrame window from ui/op_builder.ui, then return it
+        Create a QFrame window from ui/wf_editor.ui, then return it
         """
-        uiman = OpUiManager(self.wfman,self.opman)
+        uiman = WfUiManager(self.wfman,self.opman)
         if trmod and indx.isValid():
             uiman.get_op(trmod,indx)
         uiman.ui.setParent(self.ui,QtCore.Qt.Window)
@@ -185,10 +168,10 @@ class UiManager(object):
         # when I scroll through the tree with my arrow keys.
         #self.ui.wf_tree.activated.connect(self.display_item)
         self.ui.wf_tree.clicked.connect(self.display_item)
-        self.ui.add_op_button.setText("&Add Operation")
-        self.ui.add_op_button.clicked.connect(self.add_op)
-        self.ui.edit_op_button.setText("Edit Operation")
-        self.ui.edit_op_button.clicked.connect(self.edit_op)
+        self.ui.add_op_button.setText("Add Operations")
+        self.ui.add_op_button.clicked.connect(self.add_ops)
+        self.ui.edit_op_button.setText("Edit Operations")
+        self.ui.edit_op_button.clicked.connect(self.edit_ops)
         self.ui.load_wf_button.setText("&Load")
         self.ui.load_wf_button.clicked.connect( partial(self.load_from_file,slacxtools.rootdir+'/test.wfl') )
         #self.ui.load_wf_button.clicked.connect( self.load_from_file )

@@ -83,7 +83,7 @@ class image_to_1D_simple(Operation):
         self.output_doc['Intensity'] = 'Integrated intensity averaged by pixels #'
         self.output_doc['Qlist'] = 'momentum transfer in a list'
         # source & type
-        self.input_src['image_data'] = optools.op_input
+        self.input_src['image_data'] = optools.wf_input
         self.input_src['calib_file'] = optools.fs_input
         self.input_src['PP'] = optools.user_input
         self.input_src['pixel_size'] = optools.user_input

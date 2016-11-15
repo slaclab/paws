@@ -116,7 +116,7 @@ class TreeModel(QtCore.QAbstractItemModel):
     # Subclass of QAbstractItemModel must implement columnCount()
     def columnCount(self,parent):
         """
-        Let TreeModels have one column,
+        Let TreeModels by default have one column,
         to display the local TreeItem's tag.
         """
         return 1
@@ -169,10 +169,12 @@ class TreeModel(QtCore.QAbstractItemModel):
             # Get the TreeItem referred to by QModelIndex parent:
             item = parent.internalPointer()
             for j in range(row,row+count)[::-1]:
-                del item.children[j]
+                #del item.children[j]
+                item.children.pop(j)
         else:
             for j in range(row,row+count)[::-1]:
-                del self.root_items[j]
+                #del self.root_items[j]
+                self.root_items.pop(j)
         # Signal listeners that we are done removing rows
         self.endRemoveRows()
 

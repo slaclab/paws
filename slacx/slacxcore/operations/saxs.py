@@ -27,9 +27,9 @@ class GenerateSphericalDiffractionQ(Operation):
         self.input_doc['qmin'] = 'lower bound of q range of interest'
         self.input_doc['qmax'] = 'upper bound of q range of interest'
         self.input_doc['qstep'] = 'step size in q range of interest'
-        self.input_src['r0'] = optools.op_input
-        self.input_src['sigma_r_over_r0'] = optools.op_input
-        self.input_src['intensity_at_zero_q'] = optools.op_input
+        self.input_src['r0'] = optools.wf_input
+        self.input_src['sigma_r_over_r0'] = optools.wf_input
+        self.input_src['intensity_at_zero_q'] = optools.wf_input
         self.input_src['qmin'] = optools.user_input
         self.input_src['qmax'] = optools.user_input
         self.input_src['qstep'] = optools.user_input
@@ -60,10 +60,10 @@ class GenerateSphericalDiffraction(Operation):
         self.input_doc['sigma_r_over_r0'] = 'width of distribution in r divided by r0'
         self.input_doc['intensity_at_zero_q'] = 'intensity at q = 0'
         self.input_doc['q_vector'] = 'q values of interest'
-        self.input_src['r0'] = optools.op_input
-        self.input_src['sigma_r_over_r0'] = optools.op_input
-        self.input_src['intensity_at_zero_q'] = optools.op_input
-        self.input_src['q_vector'] = optools.op_input
+        self.input_src['r0'] = optools.wf_input
+        self.input_src['sigma_r_over_r0'] = optools.wf_input
+        self.input_src['intensity_at_zero_q'] = optools.wf_input
+        self.input_src['q_vector'] = optools.wf_input
         self.output_doc['I'] = '1d ndarray; intensity values'
         self.categories = ['1D DATA PROCESSING']
 
@@ -122,8 +122,8 @@ def GuessPolydispersityUnweighted(Operation):
         self.input_doc['I'] = '1d ndarray; intensity values'
         self.output_doc['fractional_variation'] = 'normal distribution sigma divided by mean size'
         # Source and type
-        self.input_src['q'] = optools.op_input
-        self.input_src['I'] = optools.op_input
+        self.input_src['q'] = optools.wf_input
+        self.input_src['I'] = optools.wf_input
         self.categories = ['1D DATA PROCESSING']
 
     def run(self):

@@ -16,7 +16,7 @@ from .. import slacxtools
 
 class WfManager(TreeModel):
     """
-    Class for managing a Workflow(Operation) built from slacx Operations.
+    Class for managing a Workflow built from slacx Operations.
     """
 
     def __init__(self,**kwargs):
@@ -44,7 +44,6 @@ class WfManager(TreeModel):
         dct = yaml.load(f)
         f.close()
         print dct
-        pass 
         
     def save_to_file(self):
         """
@@ -52,28 +51,31 @@ class WfManager(TreeModel):
         """
         wf_dict = {}
         for row in range(len(self.root_items)):
-            idx = self.index(row,0,QtCore.QModelIndex())
             item = self.root_items[row]
-            op = item.data
+            idx = self.index(row,0,QtCore.QModelIndex())
             uri = self.build_uri(idx)
-            wf_dict[uri] = type(op).__name__
-            inputs_item = item.children[self.inputs_child_index]
-            inputs_idx = self.index(self.inputs_child_index,0,idx)
-            inputs_uri = self.build_uri(inputs_idx)
-            wf_dict[inputs_uri] = self.inputs_dict(op)
-            #outputs_item = item.children(self.outputs_child_index)
-            #outputs_idx = self.index(self.outputs_child_index,0,idx)
+            wf_dict[str(uri)] = self.op_dict(item)
         filename = slacxtools.rootdir+'/'+'test.wfl'
         print 'dumping to {}'.format(filename)
         f = open(filename, "w")
         yaml.dump(wf_dict, f, encoding='utf-8')
         f.close()
-
+    def op_dict(self,op_item):
+        dct = {}
+        op = op_item.data
+        dct['Inputs'] = self.inputs_dict(op)
+        dct['Outputs'] = self.outputs_dict(op)
+        return dct
     def inputs_dict(self,op):
         dct = {}
         for name in op.inputs.keys():
             il = op.input_locator[name]
-            dct[name] = {'src':il.src,'type':il.tp,'val':il.val}
+            dct[name] = {'src':il.src,'type':il.tp,'val':str(il.val)}
+        return dct
+    def outputs_dict(self,op):
+        dct = {}
+        for name in op.outputs.keys():
+            dct[name] = op.outputs[name]
         return dct
 
     def add_op(self,uri,new_op):
@@ -637,4 +639,7 @@ class WfManager(TreeModel):
     def columnCount(self,parent):
         """Let WfManager have two columns, one for item tag, one for item type"""
         return 2
+
+
+
 
