@@ -22,6 +22,7 @@ class image_to_1D(Operation):
         input_names = ['image_data','d_pixel', 'rotation_rad', 'tilt_rad', 'lamda', 'x0_pixel', 'y0_pixel', 'PP', 'pixel_size']
         output_names = ['Intensity','Qlist']
         super(image_to_1D,self).__init__(input_names,output_names)
+        # docstrings
         self.input_doc['image_data'] = '2d array representing intensity for each pixel'
         self.input_doc['d_pixel'] = 'detector to sample distance (in pixels) along x-ray direction (WxDiff)'
         self.input_doc['rotation_rad'] = 'rotation angle in radian (WxDiff)'
@@ -33,6 +34,25 @@ class image_to_1D(Operation):
         self.input_doc['pixel_size'] = 'detector pixel size in microns'
         self.output_doc['Intensity'] = 'Integrated intensity averaged by pixels #'
         self.output_doc['Qlist'] = 'momentum transfer in a list'
+        # source & type
+        self.input_src['image_data'] = optools.op_input
+        self.input_src['d_pixel'] = optools.text_input
+        self.input_src['rotation_rad'] = optools.text_input
+        self.input_src['tilt_rad'] = optools.text_input
+        self.input_src['lamda'] = optools.text_input
+        self.input_src['x0_pixel'] = optools.text_input
+        self.input_src['y0_pixel'] = optools.text_input
+        self.input_src['PP'] = optools.text_input
+        self.input_src['pixel_size'] = optools.text_input
+        self.input_type['d_pixel'] = optools.float_type
+        self.input_type['rotation_rad'] = optools.float_type
+        self.input_type['tilt_rad'] = optools.float_type
+        self.input_type['lamda'] = optools.float_type
+        self.input_type['x0_pixel'] = optools.float_type
+        self.input_type['y0_pixel'] = optools.float_type
+        self.input_type['PP'] = optools.float_type
+        self.input_type['pixel_size'] = optools.float_type
+
         self.categories = ['2D DATA PROCESSING']
 
     def run(self):

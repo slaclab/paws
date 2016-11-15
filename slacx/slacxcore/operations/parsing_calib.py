@@ -33,27 +33,6 @@ class ParseCalib(Operation):
 
 
 #filename = 'C:\Research_FangRen\Data\Apr2016\Jae_samples\LaB6\\LaB6_11RE.calib'
-def parse_calib_dictionary_1(filename):
-    file=open(filename,'r')
-    data = []
-    with file as inputfile:
-        for line in inputfile:
-            data.append(line.strip().split('\n'))
-    bcenter_x = float(data[6][0][10:])
-    bcenter_y = float(data[7][0][10:])
-    detector_dist = float(data[8][0][12:])
-    detect_tilt_alpha = float(data[9][0][18:])
-    detect_tilt_delta = float(data[10][0][18:])
-    wavelength = float(data[11][0][11:])
-    # Pack in dictionary with image_to_1D style keys
-    parameters = []
-    parameters['x0_pixel'] = bcenter_x
-    parameters['y0_pixel'] = bcenter_y
-    parameters['d_pixel'] = detector_dist
-    parameters['rotation_rad'] = detect_tilt_alpha
-    parameters['tilt_rad'] = detect_tilt_delta
-    parameters['lamda'] = wavelength
-    return parameters
 
 
 def parse_calib_dictionary(filename):
@@ -62,8 +41,6 @@ def parse_calib_dictionary(filename):
     with file as inputfile:
         for line in inputfile:
             data.append(line.strip().split(linesep))
-    print data
-    print data[6][0][10:]
     bcenter_x = float(data[6][0][10:])
     bcenter_y = float(data[7][0][10:])
     detector_dist = float(data[8][0][12:])
@@ -71,12 +48,11 @@ def parse_calib_dictionary(filename):
     detect_tilt_delta = float(data[10][0][18:])
     wavelength = float(data[11][0][11:])
     # Pack in dictionary with image_to_1D style keys
-    parameters = []
+    parameters = {}
     parameters['x0_pixel'] = bcenter_x
     parameters['y0_pixel'] = bcenter_y
     parameters['d_pixel'] = detector_dist
     parameters['rotation_rad'] = detect_tilt_alpha
     parameters['tilt_rad'] = detect_tilt_delta
     parameters['lamda'] = wavelength
-    print parameters
     return parameters
