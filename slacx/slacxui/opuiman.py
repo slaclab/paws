@@ -82,12 +82,12 @@ class OpUiManager(object):
         src = self.src_widgets[name].currentIndex()
         # If source is none, easy job.
         if src == optools.no_input:
-            #tp = optools.none_type
             self.type_widgets[name].setCurrentIndex(optools.none_type)
             val = None
-            self.op.input_locator[name] = optools.InputLocator(src,val) 
+            tp = optools.none_type
+            self.op.input_locator[name] = optools.InputLocator(src,tp,val) 
         # If source is text, load text.
-        elif src == optools.text_input:
+        elif src == optools.user_input:
             tp = self.type_widgets[name].currentIndex()
             val_widg = self.val_widgets[name]
             if tp == optools.none_type:
@@ -103,7 +103,7 @@ class OpUiManager(object):
             else:
                 msg = 'type selection {}, should be one of {}'.format(src,optools.valid_types)
                 raise ValueError(msg)
-            self.op.input_locator[name] = optools.InputLocator(src,val)
+            self.op.input_locator[name] = optools.InputLocator(src,tp,val)
         # If source is op or fs, check if tree browser exists, load its input.
         elif (src == optools.op_input or src == optools.fs_input):
             if name in self.inp_src_windows.keys():
@@ -113,7 +113,7 @@ class OpUiManager(object):
     def load_from_tree(self,name,item_indx=None):
         """
         Construct a unique resource identifier (uri) for the selected item.
-        Set self.op.input_locator[name] to be an optools.InputLocator(src,uri).
+        Set self.op.input_locator[name] to be an optools.InputLocator(src,tp,uri).
         Also set that uri to be the text of val_widg.
         Finally, reset self.ui.op_info to reflect the changes.
         This should only be called when the corresponding input source window
@@ -135,11 +135,11 @@ class OpUiManager(object):
                 # Build a unique URI for this item
                 item_uri = trview.model().build_uri(item_indx)
                 type_widg.setText('workflow uri')
-            val_widg.setText(item_uri)
-            self.op.input_locator[name] = optools.InputLocator(src,item_uri)
+            self.val_widgets[name].setText(item_uri)
+            self.op.input_locator[name] = optools.InputLocator(src,optools.auto_type,item_uri)
         else:
             # if nothing is selected, load the input as None. 
-            self.op.input_locator[name] = optools.InputLocator(src,None) 
+            self.op.input_locator[name] = optools.InputLocator(src,optools.auto_type,None) 
             val_widg.setText('None')
             type_widg.setText('None')
         self.srcwindow_safe_close(name)
@@ -291,7 +291,7 @@ class OpUiManager(object):
             type_widget.setReadOnly(True)
             val_widget.setReadOnly(True)
             btn_widget = None
-        elif src == optools.text_input:
+        elif src == optools.user_input:
             type_widget = QtGui.QComboBox()
             type_widget.addItems(optools.input_types)
             #if self.op.input_type[name]:

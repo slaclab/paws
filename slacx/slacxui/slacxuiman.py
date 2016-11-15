@@ -91,16 +91,16 @@ class UiManager(object):
             new_op_flag = issubclass(x,Operation)
         except:
             new_op_flag = False
-        print 'existing op: {}'.format(existing_op_flag)
-        print 'new op: {}'.format(new_op_flag)
+        #print 'existing op: {}'.format(existing_op_flag)
+        #print 'new op: {}'.format(new_op_flag)
         if new_op_flag: 
-            print 'new op'
+            #print 'new op'
             uiman = self.start_op_ui_manager(self.opman,idx)
             uiman.ui.op_selector.setCurrentIndex(idx)
             uiman.ui.show()
             return
         elif existing_op_flag: 
-            print 'existing op'
+            #print 'existing op'
             uiman = self.start_op_ui_manager(self.wfman,idx)
             uiman.ui.wf_selector.setCurrentIndex(idx)
             uiman.ui.show()
@@ -190,7 +190,8 @@ class UiManager(object):
         self.ui.edit_op_button.setText("Edit Operation")
         self.ui.edit_op_button.clicked.connect(self.edit_op)
         self.ui.load_wf_button.setText("&Load")
-        self.ui.load_wf_button.clicked.connect(self.load_from_file)
+        self.ui.load_wf_button.clicked.connect( partial(self.load_from_file,slacxtools.rootdir+'/test.wfl') )
+        #self.ui.load_wf_button.clicked.connect( self.load_from_file )
         self.ui.edit_wf_button.setText("&Edit")
         self.ui.edit_wf_button.clicked.connect( partial(self.edit_wf,self.wfman) )
         self.ui.run_wf_button.setText("&Run")

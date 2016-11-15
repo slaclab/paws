@@ -3,6 +3,7 @@ from collections import OrderedDict
 
 from PySide import QtCore
 import dask.threaded
+import yaml
 
 from ..treemodel import TreeModel
 from ..treeitem import TreeItem
@@ -39,17 +40,41 @@ class WfManager(TreeModel):
         """
         Load things in to the Workflow from a YAML with .wfl extension
         """
+        f = open(wfl, "r")
+        dct = yaml.load(f)
+        f.close()
+        print dct
         pass 
         
-       
     def save_to_file(self):
         """
         Save the current image of the Workflow as a YAML with .wfl extension
         """
+        wf_dict = {}
+        for row in range(len(self.root_items)):
+            idx = self.index(row,0,QtCore.QModelIndex())
+            item = self.root_items[row]
+            op = item.data
+            uri = self.build_uri(idx)
+            wf_dict[uri] = type(op).__name__
+            inputs_item = item.children[self.inputs_child_index]
+            inputs_idx = self.index(self.inputs_child_index,0,idx)
+            inputs_uri = self.build_uri(inputs_idx)
+            wf_dict[inputs_uri] = self.inputs_dict(op)
+            #outputs_item = item.children(self.outputs_child_index)
+            #outputs_idx = self.index(self.outputs_child_index,0,idx)
         filename = slacxtools.rootdir+'/'+'test.wfl'
+        print 'dumping to {}'.format(filename)
         f = open(filename, "w")
-        yaml.dump(self.root_items, f)
+        yaml.dump(wf_dict, f, encoding='utf-8')
         f.close()
+
+    def inputs_dict(self,op):
+        dct = {}
+        for name in op.inputs.keys():
+            il = op.input_locator[name]
+            dct[name] = {'src':il.src,'type':il.tp,'val':il.val}
+        return dct
 
     def add_op(self,uri,new_op):
         """Add an Operation to the tree as a new top-level TreeItem."""
@@ -83,20 +108,21 @@ class WfManager(TreeModel):
             # check if new_op has different inputs...
             if not nm in new_op.inputs.keys() or (
             nm in new_op.inputs.keys() and not (
-            current_op.input_src[name] == new_op.input_src[name]
-            and current_op.input_type[name] == new_op.input_type[name]
-            and current_op.input_locator[name].val == new_op.input_locator[name].val )):
+            current_op.input_src[nm] == new_op.input_src[nm]
+            and current_op.input_type[nm] == new_op.input_type[nm]
+            and current_op.input_locator[nm].val == new_op.input_locator[nm].val )):
                 # if so, go through the tree and remove any other Operation inputs
                 # that are currently linked to the current_op input
                 inp_uri = uri+'.Inputs.'+nm
                 self.remove_inputs(inp_uri)
         for nm in current_op.outputs.keys():
             # repeat the process for new_op outputs...
-            if not nm in new_op.outputs.keys() or (
-            nm in new_op.inputs.keys() and not (
-            current_op.input_src[name] == new_op.input_src[name]
-            and current_op.input_type[name] == new_op.input_type[name]
-            and current_op.input_locator[name].val == new_op.input_locator[name].val )):
+            if not nm in new_op.outputs.keys():
+            # or (
+            #nm in new_op.outputs.keys() and not (
+            #current_op.output_src[nm] == new_op.input_src[nm]
+            #and current_op.input_type[nm] == new_op.input_type[nm]
+            #and current_op.input_locator[name].val == new_op.input_locator[name].val )):
                 out_uri = uri+'.Outputs.'+nm
                 self.remove_inputs(out_uri)
         # Put the new op in the treeitem

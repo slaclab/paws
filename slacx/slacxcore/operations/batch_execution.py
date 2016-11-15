@@ -22,7 +22,7 @@ class BatchFromFiles(Batch):
         self.output_doc['batch_outputs'] = 'list of dicts of [output_route:output_value]'
         self.categories = ['EXECUTION.BATCH']
         self.input_src['dir_path'] = optools.fs_input
-        self.input_src['regex'] = optools.text_input 
+        self.input_src['regex'] = optools.user_input 
         self.input_type['regex'] = optools.str_type
         self.inputs['regex'] = '*.tif' 
         self.input_src['input_route'] = optools.op_input 
