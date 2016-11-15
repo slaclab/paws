@@ -1,6 +1,7 @@
 import numpy as np
 
 from slacxop import Operation
+import optools
 
 
 class MirrorVertically(Operation):
@@ -12,6 +13,8 @@ class MirrorVertically(Operation):
         super(MirrorVertically, self).__init__(input_names, output_names)
         self.input_doc['image_in'] = '2d ndarray'
         self.output_doc['image_out'] = '2d ndarray'
+        # source & type
+        self.input_src['image_in'] = optools.wf_input
         self.categories = ['TESTS']
 
     def run(self):
@@ -28,6 +31,8 @@ class MirrorHorizontally(Operation):
         super(MirrorHorizontally, self).__init__(input_names, output_names)
         self.input_doc['image_in'] = '2d ndarray'
         self.output_doc['image_out'] = '2d ndarray'
+        # source & type
+        self.input_src['image_in'] = optools.wf_input
         self.categories = ['TESTS']
 
     def run(self):

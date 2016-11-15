@@ -1,4 +1,5 @@
 from slacxop import Operation
+import optools
 
 import numpy as np
 
@@ -13,7 +14,7 @@ class ReadCSV_13(Operation):
         output_names = ['list_of_x_y_dy_bg_dbg_name']
         super(ReadCSV_13, self).__init__(input_names, output_names)
         self.output_doc['list_of_x_y_dy_bg_dbg_name'] = 'blank'
-        self.categories = ['INPUT']
+        self.categories = ['INPUT.APF TESTS']
 
     def run(self):
         filename = '/Users/Amanda/Desktop/Travails/Programming/ImageProcessing/SampleData/Liheng/SolventCorrection/R13.csv'
@@ -45,12 +46,12 @@ class ReadCSV_13_alt(Operation):
         input_names = []
         output_names = ['x', 'y', 'dy', 'bg', 'dbg']
         super(ReadCSV_13_alt, self).__init__(input_names, output_names)
-        self.output_doc['x'] = ''
-        self.output_doc['y'] = ''
-        self.output_doc['dy'] = ''
-        self.output_doc['bg'] = ''
-        self.output_doc['dbg'] = ''
-        self.categories = ['INPUT']
+        self.output_doc['x'] = 'blank'
+        self.output_doc['y'] = 'blank'
+        self.output_doc['dy'] = 'blank'
+        self.output_doc['bg'] = 'blank'
+        self.output_doc['dbg'] = 'blank'
+        self.categories = ['INPUT.APF TESTS']
 
     def run(self):
         filename = '/Users/Amanda/Desktop/Travails/Programming/ImageProcessing/SampleData/Liheng/SolventCorrection/R13.csv'
@@ -71,7 +72,7 @@ class ReadCSV_4_6(Operation):
         output_names = ['list_of_x_y_dy_bg_dbg_name']
         super(ReadCSV_4_6, self).__init__(input_names, output_names)
         self.output_doc['list_of_x_y_dy_bg_dbg_name'] = 'blank'
-        self.categories = ['INPUT']
+        self.categories = ['INPUT.APF TESTS']
 
     def run(self):
         filename = '/Users/Amanda/Desktop/Travails/Programming/ImageProcessing/SampleData/Liheng/SolventCorrection/R4.csv'
@@ -117,9 +118,13 @@ class concatCSV1CSV2(Operation):
         input_names = ['list1', 'list2']
         output_names = ['full_list']
         super(concatCSV1CSV2, self).__init__(input_names, output_names)
-        self.input_doc['list1'] = ''
-        self.input_doc['list2'] = ''
+        self.input_doc['list1'] = 'blank'
+        self.input_doc['list2'] = 'blank'
         self.output_doc['full_list'] = 'blank'
+        # source & type
+        self.input_src['list1'] = optools.wf_input
+        self.input_src['list2'] = optools.wf_input
+        self.categories = ['INPUT.APF TESTS']
 
     def run(self):
         self.outputs['full_list'] = []
@@ -138,7 +143,7 @@ class ReadMegaSAXS(Operation):
         output_names = ['list_of_x_y_dy']
         super(ReadMegaSAXS, self).__init__(input_names, output_names)
         self.output_doc['list_of_x_y_dy'] = 'blank'
-        self.categories = ['INPUT']
+        self.categories = ['INPUT.APF TESTS']
 
     def run(self):
         fileloc = '/Users/Amanda/Desktop/Travails/Programming/ImageProcessing/SampleData/Liheng/megaSAXSspreadsheet/megaSAXSspreadsheet.csv'

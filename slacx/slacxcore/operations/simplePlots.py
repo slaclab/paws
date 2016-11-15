@@ -2,6 +2,7 @@
 from matplotlib import pyplot as plt
 
 from slacxop import Operation
+import optools
 
 
 class SimplePlot(Operation):
@@ -15,6 +16,9 @@ class SimplePlot(Operation):
         self.input_doc['y'] = '1d ndarray; dependent variable'
         self.output_doc['figure'] = 'figure of *x* vs *y*; display this'
         self.output_doc['axis'] = 'axis object of *x* vs *y*; need this to modify plot further'
+        # source & type
+        self.input_src['x'] = optools.wf_input
+        self.input_src['y'] = optools.wf_input
         self.categories = ['DISPLAY']
 
     def run(self):
@@ -35,6 +39,9 @@ class MPLFigFromXYData(Operation):
         self.input_doc['x'] = '1d ndarray; independent variable'
         self.input_doc['y'] = '1d ndarray; dependent variable'
         self.output_doc['figure'] = 'figure of *x* vs *y*; display this'
+        # source & type
+        self.input_src['x'] = optools.wf_input
+        self.input_src['y'] = optools.wf_input
         self.categories = ['DISPLAY.TESTS']
 
     def run(self):

@@ -1,6 +1,7 @@
 import numpy as np
 
 from slacxop import Operation
+import optools
 
 
 
@@ -19,7 +20,15 @@ class SavitzkyGolayWeighted(Operation):
         self.input_doc['order'] = 'integer order of polynomial approximation (zero to five)'
         self.input_doc['base'] = '-1, 0, or positive integer; see class docs'
         self.output_doc['smoothdata'] = 'smoothed 1d ndarray'
-        self.categories = ['1D DATA PROCESSING']
+        # source & type
+        self.input_src['x'] = optools.wf_input
+        self.input_src['y'] = optools.wf_input
+        self.input_src['dy'] = optools.wf_input
+        self.input_src['order'] = optools.user_input
+        self.input_src['base'] = optools.user_input
+        self.input_type['order'] = optools.int_type
+        self.input_type['base'] = optools.int_type
+        self.categories = ['1D DATA PROCESSING.SMOOTHING']
 
     def run(self):
         self.outputs['smoothdata'] = savitzky_golay(self.inputs['data'], self.inputs['order'], self.inputs['error'])
@@ -39,7 +48,7 @@ class SavitzkyGolayUnweighted(Operation):
         self.input_doc['order'] = 'integer order of polynomial approximation (zero to five)'
         self.input_doc['base'] = '-1, 0, or positive integer; see class docs'
         self.output_doc['smoothdata'] = 'smoothed 1d ndarray'
-        self.categories = ['1D DATA PROCESSING']
+        self.categories = ['1D DATA PROCESSING.SMOOTHING']
 
     def run(self):
         self.outputs['smoothdata'] = savitzky_golay(self.inputs['data'], self.inputs['order'])
@@ -57,7 +66,11 @@ class RectangularUnweightedSmooth(Operation):
         self.input_doc['data'] = '1d ndarray'
         self.input_doc['m'] = 'odd integer number of data points to average locally'
         self.output_doc['smoothdata'] = 'smoothed 1d ndarray'
-        self.categories = ['1D DATA PROCESSING']
+        # source & type
+        self.input_src['data'] = optools.wf_input
+        self.input_src['m'] = optools.user_input
+        self.input_type['m'] = optools.int_type
+        self.categories = ['1D DATA PROCESSING.SMOOTHING']
 
     def run(self):
         self.outputs['smoothdata'] = moving_average(self.inputs['data'], self.inputs['m'], 'square')
@@ -76,7 +89,12 @@ class RectangularWeightedSmooth(Operation):
         self.input_doc['error'] = '1d ndarray, same shape as data'
         self.input_doc['m'] = 'odd integer number of data points to average locally'
         self.output_doc['smoothdata'] = 'smoothed 1d ndarray'
-        self.categories = ['1D DATA PROCESSING']
+        # source & type
+        self.input_src['data'] = optools.wf_input
+        self.input_src['error'] = optools.wf_input
+        self.input_src['m'] = optools.user_input
+        self.input_type['m'] = optools.int_type
+        self.categories = ['1D DATA PROCESSING.SMOOTHING']
 
     def run(self):
         self.outputs['smoothdata'] = moving_average(self.inputs['data'], self.inputs['m'], 'square',
@@ -95,7 +113,11 @@ class TriangularUnweightedSmooth(Operation):
         self.input_doc['data'] = '1d ndarray'
         self.input_doc['m'] = 'odd integer number of data points to average locally'
         self.output_doc['smoothdata'] = 'smoothed 1d ndarray'
-        self.categories = ['1D DATA PROCESSING']
+        # source & type
+        self.input_src['data'] = optools.wf_input
+        self.input_src['m'] = optools.user_input
+        self.input_type['m'] = optools.int_type
+        self.categories = ['1D DATA PROCESSING.SMOOTHING']
 
     def run(self):
         self.outputs['smoothdata'] = moving_average(self.inputs['data'], self.inputs['m'], 'triangle')
@@ -114,7 +136,12 @@ class TriangularWeightedSmooth(Operation):
         self.input_doc['error'] = '1d ndarray, same shape as data'
         self.input_doc['m'] = 'odd integer number of data points to average locally'
         self.output_doc['smoothdata'] = 'smoothed 1d ndarray'
-        self.categories = ['1D DATA PROCESSING']
+        # source & type
+        self.input_src['data'] = optools.wf_input
+        self.input_src['error'] = optools.wf_input
+        self.input_src['m'] = optools.user_input
+        self.input_type['m'] = optools.int_type
+        self.categories = ['1D DATA PROCESSING.SMOOTHING']
 
     def run(self):
         self.outputs['smoothdata'] = moving_average(self.inputs['data'], self.inputs['m'], 'triangle',

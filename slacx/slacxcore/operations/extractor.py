@@ -18,6 +18,7 @@ class ItemFromSequence(Operation):
         self.input_doc['index'] = 'index of the item you wish to extract'
         self.output_doc['item'] = 'item extracted from *sequence* at position *index*'
         self.categories = ['MISC.PYTHON OBJECT MANIPULATION']
+        # source & type
         self.input_src['sequence'] = optools.wf_input
         self.input_src['index'] = optools.user_input
         self.input_type['index'] = optools.int_type
@@ -92,7 +93,12 @@ class ItemToMap(Operation):
         self.input_doc['map'] = 'dictionary or other map'
         self.input_doc['key'] = 'key to the item you wish to add'
         self.input_doc['value'] = 'value of the item with key *key* in object *map*'
-        self.output_doc['value'] = 'map with added key-value pair'
+        self.output_doc['new_map'] = 'map with added key-value pair'
+        # source & type
+        self.input_src['map'] = optools.wf_input
+        self.input_src['key'] = optools.user_input
+        self.input_src['value'] = optools.wf_input
+        self.input_type['key'] = optools.str_type
         self.categories = ['MISC.PYTHON OBJECT MANIPULATION']
 
     def run(self):

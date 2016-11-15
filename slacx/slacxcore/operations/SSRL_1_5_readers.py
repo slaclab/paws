@@ -1,8 +1,9 @@
-from slacxop import Operation
-
 import time
 import tifffile
 from os.path import splitext
+
+from slacxop import Operation
+import optools
 
 
 class ReadTxtSSRL15(Operation):
@@ -16,6 +17,8 @@ class ReadTxtSSRL15(Operation):
         super(ReadTxtSSRL15, self).__init__(input_names, output_names)
         self.input_doc['file'] = 'path to a text file header produced by beamline 1-5 at SSRL'
         self.output_doc['header'] = 'the header file as a python dictionary'
+        # source & type
+        self.input_src['file'] = optools.wf_input
         self.categories = ['INPUT.SSRL 1-5']
 
     def run(self):

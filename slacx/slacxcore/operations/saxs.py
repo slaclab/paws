@@ -38,6 +38,19 @@ class GenerateSphericalDiffractionQ(Operation):
         self.input_type['qstep'] = optools.float_type
         self.output_doc['q'] = '1d ndarray; wave vector values'
         self.output_doc['I'] = '1d ndarray; intensity values'
+        # source & type
+        self.input_src['r0'] = optools.user_input
+        self.input_src['sigma_r_over_r0'] = optools.user_input
+        self.input_src['intensity_at_zero_q'] = optools.user_input
+        self.input_src['qmin'] = optools.user_input
+        self.input_src['qmax'] = optools.user_input
+        self.input_src['qstep'] = optools.user_input
+        self.input_type['r0'] = optools.float_type
+        self.input_type['sigma_r_over_r0'] = optools.float_type
+        self.input_type['intensity_at_zero_q'] = optools.float_type
+        self.input_type['qmin'] = optools.float_type
+        self.input_type['qmax'] = optools.float_type
+        self.input_type['qstep'] = optools.float_type
         self.categories = ['1D DATA PROCESSING']
 
     def run(self):
@@ -65,6 +78,14 @@ class GenerateSphericalDiffraction(Operation):
         self.input_src['intensity_at_zero_q'] = optools.wf_input
         self.input_src['q_vector'] = optools.wf_input
         self.output_doc['I'] = '1d ndarray; intensity values'
+        # source & type
+        self.input_src['r0'] = optools.user_input
+        self.input_src['sigma_r_over_r0'] = optools.user_input
+        self.input_src['intensity_at_zero_q'] = optools.user_input
+        self.input_src['q_vector'] = optools.wf_input
+        self.input_type['r0'] = optools.float_type
+        self.input_type['sigma_r_over_r0'] = optools.float_type
+        self.input_type['intensity_at_zero_q'] = optools.float_type
         self.categories = ['1D DATA PROCESSING']
 
     def run(self):

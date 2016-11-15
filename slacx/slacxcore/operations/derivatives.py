@@ -1,6 +1,7 @@
 #import numpy as np
 
 from slacxop import Operation
+import optools
 #from smoothing import choose_m, choose_start_and_end, make_poly_matrices, polynomial
 
 
@@ -18,6 +19,9 @@ class DiscreteFirstDerivative(Operation):
         self.input_doc['y'] = '1d ndarray; dependent variable; same shape as *x*'
         self.output_doc['slope'] = 'rate of change of *y* with respect to *x*'
         self.output_doc['new_x'] = 'coordinates at which the slope is best defined'
+        # source & type
+        self.input_src['x'] = optools.wf_input
+        self.input_src['y'] = optools.wf_input
         self.categories = ['1D DATA PROCESSING']
 
     def run(self):
@@ -35,6 +39,9 @@ class DiscreteSecondDerivative(Operation):
         self.input_doc['y'] = '1d ndarray; dependent variable; same shape as *x*'
         self.output_doc['curvature'] = 'second derivative of *y* with respect to *x*'
         self.output_doc['new_x'] = 'coordinates at which the curvature is best defined'
+        # source & type
+        self.input_src['x'] = optools.wf_input
+        self.input_src['y'] = optools.wf_input
         self.categories = ['1D DATA PROCESSING']
 
     def run(self):

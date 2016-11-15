@@ -24,6 +24,8 @@ class ParseCalib(Operation):
         self.input_doc['filename'] = 'path to .calib file'
         self.input_src['filename'] = optools.fs_input
         self.output_doc['parameters'] = 'dictionary organized in image_to_1D style'
+        # source & type
+        self.input_src['filename'] = optools.fs_input
         self.categories = ['INPUT.WXDIFF']
 
     def run(self):

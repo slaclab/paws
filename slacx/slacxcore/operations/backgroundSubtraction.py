@@ -1,5 +1,6 @@
 import numpy as np
 from slacxop import Operation
+import optools
 
 
 
@@ -13,6 +14,9 @@ class SubtractMaximumBackgroundNoErrors(Operation):
         self.input_doc['background'] = '1d ndarray; background to subtract, same coordinates as *foreground*'
         self.output_doc['subtracted'] = 'background-subtracted experimental data'
         self.output_doc['factor'] = 'the factor the background was multiplied by before subraction'
+        # source & type
+        self.input_src['foreground'] = optools.wf_input
+        self.input_src['background'] = optools.wf_input
         self.categories = ['1D DATA PROCESSING']
 
     def run(self):
@@ -32,6 +36,11 @@ class SubtractMaximumBackgroundWithErrors(Operation):
         self.output_doc['subtracted'] = 'background-subtracted experimental data'
         self.output_doc['subtracted_error'] = 'error estimate of *subtracted*'
         self.output_doc['factor'] = 'the factor the background was multiplied by before subraction'
+        # source & type
+        self.input_src['foreground'] = optools.wf_input
+        self.input_src['background'] = optools.wf_input
+        self.input_src['foreground_error'] = optools.wf_input
+        self.input_src['background_error'] = optools.wf_input
         self.categories = ['1D DATA PROCESSING']
 
     def run(self):
