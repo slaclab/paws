@@ -111,7 +111,9 @@ class GenerateSphericalDiffractionX(Operation):
 def GuessPolydispersityUnweighted(Operation):
     """Guess the polydispersity of spherical diffraction pattern.
 
-    Assumes the data have already been background subtracted, smoothed, and otherwise cleaned."""
+    Assumes the data have already been background subtracted, smoothed, and otherwise cleaned.
+
+    """
 
     def __init__(self):
         input_names = ['q','I','dI']
@@ -190,6 +192,49 @@ def clean_extrema(dips, shoulders):
     shoulders[-1] = False
     return dips, shoulders
 
+def harsh_clean_extrema(dips, shoulders):
+    # Forbid rapid oscillation
+    dips_above = dips[1:].copy()
+    dips_below = dips[:-1].copy()
+    shoulders_above = shoulders[1:].copy()
+    shoulders_below = shoulders[:-1].copy()
+    dips[:-1] = dips[:-1] & (~shoulders_above)
+    dips[1:] = dips[1:] & (~shoulders_below)
+    shoulders[:-1] = shoulders[:-1] & (~dips_above)
+    shoulders[1:] = shoulders[1:] & (~dips_below)
+    # Play favorites
+    size = dips_above.size
+    onepercent = np.ceil(size/100.)
+    dips_near_above = neighborhood(dips, onepercent)
+    dips_near_below = dips[:-onepercent].copy()
+    shoulders_near_above = shoulders[onepercent:].copy()
+    shoulders_near_below = shoulders[:-onepercent].copy()
+
+    dips[:-1] = dips[:-1] & (~shoulders_above)
+    dips[1:] = dips[1:] & (~shoulders_below)
+    shoulders[:-1] = shoulders[:-1] & (~dips_above)
+    shoulders[1:] = shoulders[1:] & (~dips_below)
+    # Mark endpoints False
+    dips[0:10] = False
+    dips[-1] = False
+    shoulders[0] = False
+    shoulders[-1] = False
+    return dips, shoulders
+
+
+def neighborhood_up(boolarray1d, n):
+    size = boolarray1d.size
+    neighbors = np.zeros(size, dtype=bool)
+    for ii in range(1, n):
+        neighbors = neighbors[ii:] | boolarray1d[:-ii]
+    return neighbors
+
+def neighborhood_down(boolarray1d, n):
+    size = boolarray1d.size
+    neighbors = np.zeros(size, dtype=bool)
+    for ii in range(1, n):
+        neighbors = neighbors[:-ii] | boolarray1d[ii:]
+    return neighbors
 
 def choose_extrema(q, I, dI):
     scaled_I = (I * q ** 4) / dI

@@ -39,7 +39,11 @@ class ImageAndHeaderSSRL15(Operation):
     def run(self):
         self.outputs['image'] = tifffile.imread(self.inputs['file'])
         txtname = txtname_from_tifname(self.inputs['file'])
-        self.outputs['header'] = read_header(txtname)
+        try:
+            self.outputs['header'] = read_header(txtname)
+        except IOError:
+            print "No corresponding header to file %s was found." % self.outputs['image']
+            self.outputs['header'] = {}
 
 
 
