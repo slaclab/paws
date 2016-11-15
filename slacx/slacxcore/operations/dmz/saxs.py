@@ -222,13 +222,22 @@ def harsh_clean_extrema(dips, shoulders):
     return dips, shoulders
 
 
-def neighborhood(boolarray1d, n):
+def neighborhood_up(boolarray1d, n):
     size = boolarray1d.size
     newsize = size - n
     neighbors = np.zeros(newsize, dtype=bool)
     for ii in range(n):
         jj = n - ii
         neighbors = neighbors | boolarray1d[ii:-jj]
+    return neighbors
+
+def neighborhood_down(boolarray1d, n):
+    size = boolarray1d.size
+    newsize = size - n
+    neighbors = np.zeros(newsize, dtype=bool)
+    for ii in range(n):
+        jj = n - ii
+        neighbors = neighbors | boolarray1d[jj:-ii]
     return neighbors
 
 def choose_extrema(q, I, dI):
