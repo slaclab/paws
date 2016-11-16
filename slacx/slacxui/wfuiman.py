@@ -380,11 +380,11 @@ class WfUiManager(object):
                 return
             else:
                 self.srcwindow_safe_close(name)
-        ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/tree_browser.ui")
+        ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/load_browser.ui")
         ui_file.open(QtCore.QFile.ReadOnly)
         src_ui = QtUiTools.QUiLoader().load(ui_file)
         ui_file.close()
-        src_ui.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+        #src_ui.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         src_ui.setParent(self.ui,QtCore.Qt.Window)
         if src == optools.wf_input:
             trmod = self.wfman
@@ -454,7 +454,7 @@ class WfUiManager(object):
         self.ui.splitter.setStretchFactor(0,1000)    
         #self.ui.returnPressed.connect(self.load_op)
         self.ui.setStyleSheet( "QLineEdit { border: none }" + self.ui.styleSheet() )
-        self.ui.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+        #self.ui.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         self.name_col = 1
         self.eq_col = 2
         self.src_col = 3

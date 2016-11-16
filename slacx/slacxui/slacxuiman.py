@@ -35,13 +35,14 @@ class UiManager(object):
         self.ui = QtUiTools.QUiLoader().load(ui_file)
         ui_file.close()
         # Set up the self.ui widget to delete itself when closed
-        self.ui.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+        #self.ui.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         self.opman = opman 
         self.wfman = wfman 
 
     def load_from_file(self,wfl_file):
         """
-        Build things in to wfman from a wfl (YAML) file
+        Build things in to wfman from a wfl (YAML) file.
+        Pass along an OpManager (e.g. self.opman) to retrieve Operations.
         """
         self.wfman.load_from_file(self.opman,wfl_file)
        
@@ -49,6 +50,12 @@ class UiManager(object):
         """
         Serialize things from wfman into a wfl (YAML) file
         """
+        ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/save_browser.ui")
+        ui_file.open(QtCore.QFile.ReadOnly)
+        save_ui = QtUiTools.QUiLoader().load(ui_file)
+        ui_file.close()
+        #save_ui.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+        save_ui.setParent(self.ui,QtCore.Qt.Window)
         self.wfman.save_to_file()
 
     def run_wf(self):
