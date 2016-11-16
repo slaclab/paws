@@ -39,25 +39,6 @@ class UiManager(object):
         self.opman = opman 
         self.wfman = wfman 
 
-    def load_from_file(self,wfl_file):
-        """
-        Build things in to wfman from a wfl (YAML) file.
-        Pass along an OpManager (e.g. self.opman) to retrieve Operations.
-        """
-        self.wfman.load_from_file(self.opman,wfl_file)
-       
-    def save_to_file(self):
-        """
-        Serialize things from wfman into a wfl (YAML) file
-        """
-        ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/save_browser.ui")
-        ui_file.open(QtCore.QFile.ReadOnly)
-        save_ui = QtUiTools.QUiLoader().load(ui_file)
-        ui_file.close()
-        #save_ui.setAttribute(QtCore.Qt.WA_DeleteOnClose)
-        save_ui.setParent(self.ui,QtCore.Qt.Window)
-        self.wfman.save_to_file()
-
     def run_wf(self):
         """
         run the workflow
@@ -171,31 +152,30 @@ class UiManager(object):
 
     def connect_actions(self):
         """Set up the works for buttons and menu items"""
-        # TODO: Figure out how to get the display to follow
-        # when I scroll through the tree with my arrow keys.
-        #self.ui.wf_tree.activated.connect(self.display_item)
-        self.ui.wf_tree.clicked.connect(self.display_item)
         self.ui.add_op_button.setText("Add Operations")
         self.ui.add_op_button.clicked.connect(self.add_ops)
         self.ui.edit_op_button.setText("Edit Operations")
         self.ui.edit_op_button.clicked.connect(self.edit_ops)
         self.ui.load_wf_button.setText("&Load")
-        self.ui.load_wf_button.clicked.connect( partial(self.load_from_file,slacxtools.rootdir+'/test.wfl') )
-        #self.ui.load_wf_button.clicked.connect( self.load_from_file )
+        self.ui.load_wf_button.clicked.connect(partial(uitools.start_load_ui,self))
         self.ui.edit_wf_button.setText("&Edit")
         self.ui.edit_wf_button.clicked.connect( partial(self.edit_wf,self.wfman) )
         self.ui.run_wf_button.setText("&Run")
         self.ui.run_wf_button.clicked.connect(self.run_wf)
         self.ui.save_wf_button.setText("&Save")
-        self.ui.save_wf_button.clicked.connect(self.save_to_file)
-        # Connect self.ui.wf_tree (QTreeView) to self.wfman (WfManager(TreeModel))
+        self.ui.save_wf_button.clicked.connect(partial(uitools.start_save_ui,self))
         self.ui.wf_tree.setModel(self.wfman)
-        #self.ui.wf_tree.hideColumn(1)
-        # Connect self.ui.op_tree (QTreeView) to self.opman (OpManager(TreeModel))
         self.ui.op_tree.setModel(self.opman)
         self.ui.op_tree.hideColumn(1)
+        self.ui.op_tree.clicked.connect( self.ui.op_tree.expand ) 
+        self.ui.wf_tree.clicked.connect( self.ui.wf_tree.expand )
+        self.ui.wf_tree.clicked.connect( self.display_item )
         self.ui.op_tree.doubleClicked.connect( partial(self.edit_wf,self.opman) )
         self.ui.wf_tree.doubleClicked.connect( partial(self.edit_wf,self.wfman) )
+        # TODO: Figure out how to get the display to follow
+        # when I scroll through the tree with my arrow keys.
+        #self.ui.wf_tree.activated.connect(self.display_item)
+        #self.ui.wf_tree.selectionModel().selectionChanged.connect( self.ui.wf_tree.selectionChanged )
 
     def make_title(self):
         """Display the slacx logo in the image viewer"""
@@ -215,16 +195,9 @@ class UiManager(object):
         # Add the QGraphicsScene to self.ui.image_viewer layout 
         logo_view = QtGui.QGraphicsView()
         logo_view.setScene(slacx_scene)
-        #logo_view.setStyleSheet( "QTextEdit { color: white  }" + self.ui.styleSheet() )
-        #logo_view.setStyleSheet( "QGraphicsTextItem { color: white  }" + self.ui.styleSheet() )
-        #logo_view.setStyleSheet( "QGraphicsView { color: white  }" + self.ui.styleSheet() )
-        #textitem.setStyleSheet( "QGraphicsTextItem { color: white  }" + self.ui.styleSheet() )
         self.ui.image_viewer.addWidget(logo_view,0,0,1,1)
-        #self.ui.title_box.setScene(slacx_scene)
-        # Set the main window title and icon
         self.ui.setWindowTitle("slacx v{}".format(slacxtools.version))
         self.ui.setWindowIcon(slacx_pixmap)
-
 
     def msg_board_log(self,msg,timestamp=slacxtools.timestr):
         """Print timestamped message to msg board"""
@@ -234,17 +207,4 @@ class UiManager(object):
       
     def show_status(self,msg):
         self.ui.statusbar.showMessage(msg)
-
-    #def export_image(self):
-    #    """export the image in the currently selected tab"""
-    #    pass
-
-    #def edit_image(self):
-    #    """open an image editor for the current tab"""
-    #    pass
-
-    # A QtCore.Slot for closing tabs from image_viewer
-    #@QtCore.Slot(int)
-    #def close_tab(self,indx):
-    #    self.ui.image_viewer.removeTab(indx)
 

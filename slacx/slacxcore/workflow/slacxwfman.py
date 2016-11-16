@@ -1,3 +1,4 @@
+import os
 import traceback
 from collections import OrderedDict
 
@@ -55,20 +56,25 @@ class WfManager(TreeModel):
             self.add_op(uri,op)
         #print dct
         
-    def save_to_file(self):
+    def save_to_file(self,filename):
         """
-        Save the current image of the Workflow as a YAML with .wfl extension
+        Save the current image of the Workflow as a YAML 
         """
-        wf_dict = OrderedDict() 
+        if not os.path.splitext(filename)[1] == '.wfl':
+            filename = filename+'.wfl'
+        #filename = slacxtools.rootdir+'/'+'test.wfl'
+        #wf_dict = OrderedDict() 
+        wf_dict = {} 
         for row in range(len(self.root_items)):
             item = self.root_items[row]
             idx = self.index(row,0,QtCore.QModelIndex())
             uri = self.build_uri(idx)
             wf_dict[str(uri)] = self.op_dict(item)
-        filename = slacxtools.rootdir+'/'+'test.wfl'
-        print 'dumping to {}'.format(filename)
+        if self.logmethod:
+            self.logmethod( 'dumping current workflow image to {}'.format(filename) )
         f = open(filename, "w")
-        yaml.dump(wf_dict, f, encoding='utf-8')
+        #yaml.dump(wf_dict, f, encoding='utf-8')
+        yaml.dump(wf_dict, f)
         f.close()
     def op_dict(self,op_item):
         dct = {}

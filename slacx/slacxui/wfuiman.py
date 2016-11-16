@@ -430,7 +430,7 @@ class WfUiManager(object):
         self.ui.op_selector.setModel(self.opman)
         self.ui.op_selector.hideColumn(1)
         self.ui.op_selector.clicked.connect( partial(self.get_op,self.opman) )
-        self.ui.op_selector.activated.connect( partial(self.get_op,self.opman) )
+        #self.ui.op_selector.activated.connect( partial(self.get_op,self.opman) )
         # Populate uri entry fields
         self.ui.uri_prompt.setText('operation uri:')
         #self.ui.uri_prompt.setMaximumWidth(150)

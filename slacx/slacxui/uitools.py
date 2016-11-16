@@ -1,10 +1,13 @@
+import os
 import re
 import platform
+from functools import partial
 
-from PySide import QtGui, QtCore
+from PySide import QtGui, QtCore, QtUiTools
 
 from ..slacxcore.operations import optools
 from ..slacxcore.listmodel import ListModel
+from ..slacxcore import slacxtools
 
 ## Test whether we have Qt >= 4.7 
 have_qt47 = True
@@ -90,27 +93,103 @@ def treesource_typval_widgets():
     val_widget = QtGui.QLineEdit('-')
     val_widget.setReadOnly(True)
     return type_widget, val_widget
+    
+def toggle_load_button(ui,txt):
+    idx = ui.tree.model().index(txt)
+    if (idx.isValid() and ui.tree.model().isDir(idx) 
+    or not os.path.splitext(txt)[1] == '.wfl'):
+        ui.load_button.setEnabled(False)
+    else:
+        ui.load_button.setEnabled(True)
 
-##### MINIMAL CLASS FOR VERTICAL HEADERS
-#class VertQLineEdit(QtGui.QLineEdit):
-class VertQLineEdit(QtGui.QWidget):
-    """QLineEdit, but vertical"""
-    def __init__(self,text):
-        super(VertQLineEdit,self).__init__()
-        self.text = text
-        #wid = self.geometry().width()
-        #ht = self.geometry().height()
-        #rt = self.geometry().right()
-        #t = self.geometry().top()
-        # QWidget.setGeometry(left,top,width,height)
-        #self.setGeometry(t, rt, ht, wid)
+def toggle_save_button(ui,txt):
+    idx = ui.tree.model().index(ui.filename.text())
+    if (idx.isValid() and ui.tree.model().isDir(idx)
+    or not os.path.splitext(txt)[1] == '.wfl'):
+        ui.save_button.setEnabled(False)
+    else:
+        ui.save_button.setEnabled(True)
 
-    def paintEvent(self,event):
-        qp = QtGui.QPainter()
-        qp.begin(self)
-        qp.rotate(90)
-        qp.drawText(0,0,self.text)
-        qp.end()
+def save_path(ui,idx=QtCore.QModelIndex(),oldidx=QtCore.QModelIndex()):
+    if idx.isValid():
+        p = ui.tree.model().filePath(idx)
+        ui.filename.setText(p)
+
+def load_path(ui,idx=QtCore.QModelIndex()):
+    if idx.isValid():
+        p = ui.tree.model().filePath(idx)
+        if (ui.tree.model().isDir(idx) 
+        or not os.path.splitext(p)[1] == '.wfl'):
+            ui.load_button.setEnabled(False)
+        else:
+            ui.load_button.setEnabled(True)
+
+def stop_save_ui(ui,uiman):
+    fname = ui.filename.text()
+    uiman.wfman.save_to_file(fname)
+    ui.close()
+
+def stop_load_ui(ui,uiman):
+    #fname = ui.filename.text()
+    fname = ui.tree.model().filePath(ui.tree.currentIndex())
+    uiman.wfman.load_from_file(uiman.opman,fname)
+    ui.close()
+
+def start_save_ui(uiman):
+    """
+    Start a modal window dialog to choose a save destination for the workflow in progress 
+    """
+    ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/save_browser.ui")
+    ui_file.open(QtCore.QFile.ReadOnly)
+    save_ui = QtUiTools.QUiLoader().load(ui_file)
+    ui_file.close()
+    #save_ui.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+    trmod = QtGui.QFileSystemModel()
+    trmod.setRootPath('.')
+    trmod.setNameFilters(['*.wfl'])
+    save_ui.tree_box.setTitle('Select a file to save the current workflow')
+    save_ui.tree.setModel(trmod)
+    save_ui.tree.hideColumn(1)
+    save_ui.tree.hideColumn(3)
+    save_ui.tree.setColumnWidth(0,400)
+    save_ui.tree.expandAll()
+    save_ui.tree.clicked.connect( partial(save_path,save_ui) )
+    #save_ui.tree.activated.connect( save_ui.tree.setCurrentIndex )
+    #save_ui.tree.selectionModel().selectionChanged.connect( save_ui.tree.selectionChanged )
+    #import pdb; pdb.set_trace()
+    save_ui.setParent(uiman.ui,QtCore.Qt.Window)
+    save_ui.save_button.setText('&Save')
+    save_ui.save_button.clicked.connect(partial(stop_save_ui,save_ui,uiman))
+    #save_ui.filename.returnPressed.connect(partial(stop_save_ui,save_ui,uiman))
+    save_ui.filename.textChanged.connect( partial(toggle_save_button,save_ui) )
+    save_ui.setWindowModality(QtCore.Qt.ApplicationModal)
+    save_ui.show()
+    save_ui.activateWindow()
+
+def start_load_ui(uiman):
+    """
+    Start a modal window dialog to load a previously saved workflow
+    """
+    ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/load_browser.ui")
+    ui_file.open(QtCore.QFile.ReadOnly)
+    load_ui = QtUiTools.QUiLoader().load(ui_file)
+    ui_file.close()
+    trmod = QtGui.QFileSystemModel()
+    trmod.setRootPath('.')
+    trmod.setNameFilters(['*.wfl'])
+    load_ui.tree_box.setTitle('Select a .wfl file to load a workflow')
+    load_ui.tree.setModel(trmod)
+    load_ui.tree.hideColumn(1)
+    load_ui.tree.hideColumn(3)
+    load_ui.tree.setColumnWidth(0,400)
+    load_ui.tree.expandAll()
+    load_ui.tree.clicked.connect( partial(load_path,load_ui) )
+    load_ui.setParent(uiman.ui,QtCore.Qt.Window)
+    load_ui.load_button.setText('&Load')
+    load_ui.load_button.clicked.connect(partial(stop_load_ui,load_ui,uiman))
+    load_ui.setWindowModality(QtCore.Qt.ApplicationModal)
+    load_ui.show()
+    load_ui.activateWindow()
 
 
 
