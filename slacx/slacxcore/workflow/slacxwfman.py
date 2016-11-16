@@ -20,7 +20,7 @@ class WfManager(TreeModel):
     """
 
     def __init__(self,**kwargs):
-        self._n_loaded = 0 
+        #self._n_loaded = 0 
         #TODO: build a saved tree from kwargs
         #if 'wf_loader' in kwargs:
         #    with f as open(wf_loader,'r'): 
@@ -36,20 +36,30 @@ class WfManager(TreeModel):
         if 'wfl' in kwargs:
             self.load_from_file( kwargs['wfl'] )
 
-    def load_from_file(self,wfl):
+    def load_from_file(self,opman,wfl):
         """
-        Load things in to the Workflow from a YAML with .wfl extension
+        Load things in to the Workflow from an OpManager and a YAML .wfl file 
         """
         f = open(wfl, "r")
         dct = yaml.load(f)
         f.close()
-        print dct
+        for uri, opdict in dct.items():
+            opname = opdict['type']
+            op = opman.get_op_byname(opname)()
+            ilspec = opdict['Inputs']
+            for name, srctypeval in ilspec.items():
+                op.input_src[name] = srctypeval['src']
+                op.input_type[name] = srctypeval['type']
+                il = optools.InputLocator(srctypeval['src'],srctypeval['type'],srctypeval['val'])
+                op.input_locator[name] = il
+            self.add_op(uri,op)
+        #print dct
         
     def save_to_file(self):
         """
         Save the current image of the Workflow as a YAML with .wfl extension
         """
-        wf_dict = {}
+        wf_dict = OrderedDict() 
         for row in range(len(self.root_items)):
             item = self.root_items[row]
             idx = self.index(row,0,QtCore.QModelIndex())
@@ -63,8 +73,9 @@ class WfManager(TreeModel):
     def op_dict(self,op_item):
         dct = {}
         op = op_item.data
+        dct['type'] = type(op).__name__ 
         dct['Inputs'] = self.inputs_dict(op)
-        dct['Outputs'] = self.outputs_dict(op)
+        #dct['Outputs'] = self.outputs_dict(op)
         return dct
     def inputs_dict(self,op):
         dct = {}
@@ -75,7 +86,7 @@ class WfManager(TreeModel):
     def outputs_dict(self,op):
         dct = {}
         for name in op.outputs.keys():
-            dct[name] = op.outputs[name]
+            dct[name] = str(op.outputs[name])
         return dct
 
     def add_op(self,uri,new_op):
@@ -95,7 +106,7 @@ class WfManager(TreeModel):
         # Render Operation inputs and outputs as children
         indx = self.index(ins_row,0,QtCore.QModelIndex())
         self.io_subtree(new_op,indx)
-        self._n_loaded += 1
+        #self._n_loaded += 1
 
     def update_op(self,uri,new_op):
         """
@@ -386,7 +397,7 @@ class WfManager(TreeModel):
                 for name in op.inputs.keys():
                     # Check if this input is supposed to come from a field in another Operation
                     src = op.input_src[name]
-                    if src == optools.op_input:
+                    if src == optools.wf_input:
                         # Check whether or not this is an Output field 
                         uri = op.input_locator[name].val
                         op_tag = uri.split('.')[0]
@@ -403,7 +414,7 @@ class WfManager(TreeModel):
         ordered_items = []
         for item in self.root_items:
             op = item.data
-            if not optools.op_input in [src for name,src in op.input_src.items()]:
+            if not optools.wf_input in [src for name,src in op.input_src.items()]:
                 ordered_items.append(item)
         next_items = self.items_ready(ordered_items)
         while next_items:
@@ -446,7 +457,7 @@ class WfManager(TreeModel):
             op = item.data
             op_rdy = True
             for name,src in op.input_src.items():
-                if src == optools.op_input:
+                if src == optools.wf_input:
                     # Get the uri for this input
                     inp_uri = op.input_locator[name].val
                     # Check that the uri points to a thing that exists in this WfManager(TreeModel) 
@@ -581,9 +592,9 @@ class WfManager(TreeModel):
             #print 'called locate_input for src {}, val {}'.format(src,val)
             if src in optools.valid_sources:
                 if (src == optools.fs_input
-                or src == optools.text_input): 
+                or src == optools.user_input): 
                     return val 
-                elif src == optools.op_input:
+                elif src == optools.wf_input:
                     io_type = val.split('.')[1]
                     # So far this supports two scenarios:
                     if io_type == 'Outputs':

@@ -33,6 +33,7 @@ class WfUiManager(object):
         self.src_widgets = {} 
         self.type_widgets = {} 
         self.val_widgets = {} 
+        self.btn_widgets = {} 
         self.inp_src_windows = {} 
         self.setup_ui()
 
@@ -77,21 +78,26 @@ class WfUiManager(object):
     def test_op(self):
         print 'Operation testing not yet implemented'
 
+    def set_input(self,name,item_indx=None):
+        if not self.op.input_locator[name]:
+            il = self.load_input(name,item_indx)
+            self.op.input_locator[name] = il
+
     def load_input(self,name,item_indx=None):
-        # Check the source.
         src = self.src_widgets[name].currentIndex()
+        il = optools.InputLocator()
         # If source is none, easy job.
         if src == optools.no_input:
             tp = optools.none_type
             val = None
-            self.type_widgets[name].setCurrentIndex(tp)
-            self.op.input_locator[name] = optools.InputLocator(src,tp,val) 
+            #self.type_widgets[name].setCurrentIndex(tp)
+            il = optools.InputLocator(src,tp,val) 
         # If source is batch...
         elif src == optools.batch_input:
             tp = optools.auto_type
             val = None
-            self.type_widgets[name].setCurrentIndex(tp)
-            self.op.input_locator[name] = optools.InputLocator(src,tp,val) 
+            #self.type_widgets[name].setCurrentIndex(tp)
+            il = optools.InputLocator(src,tp,val) 
         # If source is user input, load user input. 
         elif src == optools.user_input:
             tp = self.type_widgets[name].currentIndex()
@@ -111,12 +117,20 @@ class WfUiManager(object):
             else:
                 msg = 'type selection {}, should be one of {}'.format(src,optools.valid_types)
                 raise ValueError(msg)
-            self.op.input_locator[name] = optools.InputLocator(src,tp,val)
+            il = optools.InputLocator(src,tp,val)
         # If source is op or fs, check if tree browser exists, load its input.
         elif (src == optools.wf_input or src == optools.fs_input):
             if name in self.inp_src_windows.keys():
-                self.load_from_tree(name,item_indx)            
+                il = self.load_from_tree(name,item_indx)            
         self.ui.op_info.setPlainText(self.op.description())
+        return il
+
+    def list_from_widget(self,list_modview):
+        """
+        Load a list from a QAbstractListView connected to a ListModel
+        """
+        print 'list loading not yet implemented'
+        pass
 
     def load_from_tree(self,name,item_indx=None):
         """
@@ -144,14 +158,15 @@ class WfUiManager(object):
                 item_uri = trview.model().build_uri(item_indx)
                 #type_widg.setText('workflow uri')
             self.val_widgets[name].setText(item_uri)
-            self.op.input_locator[name] = optools.InputLocator(src,optools.auto_type,item_uri)
+            il = optools.InputLocator(src,optools.auto_type,item_uri)
         else:
             # if nothing is selected, load the input as None. 
-            self.op.input_locator[name] = optools.InputLocator(src,optools.auto_type,None) 
+            il = optools.InputLocator(src,optools.auto_type,None) 
             val_widg.setText('None')
             type_widg.setCurrentIndex(optools.none_type)
         self.srcwindow_safe_close(name)
         self.ui.op_info.setPlainText(self.op.description())
+        return il
 
     def rm_op(self):
         """
@@ -167,7 +182,8 @@ class WfUiManager(object):
         """ 
         # Make sure all inputs are loaded
         for name in self.op.inputs.keys():
-            self.load_input(name) 
+            self.set_input(name)
+            #self.op.input_locator[name] = self.load_input(name) 
         uri = self.ui.uri_entry.text()
         result = self.wfman.is_good_tag(uri)
         if result[0]:
@@ -194,11 +210,13 @@ class WfUiManager(object):
         n_inp_widgets = self.ui.input_layout.count()
         for i in range(n_inp_widgets-1,-1,-1):
             item = self.ui.input_layout.takeAt(i)
-            item.widget().deleteLater()
+            #item.widget().deleteLater()
+            item.widget().hide()
         n_out_widgets = self.ui.output_layout.count()
         for i in range(n_out_widgets-1,-1,-1):
             item = self.ui.output_layout.takeAt(i)
-            item.widget().deleteLater()
+            #item.widget().deleteLater()
+            item.widget().hide()
 
     def clear_input_windows(self):
         for name in self.inp_src_windows.keys():
@@ -207,7 +225,8 @@ class WfUiManager(object):
     def srcwindow_safe_close(self,name):
         old_widg = self.inp_src_windows.pop(name)[1]
         try:
-            old_widg.hide()
+            old_widg.close()
+            #old_widg.hide()
             #old_widg.deleteLater()
         except RuntimeError as ex:
             # I presume that old_widg has already been deleted, 
@@ -273,21 +292,31 @@ class WfUiManager(object):
         desc_widget = uitools.bigtext_widget(self.op.output_doc[name])
         self.ui.output_layout.addWidget(desc_widget,row,self.src_col,1,self.btn_col-self.src_col)
         ht = desc_widget.sizeHint().height()
-        name_widget.sizeHint = lambda: QtCore.QSize(8*len(name_widget.text()),ht)
+        name_widget.sizeHint = lambda: QtCore.QSize(10*len(name_widget.text()),ht)
         desc_widget.sizeHint = lambda: QtCore.QSize(20*len(desc_widget.text()),ht)
         name_widget.setSizePolicy(QtGui.QSizePolicy.Minimum,QtGui.QSizePolicy.Fixed)
         desc_widget.setSizePolicy(QtGui.QSizePolicy.Maximum,QtGui.QSizePolicy.Fixed)
 
     def render_input_widgets(self,name,row,src=None):
+        #import pdb; pdb.set_trace()
         if not src:
             src = self.src_widgets[name].currentIndex()
+        if name in self.type_widgets.keys():
+            if self.type_widgets[name]:
+                self.type_widgets[name].hide()
+        if name in self.val_widgets.keys():
+            if self.val_widgets[name]:
+                self.val_widgets[name].hide()
+        if name in self.btn_widgets.keys():
+            if self.btn_widgets[name]:
+                self.btn_widgets[name].hide()
         # If input widgets exist, close them.
-        for col in [self.type_col,self.val_col,self.btn_col]:
-            if self.ui.input_layout.itemAtPosition(row,col):
-                widg = self.ui.input_layout.itemAtPosition(row,col).widget()
-                #print 'remove widget {} from row {}, column {}.'.format(widg,row,col)
-                widg.hide()
-                #widg.deleteLater()
+        #for col in [self.type_col,self.val_col,self.btn_col]:
+        #    if self.ui.input_layout.itemAtPosition(row,col):
+        #        widg = self.ui.input_layout.itemAtPosition(row,col).widget()
+        #        #print 'remove widget {} from row {}, column {}.'.format(widg,row,col)
+        #        widg.hide()
+        #        #widg.deleteLater()
         #import pdb; pdb.set_trace()
         type_widget = uitools.type_selection_widget() 
         # if input source windows exist, hide / close those too.
@@ -324,10 +353,10 @@ class WfUiManager(object):
             btn_widget.clicked.connect( partial(self.fetch_data,name) )
             if (src == optools.wf_input and self.op.input_locator[name]):
                 if src == self.op.input_locator[name].src:
-                    val_widget.setText(str(self.op.input_locator[name].val))
+                    val_widget.setText(self.op.input_locator[name].val)
             elif (src == optools.fs_input and self.op.input_locator[name]):
                 if src == self.op.input_locator[name].src:
-                    val_widget.setText(str(self.op.input_locator[name].val))
+                    val_widget.setText(self.op.input_locator[name].val)
         #else:
         #    msg = 'source selection {} not recognized'.format(src)
         #    raise ValueError(msg)
@@ -337,6 +366,7 @@ class WfUiManager(object):
         self.val_widgets[name] = val_widget
         if btn_widget:
             self.ui.input_layout.addWidget(btn_widget,row,self.btn_col,1,1)
+        self.btn_widgets[name] = btn_widget
             
     def fetch_data(self,name):
         """Use a popup to select the input data"""
@@ -364,11 +394,14 @@ class WfUiManager(object):
         src_ui.tree.setModel(trmod)
         src_ui.tree_box.setTitle(name)
         self.inp_src_windows[name] = (src,src_ui)
-        src_ui.tree.expandAll()
+        if src == optools.wf_input:
+            src_ui.tree.expandToDepth(2)
+        elif src == optools.fs_input:
+            src_ui.tree.expandAll()
         src_ui.tree.resizeColumnToContents(0)
         src_ui.load_button.setText('Load selected data')
-        src_ui.load_button.clicked.connect(partial(self.load_input,name))
-        src_ui.tree.doubleClicked.connect(partial(self.load_input,name))
+        src_ui.load_button.clicked.connect(partial(self.set_input,name))
+        src_ui.tree.doubleClicked.connect(partial(self.set_input,name))
         if src == optools.fs_input:
             src_ui.tree.hideColumn(1)
             src_ui.tree.hideColumn(3)

@@ -36,11 +36,9 @@ class InputLocator(object):
     Objects of this class contain the information needed to find the relevant input data.
     If raw textual input is provided, it is stored in self.val after typecasting.
     """
-    def __init__(self,src,tp,val):
-        if src < 0 or src > len(input_sources):
-            msg = 'found input source {}, should be between 0 and {}'.format(
-            src, len(input_sources))
-            raise ValueError(msg)
+    def __init__(self,src=no_input,tp=none_type,val=None):
+        if src not in valid_sources: 
+            msg = 'found input source {}, should be one of {}'.format(src, valid_sources)
         self.src = src
         self.tp = tp
         self.val = val 

@@ -39,11 +39,11 @@ class UiManager(object):
         self.opman = opman 
         self.wfman = wfman 
 
-    def load_from_file(self,wf_file):
+    def load_from_file(self,wfl_file):
         """
         Build things in to wfman from a wfl (YAML) file
         """
-        self.wfman.load_from_file(wf_file)
+        self.wfman.load_from_file(self.opman,wfl_file)
        
     def save_to_file(self):
         """

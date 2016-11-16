@@ -27,7 +27,7 @@ for modloader, modname, ispkg in mods:
                     if issubclass(item,Batch):
                         if not cats == ['EXECUTION.BATCH']:
                             msg = str( '[{}] tried to load a Batch executor, '
-                            + 'but found categorizations other than EXECUTION.BATCH: {}'.format(
+                            + 'but found categories other than EXECUTION.BATCH: {}'.format(
                             __name__, cats))
                             raise ImportError(msg)
                     op_list.append( (cats,op) )
