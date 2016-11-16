@@ -79,9 +79,15 @@ class WfUiManager(object):
         print 'Operation testing not yet implemented'
 
     def set_input(self,name,item_indx=None):
+        """
+        Load input indicated by name into an InputLocator. 
+        Store it in self.op.input_locator[name].
+        """
         if not self.op.input_locator[name]:
             il = self.load_input(name,item_indx)
             self.op.input_locator[name] = il
+            self.op.input_src[name] = il.src
+            self.op.input_type[name] = il.tp
 
     def load_input(self,name,item_indx=None):
         src = self.src_widgets[name].currentIndex()
@@ -101,28 +107,12 @@ class WfUiManager(object):
         # If source is user input, load user input. 
         elif src == optools.user_input:
             tp = self.type_widgets[name].currentIndex()
-            val_widg = self.val_widgets[name]
-            if tp == optools.none_type:
-                val = None 
-            elif tp == optools.int_type:
-                val = int(val_widg.text())
-            elif tp == optools.float_type:
-                val = float(val_widg.text())
-            elif tp == optools.str_type:
-                val = str(val_widg.text())
-            elif tp == optools.bool_type:
-                val = bool(val_widg.text())
-            elif tp == optools.list_type:
-                val = self.list_from_widget(val_widg) 
-            else:
-                msg = 'type selection {}, should be one of {}'.format(src,optools.valid_types)
-                raise ValueError(msg)
+            val = self.val_widgets[name].text()
             il = optools.InputLocator(src,tp,val)
         # If source is op or fs, check if tree browser exists, load its input.
         elif (src == optools.wf_input or src == optools.fs_input):
             if name in self.inp_src_windows.keys():
                 il = self.load_from_tree(name,item_indx)            
-        self.ui.op_info.setPlainText(self.op.description())
         return il
 
     def list_from_widget(self,list_modview):
@@ -181,9 +171,11 @@ class WfUiManager(object):
         Package the finished self.op(Operation), ship to self.wfman
         """ 
         # Make sure all inputs are loaded
+        #import pdb; pdb.set_trace()
         for name in self.op.inputs.keys():
             self.set_input(name)
             #self.op.input_locator[name] = self.load_input(name) 
+        #import pdb; pdb.set_trace()
         uri = self.ui.uri_entry.text()
         result = self.wfman.is_good_tag(uri)
         if result[0]:
@@ -280,7 +272,7 @@ class WfUiManager(object):
         self.render_input_widgets(name,row) 
         #name_widget.resize(10,name_widget.size().height())
         ht = name_widget.sizeHint().height()
-        name_widget.sizeHint = lambda: QtCore.QSize(8*len(name_widget.text()),ht)
+        name_widget.sizeHint = lambda: QtCore.QSize(10*len(name_widget.text()),ht)
         name_widget.setSizePolicy(QtGui.QSizePolicy.Minimum,QtGui.QSizePolicy.Fixed)
 
     def add_output_widgets(self,name,row):
@@ -411,7 +403,7 @@ class WfUiManager(object):
         src_ui.activateWindow()
         
     def setup_ui(self):
-        self.ui.setWindowTitle("operation setup")
+        self.ui.setWindowTitle("workflow setup")
         self.ui.input_box.setTitle("INPUTS")
         self.ui.output_box.setTitle("OUTPUTS")
         self.ui.finish_box.setTitle("FINISH / LOAD")

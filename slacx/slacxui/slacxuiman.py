@@ -152,8 +152,9 @@ class UiManager(object):
 
     def connect_actions(self):
         """Set up the works for buttons and menu items"""
-        self.ui.add_op_button.setText("Add Operations")
-        self.ui.add_op_button.clicked.connect(self.add_ops)
+        self.ui.add_op_button.setText("Add to Workflow")
+        #self.ui.add_op_button.clicked.connect(self.add_ops)
+        self.ui.add_op_button.clicked.connect( partial(self.edit_wf,self.opman) )
         self.ui.edit_op_button.setText("Edit Operations")
         self.ui.edit_op_button.clicked.connect(self.edit_ops)
         self.ui.load_wf_button.setText("&Load")

@@ -594,24 +594,44 @@ class WfManager(TreeModel):
         """
         if isinstance(inplocator,InputLocator):
             src = inplocator.src
+            tp = inplocator.tp
             val = inplocator.val
             #print 'called locate_input for src {}, val {}'.format(src,val)
-            if src in optools.valid_sources:
-                if (src == optools.fs_input
-                or src == optools.user_input): 
-                    return val 
-                elif src == optools.wf_input:
-                    io_type = val.split('.')[1]
-                    # So far this supports two scenarios:
-                    if io_type == 'Outputs':
-                        # 1) val is a uri pointing to an op output. 
-                        # Return data by getting it from the uri.
-                        item, indx = self.get_from_uri(val)
-                        return item.data
-                    elif io_type == 'Inputs':
-                        # 2) val is an input uri for setting values during execution.
-                        # Return the uri directly.
-                        return val
+            if src == optools.user_input: 
+                if tp == optools.none_type:
+                    val = None 
+                elif tp == optools.int_type:
+                    val = int(val)
+                elif tp == optools.float_type:
+                    val = float(val)
+                elif tp == optools.str_type:
+                    val = str(val)
+                elif tp == optools.bool_type:
+                    val = bool(val)
+                elif tp == optools.list_type:
+                    # val is expected to be a widget containing the list data
+                    val = self.list_from_widget(val) 
+                else:
+                    msg = 'type selection {}, should be one of {}'.format(src,optools.valid_types)
+                    raise ValueError(msg)
+                return val
+            elif src == optools.wf_input:
+                io_type = val.split('.')[1]
+                # So far this supports two scenarios:
+                if io_type == 'Outputs':
+                    # 1) val is a uri pointing to an op output. 
+                    # Return data by getting it from the uri.
+                    item, indx = self.get_from_uri(val)
+                    return item.data
+                elif io_type == 'Inputs':
+                    # 2) val is an input uri for setting values during execution.
+                    # Return the uri directly.
+                    return val
+            elif src == optools.fs_input:
+                return val 
+            elif src == optools.batch_input:
+                # Do nothing, trust the Batch executor to set the input values
+                return val
             else: 
                 msg = 'found input source {}, should be one of {}'.format(
                 src, valid_sources)
@@ -621,6 +641,10 @@ class WfManager(TreeModel):
             # do nothing, return the input.
             #print 'called locate_input on non-InputLocator: {}'.format(inplocator)
             return inplocator
+
+    def list_from_widget(self,widg):
+        print '[{}]: need to implement list_from_widget'.format(__name__)
+        return None
 
     def get_from_uri(self, uri):
         """Get from this tree the item at the given uri."""
