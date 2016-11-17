@@ -58,7 +58,6 @@ class WfUiManager(object):
                 self.create_op(x)
             elif existing_op_flag:
                 # Load existing Operation
-                #import pdb; pdb.set_trace()
                 self.set_op(x,xitem.tag())
 
     def set_op(self,op,uri):
@@ -83,15 +82,14 @@ class WfUiManager(object):
         Load input indicated by name into an InputLocator. 
         Store it in self.op.input_locator[name].
         """
-        if not self.op.input_locator[name]:
-            il = self.load_input(name,item_indx)
-            self.op.input_locator[name] = il
-            self.op.input_src[name] = il.src
-            self.op.input_type[name] = il.tp
+        #if not self.op.input_locator[name]:
+        il = self.load_input(name,item_indx)
+        self.op.input_locator[name] = il
+        self.op.input_src[name] = il.src
+        self.op.input_type[name] = il.tp
 
     def load_input(self,name,item_indx=None):
         src = self.src_widgets[name].currentIndex()
-        il = optools.InputLocator()
         # If source is none, easy job.
         if src == optools.no_input:
             tp = optools.none_type
@@ -109,10 +107,20 @@ class WfUiManager(object):
             tp = self.type_widgets[name].currentIndex()
             val = self.val_widgets[name].text()
             il = optools.InputLocator(src,tp,val)
-        # If source is op or fs, check if tree browser exists, load its input.
+        # If source is op or fs, check if tree browser exists, if so, load its input.
         elif (src == optools.wf_input or src == optools.fs_input):
             if name in self.inp_src_windows.keys():
-                il = self.load_from_tree(name,item_indx)            
+                il = self.load_from_tree(name,item_indx)
+            elif self.op.input_locator[name] is not None:
+                il = self.op.input_locator[name]
+            else: 
+                tp = optools.auto_type
+                val = None
+                il = optools.InputLocator(src,tp,val)
+        elif self.op.input_locator[name] is not None:
+            il = self.op.input_locator[name]
+        else: 
+            il = optools.InputLocator()
         return il
 
     def list_from_widget(self,list_modview):
@@ -171,16 +179,13 @@ class WfUiManager(object):
         Package the finished self.op(Operation), ship to self.wfman
         """ 
         # Make sure all inputs are loaded
-        #import pdb; pdb.set_trace()
         for name in self.op.inputs.keys():
             self.set_input(name)
             #self.op.input_locator[name] = self.load_input(name) 
-        #import pdb; pdb.set_trace()
         uri = self.ui.uri_entry.text()
         result = self.wfman.is_good_tag(uri)
         if result[0]:
             self.wfman.add_op(uri,self.op) 
-            #import pdb; pdb.set_trace()
             #self.ui.close()
             #self.ui.deleteLater()
         elif result[1] == 'Tag not unique':
@@ -268,8 +273,12 @@ class WfUiManager(object):
         #val_widget = QtGui.QLineEdit(str(val))
         self.ui.input_layout.addWidget(src_widget,row,self.src_col,1,1)
         src_widget.activated.connect( partial(self.render_input_widgets,name,row) )
-        src_widget.setCurrentIndex(self.op.input_src[name])
-        self.render_input_widgets(name,row) 
+        if self.op.input_locator[name] is not None:
+            src = self.op.input_locator[name].src
+        else:
+            src = self.op.input_src[name]
+        src_widget.setCurrentIndex(src)
+        self.render_input_widgets(name,row,src) 
         #name_widget.resize(10,name_widget.size().height())
         ht = name_widget.sizeHint().height()
         name_widget.sizeHint = lambda: QtCore.QSize(10*len(name_widget.text()),ht)
@@ -290,7 +299,6 @@ class WfUiManager(object):
         desc_widget.setSizePolicy(QtGui.QSizePolicy.Maximum,QtGui.QSizePolicy.Fixed)
 
     def render_input_widgets(self,name,row,src=None):
-        #import pdb; pdb.set_trace()
         if not src:
             src = self.src_widgets[name].currentIndex()
         if name in self.type_widgets.keys():
@@ -302,14 +310,6 @@ class WfUiManager(object):
         if name in self.btn_widgets.keys():
             if self.btn_widgets[name]:
                 self.btn_widgets[name].hide()
-        # If input widgets exist, close them.
-        #for col in [self.type_col,self.val_col,self.btn_col]:
-        #    if self.ui.input_layout.itemAtPosition(row,col):
-        #        widg = self.ui.input_layout.itemAtPosition(row,col).widget()
-        #        #print 'remove widget {} from row {}, column {}.'.format(widg,row,col)
-        #        widg.hide()
-        #        #widg.deleteLater()
-        #import pdb; pdb.set_trace()
         type_widget = uitools.type_selection_widget() 
         # if input source windows exist, hide / close those too.
         if name in self.inp_src_windows.keys():
@@ -327,14 +327,14 @@ class WfUiManager(object):
             val_widget.setReadOnly(True)
             btn_widget = None
         elif src == optools.user_input:
-            #if self.op.input_type[name]:
-            type_widget.setCurrentIndex(self.op.input_type[name])
             val_widget = QtGui.QLineEdit()
             btn_widget = None
             if self.op.input_locator[name]:
                 val_widget.setText(str(self.op.input_locator[name].val))
-            elif self.op.inputs[name]:
+                type_widget.setCurrentIndex(self.op.input_locator[name].tp)
+            elif self.op.input_type[name]:
                 val_widget.setText(str(self.op.inputs[name]))
+                type_widget.setCurrentIndex(self.op.input_type[name])
             elif uitools.have_qt47:
                 val_widget.setPlaceholderText('(enter value)')
             else:

@@ -35,7 +35,7 @@ class UiManager(object):
         self.ui = QtUiTools.QUiLoader().load(ui_file)
         ui_file.close()
         # Set up the self.ui widget to delete itself when closed
-        #self.ui.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+        self.ui.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         self.opman = opman 
         self.wfman = wfman 
 
@@ -152,7 +152,7 @@ class UiManager(object):
 
     def connect_actions(self):
         """Set up the works for buttons and menu items"""
-        self.ui.add_op_button.setText("Add to Workflow")
+        self.ui.add_op_button.setText("Add Operation to Workflow")
         #self.ui.add_op_button.clicked.connect(self.add_ops)
         self.ui.add_op_button.clicked.connect( partial(self.edit_wf,self.opman) )
         self.ui.edit_op_button.setText("Edit Operations")

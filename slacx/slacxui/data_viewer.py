@@ -3,12 +3,14 @@ import re
 import numpy as np
 from PySide import QtGui
 
+from ..slacxcore.operations.optools import InputLocator
 from . import uitools
 if uitools.have_qt47:
     from . import plotmaker_pqg as plotmaker
 else:
     from . import plotmaker_mpl as plotmaker
     
+
 def display_item(item,uri,qlayout,logmethod=None):
     if logmethod: 
         logmethod('Log messages for data viewer not yet implemented')
@@ -35,24 +37,23 @@ def display_item(item,uri,qlayout,logmethod=None):
     
     # Produce widgets for displaying strings, dicts, etc.
     if type(item).__name__ in ['str','unicode']:
-        display_text = 'STRING PRINTOUT: <br>{}'.format(item)
-        text_widget = QtGui.QTextEdit(display_text)
-    elif type(item).__name__ == 'dict':
-        display_text = 'DICT PRINTOUT: '
+        display_text = 'str / unicode printout: <br>{}'.format(item)
+    elif isinstance(item,dict):
+        display_text = 'dict printout: '
         for k,v in item.items():
             display_text += '<br> {}: {}'.format(k,v)
-        text_widget = QtGui.QTextEdit(display_text)
-    elif type(item).__name__ == 'list':
-        display_text = 'LIST PRINTOUT: '
+    elif isinstance(item,list):
+        display_text = 'list printout: '
         for i in range(len(item)):
             display_text += '<br> {}: {}'.format(i,item[i])
-        text_widget = QtGui.QTextEdit(display_text)
-    #elif type(item).__name__ == 'listiterator':
-    #    display_text = 'ITERATOR PRINTOUT: <br> (skipping- cannot print without mutating iterator)'
-    #    text_widget = QtGui.QTextEdit(display_text)
+    elif isinstance(item,InputLocator):
+        display_text = 'InputLocator printout: '
+        display_text += '<br> src: {}'.format(item.src)
+        display_text += '<br> type: {}'.format(item.tp)
+        display_text += '<br> val: {}'.format(item.val)
     else:
-        display_text = 'ITEM PRINTOUT: <br>{}'.format(item)
-        text_widget = QtGui.QTextEdit(display_text)
+        display_text = 'object printout: <br>{}'.format(item)
+    text_widget = QtGui.QTextEdit(display_text)
 
     # Assemble whatever widgets were produced, add them to the layout    
     if plot_widget:

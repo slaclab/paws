@@ -193,7 +193,7 @@ class WfManager(TreeModel):
         self.removeRows(0,nc_i,inputs_indx)
         self.removeRows(0,nc_o,outputs_indx)
         # Build io trees from io dicts:
-        self.build_from_dict(op.inputs,inputs_indx)
+        self.build_from_dict(op.input_locator,inputs_indx)
         self.build_from_dict(op.outputs,outputs_indx)
         # Now go through and set_long_tag for the op inputs and outputs
         for name, val in op.inputs.items():
