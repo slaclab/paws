@@ -63,8 +63,8 @@ class WfManager(TreeModel):
         if not os.path.splitext(filename)[1] == '.wfl':
             filename = filename+'.wfl'
         #filename = slacxtools.rootdir+'/'+'test.wfl'
-        #wf_dict = OrderedDict() 
-        wf_dict = {} 
+        wf_dict = OrderedDict() 
+        #wf_dict = {} 
         for row in range(len(self.root_items)):
             item = self.root_items[row]
             idx = self.index(row,0,QtCore.QModelIndex())
@@ -77,20 +77,23 @@ class WfManager(TreeModel):
         yaml.dump(wf_dict, f)
         f.close()
     def op_dict(self,op_item):
-        dct = {}
+        #dct = {}
+        dct = OrderedDict() 
         op = op_item.data
         dct['type'] = type(op).__name__ 
         dct['Inputs'] = self.inputs_dict(op)
         #dct['Outputs'] = self.outputs_dict(op)
         return dct
     def inputs_dict(self,op):
-        dct = {}
+        #dct = {}
+        dct = OrderedDict() 
         for name in op.inputs.keys():
             il = op.input_locator[name]
             dct[name] = {'src':il.src,'type':il.tp,'val':str(il.val)}
         return dct
     def outputs_dict(self,op):
-        dct = {}
+        #dct = {}
+        dct = OrderedDict() 
         for name in op.outputs.keys():
             dct[name] = str(op.outputs[name])
         return dct

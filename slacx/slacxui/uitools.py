@@ -104,8 +104,7 @@ def toggle_load_button(ui,txt):
 
 def toggle_save_button(ui,txt):
     idx = ui.tree.model().index(ui.filename.text())
-    if (idx.isValid() and ui.tree.model().isDir(idx)
-    or not os.path.splitext(txt)[1] == '.wfl'):
+    if idx.isValid() and ui.tree.model().isDir(idx):
         ui.save_button.setEnabled(False)
     else:
         ui.save_button.setEnabled(True)
@@ -126,6 +125,8 @@ def load_path(ui,idx=QtCore.QModelIndex()):
 
 def stop_save_ui(ui,uiman):
     fname = ui.filename.text()
+    if not os.path.splitext(fname)[1] == '.wfl':
+        fname = fname + '.wfl'
     uiman.wfman.save_to_file(fname)
     ui.close()
 
@@ -154,6 +155,7 @@ def start_save_ui(uiman):
     save_ui.tree.setColumnWidth(0,400)
     save_ui.tree.expandAll()
     save_ui.tree.clicked.connect( partial(save_path,save_ui) )
+    save_ui.tree.expanded.connect( partial(save_path,save_ui) )
     #save_ui.tree.activated.connect( save_ui.tree.setCurrentIndex )
     #save_ui.tree.selectionModel().selectionChanged.connect( save_ui.tree.selectionChanged )
     #import pdb; pdb.set_trace()
