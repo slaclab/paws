@@ -5,7 +5,9 @@ import optools
 
 
 class MirrorVertically(Operation):
-    """Mirror an image, exchanging top and bottom."""
+    """Mirror an image, exchanging top and bottom.
+
+    I.e., mirror an ndarray along axis = 1."""
 
     def __init__(self):
         input_names = ['image_in']
@@ -15,7 +17,7 @@ class MirrorVertically(Operation):
         self.output_doc['image_out'] = '2d ndarray'
         # source & type
         self.input_src['image_in'] = optools.wf_input
-        self.categories = ['TESTS']
+        self.categories = ['2D DATA PROCESSING']
 
     def run(self):
         self.outputs['image_out'] = self.inputs['image_in'][:,::-1]
@@ -23,7 +25,10 @@ class MirrorVertically(Operation):
 
 
 class MirrorHorizontally(Operation):
-    """Mirror an image, exchanging left and right."""
+    """Mirror an image, exchanging left and right.
+
+    I.e., mirror an ndarray along axis = 0.
+    """
 
     def __init__(self):
         input_names = ['image_in']
@@ -33,7 +38,7 @@ class MirrorHorizontally(Operation):
         self.output_doc['image_out'] = '2d ndarray'
         # source & type
         self.input_src['image_in'] = optools.wf_input
-        self.categories = ['TESTS']
+        self.categories = ['2D DATA PROCESSING']
 
     def run(self):
         self.outputs['image_out'] = self.inputs['image_in'][::-1,:]

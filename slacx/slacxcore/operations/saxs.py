@@ -1,4 +1,5 @@
 import numpy as np
+from scipy import interp
 #from matplotlib import pyplot as plt
 #from os.path import join
 try:
@@ -10,6 +11,13 @@ from slacxop import Operation
 import optools
 
 reference_loc = 'slacx/slacxcore/operations/dmz/references/polydispersity_guess_references.pickle'
+global references
+references = {}
+
+def load_references():
+    with open(reference_loc, 'rb') as handle:
+        references = pickle.load(handle)
+    return references
 
 
 class GenerateSphericalDiffractionQ(Operation):
@@ -51,7 +59,7 @@ class GenerateSphericalDiffractionQ(Operation):
         self.input_type['qmin'] = optools.float_type
         self.input_type['qmax'] = optools.float_type
         self.input_type['qstep'] = optools.float_type
-        self.categories = ['1D DATA PROCESSING']
+        self.categories = ['1D DATA PROCESSING.GENERATE SAXS PATTERNS']
 
     def run(self):
         self.outputs['q'] = gen_q_vector(self.inputs['qmin'], self.inputs['qmax'], self.inputs['qstep'])
@@ -86,7 +94,7 @@ class GenerateSphericalDiffraction(Operation):
         self.input_type['r0'] = optools.float_type
         self.input_type['sigma_r_over_r0'] = optools.float_type
         self.input_type['intensity_at_zero_q'] = optools.float_type
-        self.categories = ['1D DATA PROCESSING']
+        self.categories = ['1D DATA PROCESSING.GENERATE SAXS PATTERNS']
 
     def run(self):
         self.outputs['I'] = \
@@ -129,49 +137,90 @@ class GenerateSphericalDiffractionX(Operation):
                                            self.inputs['qstep'])
 '''
 
-def GuessPolydispersityUnweighted(Operation):
+class GuessPolydispersity(Operation):
     """Guess the polydispersity of spherical diffraction pattern.
 
     Assumes the data have already been background subtracted, smoothed, and otherwise cleaned."""
 
     def __init__(self):
-        input_names = ['q','I']
-        output_names = ['fractional_variation']
-        super(GenerateSphericalDiffractionQ, self).__init__(input_names, output_names)
+        input_names = ['q','I','dI']
+        output_names = ['fractional_variation','first_dip_q']
+        super(GuessPolydispersity, self).__init__(input_names, output_names)
         # Documentation
         self.input_doc['q'] = '1d ndarray; wave vector values'
         self.input_doc['I'] = '1d ndarray; intensity values'
+        self.input_doc['dI'] = '1d ndarray; error estimate of intensity values'
         self.output_doc['fractional_variation'] = 'normal distribution sigma divided by mean size'
+        self.output_doc['first_dip_q'] = 'location in q of the first dip'
         # Source and type
         self.input_src['q'] = optools.wf_input
         self.input_src['I'] = optools.wf_input
-        self.categories = ['1D DATA PROCESSING']
+        self.input_src['dI'] = optools.wf_input
+        self.categories = ['1D DATA PROCESSING.SAXS INTERPRETATION']
 
     def run(self):
-        q = self.inputs['q']
-        I = self.inputs['I']
+        q, I, dI = self.inputs['q'], self.inputs['I'], self.inputs['dI']
+        fractional_variation, first_dip_q = guess_polydispersity(q, I, dI)
+        self.outputs['fractional_variation'], self.outputs['first_dip_q'] = fractional_variation, first_dip_q
 
-        x1, dipCoefficients = polydispersity_metric_xFirstDip(q, I)
-        x2 = polydispersity_metric_x2(q, I)
-        y1 = polydispersity_metric_firstDipHeight(dipCoefficients)
-        y2 = polydispersity_metric_heightAtZero(x1, q, I)
-        x0 = x1/x2
-        y0 = y1/y2
-        with open(reference_loc, 'rb') as handle:
-            references = pickle.load(handle)
-        x = references['xFirstDip']/references['']
-        y = references['firstDipHeight']/references['heightAtZero']
-        factor = references['factorVals']
-        self.outputs['fractional_variation'] = guess_nearest_point_on_dual_trace(x0, y0, x, y, factor)
 
+class GuessSize(Operation):
+        """Guess the mean size of spherical diffraction pattern.
+
+        Assumes the data have already been background subtracted, smoothed, and otherwise cleaned.
+
+        Requires foreknowledge of the fractional variation in size."""
+
+        def __init__(self):
+            input_names = ['fractional_variation', 'first_dip_q']
+            output_names = ['mean_size']
+            super(GuessSize, self).__init__(input_names, output_names)
+            # Documentation
+            self.input_doc['fractional_variation'] = 'normal distribution sigma divided by mean size'
+            self.input_doc['first_dip_q'] = 'location in q of the first dip'
+            self.output_doc['mean_size'] = 'mean size of particles'
+            # Source and type
+            self.input_src['fractional_variation'] = optools.wf_input
+            self.input_src['first_dip_q'] = optools.wf_input
+            self.categories = ['1D DATA PROCESSING.SAXS INTERPRETATION']
+
+        def run(self):
+            fractional_variation, first_dip_q = self.outputs['fractional_variation'], self.outputs['first_dip_q']
+            mean_size = guess_size(fractional_variation, first_dip_q)
+            self.outputs['mean_size'] = mean_size
 
 
 # xFirstDip, powerLaw, depthFirstDip, sigmaFirstDip, heightFirstDip, heightAtZero
 
-def polydispersity_metric_xFirstDip(q, I, dI=np.zeros(1)):
+def guess_polydispersity(q, I, dI):
+    x1, dipCoefficients = polydispersity_metric_qFirstDip(q, I, dI)
+    x2 = polydispersity_metric_x2(q, I)
+    y1 = polydispersity_metric_firstDipHeight(dipCoefficients, x1)
+    y2 = polydispersity_metric_heightAtZero(x1, q, I, dI)
+    x0 = x1 / x2
+    y0 = y1 / y2
+    if len(references) == 0:
+        references = load_references()
+    x = references['xFirstDip'] / references['']
+    y = references['firstDipHeight'] / references['heightAtZero']
+    factor = references['factorVals']
+    fractional_variation = guess_nearest_point_on_dual_trace(x0, y0, x, y, factor)
+    return fractional_variation, x1
+
+def guess_size(fractional_variation, first_dip_q):
+    if len(references) == 0:
+        references = load_references()
+    xFirstDip, factorVals = references['xFirstDip'], references['factorVals']
+    first_dip_x = interp(fractional_variation, factorVals, xFirstDip)
+    mean_size = first_dip_x / first_dip_q
+    return mean_size
+
+
+def polydispersity_metric_qFirstDip(q, I, dI=np.zeros(1)):
+    '''Finds the location in *q* of the first dip.'''
     if not dI.any():
         dI = np.zeros(I.shape, dtype=float)
-    scaled_I = (I - dI) * q ** 4
+    scaled_I = I * q ** 4 / dI
     dips = local_minima_detector(scaled_I)
     shoulders = local_maxima_detector(scaled_I)
     dips, shoulders = clean_extrema(dips, shoulders)
@@ -181,9 +230,9 @@ def polydispersity_metric_xFirstDip(q, I, dI=np.zeros(1)):
 
 def polydispersity_metric_heightAtZero(qFirstDip, q, I, dI=np.zeros(1)):
     if not dI.any():
-        dI = np.ones(y.shape, dtype=float)
+        dI = np.ones(I.shape, dtype=float)
     low_q = (q < 0.75*qFirstDip)
-    coefficients = arbitrary_order_fit(5, q[low_q], I[low_q])
+    coefficients = arbitrary_order_fit(5, q[low_q], I[low_q], dI[low_q])
     heightAtZero = coefficients[0]
     return heightAtZero
 
@@ -209,6 +258,10 @@ def clean_extrema(dips, shoulders):
     shoulders[0] = False
     shoulders[-1] = False
     return dips, shoulders
+
+def polydispersity_metric_firstDipHeight(quadCoefficients, xdip):
+    ydip = polynomial_value(quadCoefficients, xdip)
+    return ydip
 
 def local_maxima_detector(y):
     '''
@@ -249,6 +302,7 @@ def local_minima_detector(y):
     return minima
 
 def arbitrary_order_fit(order, x, y, dy=np.zeros(1)):
+    '''Solves for a polynomial "fit" of arbitrary order.'''
     if not dy.any():
         dy = np.ones(y.shape, dtype=float)
     # Formulate the equation to be solved for polynomial coefficients
@@ -260,29 +314,25 @@ def arbitrary_order_fit(order, x, y, dy=np.zeros(1)):
     return coefficients
 
 def quadratic_extremum(coefficients):
+    '''Finds the location in independent coordinate of the extremum of a quadratic equation.'''
     extremum_location = -0.5*coefficients[1]/coefficients[2]
     return extremum_location
 
 def polynomial_value(coefficients, x):
+    '''Finds the value of a polynomial at a location.'''
     powers = np.arange(coefficients.size)
     y = ((x ** powers) * coefficients).sum()
     return y
-
-def polydispersity_metric_firstDipHeight(quadCoefficients, xdip):
-    ydip = polynomial_value(quadCoefficients, xdip)
-    return ydip
 
 def vertical(array1d):
     '''Turn 1d array into 2d vertical vector.'''
     array1d = array1d.reshape((array1d.size, 1))
     return array1d
 
-
 def horizontal(array1d):
     '''Turn 1d array into 2d horizontal vector.'''
     array1d = array1d.reshape((1, array1d.size))
     return array1d
-
 
 def dummy(array1d):
     '''Turn 1d array into dummy-index vector for 2d matrix computation.
@@ -290,7 +340,6 @@ def dummy(array1d):
     Sum over the dummy index by taking *object.sum(axis=0)*.'''
     array1d = array1d.reshape((array1d.size, 1 , 1))
     return array1d
-
 
 def make_poly_matrices(x, y, error, order):
     '''Make the matrices necessary to solve a polynomial fit of order *order*.
@@ -328,17 +377,21 @@ def nearest_point_on_trace(x0, y0, x, y):
     pass
 
 def guess_nearest_point_on_dual_trace(x0, y0, x, y, variable):
-    vbestx = guess_nearest_point_on_single_trace(x0, x, variable)
-    vbesty = guess_nearest_point_on_single_trace(y0, y, variable)
+    vbestx = guess_nearest_point_on_single_monotonic_trace(x0, x, variable)
+    vbesty = guess_nearest_point_on_single_monotonic_trace(y0, y, variable)
     vbest = 0.5*(vbestx + vbesty)
     return vbest
 
-def guess_nearest_point_on_single_trace(x0, x, y):
+def guess_nearest_point_on_single_trace_1(x0, x, y):
     index2 = np.where(x > x0)[0][0]
     index1 = index2 - 1
     xdiff2 = x[index2] - x0
     xdiff1 = x0 - x[index1]
     ybest = (y[index1] * xdiff2 + y[index2] * xdiff1) / (xdiff1 + xdiff2)
+    return ybest
+
+def guess_nearest_point_on_single_monotonic_trace(x0, x, y):
+    ybest = interp(x0, x, y)
     return ybest
 
 

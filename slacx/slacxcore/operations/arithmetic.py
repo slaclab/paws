@@ -17,8 +17,8 @@ class Add(Operation):
         # source & type
         self.input_src['augend'] = optools.wf_input
         self.input_src['addend'] = optools.wf_input
-        #self.input_type['augend'] = optools.float_type
-        #self.input_type['addend'] = optools.float_type
+        self.input_type['augend'] = optools.float_type
+        self.input_type['addend'] = optools.float_type
         self.categories = ['ARITHMETIC']
 
     def run(self):
@@ -38,8 +38,8 @@ class Multiply(Operation):
         # source & type
         self.input_src['multiplicand'] = optools.wf_input
         self.input_src['multiplier'] = optools.wf_input
-        #self.input_type['multiplicand'] = optools.float_type
-        #self.input_type['multiplier'] = optools.float_type
+        self.input_type['multiplicand'] = optools.float_type
+        self.input_type['multiplier'] = optools.float_type
         self.categories = ['ARITHMETIC']
 
     def run(self):
@@ -59,6 +59,8 @@ class Subtract(Operation):
         # source & type
         self.input_src['minuend'] = optools.wf_input
         self.input_src['subtrahend'] = optools.wf_input
+        self.input_type['minuend'] = optools.float_type
+        self.input_type['subtrahend'] = optools.float_type
         self.categories = ['ARITHMETIC']
 
     def run(self):
@@ -78,6 +80,8 @@ class Divide(Operation):
         # source & type
         self.input_src['dividend'] = optools.wf_input
         self.input_src['divisor'] = optools.wf_input
+        self.input_type['dividend'] = optools.float_type
+        self.input_type['divisor'] = optools.float_type
         self.categories = ['ARITHMETIC']
 
     def run(self):
@@ -97,6 +101,8 @@ class Exponentiate(Operation):
         # source & type
         self.input_src['base'] = optools.wf_input
         self.input_src['exponent'] = optools.wf_input
+        self.input_type['base'] = optools.float_type
+        self.input_type['exponent'] = optools.float_type
         self.categories = ['ARITHMETIC']
 
     def run(self):
@@ -118,6 +124,8 @@ class Logarithm(Operation):
         # source & type
         self.input_src['power'] = optools.wf_input
         self.input_src['base'] = optools.wf_input
+        self.input_type['power'] = optools.float_type
+        self.input_type['base'] = optools.float_type
         self.categories = ['ARITHMETIC']
 
     def run(self):

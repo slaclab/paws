@@ -22,7 +22,7 @@ class DiscreteFirstDerivative(Operation):
         # source & type
         self.input_src['x'] = optools.wf_input
         self.input_src['y'] = optools.wf_input
-        self.categories = ['1D DATA PROCESSING']
+        self.categories = ['1D DATA PROCESSING.DERIVATIVES']
 
     def run(self):
         self.outputs['slope'], self.outputs['new_x'] = discrete_first_derivative(self.inputs['x'], self.inputs['y'])
@@ -42,7 +42,7 @@ class DiscreteSecondDerivative(Operation):
         # source & type
         self.input_src['x'] = optools.wf_input
         self.input_src['y'] = optools.wf_input
-        self.categories = ['1D DATA PROCESSING']
+        self.categories = ['1D DATA PROCESSING.DERIVATIVES']
 
     def run(self):
         self.outputs['curvature'], self.outputs['new_x'] = discrete_second_derivative(self.inputs['x'], self.inputs['y'])
