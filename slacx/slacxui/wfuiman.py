@@ -291,7 +291,10 @@ class WfUiManager(object):
         eq_widget = uitools.smalltext_widget('=')
         eq_widget.setMaximumWidth(20)
         self.ui.output_layout.addWidget(eq_widget,row,self.eq_col)
-        desc_widget = uitools.bigtext_widget(self.op.output_doc[name])
+        if self.op.output_doc[name]:
+            desc_widget = uitools.bigtext_widget(self.op.output_doc[name])
+        else:
+            desc_widget = uitools.bigtext_widget('No output doc found.')
         self.ui.output_layout.addWidget(desc_widget,row,self.src_col,1,self.btn_col-self.src_col)
         ht = desc_widget.sizeHint().height()
         name_widget.sizeHint = lambda: QtCore.QSize(10*len(name_widget.text()),ht)
