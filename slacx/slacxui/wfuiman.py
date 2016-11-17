@@ -73,6 +73,7 @@ class WfUiManager(object):
         self.ui.op_info.setPlainText(self.op.description())
         self.build_nameval_list()
         self.ui.uri_entry.setText(self.wfman.next_uri(type(self.op).__name__))
+        self.ui.uri_entry.setReadOnly(False)
 
     def test_op(self):
         print 'Operation testing not yet implemented'
