@@ -30,6 +30,10 @@ class WfManager(TreeModel):
             self.logmethod = None
         if 'wfl' in kwargs:
             self.load_from_file( kwargs['wfl'] )
+        if 'app' in kwargs:
+            self.appref = kwargs['app']
+        else:
+            self.appref = None
         self._wf_dict = {}       
 
     def load_inputs(self,op):
@@ -200,9 +204,8 @@ class WfManager(TreeModel):
         item_removed = self.root_items.pop(rm_row)
         self.endRemoveRows()
         # TODO: update any Operations that depended on the removed one
-        if item_removed.data is not None:
-            if isinstance(item_removed.data,Operation):
-                self.update_io_deps(item_removed.data)
+        if isinstance(item_removed.data,Operation):
+            self.update_io_deps(item.tag(),item_removed.data)
 
     def update_op(self,uri,new_op):
         """
@@ -405,7 +408,6 @@ class WfManager(TreeModel):
                rt_items.append(item)
         return rt_items 
 
-
     def run_and_update(self,item):
         """
         Run the Operation at item.data and update its data in the tree
@@ -416,6 +418,8 @@ class WfManager(TreeModel):
             self.logmethod('Running {}'.format(str(item.tag())))
         op.run()
         self.update_op(item.tag(),op)
+        if self.appref:
+            self.appref.processEvents()
 
     def run_deps(self,item):
        deps = self.upstream_list(item)

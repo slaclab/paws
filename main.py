@@ -36,7 +36,7 @@ def main():
 
     # TODO: give kwargs to these init routines to rebuild saved jobs?
     opman = slacxopman.OpManager()
-    wfman = slacxwfman.WfManager()
+    wfman = slacxwfman.WfManager(app=app)
     uiman = slacxuiman.UiManager(opman,wfman)
     wfman.logmethod = uiman.msg_board_log
 

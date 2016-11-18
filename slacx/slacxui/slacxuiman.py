@@ -150,7 +150,9 @@ class UiManager(object):
         self.ui.op_tree.resizeColumnToContents(0)
         self.ui.wf_tree.resizeColumnToContents(0)
         self.ui.wf_tree.resizeColumnToContents(1)
+        self.ui.wf_tree.setColumnWidth(0,300)
         self.ui.splitter.setStretchFactor(1,2)    
+        self.ui.splitter.setStretchFactor(2,2)    
 
     def connect_actions(self):
         """Set up the works for buttons and menu items"""
