@@ -193,6 +193,7 @@ class GuessSize(Operation):
 # xFirstDip, powerLaw, depthFirstDip, sigmaFirstDip, heightFirstDip, heightAtZero
 
 def guess_polydispersity(q, I, dI):
+    dips, shoulders = choose_dips_and_shoulders(q, I, dI)
     x1, dipCoefficients = polydispersity_metric_qFirstDip(q, I, dI)
     x2 = polydispersity_metric_x2(q, I)
     y1 = polydispersity_metric_firstDipHeight(dipCoefficients, x1)
@@ -216,6 +217,11 @@ def guess_size(fractional_variation, first_dip_q):
     return mean_size
 
 
+def choose_dips_and_shoulders(q, I, dI):
+    pass
+    return dips, shoulders
+
+
 def polydispersity_metric_qFirstDip(q, I, dI=np.zeros(1)):
     '''Finds the location in *q* of the first dip.'''
     if not dI.any():
@@ -226,6 +232,10 @@ def polydispersity_metric_qFirstDip(q, I, dI=np.zeros(1)):
     dips, shoulders = clean_extrema(dips, shoulders)
     xFirstDip, quadCoefficients = firstDipLoc(q, I, dips)
     return xFirstDip, quadCoefficients
+
+
+def polydispersity_metric_x2(q, I):
+    pass
 
 
 def polydispersity_metric_heightAtZero(qFirstDip, q, I, dI=np.zeros(1)):
@@ -363,15 +373,6 @@ def make_poly_matrices(x, y, error, order):
     matrix = (dummy(x) ** index_block * dummy(error)).sum(axis=0)
     return matrix, vector
 
-
-def polydispersity_metric_x2(q, I):
-    pass
-
-def polydispersity_metric_y1(q, I):
-    pass
-
-def polydispersity_metric_y2(q, I):
-    pass
 
 def nearest_point_on_trace(x0, y0, x, y):
     pass

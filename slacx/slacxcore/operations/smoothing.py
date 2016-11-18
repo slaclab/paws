@@ -12,7 +12,7 @@ class SavitzkyGolayWeighted(Operation):
     """
     def __init__(self):
         input_names = ['x', 'y', 'dy', 'order', 'base']
-        output_names = ['sum']
+        output_names = ['smoothdata']
         super(SavitzkyGolayWeighted, self).__init__(input_names, output_names)
         self.input_doc['x'] = '1d ndarray; independent variable'
         self.input_doc['y'] = '1d ndarray; dependent variable, same shape as *x*'
@@ -31,7 +31,7 @@ class SavitzkyGolayWeighted(Operation):
         self.categories = ['1D DATA PROCESSING.SMOOTHING']
 
     def run(self):
-        self.outputs['smoothdata'] = savitzky_golay(self.inputs['data'], self.inputs['order'], self.inputs['error'])
+        self.outputs['smoothdata'] = savitzky_golay(self.inputs['x'], self.inputs['y'], self.inputs['order'], self.inputs['base'], self.inputs['dy'])
 
 
 class SavitzkyGolayUnweighted(Operation):
@@ -41,17 +41,24 @@ class SavitzkyGolayUnweighted(Operation):
     """
     def __init__(self):
         input_names = ['x', 'y', 'order', 'base']
-        output_names = ['sum']
+        output_names = ['smoothdata']
         super(SavitzkyGolayUnweighted, self).__init__(input_names, output_names)
         self.input_doc['x'] = '1d ndarray; independent variable'
         self.input_doc['y'] = '1d ndarray; dependent variable, same shape as *x*'
         self.input_doc['order'] = 'integer order of polynomial approximation (zero to five)'
         self.input_doc['base'] = '-1, 0, or positive integer; see class docs'
         self.output_doc['smoothdata'] = 'smoothed 1d ndarray'
+        # source & type
+        self.input_src['x'] = optools.wf_input
+        self.input_src['y'] = optools.wf_input
+        self.input_src['order'] = optools.user_input
+        self.input_src['base'] = optools.user_input
+        self.input_type['order'] = optools.int_type
+        self.input_type['base'] = optools.int_type
         self.categories = ['1D DATA PROCESSING.SMOOTHING']
 
     def run(self):
-        self.outputs['smoothdata'] = savitzky_golay(self.inputs['data'], self.inputs['order'])
+        self.outputs['smoothdata'] = savitzky_golay(self.inputs['x'], self.inputs['y'], self.inputs['order'], self.inputs['base'])
 
 
 class RectangularUnweightedSmooth(Operation):
@@ -152,7 +159,7 @@ def moving_average(data, m, shape, error=np.zeros(1)):
     n = int(m)/2
     if (m != (2*n+1)):
         raise ValueError('Argument *m* should be an odd integer.')
-    if error.any and (data.shape != error.shape):
+    if error.any() and (data.shape != error.shape):
         raise ValueError('Arguments *data* and *error* should have the same shape.')
     if shape == 'square':
         shape_weight = square_weighting(n)
@@ -163,7 +170,7 @@ def moving_average(data, m, shape, error=np.zeros(1)):
     if error.any():
         error_weight = specified_error_weights(error)
     else:
-        error_weight = no_specified_error_weights(n)
+        error_weight = no_specified_error_weights(data)
     sum = data * shape_weight[0] * error_weight
     weights = shape_weight[0] * error_weight
     for ii in range(1, n+1):
@@ -176,15 +183,15 @@ def moving_average(data, m, shape, error=np.zeros(1)):
 
 
 def triangular_weighting(n):
-    weights = (n - np.arange(0, int(n), dtype=float))/float(n)
+    weights = (n + 1 - np.arange(0, int(n + 1), dtype=float))/float(n + 1)
     return weights
 
 def square_weighting(n):
-    weights = np.ones(n, dtype=float)
+    weights = np.ones(n + 1, dtype=float)
     return weights
 
-def no_specified_error_weights(n):
-    weights = np.ones(n, dtype=float)
+def no_specified_error_weights(data):
+    weights = np.ones(data.shape, dtype=float)
     return weights
 
 def specified_error_weights(error):
@@ -205,7 +212,7 @@ def savitzky_golay(x, y, order, base, dy=np.zeros(1)):
         # Formulate the equation to be solved for polynomial coefficients
         matrix, vector = make_poly_matrices(x[start:end], y[start:end], dy[start:end], order)
         # Solve equation
-        coefficients = np.linalg.solve(matrix, vector)
+        coefficients = (np.linalg.solve(matrix, vector)).flatten()
         # Find chosen approximation
         smoothed[ii] = polynomial(x[ii], coefficients)
     return smoothed
@@ -275,7 +282,7 @@ def polynomial(x, coefficients):
     '''
     order = coefficients.size - 1
     powers = np.arange(0, order+1)
-    value = (x**powers) * coefficients
+    value = ((x**powers) * coefficients).sum()
     return value
 
 
