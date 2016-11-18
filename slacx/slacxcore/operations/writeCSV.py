@@ -8,10 +8,6 @@ import optools
 from SSRL_1_5_readers import read_header
 
 
-
-np.savetxt(fname, X, fmt='%.18e', delimiter=' ', newline=linesep, header='# TEMPCELSIUS  FILENAME')[source]
-
-
 class WriteTemperatureIndex(Operation):
     """Find .csv diffractograms; match with temperatures from headers; record."""
 
