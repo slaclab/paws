@@ -13,23 +13,19 @@ class WriteTemperatureIndex(Operation):
 
     def __init__(self):
         input_names = ['directory']
-        output_names = ['temperatures', 'filenames']
+        output_names = ['temperatures', 'filenames', 'temperature_index_file']
         super(WriteTemperatureIndex, self).__init__(input_names, output_names)
         self.input_doc['directory'] = "path to directory with .csv's and .txt headers in it"
         self.output_doc['temperatures'] = 'temperatures from headers'
         self.output_doc['filenames'] = 'names of csvs'
+        self.output_doc['temperature_index_file'] = 'csv-formatted file containing temperature indexed csv file names'
         self.categories = ['MISC']
 
     def run(self):
         directory = self.inputs['directory']
         outname = 'temperature_index.csv'
         outloc = join(directory,outname)
-        innames = listdir(directory)
-        csvnames = []
-        for ii in range(len(innames)):
-            innameii = splitext(innames[ii])
-            if innameii[1] == 'csv':
-                csvnames.append(innames[ii])
+        csvnames = find_csvs(directory)
         temperatures = []
         for ii in range(len(csvnames)):
             headernameii = txtname_from_csvname(csvnames[ii])
@@ -45,13 +41,43 @@ class WriteTemperatureIndex(Operation):
         outfile.close()
         self.outputs['filenames'] = csvnames
         self.outputs['temperatures'] = temperatures
+        self.outputs['temperature_index_file'] = outloc
 
 
 
+class ReadTemperatureIndex(Operation):
+    """Read temperature index file written by WriteTemperatureIndex."""
 
-        self.outputs['list_of_x_y_dy'] = []
+    def __init__(self):
+        input_names = ['directory']
+        output_names = ['temperatures', 'filenames', 'temperature_index_file']
+        super(WriteTemperatureIndex, self).__init__(input_names, output_names)
+        self.input_doc['directory'] = "path to directory with background .csv's and .txt headers in it"
+        self.output_doc['temperatures'] = 'temperatures from headers'
+        self.output_doc['filenames'] = 'names of csvs'
+        self.output_doc['temperature_index_file'] = 'csv-formatted file containing temperature indexed csv file names'
+        self.categories = ['MISC']
+
+    def run(self):
+        directory = self.inputs['directory']
+        outname = 'temperature_index.csv'
+        outloc = join(directory,outname)
+        self.outputs['temperatures'] = np.loadtxt(outloc, dtype=float, delimiter=',', skiprows=1, usecols=(0))
+        self.outputs['filenames'] = np.loadtxt(outloc, dtype=str, delimiter=',', skiprows=1, usecols=(1))
+        self.outputs['temperature_index_file'] = outloc
+
+
+def find_csvs(directory):
+    innames = listdir(directory)
+    csvnames = []
+    for ii in range(len(innames)):
+        innameii = splitext(innames[ii])
+        if innameii[1] == 'csv':
+            csvnames.append(innames[ii])
+    return csvnames
 
 def txtname_from_csvname(csvname):
     root = splitext(csvname)
     headername = join(root, '.txt')
     return headername
+
