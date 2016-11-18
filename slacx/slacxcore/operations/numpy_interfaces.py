@@ -80,12 +80,23 @@ class Zip(Operation):
         output_names = ['ndarray_xy']
         super(Zip, self).__init__(input_names, output_names)
         self.input_doc['ndarray_x'] = '1d ndarray, x axis'
-        self.input_doc['ndarray_y'] = '1d ndarray, x axis'
-        self.output_doc['ndarray_xy'] = 'existence of any zero / False elements'
+        self.input_doc['ndarray_y'] = '1d ndarray, y axis; same size as ndarray_x'
+        self.output_doc['ndarray_xy'] = '2 x n ndarray for slacx autodisplay fun'
         # source & type
-        self.input_src['ndarray'] = optools.wf_input
-        self.categories = ['TESTS.NDARRAY TESTS']
+        self.input_src['ndarray_x'] = optools.wf_input
+        self.input_src['ndarray_y'] = optools.wf_input
+        self.categories = ['MISC.NDARRAY MANIPULATION']
 
     def run(self):
-        self.outputs['any_zeros'] = np.any(np.logical_not(self.inputs['ndarray']))
+        x = self.inputs['ndarray_x']
+        y = self.inputs['ndarray_y']
+        n = x.size
+        if len(x.shape) > 1:
+            raise ValueError("ndarray_x must be a 1d array")
+        if (x.shape != y.shape):
+            raise ValueError("ndarray_x and ndarray_y must have the same shape")
+        xy = np.zeros((2,n))
+        xy[0,:] = x
+        xy[1,:] = y
+        self.outputs['ndarray_xy'] = xy
 
