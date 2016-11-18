@@ -3,6 +3,7 @@ from scipy import interp
 #from matplotlib import pyplot as plt
 from os.path import join
 from os import remove
+from scipy.optimize import curve_fit
 try:
     import cPickle as pickle
 except ImportError:
@@ -230,7 +231,7 @@ class GuessPolydispersityWeighted(Operation):
         self.input_doc['I'] = '1d ndarray; intensity values'
         self.input_doc['dI'] = '1d ndarray; error estimate of intensity values'
         self.output_doc['fractional_variation'] = 'normal distribution sigma divided by mean size'
-        self.output_doc['first_dip_q'] = 'location in q of the first dip'
+        self.output_doc['qFirstDip'] = 'location in q of the first dip'
         # Source and type
         self.input_src['q'] = optools.wf_input
         self.input_src['I'] = optools.wf_input
@@ -239,8 +240,8 @@ class GuessPolydispersityWeighted(Operation):
 
     def run(self):
         q, I, dI = self.inputs['q'], self.inputs['I'], self.inputs['dI']
-        fractional_variation, first_dip_q = guess_polydispersity(q, I, dI)
-        self.outputs['fractional_variation'], self.outputs['first_dip_q'] = fractional_variation, first_dip_q
+        fractional_variation, qFirstDip, _, _, _, _, _ = guess_polydispersity(q, I, dI)
+        self.outputs['fractional_variation'], self.outputs['first_dip_q'] = fractional_variation, qFirstDip
 
 
 class GuessSize(Operation):
@@ -304,6 +305,50 @@ class GuessPropertiesWeighted(Operation):
         #dips, shoulders = choose_dips_and_shoulders(q, I, dI)
         self.outputs['fractional_variation'], self.outputs['mean_size'], self.outputs['amplitude_at_zero'] = \
             fractional_variation, mean_size, amplitude_at_zero
+
+
+class OptimizeSphericalDiffractionFit(Operation):
+    """From an initial guess, optimize r0, I0, and fractional_variation."""
+
+    def __init__(self):
+        input_names = ['q', 'I', 'amplitude_at_zero', 'mean_size', 'fractional_variation']
+        output_names = ['amplitude_at_zero', 'mean_size', 'fractional_variation']
+        super(OptimizeSphericalDiffractionFit, self).__init__(input_names, output_names)
+        # Documentation
+        self.input_doc['q'] = '1d ndarray; wave vector values'
+        self.input_doc['I'] = '1d ndarray; intensity values'
+        self.input_doc['amplitude_at_zero'] = 'estimate of intensity at q=0'
+        self.input_doc['mean_size'] = 'estimate of mean particle size'
+        self.input_doc['fractional_variation'] = 'estimate of normal distribution sigma divided by mean size'
+        self.output_doc['fractional_variation'] = 'normal distribution sigma divided by mean size'
+        self.output_doc['mean_size'] = 'mean particle size'
+        self.output_doc['amplitude_at_zero'] = 'projected intensity at q=0'
+        # Source and type
+        self.input_src['q'] = optools.wf_input
+        self.input_src['I'] = optools.wf_input
+        self.input_src['dI'] = optools.wf_input
+        self.categories = ['1D DATA PROCESSING.SAXS INTERPRETATION']
+
+    def run(self):
+        q, I = self.inputs['I'], self.inputs['q']
+        I0_in, r0_in, frac_in = self.inputs['I0'], self.inputs['r0'], self.inputs['fractional_variation']
+        popt, pcov = curve_fit(generate_spherical_diffraction, q, I, bounds=([I0_in*0.5, r0_in*0.5, frac_in*0.1], [I0_in/0.5, r0_in/0.5, frac_in/0.1]))
+        # generate_spherical_diffraction(q, i0, r0, poly)
+        q, I, dI = self.inputs['q'], self.inputs['I'], self.inputs['dI']
+        fractional_variation, qFirstDip, heightFirstDip, sigmaScaledFirstDip, heightAtZero, dips, shoulders = guess_polydispersity(q, I, dI)
+        self.outputs['qFirstDip'] = qFirstDip
+        self.outputs['heightFirstDip'] = heightFirstDip
+        self.outputs['sigmaScaledFirstDip'] = sigmaScaledFirstDip
+        self.outputs['heightAtZero'] = heightAtZero
+        self.outputs['dips'] = dips
+        self.outputs['shoulders'] = shoulders
+        mean_size = guess_size(fractional_variation, qFirstDip)
+        amplitude_at_zero = polydispersity_metric_heightAtZero(qFirstDip, q, I, dI)
+        #dips, shoulders = choose_dips_and_shoulders(q, I, dI)
+        self.outputs['fractional_variation'], self.outputs['mean_size'], self.outputs['amplitude_at_zero'] = \
+            fractional_variation, mean_size, amplitude_at_zero
+
+
 
 def generate_references(x, factorVals):
     #y0 = fullFunction(x)
@@ -434,9 +479,9 @@ def gen_q_vector(qmin, qmax, qstep):
     q = np.arange(qmin, qmax, qstep)
     return q
 
-def generate_spherical_diffraction(r0, poly, i0, q):
+def generate_spherical_diffraction(q, i0, r0, poly):
     x = q * r0
-    i = i0 * blur(x, poly)
+    i = i0 * blur(x, poly) * 9.
     return i
 
 def fullFunction(x):
