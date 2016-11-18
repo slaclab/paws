@@ -13,11 +13,6 @@ import optools
 
 reference_loc = join('slacx','slacxcore','operations','dmz','references','polydispersity_guess_references.pickle')
 global references
-def load_references():
-    with open(reference_loc, 'rb') as handle:
-        references = pickle.load(handle)
-    return references
-#references = load_references()
 references = {}
 
 class GenerateSphericalDiffractionQ(Operation):
@@ -319,28 +314,18 @@ def prep_for_pickle(factorVals, xFirstDip, sigmaFirstDip, heightFirstDip, height
     #references['powerLaw'] = powerLaw
     return references
 
+# xFirstDip, heightFirstDip, sigmaFirstDip, heightAtZero # , powerLawAll, powerLawInitial
+
+# I/O functions
+
+def load_references():
+    with open(reference_loc, 'rb') as handle:
+        references = pickle.load(handle)
+    return references
+
 def dump_references(references):
     with open(reference_loc, 'wb') as handle:
         pickle.dump(references, handle)
-
-
-# xFirstDip, heightFirstDip, sigmaFirstDip, heightAtZero # , powerLawAll, powerLawInitial
-
-
-def gauss_guess(signalMagnitude, signalCurvature):
-    '''
-    Guesses a gaussian intensity and width from signal magnitude and curvature.
-
-    :param signalMagnitude: number-like with units of magnitude
-    :param signalCurvature: number-like with units of magnitude per distance squared
-    :return intensity, sigma:
-
-    The solution given is not fitted; it is a first estimate to be used in fitting.
-    '''
-    sigma = (signalMagnitude / signalCurvature) ** 0.5
-    intensity = signalMagnitude * sigma * (2 * np.pi) ** 0.5
-    return intensity, sigma
-
 
 # Functions about algebraic solutions
 
@@ -498,7 +483,7 @@ def guess_polydispersity(q, I, dI=np.zeros(1)):
     y = references['heightFirstDip'] / references['heightAtZero']
     factor = references['factorVals']
     print "comparing to references"
-    fractional_variation = guess_nearest_point_on_dual_trace(x0, y0, x, y, factor)
+    fractional_variation = guess_nearest_point_on_nonmonotonic_trace_normalized([x0, y0], [x, y], factor)
     return fractional_variation, x1
 
 def choose_dips_and_shoulders(q, I, dI=np.zeros(1)):
@@ -509,6 +494,23 @@ def choose_dips_and_shoulders(q, I, dI=np.zeros(1)):
     dips = local_minima_detector(scaled_I)
     shoulders = local_maxima_detector(scaled_I)
     dips, shoulders = clean_extrema(dips, shoulders)
+    return dips, shoulders
+
+def clean_extrema(dips, shoulders):
+    # Forbid rapid oscillation
+    dips_above = dips[1:].copy()
+    dips_below = dips[:-1].copy()
+    shoulders_above = shoulders[1:].copy()
+    shoulders_below = shoulders[:-1].copy()
+    dips[:-1] = dips[:-1] & (~shoulders_above)
+    dips[1:] = dips[1:] & (~shoulders_below)
+    shoulders[:-1] = shoulders[:-1] & (~dips_above)
+    shoulders[1:] = shoulders[1:] & (~dips_below)
+    # Mark endpoints False
+    dips[0:10] = False
+    dips[-1] = False
+    shoulders[0] = False
+    shoulders[-1] = False
     return dips, shoulders
 
 def guess_size(fractional_variation, first_dip_q):
@@ -562,22 +564,19 @@ def polydispersity_metric_sigmaFirstDip(q, I, dips, shoulders, qFirstDip, height
 
 # Other functions
 
-def clean_extrema(dips, shoulders):
-    # Forbid rapid oscillation
-    dips_above = dips[1:].copy()
-    dips_below = dips[:-1].copy()
-    shoulders_above = shoulders[1:].copy()
-    shoulders_below = shoulders[:-1].copy()
-    dips[:-1] = dips[:-1] & (~shoulders_above)
-    dips[1:] = dips[1:] & (~shoulders_below)
-    shoulders[:-1] = shoulders[:-1] & (~dips_above)
-    shoulders[1:] = shoulders[1:] & (~dips_below)
-    # Mark endpoints False
-    dips[0:10] = False
-    dips[-1] = False
-    shoulders[0] = False
-    shoulders[-1] = False
-    return dips, shoulders
+def gauss_guess(signalMagnitude, signalCurvature):
+    '''
+    Guesses a gaussian intensity and width from signal magnitude and curvature.
+
+    :param signalMagnitude: number-like with units of magnitude
+    :param signalCurvature: number-like with units of magnitude per distance squared
+    :return intensity, sigma:
+
+    The solution given is not fitted; it is a first estimate to be used in fitting.
+    '''
+    sigma = (signalMagnitude / signalCurvature) ** 0.5
+    intensity = signalMagnitude * sigma * (2 * np.pi) ** 0.5
+    return intensity, sigma
 
 def local_maxima_detector(y):
     '''
@@ -617,24 +616,57 @@ def local_minima_detector(y):
     minima = local_maxima_detector(-y)
     return minima
 
-def guess_nearest_point_on_dual_trace(x0, y0, x, y, variable):
-    vbestx = guess_nearest_point_on_single_monotonic_trace(x0, x, variable)
-    vbesty = guess_nearest_point_on_single_monotonic_trace(y0, y, variable)
-    vbest = 0.5*(vbestx + vbesty)
-    return vbest
-
-def guess_nearest_point_on_single_trace_1(x0, x, y):
-    index2 = np.where(x > x0)[0][0]
-    index1 = index2 - 1
-    xdiff2 = x[index2] - x0
-    xdiff1 = x0 - x[index1]
-    ybest = (y[index1] * xdiff2 + y[index2] * xdiff1) / (xdiff1 + xdiff2)
-    return ybest
-
+'''
 def guess_nearest_point_on_single_monotonic_trace(x0, x, y):
     ybest = interp(x0, x, y)
     return ybest
 
-def nearest_point_on_trace(x0, y0, x, y):
-    pass
+def guess_nearest_point_on_dual_monotonic_trace(x0, y0, x, y, variable):
+    vbestx = guess_nearest_point_on_single_monotonic_trace(x0, x, variable)
+    vbesty = guess_nearest_point_on_single_monotonic_trace(y0, y, variable)
+    vbest = 0.5*(vbestx + vbesty)
+    return vbest
+'''
 
+def guess_nearest_point_on_nonmonotonic_trace_normalized(loclist, tracelist, coordinate):
+    '''Finds the nearest point to location *loclist* on a trace *tracelist*.
+
+    *loclist* and *tracelist* are lists of the same length and type.
+    Elements of *loclist* are floats; elements of *tracelist* are arrays of the same shape as *coordinate*.
+    *coordinate* is the independent variable along which *tracelist* is varying.
+
+    *tracelist* must have good sampling to start with or the algorithm will likely fail.'''
+    tracesize = coordinate.size
+    spacesize = len(loclist)
+    distances = np.zeros(tracesize, dtype=float)
+    for ii in range(spacesize):
+        yii = tracelist[ii]
+        meanii = yii.mean()
+        varii = (((yii - meanii)**2).mean())**0.5
+        normyii = (yii - meanii)/varii
+        y0 = loclist[ii]
+        normy0 = (y0 - meanii)/varii
+        diffsquare = (normyii - normy0)**2
+        distances = distances + diffsquare
+    distances = distances**0.5
+    best_indices = np.where(local_minima_detector(distances))[0]
+    # At this point we've just found good neighborhoods to investigate
+    # So we compare those neighborhoods
+    n_candidates = best_indices.size
+    best_coordinates = np.zeros(n_candidates)
+    best_distances = np.zeros(n_candidates)
+    for ii in range(n_candidates):
+        best_index = best_indices[ii]
+        # Assume distances is a fairly (but not perfectly) smooth function of coordinate
+        lolim = best_index-2
+        hilim = best_index+3
+        if lolim < 0:
+            lolim = None
+        if hilim >= tracesize:
+            hilim = None
+        coefficients = arbitrary_order_solution(2,coordinate[lolim:hilim],distances[lolim:hilim])
+        best_coordinates[ii] = quadratic_extremum(coefficients)
+        best_distances[ii] = polynomial_value(coefficients, best_coordinates[ii])
+    best_distance = best_distances.min()
+    best_coordinate = best_coordinates[np.where(best_distances == best_distance)[0][0]]
+    return best_coordinate, best_distance
