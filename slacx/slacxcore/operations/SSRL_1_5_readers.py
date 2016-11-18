@@ -18,7 +18,7 @@ class ReadTxtSSRL15(Operation):
         self.input_doc['file'] = 'path to a text file header produced by beamline 1-5 at SSRL'
         self.output_doc['header'] = 'the header file as a python dictionary'
         # source & type
-        self.input_src['file'] = optools.wf_input
+        self.input_src['file'] = optools.fs_input
         self.categories = ['INPUT.SSRL 1-5']
 
     def run(self):
@@ -37,6 +37,8 @@ class ImageAndHeaderSSRL15(Operation):
         self.input_doc['file'] = 'path to a tif file image produced by beamline 1-5 at SSRL'
         self.output_doc['image'] = 'the image as an ndarray'
         self.output_doc['header'] = 'the header file as a python dictionary'
+        # source & type
+        self.input_src['file'] = optools.fs_input
         self.categories = ['INPUT.SSRL 1-5']
 
     def run(self):
@@ -45,7 +47,7 @@ class ImageAndHeaderSSRL15(Operation):
         try:
             self.outputs['header'] = read_header(txtname)
         except IOError:
-            print "No corresponding header to file %s was found." % self.outputs['image']
+            print "No corresponding header to file %s was found." % self.inputs['file']
             self.outputs['header'] = {}
 
 

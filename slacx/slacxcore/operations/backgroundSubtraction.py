@@ -17,7 +17,7 @@ class SubtractMaximumBackgroundNoErrors(Operation):
         # source & type
         self.input_src['foreground'] = optools.wf_input
         self.input_src['background'] = optools.wf_input
-        self.categories = ['1D DATA PROCESSING']
+        self.categories = ['1D DATA PROCESSING.BACKGROUND SUBTRACTION']
 
     def run(self):
         self.outputs['subtracted'], self.outputs['factor'] = subtract_maximum_background_no_errors(
@@ -41,7 +41,7 @@ class SubtractMaximumBackgroundWithErrors(Operation):
         self.input_src['background'] = optools.wf_input
         self.input_src['foreground_error'] = optools.wf_input
         self.input_src['background_error'] = optools.wf_input
-        self.categories = ['1D DATA PROCESSING']
+        self.categories = ['1D DATA PROCESSING.BACKGROUND SUBTRACTION']
 
     def run(self):
         self.outputs['subtracted'], self.outputs['subtracted_error'], self.outputs['factor'] = \
