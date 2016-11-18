@@ -107,6 +107,20 @@ class WriteCSV_q_I(Operation):
         write_csv_q_I(self.inputs['q'], self.inputs['I'], csv_location)
         self.outputs['csv_location'] = csv_location
 
+class WriteCSV_q_I_dI(Operation):
+    """Write q, I, and dI to a csv-formatted file."""
+
+    def __init__(self):
+        input_names = ['q','I','dI','image_location']
+        output_names = ['csv_location']
+        super(WriteCSV_q_I_dI, self).__init__(input_names, output_names)
+        self.categories = ['MISC']
+
+    def run(self):
+        csv_location = csvname_from_imagename(self.inputs['image_location'])
+        write_csv_q_I_dI(self.inputs['q'], self.inputs['I'], self.inputs['dI'], csv_location)
+        self.outputs['csv_location'] = csv_location
+
 
 def write_csv_q_I(q, I, nameloc):
     datablock = np.zeros((q.size,2),dtype=float)
@@ -114,7 +128,7 @@ def write_csv_q_I(q, I, nameloc):
     datablock[:,1] = I
     np.savetxt(nameloc, datablock, delimiter=',', newline=linesep, header='#q,I')
 
-def write_csv_q_I(q, I, dI, nameloc):
+def write_csv_q_I_dI(q, I, dI, nameloc):
     datablock = np.zeros((q.size,3),dtype=float)
     datablock[:,0] = q
     datablock[:,1] = I
