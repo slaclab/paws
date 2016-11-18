@@ -2,9 +2,11 @@ import re
 
 import numpy as np
 from PySide import QtGui
+from matplotlib.figure import Figure
 
 from ..slacxcore.slacxtools import FileSystemIterator
 from ..slacxcore.operations.optools import InputLocator
+from ..slacxcore.operations.slacxop import Operation 
 from . import uitools
 if uitools.have_qt47:
     from . import plotmaker_pqg as plotmaker
@@ -24,14 +26,17 @@ def display_item(item,uri,qlayout,logmethod=None):
         # get the QWidget of that LayoutItem and set it to deleteLater()
         widg.widget().deleteLater()
 
+    if isinstance(item,Operation):
+        op_widget = uitools.OpWidget(item)
+
     # Produce widgets for displaying arrays and MatPlotLib figures
-    if type(item).__name__ == 'ndarray':
+    if isinstance(item,np.ndarray):
         dims = np.shape(item)
         if len(dims) == 2 and dims[0] > 2 and dims[1] > 2:
             plot_widget = plotmaker.array_plot_2d(item)
         elif len(dims) == 1 or (len(dims) == 2 and (dims[0]==2 or dims[1]==2)):
             plot_widget = plotmaker.array_plot_1d(item)
-    elif type(item).__name__ == 'Figure':
+    elif isinstance(item,Figure):
         plot_widget = plotmaker.plot_mpl_fig(item)
     else:
         plot_widget = None
@@ -62,7 +67,9 @@ def display_item(item,uri,qlayout,logmethod=None):
     text_widget = QtGui.QTextEdit(display_text)
 
     # Assemble whatever widgets were produced, add them to the layout    
-    if plot_widget:
+    if op_widget:
+        qlayout.addWidget(op_widget,0,0,1,1) 
+    elif plot_widget:
         qlayout.addWidget(plot_widget,0,0,1,1) 
     elif text_widget:
         # TODO: Anything else for displaying text, other than plopping it down in the center?

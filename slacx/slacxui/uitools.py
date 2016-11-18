@@ -193,6 +193,44 @@ def start_load_ui(uiman):
     load_ui.show()
     load_ui.activateWindow()
 
+class OpWidget(QtGui.QWidget):
+    
+    def __init__(self,op):
+        super(OpWidget,self).__init__()
+        self.op = op
+        #self.render_from_op()        
+
+    def paintEvent(self,evnt):
+        w = self.width()
+        h = self.height()
+        widgdim = float( min([w,h]) )
+        # Create a painter and draw in the elements of the Operation
+        p = QtGui.QPainter(self)
+        p.setRenderHint(QtGui.QPainter.Antialiasing)
+        #p.setPen()...
+        #p.setBrush()...
+        p.translate(w/2, h/2)
+        p.scale(widgdim/200,widgdim/200)
+        topleft = QtCore.QPoint(-60,-80)
+        bottomright = QtCore.QPoint(60,80)
+        # Large rectangle representing the Operation
+        mainrec = QtCore.QRectF(topleft,bottomright)
+        p.drawRect(mainrec)
+        f = QtGui.QFont()
+        f.setPointSize(4)
+        #f.setPixelSize(10)
+        p.setFont(f)
+        p.drawText(mainrec,QtCore.Qt.AlignCenter,type(self.op).__name__)
+        # Headers for input and output sides
+        inphdr = QtCore.QRectF(QtCore.QPoint(-90,-90),QtCore.QPoint(-70,-80))
+        outhdr = QtCore.QRectF(QtCore.QPoint(70,-90),QtCore.QPoint(90,-80))
+        f.setUnderline(True)
+        p.setFont(f)
+        p.drawText(inphdr,QtCore.Qt.AlignCenter,'Inputs')
+        p.drawText(outhdr,QtCore.Qt.AlignCenter,'Outputs')
+        f.setUnderline(False)
+        p.setFont(f)
+
 
 
 
