@@ -1,7 +1,7 @@
+import numpy as np
+
 from slacxop import Operation
 import optools
-
-import numpy as np
 
 #'/Users/Amanda/Desktop/Travails/Programming/ImageProcessing/SampleData/Liheng/SolventCorrection/R13.csv'
 #'/Users/Amanda/Desktop/Travails/Programming/ImageProcessing/SampleData/Liheng/SolventCorrection/R4.csv'

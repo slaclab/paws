@@ -58,10 +58,9 @@ class GenerateSphericalDiffractionQ(Operation):
         self.categories = ['1D DATA PROCESSING.GENERATE SAXS PATTERNS']
 
     def run(self):
-        self.outputs['q'] = gen_q_vector(self.inputs['qmin'], self.inputs['qmax'], self.inputs['qstep'])
         self.outputs['I'] = \
-            generate_spherical_diffraction(self.inputs['r0'], self.inputs['sigma_r_over_r0'],
-                                           self.inputs['intensity_at_zero_q'], self.outputs['q'])
+            generate_spherical_diffraction(self.inputs['q_vector'], self.inputs['intensity_at_zero_q'],
+                                           self.inputs['r0'], self.inputs['sigma_r_over_r0'])
 
 
 class GenerateSphericalDiffraction(Operation):
@@ -94,8 +93,8 @@ class GenerateSphericalDiffraction(Operation):
 
     def run(self):
         self.outputs['I'] = \
-            generate_spherical_diffraction(self.inputs['r0'], self.inputs['sigma_r_over_r0'],
-                                           self.inputs['intensity_at_zero_q'], self.inputs['q_vector'])
+            generate_spherical_diffraction(self.inputs['q_vector'], self.inputs['intensity_at_zero_q'],
+                                           self.inputs['r0'], self.inputs['sigma_r_over_r0'])
 
 '''
 class GenerateSphericalDiffractionX(Operation):
@@ -326,28 +325,21 @@ class OptimizeSphericalDiffractionFit(Operation):
         # Source and type
         self.input_src['q'] = optools.wf_input
         self.input_src['I'] = optools.wf_input
-        self.input_src['dI'] = optools.wf_input
+        self.input_src['amplitude_at_zero'] = optools.wf_input
+        self.input_src['mean_size'] = optools.wf_input
+        self.input_src['fractional_variation'] = optools.wf_input
+        self.input_type['amplitude_at_zero'] = optools.float_type
+        self.input_type['mean_size'] = optools.float_type
+        self.input_type['fractional_variation'] = optools.float_type
         self.categories = ['1D DATA PROCESSING.SAXS INTERPRETATION']
 
     def run(self):
         q, I = self.inputs['I'], self.inputs['q']
-        I0_in, r0_in, frac_in = self.inputs['I0'], self.inputs['r0'], self.inputs['fractional_variation']
+        I0_in, r0_in, frac_in = self.inputs['amplitude_at_zero'], self.inputs['mean_size'], self.inputs['fractional_variation']
         popt, pcov = curve_fit(generate_spherical_diffraction, q, I, bounds=([I0_in*0.5, r0_in*0.5, frac_in*0.1], [I0_in/0.5, r0_in/0.5, frac_in/0.1]))
-        # generate_spherical_diffraction(q, i0, r0, poly)
-        q, I, dI = self.inputs['q'], self.inputs['I'], self.inputs['dI']
-        fractional_variation, qFirstDip, heightFirstDip, sigmaScaledFirstDip, heightAtZero, dips, shoulders = guess_polydispersity(q, I, dI)
-        self.outputs['qFirstDip'] = qFirstDip
-        self.outputs['heightFirstDip'] = heightFirstDip
-        self.outputs['sigmaScaledFirstDip'] = sigmaScaledFirstDip
-        self.outputs['heightAtZero'] = heightAtZero
-        self.outputs['dips'] = dips
-        self.outputs['shoulders'] = shoulders
-        mean_size = guess_size(fractional_variation, qFirstDip)
-        amplitude_at_zero = polydispersity_metric_heightAtZero(qFirstDip, q, I, dI)
-        #dips, shoulders = choose_dips_and_shoulders(q, I, dI)
-        self.outputs['fractional_variation'], self.outputs['mean_size'], self.outputs['amplitude_at_zero'] = \
-            fractional_variation, mean_size, amplitude_at_zero
-
+        self.outputs['amplitude_at_zero'] = popt[0]
+        self.outputs['mean_size'] = popt[1]
+        self.outputs['fractional_variation'] = popt[2]
 
 
 def generate_references(x, factorVals):
@@ -598,8 +590,11 @@ def polydispersity_metric_heightFirstDip(scaledQuadCoefficients, xdip):
 def polydispersity_metric_heightAtZero(qFirstDip, q, I, dI=np.zeros(1)):
     if not dI.any():
         dI = np.ones(I.shape, dtype=float)
-    low_q = (q < 0.75*qFirstDip)
-    coefficients = arbitrary_order_solution(5, q[low_q], I[low_q], dI[low_q])
+    qlim = max(q[6], (qFirstDip - q[0])/2.)
+    if qlim > 0.75*qFirstDip:
+        print "Low-q sampling is poor and will likely affect estimate quality."
+    low_q = (q < qlim)
+    coefficients = arbitrary_order_solution(4, q[low_q], I[low_q], dI[low_q])
     heightAtZero = coefficients[0]
     return heightAtZero
 
