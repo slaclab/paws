@@ -326,7 +326,12 @@ class OptimizeSphericalDiffractionFit(Operation):
         # Source and type
         self.input_src['q'] = optools.wf_input
         self.input_src['I'] = optools.wf_input
-        self.input_src['dI'] = optools.wf_input
+        self.input_src['amplitude_at_zero'] = optools.wf_input
+        self.input_src['mean_size'] = optools.wf_input
+        self.input_src['fractional_variation'] = optools.wf_input
+        self.input_type['amplitude_at_zero'] = optools.float_type
+        self.input_type['mean_size'] = optools.float_type
+        self.input_type['fractional_variation'] = optools.float_type
         self.categories = ['1D DATA PROCESSING.SAXS INTERPRETATION']
 
     def run(self):

@@ -70,3 +70,22 @@ class AnyZero(Operation):
 
     def run(self):
         self.outputs['any_zeros'] = np.any(np.logical_not(self.inputs['ndarray']))
+
+
+class Zip(Operation):
+    """Return boolean array marking NaN elements."""
+
+    def __init__(self):
+        input_names = ['ndarray_x', 'ndarray_y']
+        output_names = ['ndarray_xy']
+        super(Zip, self).__init__(input_names, output_names)
+        self.input_doc['ndarray_x'] = '1d ndarray, x axis'
+        self.input_doc['ndarray_y'] = '1d ndarray, x axis'
+        self.output_doc['ndarray_xy'] = 'existence of any zero / False elements'
+        # source & type
+        self.input_src['ndarray'] = optools.wf_input
+        self.categories = ['TESTS.NDARRAY TESTS']
+
+    def run(self):
+        self.outputs['any_zeros'] = np.any(np.logical_not(self.inputs['ndarray']))
+
