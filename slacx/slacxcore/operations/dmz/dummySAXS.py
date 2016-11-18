@@ -522,5 +522,93 @@ references = prep_for_pickle()
 dump_references(references)
 
 
+def ReadMegaSAXS():
+    fileloc = '/Users/Amanda/Desktop/Travails/Programming/ImageProcessing/SampleData/Liheng/megaSAXSspreadsheet/megaSAXSspreadsheet.csv'
+    data1 = np.loadtxt(fileloc, delimiter=',', skiprows=2, comments=',,,',
+                       usecols=(0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14, 16, 17, 18, 20, 21, 22, 24, 25, 26))
+    data2 = np.loadtxt(fileloc, delimiter=',', skiprows=2, usecols=(24, 25, 26))
+    q1, I1, dI1 = data1[:, 0], data1[:, 1], data1[:, 2]
+    q2, I2, dI2 = data1[:, 3], data1[:, 4], data1[:, 5]
+    q3, I3, dI3 = data1[:, 6], data1[:, 7], data1[:, 8]
+    q4, I4, dI4 = data1[:, 9], data1[:, 10], data1[:, 11]
+    q5, I5, dI5 = data1[:, 12], data1[:, 13], data1[:, 14]
+    q6, I6, dI6 = data1[:, 15], data1[:, 16], data1[:, 17]
+    q7, I7, dI7 = data2[:, 0], data2[:, 1], data2[:, 2]
+    return q1, I1, dI1 #, q2, I2, dI2, q3, I3, dI3, q4, I4, dI4, q5, I5, dI5, q6, I6, dI6, q7, I7, dI7
+q1, I1, dI1 = ReadMegaSAXS()
+def find_properties(q, I, dI):
+    fractional_variation, qFirstDip, heightFirstDip, sigmaScaledFirstDip, heightAtZero, dips, shoulders = guess_polydispersity(q, I, dI)
+    mean_size = guess_size(fractional_variation, qFirstDip)
+    amplitude_at_zero = polydispersity_metric_heightAtZero(qFirstDip, q, I, dI)
+    # dips, shoulders = choose_dips_and_shoulders(q, I, dI)
+    return fractional_variation, mean_size, amplitude_at_zero, qFirstDip, heightFirstDip, sigmaScaledFirstDip, heightAtZero, dips, shoulders
+fractional_variation, mean_size, amplitude_at_zero, qFirstDip, heightFirstDip, sigmaScaledFirstDip, heightAtZero, dips, shoulders = find_properties(q1, I1, dI1)
+def plot_diagnostics(x, y, y0, y_inf_scaled, dips, shoulders, factor):
+    scaled_y = y * x**4
+    scaled_y0 = y0 * x**4
+    scaled_curv = noiseless_curvature(x, scaled_y)
+    scaled_curv0 = noiseless_curvature(x, scaled_y0)
+    #curv = noiseless_curvature(x, y)
+    #curv0 = noiseless_curvature(x, y0)
+    fig, axarray = plt.subplots(4, sharex=True)
+    axarray[0].plot(x, y0, c='k', lw=2, marker=None)
+    axarray[0].plot(x, y, c='b', lw=1, marker=None)
+    axarray[0].plot(x[dips], y[dips], c='r', lw=0, marker='x')
+    axarray[0].plot(x[shoulders], y[shoulders], c='purple', lw=0, marker='x')
+    axarray[0].set_ylabel('$I$')
+    axarray[0].set_yscale('log')
+    axarray[1].plot(x, scaled_y0, c='k', lw=2, marker=None)
+    axarray[1].plot(x, y_inf_scaled*np.ones(x.size), c='k', lw=0.5, marker=None)
+    axarray[1].plot(x, scaled_y, c='b', lw=1, marker=None)
+    axarray[1].plot(x[dips], scaled_y[dips], c='r', lw=0, marker='x')
+    axarray[1].plot(x[shoulders], scaled_y[shoulders], c='purple', lw=0, marker='x')
+    axarray[1].set_ylabel('$I \cdot q^4$')
+    axarray[2].plot(x, scaled_curv0, c='k', lw=2, marker=None)
+    axarray[2].plot(x, np.zeros(x.size), c='k', lw=0.5, marker=None)
+    axarray[2].plot(x, scaled_curv, c='b', lw=1, marker=None)
+    axarray[2].plot(x[dips], scaled_curv[dips], c='r', lw=0, marker='x')
+    axarray[2].plot(x[shoulders], scaled_curv[shoulders], c='purple', lw=0, marker='x')
+    axarray[2].set_ylabel('$\delta_q^2 (I \cdot q^4)$')
+    axarray[3].plot(x[dips], (y_inf_scaled - scaled_y[dips]), c='r', lw=0, marker='x')
+    axarray[3].plot(x[shoulders], (scaled_y[shoulders] - y_inf_scaled), c='purple', lw=0, marker='x')
+    axarray[3].set_ylabel('Extrema vs $y_\inf$')
+    axarray[3].set_yscale('log')
+    fig.suptitle('$\Delta x / x_0 = $ %f' % factor)
+    factorstring = str(factor)[2:]
+    while len(factorstring) < 3:
+        factorstring = factorstring + '0'
+    if len(factorstring) > 3:
+        factorstring = factorstring[:3]
+    filename = 'diagnostic_factor%s.pdf' % factorstring
+    fig.savefig(join(outloc, filename))
+    plt.close()
+plot_diagnostics(q1, I1, y0, y_inf_scaled, dips, shoulders, factor)
 
+
+import numpy as np
+def spiral():
+    phi = np.arange(0,10*np.pi, 0.1)
+    r = phi/np.pi
+    x = r*np.cos(phi)
+    y = r*np.sin(phi)
+    return r, phi, x, y
+r, phi, x, y = spiral()
+x0, y0 = 1.5, 5.1
+best_r, best_distance, best_xy, distance = guess_nearest_point_on_nonmonotonic_trace_normalized([x0, y0], [x, y], r)
+from matplotlib import pyplot as plt
+def plot_spiral():
+    fig, ax = plt.subplots(1)
+    ax.plot(x,y,ls='-',marker='None')
+    ax.plot(best_r*np.cos(phi),best_r*np.sin(phi),ls='-',marker='None')
+    ax.plot(x0,y0, marker='x')
+    ax.plot(best_xy[0],best_xy[1], marker='o')
+    return fig, ax
+def plot_distances():
+    fig, ax = plt.subplots(1)
+    ax.plot(r,distance,ls='-',marker='None')
+    ax.plot(best_r,best_distance, marker='x')
+    #ax.plot(best_xy[0],best_xy[1], marker='o')
+    return fig, ax
+plot_spiral()
+plot_distances()
 print 'Done!'
