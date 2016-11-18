@@ -37,8 +37,8 @@ class InputLocator(object):
     If raw textual input is provided, it is stored in self.val after typecasting.
     """
     def __init__(self,src=no_input,tp=none_type,val=None):
-        if src not in valid_sources: 
-            msg = 'found input source {}, should be one of {}'.format(src, valid_sources)
+        #if src not in valid_sources: 
+        #    msg = 'found input source {}, should be one of {}'.format(src, valid_sources)
         self.src = src
         self.tp = tp
         self.val = val 

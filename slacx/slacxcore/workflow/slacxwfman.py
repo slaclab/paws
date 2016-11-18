@@ -1,6 +1,8 @@
 import os
+import time
 import traceback
 from collections import OrderedDict
+import copy
 
 from PySide import QtCore
 import dask.threaded
@@ -9,11 +11,9 @@ import yaml
 from ..treemodel import TreeModel
 from ..treeitem import TreeItem
 from ..operations import optools
-from ..operations.slacxop import Operation, Batch
+from ..operations.slacxop import Operation, Batch, Realtime
 from ..operations.optools import InputLocator
 from .. import slacxtools
-
-# TODO: See note on remove_op()
 
 class WfManager(TreeModel):
     """
@@ -21,12 +21,6 @@ class WfManager(TreeModel):
     """
 
     def __init__(self,**kwargs):
-        #self._n_loaded = 0 
-        #TODO: build a saved tree from kwargs
-        #if 'wf_loader' in kwargs:
-        #    with f as open(wf_loader,'r'): 
-        #        self.load_from_file(f)
-        self._wf_dict = {}       # this will be a dict for a dask.threaded graph 
         super(WfManager,self).__init__()
         self.inputs_child_index = 0
         self.outputs_child_index = 1
@@ -36,11 +30,90 @@ class WfManager(TreeModel):
             self.logmethod = None
         if 'wfl' in kwargs:
             self.load_from_file( kwargs['wfl'] )
+        self._wf_dict = {}       
+
+    def load_inputs(self,op):
+        """
+        Loads data for an Operation from that Operation's input_locator.
+        It is expected that op.input_locator[name] will refer to an InputLocator,
+        """
+        # TODO: Migrate this to slacxop.Operation
+        for name,il in op.input_locator.items():
+            if isinstance(il,InputLocator):
+                src = il.src
+                if not src == optools.batch_input:
+                    il.data = self.locate_input(il)
+                    op.inputs[name] = il.data
+                else:
+                    # batch executor should have already set the input
+                    il.data = op.inputs[name]
+            else:
+                msg = '[{}] Found broken Operation.input_locator for {}: {}'.format(
+                __name__, name, il)
+                raise ValueError(msg)
+
+    def locate_input(self,inplocator):
+        """
+        Return the data pointed to by a given InputLocator object.
+        """
+        # TODO: Migrate this to slacxop.Operation
+        #if isinstance(inplocator,InputLocator):
+        src = inplocator.src
+        tp = inplocator.tp
+        val = inplocator.val
+        #print 'called locate_input for src {}, val {}'.format(src,val)
+        if src == optools.user_input: 
+            if tp == optools.none_type:
+                val = None 
+            elif tp == optools.int_type:
+                val = int(val)
+            elif tp == optools.float_type:
+                val = float(val)
+            elif tp == optools.str_type:
+                val = str(val)
+            elif tp == optools.bool_type:
+                val = bool(val)
+            elif tp == optools.list_type:
+                # val is expected to be a widget containing the list data
+                val = self.list_from_widget(val) 
+            else:
+                msg = 'type selection {}, should be one of {}'.format(src,optools.valid_types)
+                raise ValueError(msg)
+            return val
+        elif src == optools.wf_input:
+            io_type = val.split('.')[1]
+            # So far this supports two scenarios:
+            if io_type == 'Outputs':
+                # 1) val is a uri pointing to an op output. 
+                # Return data by getting it from the uri.
+                item, indx = self.get_from_uri(val)
+                return item.data
+            elif io_type == 'Inputs':
+                # 2) val is an input uri for setting values during execution.
+                # Return the uri directly.
+                return val
+        elif src == optools.fs_input:
+            return val 
+        elif src == optools.batch_input:
+            # Trust the Batch executor has set the input values.
+            # Do nothing, return val.
+            return val 
+        else: 
+            msg = 'found input source {}, should be one of {}'.format(
+            src, valid_sources)
+            raise ValueError(msg)
+        #else:
+        #    # if this method gets called on an input that is not an InputLocator,
+        #    # do nothing, return the input.
+        #    #print 'called locate_input on non-InputLocator: {}'.format(inplocator)
+        #    return inplocator
+
 
     def load_from_file(self,opman,wfl):
         """
         Load things in to the Workflow from an OpManager and a YAML .wfl file 
         """
+        # TODO: Migrate to own module
         f = open(wfl, "r")
         dct = yaml.load(f)
         f.close()
@@ -60,6 +133,7 @@ class WfManager(TreeModel):
         """
         Save the current image of the Workflow as a YAML 
         """
+        # TODO: Migrate to own module
         if not os.path.splitext(filename)[1] == '.wfl':
             filename = filename+'.wfl'
         #filename = slacxtools.rootdir+'/'+'test.wfl'
@@ -117,6 +191,19 @@ class WfManager(TreeModel):
         self.io_subtree(new_op,indx)
         #self._n_loaded += 1
 
+    def remove_op(self,rm_indx):
+        """Remove an Operation from the workflow tree"""
+        rm_row = rm_indx.row()
+        self.beginRemoveRows(
+        QtCore.QModelIndex(),rm_row,rm_row)
+        # Removal occurs between notification methods
+        item_removed = self.root_items.pop(rm_row)
+        self.endRemoveRows()
+        # TODO: update any Operations that depended on the removed one
+        if item_removed.data is not None:
+            if isinstance(item_removed.data,Operation):
+                self.update_io_deps(item_removed.data)
+
     def update_op(self,uri,new_op):
         """
         Replace Operation in treeitem indicated by uri with new_op.
@@ -126,41 +213,59 @@ class WfManager(TreeModel):
         # If an updated op has different io structure, 
         # go through and clobber any broken dependencies.
         current_op = item.data
-        for nm in current_op.inputs.keys():
-            # check if new_op has different inputs...
-            if not nm in new_op.inputs.keys() or (
-            nm in new_op.inputs.keys() and not (
-            current_op.input_src[nm] == new_op.input_src[nm]
-            and current_op.input_type[nm] == new_op.input_type[nm]
-            and current_op.input_locator[nm].val == new_op.input_locator[nm].val )):
-                # if so, go through the tree and remove any other Operation inputs
-                # that are currently linked to the current_op input
-                inp_uri = uri+'.Inputs.'+nm
-                self.remove_inputs(inp_uri)
-        for nm in current_op.outputs.keys():
-            # repeat the process for new_op outputs...
-            if not nm in new_op.outputs.keys():
-            # or (
-            #nm in new_op.outputs.keys() and not (
-            #current_op.output_src[nm] == new_op.input_src[nm]
-            #and current_op.input_type[nm] == new_op.input_type[nm]
-            #and current_op.input_locator[name].val == new_op.input_locator[name].val )):
-                out_uri = uri+'.Outputs.'+nm
-                self.remove_inputs(out_uri)
+        self.update_io_deps(uri,current_op,new_op)
         # Put the new op in the treeitem
         item.data = new_op
         item.set_long_tag( new_op.__doc__ )
         # Update the op subtrees
         self.build_io_subtrees(new_op,indx)
 
-    def remove_inputs(self,uri):
+    def update_io_deps(self,uri,current_op,new_op=None):
+        """
+        Explicitly remove any broken dependencies in the workflow
+        created by replacing current_op with new_op.
+        Provide no new_op (defaults to None) if current_op is being removed.
+        """
+        if not new_op:
+            for nm in current_op.inputs.keys():
+                inp_uri = uri+'.Inputs.'+nm
+                self.remove_input_deps(inp_uri)
+            for nm in current_op.outputs.keys():
+                out_uri = uri+'.Outputs.'+nm
+                self.remove_input_deps(out_uri)
+        else:
+            for nm in current_op.inputs.keys():
+                # check if new_op has different inputs...
+                if not nm in new_op.inputs.keys() or (
+                nm in new_op.inputs.keys() and not (
+                current_op.input_src[nm] == new_op.input_src[nm]
+                and current_op.input_type[nm] == new_op.input_type[nm]
+                and current_op.input_locator[nm].val == new_op.input_locator[nm].val )):
+                    inp_uri = uri+'.Inputs.'+nm
+                    self.remove_input_deps(inp_uri)
+            for nm in current_op.outputs.keys():
+                # repeat the process for new_op outputs...
+                if not nm in new_op.outputs.keys():
+                    out_uri = uri+'.Outputs.'+nm
+                    self.remove_input_deps(out_uri)
+
+    def remove_input_deps(self,uri):
         # Loop through the ops.
-        for item in self.root_items:
+        for row in range(len(self.root_items)):
+            item = self.root_items[row]
             op = item.data
+            idx = self.index(row,0,QtCore.QModelIndex())
             # If any input locators are set to this uri, clobber them.
             for name,il in op.input_locator.items():
                 if il.val == uri:
-                    op.input_locator[name] = optools.InputLocator(optools.no_input,None)
+                    # TODO: Decide whether better to use default InputLocator() or None
+                    op.input_locator[name] = optools.InputLocator()
+                    # Update the op that has been changed.
+                    self.build_io_subtrees(op,indx)
+
+    def list_from_widget(self,widg):
+        print '[{}]: need to implement list_from_widget'.format(__name__)
+        return None
 
     def io_subtree(self,op,parent):
         """Add inputs and outputs subtrees as children of an Operation TreeItem"""
@@ -246,26 +351,6 @@ class WfManager(TreeModel):
         else:
             pass
 
-        #self.beginInsertRows(outputs_indx,0,n_outputs-1)
-        #for i in range(n_outputs):
-        #    name,val = output_items[i]
-        #    out_treeitem = TreeItem(i,0,outputs_indx)
-        #    out_treeitem.set_tag(name)
-        #    out_treeitem.set_long_tag( optools.parameter_doc(name,val,op.output_doc[name]) )
-        #    out_treeitem.data = val
-        #    outputs_treeitem.children.insert(i,out_treeitem)
-        #self.endInsertRows()
-
-    def remove_op(self,rm_indx):
-        """Remove an Operation from the workflow tree"""
-        rm_row = rm_indx.row()
-        self.beginRemoveRows(
-        QtCore.QModelIndex(),rm_row,rm_row)
-        # Removal occurs between notification methods
-        item_removed = self.root_items.pop(rm_row)
-        self.endRemoveRows()
-        # TODO: update any Operations that depended on the removed one
-
     # Overloaded data() for WfManager
     def data(self,item_indx,data_role):
         if (not item_indx.isValid()):
@@ -293,6 +378,11 @@ class WfManager(TreeModel):
         else:
             return None
 
+    # Overload columnCount()
+    def columnCount(self,parent):
+        """Let WfManager have two columns, one for item tag, one for item type"""
+        return 2
+
     def check_wf(self):
         """
         Check the dependencies of the workflow.
@@ -308,61 +398,135 @@ class WfManager(TreeModel):
                batch_items.append(item)
         return batch_items 
 
-    def run_wf_batch(self):
+    def find_rt_items(self):
+        rt_items = [] 
+        for item in self.root_items:
+            if isinstance(item.data,Realtime):
+               rt_items.append(item)
+        return rt_items 
+
+
+    def run_and_update(self,item):
         """
-        Executes the workflow under the control of the local Batch(Operation) instances
+        Run the Operation at item.data and update its data in the tree
         """
-        batch_items = self.find_batch_items() 
-        if not batch_items:
-            msg = '[{}] Attempted batch execution, could not find batch input'.format(__name__)
+        op = item.data
+        self.load_inputs(op)
+        if self.logmethod:
+            self.logmethod('Running {}'.format(str(item.tag())))
+        op.run()
+        self.update_op(item.tag(),op)
+
+    def run_deps(self,item):
+       deps = self.upstream_list(item)
+       if deps:
+           if self.logmethod:
+               self.logmethod('Running dependencies for {}: {}'.format(item, [dep.tag() for dep in deps]))
+           for dep in deps:
+               self.run_and_update(item)
+
+    def run_wf_realtime(self):
+        """
+        Executes the workflow under the control of the local Realtime(Operation) instances
+        """
+        rt_items = self.find_rt_items() 
+        if not rt_items:
+            msg = '[{}] Attempted real-time execution, could not find realtime controller'.format(__name__)
             if self.logmethod:
                 self.logmethod(msg)
             raise ValueError(msg)
         else:
-            for batch_item in batch_items:
-                batch_maker = batch_item.data
-                dep = self.upstream_list(batch_item)
-                if dep and self.logmethod:
-                    self.logmethod('Running batch execution dependencies: {}'.format([item.tag() for item in dep]))
-                    for item in dep:
-                        op = item.data
-                        self.load_inputs(op)
-                        if self.logmethod:
-                            self.logmethod('Running {}'.format(str(item.tag())))
-                        op.run()
-                        self.update_op(item.tag(),op)
-                # Build the batch. After batch_maker.run(), it is expected that batch_maker.input_list()
-                # will produce a list of dicts, where each dict has the form [workflow tree uri:input value]. 
+            for rt_item in rt_items:
                 if self.logmethod:
-                    self.logmethod('Running batch maker {}'.format(str(batch_item.tag())))
-                self.load_inputs(batch_maker)
-                batch_maker.run()
-                self.update_op(batch_item.tag(),batch_maker)
-                try:
-                    for i in range(len(batch_maker.input_list())):
-                        input_dict = batch_maker.input_list()[i]
-                        for uri,val in input_dict.items():
+                    self.logmethod( 'Running dependencies... ' )
+                self.run_deps(rt_item)
+                if self.logmethod:
+                    self.logmethod( 'Preparing Realtime controller... ' )
+                self.run_and_update(rt_item)
+            #try:
+            if self.logmethod:
+                self.logmethod( 'To infinity... ' )
+            while True:
+                for rt_item in rt_items:
+                    rt = rt_item.data
+                    # After rt.run(), it is expected that rt.input_iter()
+                    # will iterate lists of input values whose respective routes are rt.input_routes().
+                    # unless there are no new inputs to run, in which case it will iterate None. 
+                    vals = rt.input_iter().next()
+                    inp_dict = dict( zip(rt.input_routes(), vals) )
+                    print 'next inputs:'
+                    print inp_dict
+                    #for i in range(len(rt.input_list())):
+                    #    input_dict = batch_maker.input_list()[i]
+                    if inp_dict and not None in vals:
+                        for uri,val in inp_dict.items():
                             self.set_op_input_at_uri(uri,val)
-                        # Inputs are set, run in serial 
-                        if self.logmethod:
-                            self.logmethod( 'Running batch {} / {}'.format(i,len(batch_maker.input_list())-1) )
-                        to_run = self.downstream_from_batch(batch_item)
-                        #print 'ops to run for this batch: {}'.format([item.tag() for item in to_run])
+                        #to run = rt.downstream_ops()
+                        to_run = self.downstream_ops(rt_item)
                         self.run_wf_serial(to_run)
-                        batch_maker.output_list()[i]=self.ops_as_dict(to_run)
-                    # Update batch maker to load results
-                    self.update_op(batch_item.tag(),batch_maker)
+                        rt.output_list().append(self.ops_as_dict(to_run))
+                        # Update rt to load results
+                        self.update_op(rt_item.tag(),rt)
+                    # sleep as long as the rt controller says
+                    time.sleep(rt.delay())
+            #except UserPushedStopButtonException as ex:
+            #   exit gracefully
+            #except Exception as ex:
+            #    ex.message = 'Realtime execution seems to have failed. Error message: {}'.format(ex.message)
+            #    # Save any work that did finish:
+            #    self.update_op(rt_item.tag(),rt)
+            #    tb = traceback.format_exc()
+            #    if self.logmethod:
+            #        self.logmethod(ex.message)
+            #        self.logmethod(tb)
+            #    raise ex
+
+    def run_wf_batch(self):
+        """
+        Executes the workflow under the control of the local Batch(Operation) instances
+        """
+        b_items = self.find_batch_items() 
+        if not b_items:
+            msg = '[{}] Attempted batch execution, could not find batch controller'.format(__name__)
+            if self.logmethod:
+                self.logmethod(msg)
+            raise ValueError(msg)
+        else:
+            for b_item in b_items:
+                if self.logmethod:
+                    self.logmethod( 'Running dependencies... ' )
+                self.run_deps(b_item)
+                if self.logmethod:
+                    self.logmethod( 'Preparing Batch controller... ' )
+                self.run_and_update(b_item)
+                b = b_item.data
+                # After b.run(), it is expected that b.input_list()
+                # will produce a list of dicts, where each dict has the form [workflow tree uri:input value]. 
+                #try:
+                for i in range(len(b.input_list())):
+                    input_dict = b.input_list()[i]
+                    for uri,val in input_dict.items():
+                        self.set_op_input_at_uri(uri,val)
+                    # Inputs are set, run in serial 
                     if self.logmethod:
-                        self.logmethod( 'Batch execution complete.' )
-                except Exception as ex:
-                    msg = 'Batch seems to have failed. Error message: {}'.format(ex.message)
-                    # Save any work that did finish:
-                    self.update_op(batch_item.tag(),batch_maker)
-                    tb = traceback.format_exc()
-                    if self.logmethod:
-                        self.logmethod(msg)
-                        self.logmethod(tb)
-                    raise ex
+                        self.logmethod( 'Running batch {} / {}'.format(i,len(b.input_list())-1) )
+                    #to run = b.downstream_ops()
+                    to_run = self.downstream_ops(b_item)
+                    self.run_wf_serial(to_run)
+                    b.output_list()[i]=self.ops_as_dict(to_run)
+                # Update b to load results
+                self.update_op(b_item.tag(),b)
+                if self.logmethod:
+                    self.logmethod( 'Batch execution complete.' )
+                #except Exception as ex:
+                #    ex.message = 'Batch seems to have failed. Error message: {}'.format(ex.message)
+                #    # Save any work that did finish:
+                #    self.update_op(b_item.tag(),b)
+                #    tb = traceback.format_exc()
+                #    if self.logmethod:
+                #        self.logmethod(ex.message)
+                #        self.logmethod(tb)
+                #    raise ex
 
     def set_op_input_at_uri(self,uri,val):
         """Set an op input, indicated by uri, to provided value."""
@@ -383,13 +547,9 @@ class WfManager(TreeModel):
         if not op_items:
             op_items = self.root_items
         for item in op_items:
-            od[item.tag()] = item.data
+            od[item.tag()] = copy.deepcopy(item.data)
+            #print 'od[{}]: inputs {}'.format(item.tag(),item.data.inputs)
         return od
-            #uri = item.tag()+'.Outputs'
-            #outputs_item = item.children[self.outputs_child_index]
-            #for output_item in outputs_item.children:
-            #    uri = uri+'.'+output_item.tag()
-            #    od[uri] = output_item.data
 
     def upstream_list(self,root_item):
         """
@@ -431,28 +591,34 @@ class WfManager(TreeModel):
             next_items = self.items_ready(ordered_items)
         return ordered_items
 
-    def downstream_from_batch(self,batch_item):
+    def downstream_ops(self,op_item):
+        """
+        Give the list of Operations downstream of a given Operation.
+        The input Operation should have an implementation of input_routes(),
+        as in for example the Batch and Realtime base classes.
+        """
         ds_items = []
-        batch_maker = batch_item.data
-        # Get uris of inputs that will be set by the batch maker
-        inroutes = batch_maker.input_routes()
+        op = op_item.data
+        # Get uris of inputs that will be set by the op 
+        inroutes = op.input_routes()
         for uri in inroutes:
-            op_tag = uri.split('.')[0]
-            op_item, indx = self.get_from_uri(op_tag)
-            # Exclude Batches from downstream ops.
-            # TODO: Consider whether or not we want embedded Batches to work
-            if not isinstance(op_item.data,Batch):
-                ds_items.append(op_item)
+            in_op_tag = uri.split('.')[0]
+            in_op_item, indx = self.get_from_uri(in_op_tag)
+            # Exclude Batches and Realtimes from downstream ops.
+            # TODO: Consider how / whether embedded Batches / Realtimes should work
+            if ( not isinstance(in_op_item.data,Batch)
+            and not isinstance(in_op_item.data,Realtime) ):
+                ds_items.append(in_op_item)
         next_items = self.items_ready(ds_items)
         while next_items:
             next_items = self.items_ready(ds_items)
             pop_list = []
             for i in range(len(next_items)):
-                item = next_items[i]
-                if isinstance(item.data,Batch):
+                in_item = next_items[i]
+                if isinstance(in_item.data,Batch) or isinstance(in_item.data,Realtime):
                     pop_list.append(i)
                 else:
-                    ds_items.append(item)
+                    ds_items.append(in_item)
             for idx in pop_list:
                 next_items.pop(idx)
         return ds_items
@@ -487,42 +653,39 @@ class WfManager(TreeModel):
         if not to_run:
             to_run = self.serial_execution_list()
         for item in to_run:
-            op = item.data
-            self.load_inputs(op)
-            if self.logmethod:
-                self.logmethod('Running {}: {}'.format(item.tag(),type(op).__name__))
-            op.run()
-            self.update_op(item.tag(),op)
+            self.run_and_update(item)
         if self.logmethod:
             self.logmethod('finished serial execution.')
 
-    def load_inputs(self,op):
-        """
-        Loads data for an Operation from that Operation's input_locator.
-        It is expected that op.input_locator[name] will refer to an InputLocator,
-        """
-        for name,val in op.input_locator.items():
-            if isinstance(val,InputLocator):
-                val.data = self.locate_input(val)
-                op.inputs[name] = val.data
+    def get_from_uri(self, uri):
+        """Get from this tree the item at the given uri."""
+        path = uri.split('.')
+        parent_indx = QtCore.QModelIndex()
+        try:
+            for itemuri in path:
+                # get QModelIndex of item 
+                row = self.list_tags(parent_indx).index(itemuri)
+                qindx = self.index(row,0,parent_indx)
+                # get TreeItem from QModelIndex
+                item = self.get_item(qindx)
+                # set new parent in case the path continues...
+                parent_indx = qindx
+            return item, qindx
+        except Exception as ex:
+            msg = '-----\nbad uri: {}\n-----'.format(uri)
+            raise ex(msg+ex.message)
+
+    def next_uri(self,prefix):
+        indx = 0
+        goodtag = False
+        while not goodtag:
+            testtag = prefix+'_{}'.format(indx)
+            if not testtag in self.list_tags(QtCore.QModelIndex()):
+                goodtag = True
             else:
-                msg = '[{}] Found broken Operation.input_locator for {}: {}'.format(
-                __name__, name, val)
-                raise ValueError(msg)
-
-    def run_wf_graph(self):
-        """
-        Run the workflow by building a dask-compatible dict,
-        then calling dask.threaded.get(dict, key)
-        for each of the keys corresponding to operation outputs.
-        TODO: optimize the execution of this by making the smallest
-        possible number of calls to get().
-        """
-        # build the graph, get the list of outputs
-        outputs_list = self.load_wf_dict()
-        print 'workflow graph as dict:'
-        print self._wf_dict
-
+                indx += 1
+        return testtag
+                    
     def is_good_uri(self,uri):
         path = uri.split('.')
         parent_indx = QtCore.QModelIndex()
@@ -537,6 +700,19 @@ class WfManager(TreeModel):
             # set new parent in case the path continues...
             parent_indx = qindx
         return True
+
+    def run_wf_graph(self):
+        """
+        Run the workflow by building a dask-compatible dict,
+        then calling dask.threaded.get(dict, key)
+        for each of the keys corresponding to operation outputs.
+        TODO: optimize the execution of this by making the smallest
+        possible number of calls to get().
+        """
+        # build the graph, get the list of outputs
+        outputs_list = self.load_wf_dict()
+        print 'workflow graph as dict:'
+        print self._wf_dict
 
     def load_wf_dict(self):
         """
@@ -588,102 +764,4 @@ class WfManager(TreeModel):
     @staticmethod
     def run_op(op):
         return op.run()
-
-    def locate_input(self,inplocator):
-        """
-        Return the data pointed to by a given InputLocator object.
-        If this is called on anything other than an InputLocator,
-        it does nothing and returns the input argument.
-        """
-        if isinstance(inplocator,InputLocator):
-            src = inplocator.src
-            tp = inplocator.tp
-            val = inplocator.val
-            #print 'called locate_input for src {}, val {}'.format(src,val)
-            if src == optools.user_input: 
-                if tp == optools.none_type:
-                    val = None 
-                elif tp == optools.int_type:
-                    val = int(val)
-                elif tp == optools.float_type:
-                    val = float(val)
-                elif tp == optools.str_type:
-                    val = str(val)
-                elif tp == optools.bool_type:
-                    val = bool(val)
-                elif tp == optools.list_type:
-                    # val is expected to be a widget containing the list data
-                    val = self.list_from_widget(val) 
-                else:
-                    msg = 'type selection {}, should be one of {}'.format(src,optools.valid_types)
-                    raise ValueError(msg)
-                return val
-            elif src == optools.wf_input:
-                io_type = val.split('.')[1]
-                # So far this supports two scenarios:
-                if io_type == 'Outputs':
-                    # 1) val is a uri pointing to an op output. 
-                    # Return data by getting it from the uri.
-                    item, indx = self.get_from_uri(val)
-                    return item.data
-                elif io_type == 'Inputs':
-                    # 2) val is an input uri for setting values during execution.
-                    # Return the uri directly.
-                    return val
-            elif src == optools.fs_input:
-                return val 
-            elif src == optools.batch_input:
-                # Do nothing, trust the Batch executor to set the input values
-                return val
-            else: 
-                msg = 'found input source {}, should be one of {}'.format(
-                src, valid_sources)
-                raise ValueError(msg)
-        else:
-            # if this method gets called on an input that is not an InputLocator,
-            # do nothing, return the input.
-            #print 'called locate_input on non-InputLocator: {}'.format(inplocator)
-            return inplocator
-
-    def list_from_widget(self,widg):
-        print '[{}]: need to implement list_from_widget'.format(__name__)
-        return None
-
-    def get_from_uri(self, uri):
-        """Get from this tree the item at the given uri."""
-        path = uri.split('.')
-        parent_indx = QtCore.QModelIndex()
-        try:
-            for itemuri in path:
-                # get QModelIndex of item 
-                row = self.list_tags(parent_indx).index(itemuri)
-                qindx = self.index(row,0,parent_indx)
-                # get TreeItem from QModelIndex
-                item = self.get_item(qindx)
-                # set new parent in case the path continues...
-                parent_indx = qindx
-            return item, qindx
-        except Exception as ex:
-            msg = '-----\nbad uri: {}\n-----'.format(uri)
-            raise ex(msg+ex.message)
-        
-
-    def next_uri(self,prefix):
-        indx = 0
-        goodtag = False
-        while not goodtag:
-            testtag = prefix+'_{}'.format(indx)
-            if not testtag in self.list_tags(QtCore.QModelIndex()):
-                goodtag = True
-            else:
-                indx += 1
-        return testtag
-                    
-    # Overload columnCount()
-    def columnCount(self,parent):
-        """Let WfManager have two columns, one for item tag, one for item type"""
-        return 2
-
-
-
 

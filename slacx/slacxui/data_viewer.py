@@ -3,6 +3,7 @@ import re
 import numpy as np
 from PySide import QtGui
 
+from ..slacxcore.slacxtools import FileSystemIterator
 from ..slacxcore.operations.optools import InputLocator
 from . import uitools
 if uitools.have_qt47:
@@ -51,6 +52,11 @@ def display_item(item,uri,qlayout,logmethod=None):
         display_text += '<br> src: {}'.format(item.src)
         display_text += '<br> type: {}'.format(item.tp)
         display_text += '<br> val: {}'.format(item.val)
+        display_text += '<br> data: {}'.format(item.data)
+    elif isinstance(item,FileSystemIterator):
+        display_text = 'FileSystemIterator history: '
+        for p in item.paths_done:
+            display_text += '<br> {}'.format(p)
     else:
         display_text = 'object printout: <br>{}'.format(item)
     text_widget = QtGui.QTextEdit(display_text)

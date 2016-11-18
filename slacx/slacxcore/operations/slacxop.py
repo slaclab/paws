@@ -103,6 +103,47 @@ class Operation(object):
 
 
 
+class Realtime(Operation):
+    __metaclass__ = abc.ABCMeta
+    """
+    Abstract class template for implementing real time execution operations.
+    """
+    def __init__(self,input_names,output_names):
+        super(Realtime,self).__init__(input_names,output_names)
+
+    @abc.abstractmethod
+    def output_list(self):
+        """
+        Produce a list of OrderedDicts representing the outputs for each batch input.
+        Each OrderedDict should be populated with [input_uri:input_value] pairs.
+        """
+        pass
+    @abc.abstractmethod
+    def input_iter(self):
+        """
+        Produce an iterator over OrderedDicts representing each set of inputs to run.
+        Each dict should be populated with [input_uri:input_value] pairs.
+        When there is no new set of inputs to run, should return None.
+        """
+        pass
+    @abc.abstractmethod
+    def input_routes(self):
+        """
+        Produce a list of [input_uri] routes 
+        in the same order as the OrderedDicts 
+        produced by Batch.input_iter()
+        """
+        pass
+
+    def delay(self):
+        """
+        Return the number of seconds to pause between iterations.
+        Overload this method to change the pause time- default is 1 second.
+        """
+        return 1
+
+
+
 class Batch(Operation):
     __metaclass__ = abc.ABCMeta
     """
@@ -114,21 +155,23 @@ class Batch(Operation):
     @abc.abstractmethod
     def output_list(self):
         """
-        Produce an ordered list of dicts representing the outputs for each batch input.
-        Each dict should be populated with [input_uri:input_value] pairs.
+        Produce a list of OrderedDicts representing the outputs for each batch input.
+        Each OrderedDict should be populated with [input_uri:input_value] pairs.
         """
         pass
     @abc.abstractmethod
     def input_list(self):
         """
-        Produce an ordered list of dicts representing each set of inputs for the Batch to run.
-        Each dict should be populated with [input_uri:input_value] pairs.
+        Produce a list of OrderedDicts representing each set of inputs for the Batch to run.
+        Each OrderedDict should be populated with [input_uri:input_value] pairs.
         """
         pass
     @abc.abstractmethod
     def input_routes(self):
         """
-        Produce a list of the input routes used by the Batch
+        Produce a list of the input routes used by the Batch,
+        in the same order as each of the OrderedDicts 
+        provided by Batch.input_list()
         """
         pass
 
@@ -176,18 +219,6 @@ class Workflow(Operation):
         msg = ""
         # TODO: Loop through the Operations tree
         return msg 
-
-
-    def yaml_load(self):
-        # Load self from YAML
-        pass
-
-
-    def yaml_save(self):
-        # Serialize self as YAML
-        pass
-
-
 
 
 

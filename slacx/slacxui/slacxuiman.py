@@ -46,7 +46,9 @@ class UiManager(object):
         #self.msg_board_log('Executing current workflow')
         # Check for a batch executor...
         #self.msg_board_log('Determining execution method...')
-        if self.wfman.find_batch_items():
+        if self.wfman.find_rt_items():
+            self.wfman.run_wf_realtime()
+        elif self.wfman.find_batch_items():
             #self.msg_board_log('Start BATCH execution')
             self.wfman.run_wf_batch()
         else:
@@ -152,7 +154,7 @@ class UiManager(object):
 
     def connect_actions(self):
         """Set up the works for buttons and menu items"""
-        self.ui.add_op_button.setText("Add Operation to Workflow")
+        self.ui.add_op_button.setText("Load Operations")
         #self.ui.add_op_button.clicked.connect(self.add_ops)
         self.ui.add_op_button.clicked.connect( partial(self.edit_wf,self.opman) )
         self.ui.edit_op_button.setText("Edit Operations")

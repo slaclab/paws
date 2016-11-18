@@ -21,21 +21,15 @@ for modloader, modname, ispkg in mods:
             # is it a class?
             if isinstance(item,type):
                 # is it a non-abstract subclass of Operation?
-                if issubclass(item,Operation) and name not in ['Operation','Batch']:
+                if issubclass(item,Operation) and name not in ['Operation','Batch','Realtime']:
                     op = getattr(mod,name)
                     cats = op().categories
-                    if issubclass(item,Batch):
-                        if not cats == ['EXECUTION.BATCH']:
-                            msg = str( '[{}] tried to load a Batch executor, '
-                            + 'but found categories other than EXECUTION.BATCH: {}'.format(
-                            __name__, cats))
-                            raise ImportError(msg)
                     op_list.append( (cats,op) )
                     for cat in cats:
                         if not cat in cat_list:
                             cat_list.append(cat)
         except ImportError as ex:
-            print '[{}] had trouble dealing with module attribute {}: {}'.format(__name__,name,item)
+            print '[{}] had trouble dealing with {}: {}'.format(__name__,name,item)
             print 'Error text: {}'.format(ex.message)
             pass 
             #raise

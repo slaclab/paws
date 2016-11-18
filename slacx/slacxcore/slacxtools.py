@@ -1,4 +1,6 @@
 import os
+import glob
+from collections import Iterator
 from datetime import datetime as dt
 
 from PySide import QtCore, QtUiTools
@@ -10,13 +12,40 @@ qdir = QtCore.QDir(__file__)
 qdir.cdUp()
 rootdir = os.path.split( qdir.absolutePath() )[0]#+'/slacx'
 
-def throw_specific_error(msg):
-    msg = 'something specific happened: ' + msg
-    raise Exception(msg)
-
 class LazyCodeError(Exception):
     def __init__(self,msg):
         super(LazyCodeError,self).__init__(self,msg)
+
+class FileSystemIterator(Iterator):
+
+    def __init__(self,dirpath,regex):
+        self.paths_done = []
+        self.dirpath = dirpath
+        self.rx = regex
+        super(FileSystemIterator,self).__init__()
+
+    def next(self):
+        #import pdb; pdb.set_trace()
+        batch_list = glob.glob(self.dirpath+'/'+self.rx)
+        #print 'the batch list: '
+        #print batch_list
+        #print 'paths done: '
+        #print self.paths_done 
+        for path in batch_list:
+            if not path in self.paths_done:
+        #        print 'return [{}]'.format(path)
+                self.paths_done.append(path)
+                return [path]
+        #print 'No paths to run.'
+        #print 'the batch list: '
+        #print batch_list
+        #print 'paths done: '
+        #print self.paths_done 
+        return [None]
+
+def throw_specific_error(msg):
+    msg = 'something specific happened: ' + msg
+    raise Exception(msg)
 
 def start_message_ui():
     ui_file = QtCore.QFile(rootdir+"/slacxui/message.ui")
