@@ -17,7 +17,7 @@ class MirrorVertically(Operation):
         self.output_doc['image_out'] = '2d ndarray'
         # source & type
         self.input_src['image_in'] = optools.wf_input
-        self.categories = ['2D DATA PROCESSING']
+        self.categories = ['2D DATA PROCESSING','MISC.NDARRAY MANIPULATION']
 
     def run(self):
         self.outputs['image_out'] = self.inputs['image_in'][:,::-1]
@@ -38,7 +38,7 @@ class MirrorHorizontally(Operation):
         self.output_doc['image_out'] = '2d ndarray'
         # source & type
         self.input_src['image_in'] = optools.wf_input
-        self.categories = ['2D DATA PROCESSING']
+        self.categories = ['2D DATA PROCESSING','MISC.NDARRAY MANIPULATION']
 
     def run(self):
         self.outputs['image_out'] = self.inputs['image_in'][::-1,:]
