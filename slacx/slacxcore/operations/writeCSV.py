@@ -1,6 +1,5 @@
-from os import linesep
 from os.path import join, splitext
-from os import listdir
+from os import listdir, linesep, remove
 import numpy as np
 
 from slacxop import Operation
@@ -9,7 +8,9 @@ from SSRL_1_5_readers import read_header
 
 
 class WriteTemperatureIndex(Operation):
-    """Find .csv diffractograms; match with temperatures from headers; record."""
+    """Find .csv diffractograms; match with temperatures from headers; record.
+
+    If a temperature index already exists for some reason, it will be overwritten."""
 
     def __init__(self):
         input_names = ['directory']
@@ -28,23 +29,22 @@ class WriteTemperatureIndex(Operation):
         directory = self.inputs['directory']
         outname = 'temperature_index.csv'
         outloc = join(directory,outname)
+        try:
+            remove(outloc)
+        except:
+            pass
         csvnames = find_csvs(directory)
-        print "csvnames", csvnames
         temperatures = []
         for ii in range(len(csvnames)):
             headernameii = txtname_from_csvname(csvnames[ii])
-            print "headernameii", headernameii
             headerii = read_header(headernameii)
             temp = headerii['temp_celsius']
-            print "temp", temp
             temperatures.append(temp)
         outfile = open(outloc, 'w')
         outfile.write("#TEMPCELSIUS,FILENAME")
         for ii in range(len(csvnames)):
             csvmsg ='"%s"'% csvnames[ii]
-            print csvmsg
             msg = str(temperatures[ii])+","+csvmsg+linesep
-            print msg
             outfile.write(msg)
         outfile.close()
         self.outputs['filenames'] = csvnames
@@ -173,7 +173,7 @@ def find_csvs(directory):
     for ii in range(len(innames)):
         innameii = splitext(innames[ii])
         if innameii[1] == '.csv':
-            csvnames.append(innames[ii])
+            csvnames.append(join(directory, innames[ii]))
     return csvnames
 
 def txtname_from_csvname(csvname):
