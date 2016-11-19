@@ -526,9 +526,7 @@ def guess_polydispersity(q, I, dI=np.zeros(1)):
     try:
         references = load_references()
     except:
-        print '''No reference file exists.  Use the GenerateReferences operation once
-        to generate an appropriate file; the file will be saved
-        and need not be generated again.'''
+        print no_reference_message
     x = references['xFirstDip'] / references['sigmaScaledFirstDip']
     y = references['heightFirstDip'] / references['heightAtZero']
     factor = references['factorVals']
@@ -577,7 +575,7 @@ def guess_size(fractional_variation, first_dip_q):
     try:
         references = load_references()
     except:
-        print "Failed to load references."
+        print no_reference_message
     #xFirstDip, factorVals = references['xFirstDip'], references['factorVals']
     first_dip_x = interp(fractional_variation, references['factorVals'], references['xFirstDip'])
     mean_size = first_dip_x / first_dip_q
@@ -756,3 +754,6 @@ def guess_nearest_point_on_nonmonotonic_trace_normalized(loclist, tracelist, coo
         best_xjj = polynomial_value(xjj_coefficients, best_coordinate)
         best_location[jj] = best_xjj
     return best_coordinate, best_distance, best_location #, distances
+
+no_reference_message = '''No reference file exists.  Use the GenerateReferences operation once to generate
+an appropriate file; the file will be saved and need not be generated again.'''

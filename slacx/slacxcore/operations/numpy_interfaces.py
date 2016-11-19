@@ -20,7 +20,6 @@ class Any(Operation):
     def run(self):
         self.outputs['any'] = self.inputs['ndarray'].any()
 
-
 class AnyNaN(Operation):
     """Check whether an array has any NaN elements."""
 
@@ -32,7 +31,7 @@ class AnyNaN(Operation):
         self.output_doc['any_nan'] = 'existence of any NaN elements'
         # source & type
         self.input_src['ndarray'] = optools.wf_input
-        self.categories = ['TESTS.NDARRAY TESTS']
+        self.categories = ['MISC.NDARRAY MANIPULATION','TESTS.NDARRAY TESTS']
 
     def run(self):
         self.outputs['any_nan'] = np.isnan(self.inputs['ndarray']).any()
@@ -48,15 +47,13 @@ class IsNaN(Operation):
         self.output_doc['nan'] = 'existence of any non-zero / True elements'
         # source & type
         self.input_src['ndarray'] = optools.wf_input
-        self.categories = ['TESTS.NDARRAY TESTS']
+        self.categories = ['MISC.NDARRAY MANIPULATION','TESTS.NDARRAY TESTS']
 
     def run(self):
         self.outputs['nan'] = np.isnan(self.inputs['ndarray'])
 
-
-
 class AnyZero(Operation):
-    """Return boolean array marking NaN elements."""
+    """Return boolean array marking zero-value elements."""
 
     def __init__(self):
         input_names = ['ndarray']
@@ -66,14 +63,13 @@ class AnyZero(Operation):
         self.output_doc['any_zeros'] = 'existence of any zero / False elements'
         # source & type
         self.input_src['ndarray'] = optools.wf_input
-        self.categories = ['TESTS.NDARRAY TESTS']
+        self.categories = ['MISC.NDARRAY MANIPULATION','TESTS.NDARRAY TESTS']
 
     def run(self):
         self.outputs['any_zeros'] = np.any(np.logical_not(self.inputs['ndarray']))
 
-
 class Zip(Operation):
-    """Return boolean array marking NaN elements."""
+    """Zips two 1d ndarrays together for display in slacx."""
 
     def __init__(self):
         input_names = ['ndarray_x', 'ndarray_y']
@@ -81,22 +77,53 @@ class Zip(Operation):
         super(Zip, self).__init__(input_names, output_names)
         self.input_doc['ndarray_x'] = '1d ndarray, x axis'
         self.input_doc['ndarray_y'] = '1d ndarray, y axis; same size as ndarray_x'
-        self.output_doc['ndarray_xy'] = '2 x n ndarray for slacx autodisplay fun'
+        self.output_doc['ndarray_xy'] = 'n x 2 ndarray for slacx autodisplay fun'
         # source & type
         self.input_src['ndarray_x'] = optools.wf_input
         self.input_src['ndarray_y'] = optools.wf_input
-        self.categories = ['MISC.NDARRAY MANIPULATION']
+        self.categories = ['MISC.NDARRAY MANIPULATION','DISPLAY']
 
     def run(self):
         x = self.inputs['ndarray_x']
         y = self.inputs['ndarray_y']
         n = x.size
         if len(x.shape) > 1:
-            raise ValueError("ndarray_x must be a 1d array")
+            raise ValueError("ndarray_x and ndarray_y must be 1d arrays")
         if (x.shape != y.shape):
             raise ValueError("ndarray_x and ndarray_y must have the same shape")
-        xy = np.zeros((2,n))
-        xy[0,:] = x
-        xy[1,:] = y
+        xy = np.zeros((n,2))
+        xy[:,0] = x
+        xy[:,1] = y
+        self.outputs['ndarray_xy'] = xy
+
+class LogLogZip(Operation):
+    """Takes the logarithm of two 1d ndarrays, then zips them together for display in slacx.
+
+    Logarithm is taken in base ten."""
+
+
+    def __init__(self):
+        input_names = ['ndarray_x', 'ndarray_y']
+        output_names = ['ndarray_logxlogy']
+        super(LogLogZip, self).__init__(input_names, output_names)
+        self.input_doc['ndarray_x'] = '1d ndarray, x axis'
+        self.input_doc['ndarray_y'] = '1d ndarray, y axis; same size as ndarray_x'
+        self.output_doc['ndarray_logxlogy'] = 'n x 2 ndarray for slacx autodisplay fun'
+        # source & type
+        self.input_src['ndarray_x'] = optools.wf_input
+        self.input_src['ndarray_y'] = optools.wf_input
+        self.categories = ['MISC.NDARRAY MANIPULATION','DISPLAY']
+
+    def run(self):
+        x = self.inputs['ndarray_x']
+        y = self.inputs['ndarray_y']
+        n = x.size
+        if len(x.shape) > 1:
+            raise ValueError("ndarray_x and ndarray_y must be 1d arrays")
+        if (x.shape != y.shape):
+            raise ValueError("ndarray_x and ndarray_y must have the same shape")
+        xy = np.zeros((n,2))
+        xy[:,0] = np.log10(x)
+        xy[:,1] = np.log10(y)
         self.outputs['ndarray_xy'] = xy
 
