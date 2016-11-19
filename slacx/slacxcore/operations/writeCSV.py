@@ -15,10 +15,13 @@ class WriteTemperatureIndex(Operation):
         input_names = ['directory']
         output_names = ['temperatures', 'filenames', 'temperature_index_file']
         super(WriteTemperatureIndex, self).__init__(input_names, output_names)
+        # docstrings
         self.input_doc['directory'] = "path to directory with .csv's and .txt headers in it"
         self.output_doc['temperatures'] = 'temperatures from headers'
         self.output_doc['filenames'] = 'names of csvs'
         self.output_doc['temperature_index_file'] = 'csv-formatted file containing temperature indexed csv file names'
+        # source & type
+        self.input_src['directory'] = optools.fs_input
         self.categories = ['INPUT.MISC','OUTPUT.MISC']
 
     def run(self):
@@ -26,17 +29,22 @@ class WriteTemperatureIndex(Operation):
         outname = 'temperature_index.csv'
         outloc = join(directory,outname)
         csvnames = find_csvs(directory)
+        print "csvnames", csvnames
         temperatures = []
         for ii in range(len(csvnames)):
             headernameii = txtname_from_csvname(csvnames[ii])
+            print "headernameii", headernameii
             headerii = read_header(headernameii)
             temp = headerii['temp_celsius']
+            print "temp", temp
             temperatures.append(temp)
         outfile = open(outloc, 'w')
         outfile.write("#TEMPCELSIUS,FILENAME")
         for ii in range(len(csvnames)):
             csvmsg ='"%s"'% csvnames[ii]
+            print csvmsg
             msg = str(temperatures[ii])+","+csvmsg+linesep
+            print msg
             outfile.write(msg)
         outfile.close()
         self.outputs['filenames'] = csvnames
@@ -72,11 +80,15 @@ class SelectClosestTemperatureBackground(Operation):
         input_names = ['directory','this_temperature']
         output_names = ['background_q','background_I']
         super(SelectClosestTemperatureBackground, self).__init__(input_names, output_names)
+        # docstrings
         self.input_doc['directory'] = "path to directory with background .csv's and .txt headers in it"
         self.input_doc['this_temperature'] = "temperature we want to find a background for"
         self.output_doc['background_q'] = 'appropriate background q'
         self.output_doc['background_I'] = 'appropriate background I'
-        self.categories = ['MISC']
+        # source & type
+        self.input_src['directory'] = optools.fs_input
+        self.input_src['this_temperature'] = optools.wf_input
+        self.categories = ['1D DATA PROCESSING.BACKGROUND SUBTRACTION']
 
     def run(self):
         directory = self.inputs['directory']
@@ -100,6 +112,14 @@ class WriteCSV_q_I(Operation):
         input_names = ['q','I','image_location']
         output_names = ['csv_location']
         super(WriteCSV_q_I, self).__init__(input_names, output_names)
+        # docstrings
+        self.input_doc['q'] = "1d ndarray; independent variable"
+        self.input_doc['I'] = "1d ndarray; dependent variable; same shape as *q*"
+        self.input_doc['image_location'] = "string path to "
+
+        self.input_doc['this_temperature'] = "temperature we want to find a background for"
+        self.output_doc['background_q'] = 'appropriate background q'
+        self.output_doc['background_I'] = 'appropriate background I'
         # source & type
         self.input_src['q'] = optools.wf_input
         self.input_src['I'] = optools.wf_input
@@ -152,7 +172,7 @@ def find_csvs(directory):
     csvnames = []
     for ii in range(len(innames)):
         innameii = splitext(innames[ii])
-        if innameii[1] == 'csv':
+        if innameii[1] == '.csv':
             csvnames.append(innames[ii])
     return csvnames
 
