@@ -19,7 +19,7 @@ class WriteTemperatureIndex(Operation):
         self.output_doc['temperatures'] = 'temperatures from headers'
         self.output_doc['filenames'] = 'names of csvs'
         self.output_doc['temperature_index_file'] = 'csv-formatted file containing temperature indexed csv file names'
-        self.categories = ['MISC']
+        self.categories = ['INPUT.MISC','OUTPUT.MISC']
 
     def run(self):
         directory = self.inputs['directory']
@@ -55,7 +55,7 @@ class ReadTemperatureIndex(Operation):
         self.output_doc['temperatures'] = 'temperatures from headers'
         self.output_doc['filenames'] = 'names of csvs'
         self.output_doc['temperature_index_file'] = 'csv-formatted file containing temperature indexed csv file names'
-        self.categories = ['MISC']
+        self.categories = ['INPUT.MISC']
 
     def run(self):
         directory = self.inputs['directory']
@@ -100,7 +100,12 @@ class WriteCSV_q_I(Operation):
         input_names = ['q','I','image_location']
         output_names = ['csv_location']
         super(WriteCSV_q_I, self).__init__(input_names, output_names)
-        self.categories = ['MISC']
+        # source & type
+        self.input_src['q'] = optools.wf_input
+        self.input_src['I'] = optools.wf_input
+        self.input_src['image_location'] = optools.wf_input
+        self.input_type['image_location'] = optools.str_type
+        self.categories = ['OUTPUT']
 
     def run(self):
         csv_location = csvname_from_imagename(self.inputs['image_location'])
@@ -114,7 +119,13 @@ class WriteCSV_q_I_dI(Operation):
         input_names = ['q','I','dI','image_location']
         output_names = ['csv_location']
         super(WriteCSV_q_I_dI, self).__init__(input_names, output_names)
-        self.categories = ['MISC']
+        # source & type
+        self.input_src['q'] = optools.wf_input
+        self.input_src['I'] = optools.wf_input
+        self.input_src['dI'] = optools.wf_input
+        self.input_src['image_location'] = optools.wf_input
+        self.input_type['image_location'] = optools.str_type
+        self.categories = ['OUTPUT']
 
     def run(self):
         csv_location = csvname_from_imagename(self.inputs['image_location'])
@@ -146,13 +157,13 @@ def find_csvs(directory):
     return csvnames
 
 def txtname_from_csvname(csvname):
-    root = splitext(csvname)
-    headername = join(root, '.txt')
+    root = splitext(csvname)[0]
+    headername = root + '.txt'
     return headername
 
 def csvname_from_imagename(imagename):
-    root = splitext(imagename)
-    csvname = join(root, '.csv')
+    root = splitext(imagename)[0]
+    csvname = root + '.csv'
     return csvname
 
 
