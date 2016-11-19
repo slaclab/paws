@@ -13,7 +13,7 @@ class ReadTxtSSRL15(Operation):
 
     def __init__(self):
         input_names = ['file']
-        output_names = ['header']
+        output_names = ['header','header_file_name']
         super(ReadTxtSSRL15, self).__init__(input_names, output_names)
         self.input_doc['file'] = 'path to a text file header produced by beamline 1-5 at SSRL'
         self.output_doc['header'] = 'the header file as a python dictionary'
@@ -22,6 +22,7 @@ class ReadTxtSSRL15(Operation):
         self.categories = ['INPUT.SSRL 1-5']
 
     def run(self):
+        self.outputs['header_file_name'] = self.inputs['file']
         self.outputs['header'] = read_header(self.inputs['file'])
 
 
@@ -32,7 +33,7 @@ class ImageAndHeaderSSRL15(Operation):
 
     def __init__(self):
         input_names = ['file']
-        output_names = ['image', 'header']
+        output_names = ['image', 'header','image_file_name','header_file_name']
         super(ImageAndHeaderSSRL15, self).__init__(input_names, output_names)
         self.input_doc['file'] = 'path to a tif file image produced by beamline 1-5 at SSRL'
         self.output_doc['image'] = 'the image as an ndarray'
@@ -42,8 +43,10 @@ class ImageAndHeaderSSRL15(Operation):
         self.categories = ['INPUT.SSRL 1-5']
 
     def run(self):
-        self.outputs['image'] = tifffile.imread(self.inputs['file'])
+        self.outputs['image_file_name'] = self.inputs['file']
         txtname = txtname_from_tifname(self.inputs['file'])
+        self.outputs['header_file_name'] = txtname
+        self.outputs['image'] = tifffile.imread(self.inputs['file'])
         try:
             self.outputs['header'] = read_header(txtname)
         except IOError:
