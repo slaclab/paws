@@ -97,11 +97,8 @@ def line_to_dict_entries(line, sep, dict):
 
 def read_header(txtfile):
     """Pulls together mini-functions in correct order."""
-    print "read_header running on %s" % txtfile
     header = {}
-    print "empty header made"
     file = open(txtfile, 'r')
-    print "file opened"
     file.readline()  # pass first, commented line
     line = file.readline()
     firstline_to_dict_entries(line, header)
@@ -114,6 +111,5 @@ def read_header(txtfile):
             if len(line.strip()) > 0:
                 line_to_dict_entries(line, '=', header)
         line = file.readline()
-    print "header read"
     return header
 
