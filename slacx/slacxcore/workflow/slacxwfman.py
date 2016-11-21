@@ -716,10 +716,16 @@ class WfManager(TreeModel):
                 if src == optools.wf_input:
                     # Get the uri for this input
                     inp_uri = op.input_locator[name].val
-                    # Get the operation uri from the input uri
-                    op_uri = inp_uri.split('.')[0]
+                    uri_fields = inp_uri.split('.')
+                    op_uri = uri_fields[0]
+                    # Get the op.inout.name three-level uri
+                    uri_tl = uri_fields[0]+'.'+uri_fields[1]+'.'+uri_fields[2] 
                     # Check that the op exists in items_done 
                     if not op_uri in self.list_tags(QtCore.QModelIndex()): 
+                        op_rdy = False
+                    # TODO: I think the second of these two checks is the more complete.
+                    # Remove the first one when all is vetted at some future date.
+                    if not is_good_uri(uri_tl):
                         op_rdy = False
             if not item in items_done and op_rdy:
                 rdy.append(item)
