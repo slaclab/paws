@@ -28,6 +28,8 @@ def display_item(item,uri,qlayout,logmethod=None):
 
     if isinstance(item,Operation):
         op_widget = uitools.OpWidget(item)
+    else:
+        op_widget = None
 
     # Produce widgets for displaying arrays and MatPlotLib figures
     if isinstance(item,np.ndarray):

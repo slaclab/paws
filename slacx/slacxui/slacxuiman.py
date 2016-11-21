@@ -39,21 +39,8 @@ class UiManager(object):
         self.opman = opman 
         self.wfman = wfman 
 
-    def run_wf(self):
-        """
-        run the workflow
-        """
-        #self.msg_board_log('Executing current workflow')
-        # Check for a batch executor...
-        #self.msg_board_log('Determining execution method...')
-        if self.wfman.find_rt_items():
-            self.wfman.run_wf_realtime()
-        elif self.wfman.find_batch_items():
-            #self.msg_board_log('Start BATCH execution')
-            self.wfman.run_wf_batch()
-        else:
-            #self.msg_board_log('Start SERIAL execution')
-            self.wfman.run_wf_serial()
+#    def run_wf(self):
+#        self.wfman.run_wf()
 
     def edit_wf(self,trmod,item_indx=QtCore.QModelIndex()):
         """
@@ -168,14 +155,14 @@ class UiManager(object):
         self.ui.edit_wf_button.setText("&Edit")
         self.ui.edit_wf_button.clicked.connect( partial(self.edit_wf,self.wfman) )
         self.ui.run_wf_button.setText("&Run")
-        self.ui.run_wf_button.clicked.connect(self.run_wf)
+        self.ui.run_wf_button.clicked.connect(self.wfman.run_wf)
         self.ui.save_wf_button.setText("&Save")
         self.ui.save_wf_button.clicked.connect(partial(uitools.start_save_ui,self))
         self.ui.wf_tree.setModel(self.wfman)
         self.ui.op_tree.setModel(self.opman)
         self.ui.op_tree.hideColumn(1)
-        self.ui.op_tree.clicked.connect( self.ui.op_tree.expand ) 
-        self.ui.wf_tree.clicked.connect( self.ui.wf_tree.expand )
+        self.ui.op_tree.clicked.connect( partial(uitools.toggle_expand,self.ui.op_tree) ) 
+        self.ui.wf_tree.clicked.connect( partial(uitools.toggle_expand,self.ui.wf_tree) )
         self.ui.wf_tree.clicked.connect( self.display_item )
         self.ui.op_tree.doubleClicked.connect( partial(self.edit_wf,self.opman) )
         self.ui.wf_tree.doubleClicked.connect( partial(self.edit_wf,self.wfman) )

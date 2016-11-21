@@ -5,6 +5,7 @@ from collections import OrderedDict
 import copy
 
 from PySide import QtCore
+from functools import partial
 import dask.threaded
 import yaml
 
@@ -35,11 +36,18 @@ class WfManager(TreeModel):
         else:
             self.appref = None
         self._wf_dict = {}       
+        #print 'system thread count:'
+        self._n_threads = QtCore.QThread.idealThreadCount()
+        self._wf_threads = dict.fromkeys(range(self._n_threads)) 
+        # Set up a flag to indicate whether threads are available.
+        self._exec_ready = True 
+        if self.logmethod:
+            self.logmethod('Slacx workflow manager started, working with {} threads'.format(self._n_threads))
 
     def load_inputs(self,op):
         """
         Loads data for an Operation from that Operation's input_locator.
-        It is expected that op.input_locator[name] will refer to an InputLocator,
+        It is expected that op.input_locator[name] will refer to an InputLocator.
         """
         # TODO: Migrate this to slacxop.Operation
         for name,il in op.input_locator.items():
@@ -118,6 +126,7 @@ class WfManager(TreeModel):
         Load things in to the Workflow from an OpManager and a YAML .wfl file 
         """
         # TODO: Migrate to own module
+        # TODO: Clear or store the current workflow
         f = open(wfl, "r")
         dct = yaml.load(f)
         f.close()
@@ -205,7 +214,7 @@ class WfManager(TreeModel):
         self.endRemoveRows()
         # TODO: update any Operations that depended on the removed one
         if isinstance(item_removed.data,Operation):
-            self.update_io_deps(item.tag(),item_removed.data)
+            self.update_io_deps(item_removed.tag(),item_removed.data)
 
     def update_op(self,uri,new_op):
         """
@@ -221,6 +230,7 @@ class WfManager(TreeModel):
         item.data = new_op
         item.set_long_tag( new_op.__doc__ )
         # Update the op subtrees
+        # TODO: Try this with a call to TreeModel.dataChanged() instead?
         self.build_io_subtrees(new_op,indx)
 
     def update_io_deps(self,uri,current_op,new_op=None):
@@ -261,9 +271,9 @@ class WfManager(TreeModel):
             # If any input locators are set to this uri, clobber them.
             for name,il in op.input_locator.items():
                 if il.val == uri:
-                    # TODO: Decide whether better to use default InputLocator() or None
                     op.input_locator[name] = optools.InputLocator()
                     # Update the op that has been changed.
+                    # TODO: Do this with a call to TreeModel.dataChanged()?
                     self.build_io_subtrees(op,indx)
 
     def list_from_widget(self,widg):
@@ -416,10 +426,10 @@ class WfManager(TreeModel):
         self.load_inputs(op)
         if self.logmethod:
             self.logmethod('Running {}'.format(str(item.tag())))
+        #op_thread = slacxtools.OpExecThread(op,self)
+        #op_thread.start()
         op.run()
         self.update_op(item.tag(),op)
-        if self.appref:
-            self.appref.processEvents()
 
     def run_deps(self,item):
        deps = self.upstream_list(item)
@@ -428,6 +438,59 @@ class WfManager(TreeModel):
                self.logmethod('Running dependencies for {}: {}'.format(item, [dep.tag() for dep in deps]))
            for dep in deps:
                self.run_and_update(item)
+
+    def run_wf(self):
+        if self.find_rt_items():
+            self.run_wf_realtime()
+        elif self.find_batch_items():
+            self.run_wf_batch()
+        else:
+            self.run_wf_serial()
+
+    def next_available_thread(self):
+        for idx,th in self._wf_threads.items():
+            if not th:
+                self._exec_ready = True
+                return idx
+        self._exec_ready = False
+        return None
+
+    def run_wf_serial(self,to_run=None):
+        """
+        Run the workflow by building a serial dependency list 
+        and running the listed operations in order. 
+        """
+        if self.logmethod:
+            self.logmethod('starting serial execution.')
+        if not to_run:
+            to_run = self.serial_execution_list()
+        # Find the next available thread
+        th_idx = self.next_available_thread()
+        while not self._exec_ready:
+            # Check again in a few seconds    
+            time.sleep(3)
+            if self.logmethod:
+                self.logmethod('Found no threads available, waiting...')
+            th_idx = self.next_available_thread()
+        wf_wkr = slacxtools.WfWorker(self,to_run)
+        #wf_thread = QtCore.QThread(self)
+        #wf_wkr.moveToThread(wf_thread)
+        #self._wf_threads[th_idx] = wf_thread
+        #if self.logmethod:
+        #    self.logmethod('Starting execution in thread {}.'.format(th_idx))
+        #wf_thread.started.connect(wf_wkr.work)
+        #wf_thread.finished.connect( partial(self.finish_thread,th_idx) )
+        #import pdb; pdb.set_trace()
+        #wf_thread.start()
+        wf_wkr.work()
+
+    def finish_thread(self,th_idx):
+        print 'finished execution in thread {}.'.format(th_idx)
+        if self.logmethod:
+            self.logmethod('finished execution in thread {}.'.format(th_idx))
+        self._wf_threads[th_idx].quit()
+        #self._wf_threads[th_idx].exit(0)
+        self._wf_threads[th_idx] = None
 
     def run_wf_realtime(self):
         """
@@ -444,9 +507,13 @@ class WfManager(TreeModel):
                 if self.logmethod:
                     self.logmethod( 'Running dependencies... ' )
                 self.run_deps(rt_item)
+                if self.appref:
+                    self.appref.processEvents()
                 if self.logmethod:
                     self.logmethod( 'Preparing Realtime controller... ' )
                 self.run_and_update(rt_item)
+                if self.appref:
+                    self.appref.processEvents()
             #try:
             if self.logmethod:
                 self.logmethod( 'To infinity... ' )
@@ -471,6 +538,8 @@ class WfManager(TreeModel):
                         rt.output_list().append(self.ops_as_dict(to_run))
                         # Update rt to load results
                         self.update_op(rt_item.tag(),rt)
+                    if self.appref:
+                        self.appref.processEvents()
                     # sleep as long as the rt controller says
                     time.sleep(rt.delay())
             #except UserPushedStopButtonException as ex:
@@ -500,9 +569,13 @@ class WfManager(TreeModel):
                 if self.logmethod:
                     self.logmethod( 'Running dependencies... ' )
                 self.run_deps(b_item)
+                if self.appref:
+                    self.appref.processEvents()
                 if self.logmethod:
                     self.logmethod( 'Preparing Batch controller... ' )
                 self.run_and_update(b_item)
+                if self.appref:
+                    self.appref.processEvents()
                 b = b_item.data
                 # After b.run(), it is expected that b.input_list()
                 # will produce a list of dicts, where each dict has the form [workflow tree uri:input value]. 
@@ -518,6 +591,9 @@ class WfManager(TreeModel):
                     to_run = self.downstream_ops(b_item)
                     self.run_wf_serial(to_run)
                     b.output_list()[i]=self.ops_as_dict(to_run)
+                    self.update_op(b_item.tag(),b)
+                    if self.appref:
+                        self.appref.processEvents()
                 # Update b to load results
                 self.update_op(b_item.tag(),b)
                 if self.logmethod:
@@ -639,27 +715,14 @@ class WfManager(TreeModel):
                 if src == optools.wf_input:
                     # Get the uri for this input
                     inp_uri = op.input_locator[name].val
-                    # Check that the uri points to a thing that exists in this WfManager(TreeModel) 
-                    if not self.is_good_uri(inp_uri):
+                    # Get the operation uri from the input uri
+                    op_uri = inp_uri.split('.')[0]
+                    # Check that the op exists in items_done 
+                    if not op_uri in self.list_tags(QtCore.QModelIndex()): 
                         op_rdy = False
             if not item in items_done and op_rdy:
                 rdy.append(item)
         return rdy 
-
-    def run_wf_serial(self,to_run=None):
-        """
-        Run the workflow by building a serial dependency list 
-        and running the listed operations in order. 
-        """
-        # TODO: Execute workflow in its own thread.
-        if self.logmethod:
-            self.logmethod('starting serial execution.')
-        if not to_run:
-            to_run = self.serial_execution_list()
-        for item in to_run:
-            self.run_and_update(item)
-        if self.logmethod:
-            self.logmethod('finished serial execution.')
 
     def get_from_uri(self, uri):
         """Get from this tree the item at the given uri."""

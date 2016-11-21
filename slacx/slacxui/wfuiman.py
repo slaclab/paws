@@ -397,6 +397,7 @@ class WfUiManager(object):
         src_ui.tree.resizeColumnToContents(0)
         src_ui.load_button.setText('Load selected data')
         src_ui.load_button.clicked.connect(partial(self.set_input,name))
+        src_ui.tree.clicked.connect( partial(uitools.toggle_expand,src_ui.tree) )
         src_ui.tree.doubleClicked.connect(partial(self.set_input,name))
         if src == optools.fs_input:
             src_ui.tree.hideColumn(1)
@@ -405,7 +406,7 @@ class WfUiManager(object):
         src_ui.show()
         src_ui.raise_()
         src_ui.activateWindow()
-        
+
     def setup_ui(self):
         self.ui.setWindowTitle("workflow setup")
         self.ui.input_box.setTitle("INPUTS")
@@ -426,6 +427,8 @@ class WfUiManager(object):
         self.ui.op_selector.setModel(self.opman)
         self.ui.op_selector.hideColumn(1)
         self.ui.op_selector.clicked.connect( partial(self.get_op,self.opman) )
+        self.ui.op_selector.clicked.connect( partial(uitools.toggle_expand,self.ui.op_selector) ) 
+        self.ui.wf_selector.clicked.connect( partial(uitools.toggle_expand,self.ui.wf_selector) )
         #self.ui.op_selector.activated.connect( partial(self.get_op,self.opman) )
         # Populate uri entry fields
         self.ui.uri_prompt.setText('operation uri:')

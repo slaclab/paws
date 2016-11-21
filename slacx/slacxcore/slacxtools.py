@@ -16,6 +16,40 @@ class LazyCodeError(Exception):
     def __init__(self,msg):
         super(LazyCodeError,self).__init__(self,msg)
 
+class OpExecThread(QtCore.QThread):
+    """Thread subclass for executing an Operation"""
+
+    def __init__(self,op,parent=None):
+        super(OpExecThread,self).__init__(parent)
+        self.op = op 
+
+    def run(self):
+        """Calling QThread.start() is expected to cause this run() method to run"""
+        self.op.run()
+        # Start event handler:
+        self.exec_()
+
+class WfWorker(QtCore.QObject):
+    """
+    Container for storing and executing parts of a workflow,
+    to be pushed onto QtCore.QThread(s) as needed.
+    """
+
+    def __init__(self,wfman,to_run=None,parent=None):
+        super(WfWorker,self).__init__(parent)
+        self.wfman = wfman
+        self.to_run = to_run
+
+    def work(self):
+        #print 'called work'
+        #self.wfman.logmethod('called work')
+        for item in self.to_run:
+        #    print 'run {}'.format(item.tag())
+        #    self.wfman.logmethod( 'run {}'.format(item.tag()) )
+            self.wfman.run_and_update(item)
+        #print 'quitting thread...'
+        #self.thread().quit()
+
 class FileSystemIterator(Iterator):
 
     def __init__(self,dirpath,regex):
