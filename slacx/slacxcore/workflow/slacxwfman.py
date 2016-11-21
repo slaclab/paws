@@ -94,16 +94,17 @@ class WfManager(TreeModel):
             return val
         elif src == optools.wf_input:
             io_type = val.split('.')[1]
-            # So far this supports two scenarios:
             if io_type == 'Outputs':
                 # 1) val is a uri pointing to an op output. 
                 # Return data by getting it from the uri.
                 item, indx = self.get_from_uri(val)
                 return item.data
             elif io_type == 'Inputs':
-                # 2) val is an input uri for setting values during execution.
-                # Return the uri directly.
-                return val
+                # 2) val is an input uri, and we should trust that this input has been loaded.
+                # Grab the data from the InputLocator at that uri and return it.
+                item, indx = self.get_from_uri(val)
+                il = item.data 
+                return il.data
         elif src == optools.fs_input:
             return val 
         elif src == optools.batch_input:

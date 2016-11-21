@@ -409,8 +409,8 @@ class WfUiManager(object):
 
     def setup_ui(self):
         self.ui.setWindowTitle("workflow setup")
-        self.ui.input_box.setTitle("INPUTS")
-        self.ui.output_box.setTitle("OUTPUTS")
+        self.ui.input_box.setTitle("{} INPUTS".format(type(self.op).__name__))
+        self.ui.output_box.setTitle("{} OUTPUTS".format(type(self.op).__name__))
         self.ui.finish_box.setTitle("FINISH / LOAD")
         #self.ui.input_box.setMinimumWidth(600)
         #self.ui.op_frame.setMinimumWidth(400)
