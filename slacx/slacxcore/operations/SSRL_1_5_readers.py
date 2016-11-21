@@ -47,11 +47,16 @@ class ImageAndHeaderSSRL15(Operation):
         txtname = txtname_from_tifname(self.inputs['file'])
         self.outputs['header_file_name'] = txtname
         self.outputs['image'] = tifffile.imread(self.inputs['file'])
+        print "image read from %s" % self.inputs['file']
         try:
             self.outputs['header'] = read_header(txtname)
+            print "header read successfully"
         except IOError:
             print "No corresponding header to file %s was found." % self.inputs['file']
             self.outputs['header'] = {}
+        except:
+            print "some other error occured?"  ###
+        print "ImageAndHeaderSSRL15 returning"
 
 
 
@@ -97,6 +102,7 @@ def line_to_dict_entries(line, sep, dict):
 
 def read_header(txtfile):
     """Pulls together mini-functions in correct order."""
+    print "read_header running"
     header = {}
     file = open(txtfile, 'r')
     file.readline()  # pass first, commented line
@@ -106,10 +112,29 @@ def read_header(txtfile):
         line = file.readline()  # scroll forward to temp line
     header['temp_celsius'] = float(line[:-2])  # read temperature
     line = file.readline()
+    print "looping over remainder" ###
     while len(line) > 0:
+        print line
         if not (line[0] == '#'):
             if len(line.strip()) > 0:
                 line_to_dict_entries(line, '=', header)
         line = file.readline()
     return header
 
+def readfortest(imfile):
+    image = tifffile.imread(imfile)
+    txtname = txtname_from_tifname(imfile)
+    try:
+        header = read_header(txtname)
+        print "header read successfully"
+    except IOError:
+        print "No corresponding header to file %s was found." % imfile
+        header = {}
+#    except:
+#        print "some other error occured?"  ###
+    print "readfortest returning"
+
+'''
+imfile = "/Users/Amanda/Data20161118/R1/R1_2rdcool1_0001.tif"
+readfortest(imfile)
+'''

@@ -43,9 +43,7 @@ class WriteTemperatureIndex(Operation):
         outfile = open(outloc, 'w')
         outfile.write("#TEMPCELSIUS,FILENAME")
         for ii in range(len(csvnames)):
-            #csvmsg ='"%s"'% csvnames[ii]
-            csvmsg = csvnames[ii]
-            msg = str(temperatures[ii])+","+csvmsg+linesep
+            msg = str(temperatures[ii])+","+csvnames[ii]+linesep
             outfile.write(msg)
         outfile.close()
         self.outputs['filenames'] = csvnames
@@ -126,18 +124,25 @@ class SelectClosestTemperatureBackgroundFromHeader(Operation):
         self.categories = ['1D DATA PROCESSING.BACKGROUND SUBTRACTION']
 
     def run(self):
+        print "SelectClosestTemperatureBackgroundFromHeader running"
+        print "directory is", self.inputs['directory']
         directory = self.inputs['directory']
+        print "temperature is", self.inputs['this_header']['temp_celsius']
         this_temperature = self.inputs['this_header']['temp_celsius']
         indexname = 'temperature_index.csv'
         indexloc = join(directory,indexname)
+        print "looking for index file at %s" % indexloc
         temperatures = np.loadtxt(indexloc, dtype=float, delimiter=',', skiprows=1, usecols=(0,))
+        print "temperatures read"
         filenames = np.loadtxt(indexloc, dtype=str, delimiter=',', skiprows=1, usecols=(1,))
+        print "file names read"
         diff = np.fabs(temperatures - this_temperature)
         index_of_best_temp = np.where(diff == diff.min())[0][0]
         file_of_best_temp = filenames[index_of_best_temp]
-        print "file_of_best_temp", file_of_best_temp
+        print "background file %s selected" % file_of_best_temp
         q, I = read_csv_q_I(file_of_best_temp)
-        print "q, I read",
+        print "background q, I read from %s" % file_of_best_temp
+        print "q.shape, I.shape, q.dtype, I.dtype", q.shape, I.shape, q.dtype, I.dtype
         self.outputs['background_q'] = q
         self.outputs['background_I'] = I
 
@@ -194,14 +199,14 @@ def write_csv_q_I(q, I, nameloc):
     datablock = np.zeros((q.size,2),dtype=float)
     datablock[:,0] = q
     datablock[:,1] = I
-    np.savetxt(nameloc, datablock, delimiter=',', newline=linesep, header='#q,I')
+    np.savetxt(nameloc, datablock, delimiter=',', newline=linesep, header='q, I')
 
 def write_csv_q_I_dI(q, I, dI, nameloc):
     datablock = np.zeros((q.size,3),dtype=float)
     datablock[:,0] = q
     datablock[:,1] = I
     datablock[:,2] = dI
-    np.savetxt(nameloc, datablock, delimiter=',', newline=linesep, header='#q,I')
+    np.savetxt(nameloc, datablock, delimiter=',', newline=linesep, header='q, I')
 
 
 def find_csvs(directory):

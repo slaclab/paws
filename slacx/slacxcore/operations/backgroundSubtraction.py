@@ -1,4 +1,5 @@
 import numpy as np
+
 from slacxop import Operation
 import optools
 
@@ -49,6 +50,7 @@ class SubtractMaximumBackgroundWithErrors(Operation):
                                                     self.inputs['foreground_error'], self.inputs['background_error'])
 
 def subtract_maximum_background_no_errors(foreground, background):
+    print "NaNs in foreground, background?", np.any(np.isnan(foreground)), np.any(np.isnan(background))
     factor = np.min(foreground / background)
     subtracted = foreground - (factor * background)
     return subtracted, factor
