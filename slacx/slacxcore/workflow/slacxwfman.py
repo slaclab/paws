@@ -725,7 +725,7 @@ class WfManager(TreeModel):
                         op_rdy = False
                     # TODO: I think the second of these two checks is the more complete.
                     # Remove the first one when all is vetted at some future date.
-                    if not is_good_uri(uri_tl):
+                    if not self.is_good_uri(uri_tl):
                         op_rdy = False
             if not item in items_done and op_rdy:
                 rdy.append(item)
