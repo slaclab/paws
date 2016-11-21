@@ -135,6 +135,7 @@ def readfortest(imfile):
     print "readfortest returning"
 
 '''
+# change
 imfile = "/Users/Amanda/Data20161118/R1/R1_2rdcool1_0001.tif"
 readfortest(imfile)
 '''
