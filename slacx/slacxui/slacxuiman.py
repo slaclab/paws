@@ -145,20 +145,21 @@ class UiManager(object):
 
     # TODO: Make this functionality work, but with signals and slots
     def run_wf(self):
-        #self.ui.run_wf_button.setText("S&top")
+    #    self.ui.run_wf_button.setText("S&top")
         self.wfman.run_wf()
-        #self.ui.run_wf_button.clicked.disconnect()
-        #self.ui.run_wf_button.clicked.connect(self.stop_wf)
+    #    self.ui.run_wf_button.clicked.disconnect(self.run_wf)
+    #    self.ui.run_wf_button.clicked.connect(self.wfman.stop_wf)
+    #    self.ui.run_wf_button.clicked.connect(self.reset_wf_button)
 
-    #def stop_wf(self):
+    #def reset_wf_button(self):
     #    self.ui.run_wf_button.setText("&Run")
-    #    self.wfman.stop_wf()
-    #    self.ui.run_wf_button.clicked.disconnect()
+    #    self.ui.run_wf_button.clicked.disconnect(self.wfman.stop_wf)
+    #    self.ui.run_wf_button.clicked.disconnect(self.reset_wf_button)
     #    self.ui.run_wf_button.clicked.connect(self.run_wf)
 
     def connect_actions(self):
         """Set up the works for buttons and menu items"""
-        self.ui.add_op_button.setText("Load Operations")
+        self.ui.add_op_button.setText("Edit Workflow")
         #self.ui.add_op_button.clicked.connect(self.add_ops)
         self.ui.add_op_button.clicked.connect( partial(self.edit_wf,self.opman) )
         self.ui.edit_op_button.setText("Edit Operations")
@@ -169,6 +170,9 @@ class UiManager(object):
         self.ui.edit_wf_button.clicked.connect( partial(self.edit_wf,self.wfman) )
         self.ui.run_wf_button.setText("&Run")
         self.ui.run_wf_button.clicked.connect(self.run_wf)
+        #self.reset_wf_button()
+        #self.ui.run_wf_button.clicked.connect(self.reset_wf_button)
+        #self.wfman.wfdone.connect(self.reset_wf_button)
         self.ui.save_wf_button.setText("&Save")
         self.ui.save_wf_button.clicked.connect(partial(uitools.start_save_ui,self))
         self.ui.wf_tree.setModel(self.wfman)

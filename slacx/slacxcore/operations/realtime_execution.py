@@ -53,7 +53,8 @@ class RealtimeFromFiles(Realtime):
 
     @staticmethod
     def delay():
-        return 5
+        """Amount of time to wait between execution attempts, in milliseconds"""
+        return 1000
 
 
 

@@ -43,9 +43,9 @@ class WfWorker(QtCore.QObject):
         self.to_run = to_run
 
     def work(self):
-        print 'called work'
+        #print 'called work'
         for item in self.to_run:
-            print 'worker run {}'.format(item.tag())
+        #    print 'worker run {}'.format(item.tag())
             self.wfman.run_and_update(item)
         # Finish the thread by emitting a finished signal
         #self.finished.emit()
