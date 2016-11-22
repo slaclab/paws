@@ -34,6 +34,8 @@ class WfWorker(QtCore.QObject):
     Container for storing and executing parts of a workflow,
     to be pushed onto QtCore.QThread(s) as needed.
     """
+    
+    finished = QtCore.Signal()
 
     def __init__(self,wfman,to_run=None,parent=None):
         super(WfWorker,self).__init__(parent)
@@ -41,14 +43,15 @@ class WfWorker(QtCore.QObject):
         self.to_run = to_run
 
     def work(self):
-        #print 'called work'
-        #self.wfman.logmethod('called work')
+        print 'called work'
         for item in self.to_run:
-        #    print 'run {}'.format(item.tag())
-        #    self.wfman.logmethod( 'run {}'.format(item.tag()) )
+            print 'worker run {}'.format(item.tag())
             self.wfman.run_and_update(item)
-        #print 'quitting thread...'
-        #self.thread().quit()
+        # Finish the thread by emitting a finished signal
+        #self.finished.emit()
+        #self.thread().finished.emit()
+        # Or maybe just fucking quit?
+        self.thread().quit()
 
 class FileSystemIterator(Iterator):
 

@@ -54,6 +54,7 @@ class BatchFromFiles(Batch):
         return self.outputs['batch_outputs']
 
     def input_routes(self):
-        return [ self.inputs['input_route'] ]
+        """Use the Batch.input_locators to list uri's of all input routes"""
+        return [ self.input_locator['input_route'].val ]
 
 

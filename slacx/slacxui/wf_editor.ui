@@ -67,6 +67,9 @@
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_2">
        <item>
+        <widget class="QLineEdit" name="op_name"/>
+       </item>
+       <item>
         <widget class="QGroupBox" name="input_box">
          <property name="title">
           <string>GroupBox</string>

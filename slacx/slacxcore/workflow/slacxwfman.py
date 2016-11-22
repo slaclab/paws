@@ -37,12 +37,15 @@ class WfManager(TreeModel):
             self.appref = None
         self._wf_dict = {}       
         #print 'system thread count:'
-        self._n_threads = QtCore.QThread.idealThreadCount()
+        #self._n_threads = QtCore.QThread.idealThreadCount()
+        self._n_threads = 1
         self._wf_threads = dict.fromkeys(range(self._n_threads)) 
         # Set up a flag to indicate whether threads are available.
         self._exec_ready = True 
         if self.logmethod:
             self.logmethod('Slacx workflow manager started, working with {} threads'.format(self._n_threads))
+        # Set up a flag to indicate whether or not to stop execution.
+        self._keep_going = True
 
     def load_inputs(self,op):
         """
@@ -54,19 +57,21 @@ class WfManager(TreeModel):
             if isinstance(il,InputLocator):
                 src = il.src
                 if not src == optools.batch_input:
-                    il.data = self.locate_input(il)
+                    il.data = self.locate_input(il,op)
                     op.inputs[name] = il.data
                 else:
-                    # batch executor should have already set the input
+                    # batch executor will have already set the input
                     il.data = op.inputs[name]
             else:
                 msg = '[{}] Found broken Operation.input_locator for {}: {}'.format(
                 __name__, name, il)
                 raise ValueError(msg)
 
-    def locate_input(self,inplocator):
+    def locate_input(self,inplocator,op):
         """
         Return the data pointed to by a given InputLocator object.
+        Takes the Operation that owns this inplocator as a second arg,
+        so it can be checked for special routing (e.g. batch input routes)
         """
         # TODO: Migrate this to slacxop.Operation
         #if isinstance(inplocator,InputLocator):
@@ -100,15 +105,23 @@ class WfManager(TreeModel):
                 item, indx = self.get_from_uri(val)
                 return item.data
             elif io_type == 'Inputs':
-                # 2) val is an input uri, and we should trust that this input has been loaded.
-                # Grab the data from the InputLocator at that uri and return it.
-                item, indx = self.get_from_uri(val)
-                il = item.data 
-                return il.data
+                inprouteflag = False
+                if isinstance(op,Batch) or isinstance(op,Realtime):
+                    inprouteflag = val in op.input_routes()
+                if not inprouteflag:
+                    # 2a) val is an input uri, and we should trust that this input has been loaded.
+                    # Grab the data from the InputLocator at that uri and return it.
+                    item, indx = self.get_from_uri(val)
+                    il = item.data 
+                    return il.data
+                else:
+                    # 2b) val is the uri used to direct batch executor in setting data.
+                    # It should be returned directly- the batch will use it as is.
+                    return val
         elif src == optools.fs_input:
             return val 
         elif src == optools.batch_input:
-            # Trust the Batch executor has set the input values.
+            # Trust the Batch executor will set the input values.
             # Do nothing, return val.
             return val 
         else: 
@@ -440,6 +453,9 @@ class WfManager(TreeModel):
            for dep in deps:
                self.run_and_update(item)
 
+    def stop_wf(self):
+        self._keep_going = False
+
     def run_wf(self):
         if self.find_rt_items():
             self.run_wf_realtime()
@@ -451,8 +467,19 @@ class WfManager(TreeModel):
     def next_available_thread(self):
         for idx,th in self._wf_threads.items():
             if not th:
+                print 'no treads, exec ready!'
                 self._exec_ready = True
                 return idx
+            else:
+                if th.isFinished():
+                    print 'thread finished, exec ready!'
+                    th.finished.emit()
+                    self._exec_ready = True
+                    return idx
+        for idx,th in self._wf_threads.items():
+            print 'thread {} running: {}'.format(idx,th.isRunning())
+#        if self._wf_threads[0].isFinished():
+#            self._wf_threads[0].finished.emit()
         self._exec_ready = False
         return None
 
@@ -461,35 +488,49 @@ class WfManager(TreeModel):
         Run the workflow by building a serial dependency list 
         and running the listed operations in order. 
         """
+        #mainthread = QtCore.QThread.currentThread()
+        #import pdb; pdb.set_trace()
         if self.logmethod:
             self.logmethod('starting serial execution.')
+            print 'starting serial execution.'
         if not to_run:
             to_run = self.serial_execution_list()
         # Find the next available thread
         th_idx = self.next_available_thread()
         while not self._exec_ready:
+            self.appref.processEvents()
             # Check again in a few seconds    
-            time.sleep(3)
-            if self.logmethod:
-                self.logmethod('Found no threads available, waiting...')
+            #time.sleep(1)
+            print 'Execution thread running...'
+            # TODO: Set a QTimer that checks exec ready?
             th_idx = self.next_available_thread()
+        #wf_wkr = slacxtools.WfWorker(copy.deepcopy(self),copy.deepcopy(to_run))
         wf_wkr = slacxtools.WfWorker(self,to_run)
-        #wf_thread = QtCore.QThread(self)
-        #wf_wkr.moveToThread(wf_thread)
-        #self._wf_threads[th_idx] = wf_thread
+        wf_thread = QtCore.QThread(self)
+        wf_wkr.moveToThread(wf_thread)
+        self._wf_threads[th_idx] = wf_thread
         #if self.logmethod:
         #    self.logmethod('Starting execution in thread {}.'.format(th_idx))
-        #wf_thread.started.connect(wf_wkr.work)
-        #wf_thread.finished.connect( partial(self.finish_thread,th_idx) )
+        wf_thread.started.connect(wf_wkr.work)
+        wf_thread.finished.connect( partial(self.finish_thread,th_idx) )
+        wf_thread.start()
+        # Calling wf_thread.wait() hands over control to wf_thread.
+        # i.e. this makes the current thread wait on wf_thread.
+        self.appref.processEvents()
+        wf_thread.wait()
+        self.appref.processEvents()
+        #QtCore.QThread.wait(wf_thread)
+        #wf_wkr.finished.connect(wf_thread.quit)
+        #wf_wkr.finished.connect(wf_thread.deleteLater)
+        #wf_wkr.finished.connect(wf_wkr.deleteLater)
+        #wf_thread.finished.connect( wf_wkr.deleteLater )
         #import pdb; pdb.set_trace()
-        #wf_thread.start()
-        wf_wkr.work()
+        #import pdb; pdb.set_trace()
 
     def finish_thread(self,th_idx):
-        print 'finished execution in thread {}.'.format(th_idx)
         if self.logmethod:
             self.logmethod('finished execution in thread {}.'.format(th_idx))
-        self._wf_threads[th_idx].quit()
+        #self._wf_threads[th_idx].quit()
         #self._wf_threads[th_idx].exit(0)
         self._wf_threads[th_idx] = None
 
@@ -508,17 +549,14 @@ class WfManager(TreeModel):
                 if self.logmethod:
                     self.logmethod( 'Running dependencies... ' )
                 self.run_deps(rt_item)
-                if self.appref:
-                    self.appref.processEvents()
+                #if self.appref:
+                #    self.appref.processEvents()
                 if self.logmethod:
                     self.logmethod( 'Preparing Realtime controller... ' )
                 self.run_and_update(rt_item)
-                if self.appref:
-                    self.appref.processEvents()
-            #try:
-            if self.logmethod:
-                self.logmethod( 'To infinity... ' )
-            while True:
+                #if self.appref:
+                #    self.appref.processEvents()
+            while self._keep_going:
                 for rt_item in rt_items:
                     rt = rt_item.data
                     # After rt.run(), it is expected that rt.input_iter()
@@ -539,10 +577,22 @@ class WfManager(TreeModel):
                         rt.output_list().append(self.ops_as_dict(to_run))
                         # Update rt to load results
                         self.update_op(rt_item.tag(),rt)
-                    if self.appref:
-                        self.appref.processEvents()
+                    #if self.appref:
+                    #    self.appref.processEvents()
                     # sleep as long as the rt controller says
-                    time.sleep(rt.delay())
+                    #time.sleep(rt.delay())
+                    # let the app processEvents()
+                    #self.appref.processEvents()
+                    # start a local event loop to pause without busywaiting
+                    l = QtCore.QEventLoop()
+                    # start a timer to kill the event loop
+                    t = QtCore.QTimer()
+                    t.setSingleShot(True)
+                    t.timeout.connect(l.quit)
+                    t.start(1000)
+                    l.exec_()
+            # Presume we exited the above loop cleanly and mean to be ready-to-go again.
+            self._keep_going = True
             #except UserPushedStopButtonException as ex:
             #   exit gracefully
             #except Exception as ex:
@@ -570,44 +620,28 @@ class WfManager(TreeModel):
                 if self.logmethod:
                     self.logmethod( 'Running dependencies... ' )
                 self.run_deps(b_item)
-                if self.appref:
-                    self.appref.processEvents()
                 if self.logmethod:
                     self.logmethod( 'Preparing Batch controller... ' )
                 self.run_and_update(b_item)
-                if self.appref:
-                    self.appref.processEvents()
                 b = b_item.data
                 # After b.run(), it is expected that b.input_list()
                 # will produce a list of dicts, where each dict has the form [workflow tree uri:input value]. 
-                #try:
                 for i in range(len(b.input_list())):
-                    input_dict = b.input_list()[i]
-                    for uri,val in input_dict.items():
-                        self.set_op_input_at_uri(uri,val)
-                    # Inputs are set, run in serial 
-                    if self.logmethod:
-                        self.logmethod( 'Running batch {} / {}'.format(i,len(b.input_list())-1) )
-                    #to run = b.downstream_ops()
-                    to_run = self.downstream_ops(b_item)
-                    self.run_wf_serial(to_run)
-                    b.output_list()[i]=self.ops_as_dict(to_run)
-                    self.update_op(b_item.tag(),b)
-                    if self.appref:
-                        self.appref.processEvents()
+                    if self._keep_going:
+                        input_dict = b.input_list()[i]
+                        for uri,val in input_dict.items():
+                            self.set_op_input_at_uri(uri,val)
+                        # Inputs are set, run in serial 
+                        if self.logmethod:
+                            self.logmethod( 'Running batch {} / {}'.format(i,len(b.input_list())-1) )
+                        to_run = self.downstream_ops(b_item)
+                        self.run_wf_serial(to_run)
+                        b.output_list()[i]=self.ops_as_dict(to_run)
+                        self.update_op(b_item.tag(),b)
                 # Update b to load results
-                self.update_op(b_item.tag(),b)
+                #self.update_op(b_item.tag(),b)
                 if self.logmethod:
                     self.logmethod( 'Batch execution complete.' )
-                #except Exception as ex:
-                #    ex.message = 'Batch seems to have failed. Error message: {}'.format(ex.message)
-                #    # Save any work that did finish:
-                #    self.update_op(b_item.tag(),b)
-                #    tb = traceback.format_exc()
-                #    if self.logmethod:
-                #        self.logmethod(ex.message)
-                #        self.logmethod(tb)
-                #    raise ex
 
     def set_op_input_at_uri(self,uri,val):
         """Set an op input, indicated by uri, to provided value."""
@@ -717,14 +751,11 @@ class WfManager(TreeModel):
                     # Get the uri for this input
                     inp_uri = op.input_locator[name].val
                     uri_fields = inp_uri.split('.')
-                    op_uri = uri_fields[0]
+                    #op_uri = uri_fields[0]
+                    #if not op_uri in self.list_tags(QtCore.QModelIndex()): 
+                    #    op_rdy = False
                     # Get the op.inout.name three-level uri
                     uri_tl = uri_fields[0]+'.'+uri_fields[1]+'.'+uri_fields[2] 
-                    # Check that the op exists in items_done 
-                    if not op_uri in self.list_tags(QtCore.QModelIndex()): 
-                        op_rdy = False
-                    # TODO: I think the second of these two checks is the more complete.
-                    # Remove the first one when all is vetted at some future date.
                     if not self.is_good_uri(uri_tl):
                         op_rdy = False
             if not item in items_done and op_rdy:
@@ -803,7 +834,7 @@ class WfManager(TreeModel):
             for name,val in op.inputs.items():
                 # Add a locate_input line for each input 
                 dask_key = 'op'+str(j)+'inp'+str(keyindx)
-                self._wf_dict[dask_key] = (self.locate_input, val)
+                self._wf_dict[dask_key] = (self.locate_input, val, op)
                 keyindx += 1
                 input_keys.append(name)
                 input_vals = input_vals + (dask_key)

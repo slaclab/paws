@@ -142,12 +142,12 @@ class WfUiManager(object):
         """
         src,src_ui = self.inp_src_windows[name]
         trview = src_ui.tree
+        type_widg = self.type_widgets[name]
+        val_widg = self.val_widgets[name]
         if not item_indx or not item_indx.isValid():
             # Get the selected item in QTreeView trview:
             item_indx = trview.currentIndex()
         if item_indx.isValid():
-            type_widg = self.type_widgets[name]
-            val_widg = self.val_widgets[name]
             if src == optools.fs_input:
                 # Get the path of the selection
                 item_uri = trview.model().filePath(item_indx)
@@ -205,6 +205,7 @@ class WfUiManager(object):
             msg_ui.show()
 
     def clear_nameval_list(self):
+        self.ui.op_name.setText(' ')
         n_inp_widgets = self.ui.input_layout.count()
         for i in range(n_inp_widgets-1,-1,-1):
             item = self.ui.input_layout.takeAt(i)
@@ -221,6 +222,7 @@ class WfUiManager(object):
             self.srcwindow_safe_close(name)
 
     def srcwindow_safe_close(self,name):
+        # TODO: Anything more graceful here.
         old_widg = self.inp_src_windows.pop(name)[1]
         try:
             old_widg.close()
@@ -236,13 +238,11 @@ class WfUiManager(object):
         self.clear_input_windows()
         inp_count = len(self.op.inputs)
         out_count = len(self.op.outputs)
-        #self.input_rows = []
-        #print 'found {} inputs to render'.format(inp_count)
+        self.ui.op_name.setText(type(self.op).__name__)
         if inp_count:
             self.input_header_widgets(0)
             i=1
             for name in self.op.inputs.keys():
-                #print 'rendering input {}'.format(i)
                 self.add_input_widgets(name,i)
                 i+=1
         if out_count:
@@ -409,8 +409,8 @@ class WfUiManager(object):
 
     def setup_ui(self):
         self.ui.setWindowTitle("workflow setup")
-        self.ui.input_box.setTitle("{} INPUTS".format(type(self.op).__name__))
-        self.ui.output_box.setTitle("{} OUTPUTS".format(type(self.op).__name__))
+        self.ui.input_box.setTitle("INPUTS")
+        self.ui.output_box.setTitle("OUTPUTS")
         self.ui.finish_box.setTitle("FINISH / LOAD")
         #self.ui.input_box.setMinimumWidth(600)
         #self.ui.op_frame.setMinimumWidth(400)
@@ -435,6 +435,7 @@ class WfUiManager(object):
         #self.ui.uri_prompt.setMaximumWidth(150)
         #self.ui.uri_entry.setMaximumWidth(150)
         self.ui.uri_prompt.setReadOnly(True)
+        self.ui.op_name.setAlignment(QtCore.Qt.AlignCenter)
         self.ui.uri_prompt.setAlignment(QtCore.Qt.AlignRight)
         self.ui.uri_prompt.setStyleSheet( "QLineEdit { background-color: transparent }" 
         + self.ui.uri_prompt.styleSheet() )
