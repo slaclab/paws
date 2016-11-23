@@ -109,6 +109,8 @@ class image_to_1D_simple(Operation):
         self.input_src['pixel_size'] = optools.user_input
         self.input_type['PP'] = optools.float_type
         self.input_type['pixel_size'] = optools.float_type
+        self.inputs['PP'] = 0.95
+        self.inputs['pixel_size'] = 79
         self.categories = ['2D DATA PROCESSING']
 
     def run(self):
