@@ -32,16 +32,27 @@ def text_widget(text):
 def toggle_expand(trview,idx):
     trview.setExpanded(idx, not trview.isExpanded(idx))
 
-def type_mv_widget():
-    # TODO: Fix this widget.
-    #lv = QtGui.QListView()
-    #print 'building list model'
-    #print lm.list_data
-    #print 'done with list model'
-    widg = QtGui.QComboBox()
+def type_mv_widget(src,widg=None):
+    if not widg:
+        widg = QtGui.QComboBox()
     lm = ListModel(optools.input_types,widg)
-    #widg.setView(lv)
     widg.setModel(lm)
+    if src == optools.no_input:
+        widg.setCurrentIndex(optools.none_type)
+        for tp in [optools.auto_type,optools.str_type,optools.int_type,optools.float_type,optools.bool_type,optools.list_type]:
+            lm.set_disabled(tp)
+    elif src == optools.batch_input:
+        widg.setCurrentIndex(optools.auto_type)
+        for tp in [optools.none_type,optools.str_type,optools.int_type,optools.float_type,optools.bool_type,optools.list_type]:
+            widg.model().set_disabled(tp)
+    elif src == optools.user_input:
+        for tp in [optools.auto_type]:
+            widg.model().set_disabled(tp)
+            widg.setCurrentIndex(optools.float_type)
+    elif (src == optools.wf_input or src == optools.fs_input):
+        for tp in [optools.str_type,optools.int_type,optools.float_type,optools.bool_type]:
+            widg.model().set_disabled(tp)
+            widg.setCurrentIndex(optools.auto_type)
     return widg 
 
 #def type_selection_widget():
@@ -195,6 +206,16 @@ def start_load_ui(uiman):
     load_ui.setWindowModality(QtCore.Qt.ApplicationModal)
     load_ui.show()
     load_ui.activateWindow()
+
+#class ListBuildManager(object):
+#    
+#    def __init__(self,ui):
+#        self.ui = ui 
+#        super(ListBuildManager,self).__init__()
+#        self.setup_ui()
+#
+#    def setup_ui(self):
+#        self.ui.finish_button.setText('Finish')
 
 class OpWidget(QtGui.QWidget):
     

@@ -298,76 +298,30 @@ class WfUiManager(object):
         if name in self.type_widgets.keys():
             if self.type_widgets[name]:
                 self.type_widgets[name].close()
-        type_widget = uitools.type_mv_widget() 
         # if input source windows exist, close those too.
         if name in self.inp_src_windows.keys():
             self.srcwindow_safe_close(name)
-        if src == optools.no_input:
-            type_widget.setCurrentIndex(optools.none_type)
-            for tp in [optools.auto_type,optools.str_type,optools.int_type,optools.float_type,optools.bool_type,optools.list_type]:
-                type_widget.model().set_disabled(tp)
-        #    val_widget = QtGui.QLineEdit('None')
-        #    val_widget.setReadOnly(True)
-        #    btn_widget = None
-        elif src == optools.batch_input:
-            type_widget.setCurrentIndex(optools.auto_type)
-            for tp in [optools.none_type,optools.str_type,optools.int_type,optools.float_type,optools.bool_type,optools.list_type]:
-                type_widget.model().set_disabled(tp)
-        #    val_widget = QtGui.QLineEdit('auto')
-        #    val_widget.setReadOnly(True)
-        #    btn_widget = None
-        elif src == optools.user_input:
-        #    val_widget = QtGui.QLineEdit()
+        type_widget = uitools.type_mv_widget(src) 
+        if src == optools.user_input:
             nonsense_types = [optools.auto_type]
-            for tp in nonsense_types:
-                type_widget.model().set_disabled(tp)
-        #    btn_widget = None
             if self.op.input_locator[name]:
-        #        val_widget.setText(str(self.op.input_locator[name].val))
                 if self.op.input_locator[name].tp not in nonsense_types:
                     type_widget.setCurrentIndex(self.op.input_locator[name].tp)
             elif self.op.input_type[name]:
-        #        val_widget.setText(str(self.op.inputs[name]))
                 if self.op.input_type[name] not in nonsense_types:
                     type_widget.setCurrentIndex(self.op.input_type[name])
-        #    elif uitools.have_qt47:
-        #        val_widget.setPlaceholderText('(enter value)')
-        #    else:
-        #        val_widget.setText('')
         elif (src == optools.wf_input or src == optools.fs_input):
-        #    type_widget, val_widget = uitools.treesource_typval_widgets()
             nonsense_types = [optools.str_type,optools.int_type,optools.float_type,optools.bool_type]
-            for tp in nonsense_types: 
-                type_widget.model().set_disabled(tp)
             if self.op.input_locator[name]:
                 if self.op.input_locator[name].tp not in nonsense_types:
                     type_widget.setCurrentIndex(self.op.input_locator[name].tp)
             elif self.op.input_type[name]:
                 if self.op.input_type[name] not in nonsense_types:
                     type_widget.setCurrentIndex(self.op.input_type[name])
-                    # src has not changed- may as well display previously set value 
-                    #val_widget.setText(self.op.input_locator[name].val)
         self.ui.input_layout.addWidget(type_widget,row,self.type_col,1,1)
         self.type_widgets[name] = type_widget
-        #self.ui.input_layout.addWidget(val_widget,row,self.val_col,1,1)
-        #self.val_widgets[name] = val_widget
         type_widget.activated.connect( partial(self.render_val_widget,name,row) )            
         self.render_val_widget(name,row)
-        #    btn_widget = QtGui.QPushButton('browse...')
-        #    btn_widget.clicked.connect( partial(self.fetch_data,name) )
-        #        if src == self.op.input_locator[name].src:
-        #    elif (src == optools.fs_input and self.op.input_locator[name]):
-        #        if src == self.op.input_locator[name].src:
-        #            val_widget.setText(self.op.input_locator[name].val)
-        #else:
-        #    msg = 'source selection {} not recognized'.format(src)
-        #    raise ValueError(msg)
-        #if btn_widget:
-        #    self.ui.input_layout.addWidget(btn_widget,row,self.btn_col,1,1)
-        #self.btn_widgets[name] = btn_widget
-        # If user selects optools.list_type in type_widget,
-        # the list building interface should become active.
-        #src_widget.activated.connect( partial(self.render_input_widgets,name,row) )
 
     def render_val_widget(self,name,row,tp=None):
         if name in self.val_widgets.keys():
@@ -427,19 +381,58 @@ class WfUiManager(object):
                 else:
                     btn_widget = QtGui.QPushButton('Load')
                     btn_widget.clicked.connect( partial(self.set_input,name) )
-            #if tp == optools.none_type:
-            #    self.val_widgets[name].setText('None')
-            #    self.val_widgets[name].setReadOnly(True)
-            #    btn_widget = QtGui.QPushButton('auto')
-            #    btn_widget.setEnabled(False)
-            #else:
         self.ui.input_layout.addWidget(val_widget,row,self.val_col,1,1)
         self.ui.input_layout.addWidget(btn_widget,row,self.btn_col,1,1)
 
     def build_list(self,name):
-        print 'time to build a list'
+        """Use a popup to build a list of input data"""
+        src = self.src_widgets[name].currentIndex()
+        if name in self.inp_src_windows.keys():
+            # if src has not changed, just activate the existing window
+            if src == self.inp_src_windows[name][0]:
+                self.inp_src_windows[name][1].show()
+                self.inp_src_windows[name][1].raise_()
+                self.inp_src_windows[name][1].activateWindow()
+                return
+            else:
+                self.srcwindow_safe_close(name)
+        ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/list_builder.ui")
+        ui_file.open(QtCore.QFile.ReadOnly)
+        src_ui = QtUiTools.QUiLoader().load(ui_file)
+        ui_file.close()
+        src_ui.setParent(self.ui,QtCore.Qt.Window)
+        src_ui.setWindowTitle("list builder")
+        #lbman = ListBuildManager(src_ui)
+        #print 'time to build a list'
+        src_ui.browse_button.setText('browse...')
+        src_ui.browse_button.clicked.connect(partial(self.load_from_src,src,src_ui))
+        # TODO: Write load_from_src
+        src_ui.load_button.setText('Load')
+        src_ui.load_button.clicked.connect(partial(self.load_to_list,src,src_ui))
+        # TODO: Write load_to_list
+        src_ui.finish_button.setText('Finish')
+        # TODO: Modify set_input to handle lists
+        src_ui.finish_button.clicked.connect(partial(self.set_input,name))
+        if uitools.have_qt47:
+            src_ui.value.setPlaceholderText('(enter value)')
+        else:
+            src_ui.value.setText('')
+        src_ui.type = uitools.type_mv_widget(src,src_ui.type)
+        src_ui.show()
+        src_ui.raise_()
+        src_ui.activateWindow()
+        self.inp_src_windows[name] = (src,src_ui)
+
+    def load_from_src(self,src,src_ui):
+        # Interact with src_ui to get things from the specified src into src_ui.value 
+        pass
+
+    def load_to_list(self,src,src_ui):
+        # Interact with src_ui to load things from src_ui.entry_frame to src_ui.list
+        pass
 
     def fetch_data(self,name):
+        # TODO: Move data fetching UI to its own module
         """Use a popup to select the input data"""
         src = self.src_widgets[name].currentIndex()
         if name in self.inp_src_windows.keys():
@@ -457,6 +450,7 @@ class WfUiManager(object):
         ui_file.close()
         #src_ui.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         src_ui.setParent(self.ui,QtCore.Qt.Window)
+        src_ui.setWindowTitle("data loader")
         if src == optools.wf_input:
             trmod = self.wfman
         elif src == optools.fs_input:
@@ -464,7 +458,6 @@ class WfUiManager(object):
             trmod.setRootPath('.')
         src_ui.tree.setModel(trmod)
         src_ui.tree_box.setTitle(name)
-        self.inp_src_windows[name] = (src,src_ui)
         if src == optools.wf_input:
             src_ui.tree.expandToDepth(2)
         elif src == optools.fs_input:
@@ -481,6 +474,7 @@ class WfUiManager(object):
         src_ui.show()
         src_ui.raise_()
         src_ui.activateWindow()
+        self.inp_src_windows[name] = (src,src_ui)
 
     def setup_ui(self):
         self.ui.setWindowTitle("workflow setup")

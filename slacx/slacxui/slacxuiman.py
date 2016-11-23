@@ -11,10 +11,9 @@ from ..slacxcore.operations.slacxop import Operation
 from ..slacxcore import slacxtools
 from . import data_viewer
 
-# TODO: Make add_op_button load an Operation into the opman, rather than instantiate an Operation into wfman.
-# TODO: Add a button next to add_op_button for editing an op. 
-# TODO: Load the properties of that op into an interface. 
 # TODO: Make a metaclass that generates Operation subclasses.
+# TODO: Use the above to make an Op development interface. 
+# TODO: Consider whether this should inherit from QtCore.QObject instaed of object?
 
 class UiManager(object):
     """
@@ -28,6 +27,7 @@ class UiManager(object):
 
     def __init__(self,opman,wfman):
         """Make a UI from ui_file, save a reference to it"""
+        super(UiManager,self).__init__()
         # Pick a UI definition, load it up
         ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/basic.ui")
         ui_file.open(QtCore.QFile.ReadOnly)
