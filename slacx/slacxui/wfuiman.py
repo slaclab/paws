@@ -90,6 +90,7 @@ class WfUiManager(object):
         self.op.input_type[name] = il.tp
 
     def load_input(self,name,item_indx=None):
+        # TODO: Simplify this, given that the type widgets have been upgraded to not allow nonsense types.
         src = self.src_widgets[name].currentIndex()
         # If source is none, easy job.
         if src == optools.no_input:
@@ -122,6 +123,7 @@ class WfUiManager(object):
             il = self.op.input_locator[name]
         else: 
             il = optools.InputLocator()
+        self.val_widgets[name].setText(str(il.val))
         return il
 
     def list_from_widget(self,list_modview):
@@ -135,36 +137,23 @@ class WfUiManager(object):
         """
         Construct a unique resource identifier (uri) for the selected item.
         Set self.op.input_locator[name] to be an optools.InputLocator(src,tp,uri).
-        Also set that uri to be the text of val_widg.
-        Finally, reset self.ui.op_info to reflect the changes.
-        This should only be called when the corresponding input source window
+        By design this should only be called when the corresponding input source window
         (containing a TreeView widget) is open.
         """
         src,src_ui = self.inp_src_windows[name]
         trview = src_ui.tree
-        type_widg = self.type_widgets[name]
-        val_widg = self.val_widgets[name]
         if not item_indx or not item_indx.isValid():
-            # Get the selected item in QTreeView trview:
             item_indx = trview.currentIndex()
         if item_indx.isValid():
             if src == optools.fs_input:
-                # Get the path of the selection
                 item_uri = trview.model().filePath(item_indx)
-                #type_widg.setText('file path')
             elif src == optools.wf_input:
-                # Build a unique URI for this item
                 item_uri = trview.model().build_uri(item_indx)
-                #type_widg.setText('workflow uri')
-            self.val_widgets[name].setText(item_uri)
             il = optools.InputLocator(src,optools.auto_type,item_uri)
         else:
-            # if nothing is selected, load the input as None. 
             il = optools.InputLocator(src,optools.auto_type,None) 
-            val_widg.setText('None')
-            type_widg.setCurrentIndex(optools.none_type)
         self.srcwindow_safe_close(name)
-        self.ui.op_info.setPlainText(self.op.description())
+        #self.ui.op_info.setPlainText(self.op.description())
         return il
 
     def rm_op(self):
@@ -226,11 +215,12 @@ class WfUiManager(object):
         old_widg = self.inp_src_windows.pop(name)[1]
         try:
             old_widg.close()
+            old_widg.deleteLater()
             #old_widg.hide()
-            #old_widg.deleteLater()
         except RuntimeError as ex:
             # I presume that old_widg has already been deleted, 
             # probably by the user pushing the "X" button
+            # TODO: Connect the "X" button to a slot that pops the widget from inp_src_windows.
             print 'avoided RuntimeError while clearing widgets. Error message: {}'.format(ex.message)
 
     def build_nameval_list(self):
@@ -273,13 +263,13 @@ class WfUiManager(object):
         self.src_widgets[name] = src_widget 
         #val_widget = QtGui.QLineEdit(str(val))
         self.ui.input_layout.addWidget(src_widget,row,self.src_col,1,1)
-        src_widget.activated.connect( partial(self.render_input_widgets,name,row) )
+        src_widget.activated.connect( partial(self.render_type_widget,name,row) )
         if self.op.input_locator[name] is not None:
             src = self.op.input_locator[name].src
         else:
             src = self.op.input_src[name]
         src_widget.setCurrentIndex(src)
-        self.render_input_widgets(name,row,src) 
+        self.render_type_widget(name,row,src) 
         #name_widget.resize(10,name_widget.size().height())
         ht = name_widget.sizeHint().height()
         name_widget.sizeHint = lambda: QtCore.QSize(10*len(name_widget.text()),ht)
@@ -302,68 +292,153 @@ class WfUiManager(object):
         name_widget.setSizePolicy(QtGui.QSizePolicy.Minimum,QtGui.QSizePolicy.Fixed)
         desc_widget.setSizePolicy(QtGui.QSizePolicy.Maximum,QtGui.QSizePolicy.Fixed)
 
-    def render_input_widgets(self,name,row,src=None):
+    def render_type_widget(self,name,row,src=None):
         if not src:
             src = self.src_widgets[name].currentIndex()
         if name in self.type_widgets.keys():
             if self.type_widgets[name]:
-                self.type_widgets[name].hide()
-        if name in self.val_widgets.keys():
-            if self.val_widgets[name]:
-                self.val_widgets[name].hide()
-        if name in self.btn_widgets.keys():
-            if self.btn_widgets[name]:
-                self.btn_widgets[name].hide()
-        type_widget = uitools.type_selection_widget() 
-        # if input source windows exist, hide / close those too.
+                self.type_widgets[name].close()
+        type_widget = uitools.type_mv_widget() 
+        # if input source windows exist, close those too.
         if name in self.inp_src_windows.keys():
             self.srcwindow_safe_close(name)
         if src == optools.no_input:
             type_widget.setCurrentIndex(optools.none_type)
-            type_widget.setEditable(False)
-            val_widget = QtGui.QLineEdit('None')
-            val_widget.setReadOnly(True)
-            btn_widget = None
+            for tp in [optools.auto_type,optools.str_type,optools.int_type,optools.float_type,optools.bool_type,optools.list_type]:
+                type_widget.model().set_disabled(tp)
+        #    val_widget = QtGui.QLineEdit('None')
+        #    val_widget.setReadOnly(True)
+        #    btn_widget = None
         elif src == optools.batch_input:
             type_widget.setCurrentIndex(optools.auto_type)
-            type_widget.setEditable(False)
-            val_widget = QtGui.QLineEdit('-')
-            val_widget.setReadOnly(True)
-            btn_widget = None
+            for tp in [optools.none_type,optools.str_type,optools.int_type,optools.float_type,optools.bool_type,optools.list_type]:
+                type_widget.model().set_disabled(tp)
+        #    val_widget = QtGui.QLineEdit('auto')
+        #    val_widget.setReadOnly(True)
+        #    btn_widget = None
         elif src == optools.user_input:
-            val_widget = QtGui.QLineEdit()
-            btn_widget = None
+        #    val_widget = QtGui.QLineEdit()
+            nonsense_types = [optools.auto_type]
+            for tp in nonsense_types:
+                type_widget.model().set_disabled(tp)
+        #    btn_widget = None
             if self.op.input_locator[name]:
-                val_widget.setText(str(self.op.input_locator[name].val))
-                type_widget.setCurrentIndex(self.op.input_locator[name].tp)
+        #        val_widget.setText(str(self.op.input_locator[name].val))
+                if self.op.input_locator[name].tp not in nonsense_types:
+                    type_widget.setCurrentIndex(self.op.input_locator[name].tp)
             elif self.op.input_type[name]:
-                val_widget.setText(str(self.op.inputs[name]))
-                type_widget.setCurrentIndex(self.op.input_type[name])
-            elif uitools.have_qt47:
-                val_widget.setPlaceholderText('(enter value)')
-            else:
-                val_widget.setText('')
+        #        val_widget.setText(str(self.op.inputs[name]))
+                if self.op.input_type[name] not in nonsense_types:
+                    type_widget.setCurrentIndex(self.op.input_type[name])
+        #    elif uitools.have_qt47:
+        #        val_widget.setPlaceholderText('(enter value)')
+        #    else:
+        #        val_widget.setText('')
         elif (src == optools.wf_input or src == optools.fs_input):
-            type_widget, val_widget = uitools.treesource_typval_widgets()
-            btn_widget = QtGui.QPushButton('browse...')
-            btn_widget.clicked.connect( partial(self.fetch_data,name) )
-            if (src == optools.wf_input and self.op.input_locator[name]):
-                if src == self.op.input_locator[name].src:
-                    val_widget.setText(self.op.input_locator[name].val)
-            elif (src == optools.fs_input and self.op.input_locator[name]):
-                if src == self.op.input_locator[name].src:
-                    val_widget.setText(self.op.input_locator[name].val)
+        #    type_widget, val_widget = uitools.treesource_typval_widgets()
+            nonsense_types = [optools.str_type,optools.int_type,optools.float_type,optools.bool_type]
+            for tp in nonsense_types: 
+                type_widget.model().set_disabled(tp)
+            if self.op.input_locator[name]:
+                if self.op.input_locator[name].tp not in nonsense_types:
+                    type_widget.setCurrentIndex(self.op.input_locator[name].tp)
+            elif self.op.input_type[name]:
+                if self.op.input_type[name] not in nonsense_types:
+                    type_widget.setCurrentIndex(self.op.input_type[name])
+                    # src has not changed- may as well display previously set value 
+                    #val_widget.setText(self.op.input_locator[name].val)
+        self.ui.input_layout.addWidget(type_widget,row,self.type_col,1,1)
+        self.type_widgets[name] = type_widget
+        #self.ui.input_layout.addWidget(val_widget,row,self.val_col,1,1)
+        #self.val_widgets[name] = val_widget
+        type_widget.activated.connect( partial(self.render_val_widget,name,row) )            
+        self.render_val_widget(name,row)
+        #    btn_widget = QtGui.QPushButton('browse...')
+        #    btn_widget.clicked.connect( partial(self.fetch_data,name) )
+        #        if src == self.op.input_locator[name].src:
+        #    elif (src == optools.fs_input and self.op.input_locator[name]):
+        #        if src == self.op.input_locator[name].src:
+        #            val_widget.setText(self.op.input_locator[name].val)
         #else:
         #    msg = 'source selection {} not recognized'.format(src)
         #    raise ValueError(msg)
-        self.ui.input_layout.addWidget(type_widget,row,self.type_col,1,1)
-        self.type_widgets[name] = type_widget
+        #if btn_widget:
+        #    self.ui.input_layout.addWidget(btn_widget,row,self.btn_col,1,1)
+        #self.btn_widgets[name] = btn_widget
+        # If user selects optools.list_type in type_widget,
+        # the list building interface should become active.
+        #src_widget.activated.connect( partial(self.render_input_widgets,name,row) )
+
+    def render_val_widget(self,name,row,tp=None):
+        if name in self.val_widgets.keys():
+            if self.val_widgets[name]:
+                self.val_widgets[name].close()
+        if name in self.btn_widgets.keys():
+            if self.btn_widgets[name]:
+                self.btn_widgets[name].close()
+        src = self.src_widgets[name].currentIndex()
+        if not tp:
+            tp = self.type_widgets[name].currentIndex()
+        print 'render val/btn widgets for src {}, tp {}'.format(src,tp)
+        btn_widget = QtGui.QPushButton()
+        val_widget = QtGui.QLineEdit()
+        if src == optools.no_input: 
+            btn_widget.setText('no input')
+            btn_widget.setEnabled(False)
+            val_widget.setText('None')
+            val_widget.setReadOnly(True)
+        elif src == optools.batch_input:
+            btn_widget.setText('auto input')
+            btn_widget.setEnabled(False)
+            val_widget.setText('auto')
+            val_widget.setReadOnly(True)
+        elif src == optools.wf_input or src == optools.fs_input:
+            if tp == optools.none_type:
+                btn_widget.setText('no input')
+                btn_widget.setEnabled(False)
+                val_widget.setText('None')
+                val_widget.setReadOnly(True)
+            elif tp == optools.list_type:
+                btn_widget.setText("build list...")
+                btn_widget.clicked.connect( partial(self.build_list,name) )
+            else:
+                btn_widget.setText('browse...')
+                btn_widget.clicked.connect( partial(self.fetch_data,name) )
+            if self.op.input_locator[name]:
+                val_widget.setText(str(self.op.input_locator[name].val))
+            elif self.op.inputs[name]:
+                val_widget.setText(str(self.op.inputs[name]))
+            val_widget.setReadOnly(True)
+        elif (src == optools.user_input):
+            if tp == optools.none_type:
+                btn_widget.setText('no input')
+                btn_widget.setEnabled(False)
+                val_widget.setText('None')
+                val_widget.setReadOnly(True)
+            else:
+                if self.op.input_locator[name]:
+                    val_widget.setText(str(self.op.input_locator[name].val))
+                elif self.op.inputs[name]:
+                    val_widget.setText(str(self.op.inputs[name]))
+                if tp == optools.list_type:
+                    val_widget.setReadOnly(True)
+                    btn_widget.setText("build list...")
+                    btn_widget.clicked.connect( partial(self.build_list,name) )
+                else:
+                    btn_widget = QtGui.QPushButton('Load')
+                    btn_widget.clicked.connect( partial(self.set_input,name) )
+            #if tp == optools.none_type:
+            #    self.val_widgets[name].setText('None')
+            #    self.val_widgets[name].setReadOnly(True)
+            #    btn_widget = QtGui.QPushButton('auto')
+            #    btn_widget.setEnabled(False)
+            #else:
         self.ui.input_layout.addWidget(val_widget,row,self.val_col,1,1)
-        self.val_widgets[name] = val_widget
-        if btn_widget:
-            self.ui.input_layout.addWidget(btn_widget,row,self.btn_col,1,1)
-        self.btn_widgets[name] = btn_widget
-            
+        self.ui.input_layout.addWidget(btn_widget,row,self.btn_col,1,1)
+
+    def build_list(self,name):
+        print 'time to build a list'
+
     def fetch_data(self,name):
         """Use a popup to select the input data"""
         src = self.src_widgets[name].currentIndex()

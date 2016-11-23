@@ -13,14 +13,27 @@ class ListModel(QtCore.QAbstractListModel):
     def __init__(self,input_list=[],parent=None):
         super(ListModel,self).__init__(parent)
         self.list_data = []
+        self.enabled = []
         for thing in input_list:
             self.append_item(thing)
+            self.enabled.append(True)
+        
 
     def append_item(self,thing):
         ins_row = self.rowCount()
         self.beginInsertRows(QtCore.QModelIndex(),ins_row,ins_row+1)
         self.list_data.append(thing) 
         self.endInsertRows()
+
+    def set_disabled(self,row):
+        """Change self.flags() for idx such that it does not allow the item to be selected"""
+        self.enabled[row] = False
+
+    def flags(self,idx):
+        if self.enabled[idx.row()]:
+            return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+        else:
+            return QtCore.Qt.NoItemFlags
 
     # Subclass of QAbstractListModel must implement rowCount()
     def rowCount(self,parent=QtCore.QModelIndex()):

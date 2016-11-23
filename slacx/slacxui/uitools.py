@@ -34,20 +34,20 @@ def toggle_expand(trview,idx):
 
 def type_mv_widget():
     # TODO: Fix this widget.
-    lv = QtGui.QListView()
+    #lv = QtGui.QListView()
     #print 'building list model'
-    lm = ListModel(optools.input_types,lv)
     #print lm.list_data
     #print 'done with list model'
-    lv.setModel(lm)
     widg = QtGui.QComboBox()
-    widg.setView(lv)
+    lm = ListModel(optools.input_types,widg)
+    #widg.setView(lv)
+    widg.setModel(lm)
     return widg 
 
-def type_selection_widget():
-    widg = QtGui.QComboBox()
-    widg.addItems(optools.input_types)
-    return widg 
+#def type_selection_widget():
+#    widg = QtGui.QComboBox()
+#    widg.addItems(optools.input_types)
+#    return widg 
 
 def src_selection_widget():
     widg = QtGui.QComboBox()
@@ -89,13 +89,13 @@ def name_widget(name):
     name_widget.setAlignment(QtCore.Qt.AlignRight)
     return name_widget
     
-def treesource_typval_widgets():
-    type_widget = type_selection_widget()
-    type_widget.setCurrentIndex(optools.auto_type)
-    type_widget.setEditable(False)
-    val_widget = QtGui.QLineEdit('-')
-    val_widget.setReadOnly(True)
-    return type_widget, val_widget
+#def treesource_typval_widgets():
+#    type_widget = type_mv_widget() 
+#    #type_widget = type_selection_widget()
+#    type_widget.setCurrentIndex(optools.auto_type)
+#    val_widget = QtGui.QLineEdit('-')
+#    val_widget.setReadOnly(True)
+#    return type_widget, val_widget
     
 def toggle_load_button(ui,txt):
     idx = ui.tree.model().index(txt)
