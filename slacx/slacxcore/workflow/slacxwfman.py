@@ -478,7 +478,7 @@ class WfManager(TreeModel):
         # i.e. this makes the current thread wait on wf_thread.
         #self.appref.processEvents()
         wf_thread.wait()
-        self.appref.processEvents()
+        #self.appref.processEvents()
 
     def finish_thread(self,th_idx):
         if self.logmethod:
@@ -542,11 +542,11 @@ class WfManager(TreeModel):
         for b_item in b_items:
             if self.logmethod:
                 self.logmethod( 'Running dependencies... ' )
-            self.appref.processEvents()
+            #self.appref.processEvents()
             self.run_deps(b_item)
             if self.logmethod:
                 self.logmethod( 'Preparing Batch controller... ' )
-            self.appref.processEvents()
+            #self.appref.processEvents()
             self.run_and_update(b_item)
             b = b_item.data
             # After b.run(), it is expected that b.input_list()

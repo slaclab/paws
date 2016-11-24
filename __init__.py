@@ -9,7 +9,7 @@ from slacx.slacxcore.workflow import slacxwfman
 
 class SlacxPlugin(base.plugin):
     # The display name in the xi-cam plugin bar
-    name = 'Slacx'
+    name = 'Workflow'
 
     def __init__(self, *args, **kwargs):
 
@@ -30,6 +30,7 @@ class SlacxPlugin(base.plugin):
         self.centerwidget = uiman.ui.center_frame
         self.leftwidget = uiman.ui.left_frame
         self.rightwidget = uiman.ui.right_frame
+        self.bottomwidget = uiman.ui.message_board
 
         # There seems to be a problem with this plugin loading approach,
         # where the frames, *in some circumstances, not always*, 
