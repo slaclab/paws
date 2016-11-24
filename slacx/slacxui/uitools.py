@@ -160,7 +160,8 @@ def start_save_ui(uiman):
     ui_file.close()
     #save_ui.setAttribute(QtCore.Qt.WA_DeleteOnClose)
     trmod = QtGui.QFileSystemModel()
-    trmod.setRootPath('.')
+    #trmod.setRootPath('.')
+    trmod.setRootPath(slacxtools.rootdir)
     trmod.setNameFilters(['*.wfl'])
     save_ui.tree_box.setTitle('Select a file to save the current workflow')
     save_ui.tree.setModel(trmod)
@@ -178,6 +179,7 @@ def start_save_ui(uiman):
     save_ui.save_button.clicked.connect(partial(stop_save_ui,save_ui,uiman))
     #save_ui.filename.returnPressed.connect(partial(stop_save_ui,save_ui,uiman))
     save_ui.filename.textChanged.connect( partial(toggle_save_button,save_ui) )
+    save_ui.filename.setText(trmod.rootPath())
     save_ui.setWindowModality(QtCore.Qt.ApplicationModal)
     save_ui.show()
     save_ui.activateWindow()
@@ -203,6 +205,7 @@ def start_load_ui(uiman):
     load_ui.setParent(uiman.ui,QtCore.Qt.Window)
     load_ui.load_button.setText('&Load')
     load_ui.load_button.clicked.connect(partial(stop_load_ui,load_ui,uiman))
+    #load_ui.setWindowModality(QtCore.Qt.WindowModal)
     load_ui.setWindowModality(QtCore.Qt.ApplicationModal)
     load_ui.show()
     load_ui.activateWindow()
@@ -278,7 +281,7 @@ class OpWidget(QtGui.QWidget):
             p.drawLine(QtCore.QPoint(-1*(recthorz+10),vcrd-10),QtCore.QPoint(-1*(recthorz+10),vcrd+10))
             ilrec = QtCore.QRectF(QtCore.QPoint(-100,vcrd-10),QtCore.QPoint(-1*(recthorz+12),vcrd+10))
             p.drawText(ilrec,QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter,#|QtCore.Qt.TextWordWrap,
-                'source: {} \ntype: {} \nvalue: {}'.format(il.src,il.tp,il.val))
+            'source: {} \ntype: {} \nvalue: {}'.format(optools.input_sources[il.src],optools.input_types[il.tp],il.val))
             vcrd += 2*ispc
         # Label the outputs
         n_out = len(self.op.outputs)

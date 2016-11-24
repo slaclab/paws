@@ -102,6 +102,8 @@ class Operation(object):
             self.outputs[name] = None
 
 
+#class Workflow(Operation):
+
 
 class Realtime(Operation):
     __metaclass__ = abc.ABCMeta
@@ -137,10 +139,21 @@ class Realtime(Operation):
 
     def delay(self):
         """
-        Return the number of seconds to pause between iterations.
+        Return the number of MILLIseconds to pause between iterations.
         Overload this method to change the pause time- default is 1 second.
         """
-        return 1
+        return 1000
+
+    def downstream_ops(self):
+        """
+        Provide a list of Operation uri's to be executed in each run.
+        This is best done by using the list builder applet 
+        to load it as an Operation input during Operation setup.
+        The default implementation returns an empty list,
+        and the default behavior will be to collect all downstream operations.
+        """
+        return []
+
 
 
 
@@ -175,6 +188,15 @@ class Batch(Operation):
         """
         pass
 
+    def downstream_ops(self):
+        """
+        Provide a list of Operations to be executed in each run of the batch.
+        This is best done by using the list builder applet 
+        to select a list of operation uri's during Operation setup.
+        The default implementation returns an empty list,
+        and the default behavior will be to collect all downstream operations.
+        """
+        return []
 
 
 class Workflow(Operation):

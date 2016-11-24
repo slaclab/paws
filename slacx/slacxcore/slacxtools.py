@@ -43,15 +43,14 @@ class WfWorker(QtCore.QObject):
         self.to_run = to_run
 
     def work(self):
-        #print 'called work'
-        for item in self.to_run:
-        #    print 'worker run {}'.format(item.tag())
-            self.wfman.run_and_update(item)
-        # Finish the thread by emitting a finished signal
-        #self.finished.emit()
-        #self.thread().finished.emit()
-        # Or maybe just fucking quit?
-        self.thread().quit()
+        try:
+            for item in self.to_run:
+                self.wfman.run_and_update(item)
+            self.thread().quit()
+        except Exception as ex:
+            # TODO: Handle this exception from wfman's pov
+            self.thread().quit()
+            raise ex
 
 class FileSystemIterator(Iterator):
 

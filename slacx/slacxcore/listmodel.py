@@ -1,76 +1,77 @@
-import string 
-
 from PySide import QtCore
 
 class ListModel(QtCore.QAbstractListModel):
     """
     Class for list management with a QAbstractListModel.
-    Implements required virtual methods index(), parent(), rowCount(), and data().
+    Implements required virtual methods rowCount() and data().
     Resizeable ListModels must implement insertRows(), removeRows().
-    If a nicely labeled header is desired, one should implement headerData().
+    If a nicely labeled header is desired, implement headerData().
     """
 
     def __init__(self,input_list=[],parent=None):
         super(ListModel,self).__init__(parent)
-        self.list_data = []
-        self.enabled = []
+        self._list_data = []
+        self._enabled = []
         for thing in input_list:
             self.append_item(thing)
-            self.enabled.append(True)
         
-
     def append_item(self,thing):
         ins_row = self.rowCount()
-        self.beginInsertRows(QtCore.QModelIndex(),ins_row,ins_row+1)
-        self.list_data.append(thing) 
+        self.beginInsertRows(QtCore.QModelIndex(),ins_row,ins_row)
+        self._list_data.insert(ins_row,thing) 
         self.endInsertRows()
+        self._enabled.insert(ins_row,True)
+        idx = self.index(ins_row,0,QtCore.QModelIndex())
+
+    def remove_item(self,row):
+        self.beginRemoveRows(QtCore.QModelIndex(),row,row)
+        self._list_data.pop(row) 
+        self.endRemoveRows()
+        self._enabled.pop(row) 
 
     def set_disabled(self,row):
-        """Change self.flags() for idx such that it does not allow the item to be selected"""
-        self.enabled[row] = False
+        self._enabled[row] = False
+
+    def list_data(self):
+        return self._list_data
 
     def flags(self,idx):
-        if self.enabled[idx.row()]:
+        if self._enabled[idx.row()]:
             return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
         else:
             return QtCore.Qt.NoItemFlags
 
-    # Subclass of QAbstractListModel must implement rowCount()
     def rowCount(self,parent=QtCore.QModelIndex()):
-        return len(self.list_data)
+        return len(self._list_data)
 
-    # QAbstractListModel subclass must implement 
-    # data(QModelIndex[,role=Qt.DisplayRole])
+    def columnCount(self,parent=QtCore.QModelIndex()):
+        return 1
+
     def data(self,idx,data_role):
-        return self.list_data[idx.row()]
-        #if data_role == QtCore.Qt.DisplayRole:
-        #else:
-        #    return None
+        if not idx.isValid():
+            return None
+        elif (data_role == QtCore.Qt.DisplayRole
+        or data_role == QtCore.Qt.ToolTipRole 
+        or data_role == QtCore.Qt.StatusTipRole
+        or data_role == QtCore.Qt.WhatsThisRole):
+            return str(self._list_data[idx.row()])
+        else:
+            return None
+        #    print 'data at row {}: {}'.format(idx.row(),self._list_data[idx.row()])
+        #    print 'DATA IS NONE'
 
-    # Expandable QAbstractItemModel subclass should implement
-    # insertRows(row,count[,parent=QModelIndex()])
     def insertRows(self,row,count):
-        # Signal listeners that rows are about to be born
         self.beginInsertRows(QtCore.QModelIndex(),row,row+count-1)
         for j in range(row,row+count):
-            self.list_data.insert(j,None)
-        # Signal listeners that we are done inserting rows
+            self._list_data.insert(j,None)
         self.endInsertRows()
 
-    # Shrinkable QAbstractItemModel subclass should implement
-    # removeRows(row,count[,parent=QModelIndex()])
     def removeRows(self, row, count, parent=QtCore.QModelIndex()):
-        # Signal listeners that rows are about to die
         self.beginRemoveRows(parent,row,row+count-1)
         for j in range(row,row+count)[::-1]:
             self.list_items.pop(j)
-        # Signal listeners that we are done removing rows
         self.endRemoveRows()
 
-    # QAbstractItemModel subclass should implement 
-    # headerData(int section,Qt.Orientation orientation[,role=Qt.DisplayRole])
-    # note: section arg indicates row or column number, depending on orientation
     def headerData(self,section,orientation,data_role):
-        return None
-
+        return 'dummy header'
 

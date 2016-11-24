@@ -12,12 +12,13 @@ class BatchFromFiles(Batch):
     """
 
     def __init__(self):
-        input_names = ['dir_path','regex','input_route']
+        input_names = ['dir_path','regex','input_route','downstream_ops']
         output_names = ['batch_inputs','batch_outputs']
         super(BatchFromFiles,self).__init__(input_names,output_names)
         self.input_doc['dir_path'] = 'path to directory containing batch of files to be used as input'
         self.input_doc['regex'] = 'string with * wildcards that will be substituted to indicate input files'
         self.input_doc['input_route'] = 'inputs constructed by the batch executor are directed to this uri'
+        self.input_doc['downstream_ops'] = 'list of ops to be saved in the batch_outputs- default is all downstream ops'
         self.output_doc['batch_inputs'] = 'list of dicts of [input_route:input_value]'
         self.output_doc['batch_outputs'] = 'list of dicts of [output_route:output_value]'
         self.categories = ['EXECUTION.BATCH']
@@ -26,6 +27,8 @@ class BatchFromFiles(Batch):
         self.input_type['regex'] = optools.str_type
         self.inputs['regex'] = '*.tif' 
         self.input_src['input_route'] = optools.wf_input 
+        self.input_src['downstream_ops'] = optools.wf_input 
+        self.input_type['downstream_ops'] = optools.list_type 
         
     def run(self):
         """
@@ -56,5 +59,10 @@ class BatchFromFiles(Batch):
     def input_routes(self):
         """Use the Batch.input_locators to list uri's of all input routes"""
         return [ self.input_locator['input_route'].val ]
+
+    def downstream_ops(self):
+        """Use the Batch.input_locators to list uri's of downstream ops"""
+        return list(self.input_locator['downstream_ops'].val)
+
 
 
