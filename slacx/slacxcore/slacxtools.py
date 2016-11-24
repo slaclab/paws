@@ -6,7 +6,7 @@ from datetime import datetime as dt
 from PySide import QtCore, QtUiTools
 from PySide import QtCore
 
-version='0.0.2'
+version='0.0.3'
 
 qdir = QtCore.QDir(__file__)
 qdir.cdUp()
