@@ -40,7 +40,7 @@ class WfManager(TreeModel):
             self.appref = None
         self._wf_dict = {}       
         # Flags to assist in thread control
-        self._exec_ready = True 
+        #self._exec_ready = True 
         self._keep_going = True
         #self._n_threads = QtCore.QThread.idealThreadCount()
         self._n_threads = 1
@@ -477,19 +477,67 @@ class WfManager(TreeModel):
     def next_available_thread(self):
         for idx,th in self._wf_threads.items():
             if not th:
-                self._exec_ready = True
+                #self._exec_ready = True
                 return idx
-            else:
-                if th.isFinished():
-                    th.finished.emit()
-                    self._exec_ready = True
-                    return idx
+            #else:
+            #    if th.isFinished():
+            #        print 'found finished thread not yet deleted'
+            #        #th.finished.emit()
+            #        #self._exec_ready = True
+            #        #return idx
         #for idx,th in self._wf_threads.items():
         #    print 'thread {} running: {}'.format(idx,th.isRunning())
-        self._exec_ready = False
+        #self._exec_ready = False
         return None
 
-    def run_wf_serial(self,stk=None):
+    def wait_for_thread(self,th_idx):
+        """Wait for the thread at th_idx to be finished"""
+        done = False
+        interval = 10
+        wait_iter = 0
+        while not done:
+            done = True
+            if self._wf_threads[th_idx]:
+                if not self._wf_threads[th_idx].isFinished():
+                    done = False
+                if not done:
+                    self.loopwait(interval)
+                    self.appref.processEvents()
+                    wait_iter += 1
+        if self.logmethod and wait_iter > 0:
+            self.logmethod('... waited {}ms for thread {}'.format(wait_iter*interval,th_idx))
+            self.appref.processEvents()
+
+    def wait_for_threads(self):
+        """Wait for all workflow execution threads to finish"""
+        done = False
+        interval = 10
+        wait_iter = 0
+        while not done:
+            done = True
+            for idx,th in self._wf_threads.items():
+                if not th.isFinished():
+                    done = False
+            if not done:
+                self.loopwait(interval)
+                self.appref.processEvents()
+                wait_iter += 1
+        if self.logmethod and wait_iter > 0:
+            self.logmethod('... waited {}ms for threads to finish'.format(wait_iter*interval))
+            self.appref.processEvents()
+
+    def loopwait(self,interval):
+        l = QtCore.QEventLoop()
+        t = QtCore.QTimer()
+        t.setSingleShot(True)
+        t.timeout.connect(l.quit)
+        t.start(interval)
+        l.exec_()
+        # This processEvents() is meant to process any Signals
+        # that were emitted during waiting.
+        self.appref.processEvents()
+
+    def run_wf_serial(self,stk=None,thd=0):
         """
         Run the workflow by building a dependency stack 
         and running the operations in order.
@@ -498,7 +546,8 @@ class WfManager(TreeModel):
         assuming the items in the lists above it have been executed already.
         """
         if self.logmethod:
-            self.logmethod('SERIAL EXECUTION STARTING')
+            self.logmethod('SERIAL EXECUTION STARTING in thread {}'.format(thd))
+            self.appref.processEvents()
         if not stk:
             stk = self.serial_execution_stack()
         msg = '\n----\nexecution stack: '
@@ -507,21 +556,9 @@ class WfManager(TreeModel):
         msg += '\n----'
         if self.logmethod:
             self.logmethod(msg)
+            self.appref.processEvents()
         for to_run in stk:
-            msg = 'running {} '.format( [itm.tag() for itm in to_run] )
-            if self.logmethod:
-                self.logmethod(msg)
-            th_idx = self.next_available_thread()
-            while not self._exec_ready:
-                # Use an event loop to non-busy wait    
-                l = QtCore.QEventLoop()
-                t = QtCore.QTimer()
-                t.setSingleShot(True)
-                t.timeout.connect(l.quit)
-                t.start(1000)
-                l.exec_()
-                th_idx = self.next_available_thread()
-            # We should be _exec_ready - load the inputs
+            self.wait_for_thread(thd)
             for itm in to_run:
                 op = itm.data
                 self.load_inputs(op)
@@ -529,33 +566,32 @@ class WfManager(TreeModel):
             wf_wkr = slacxtools.WfWorker(to_run,None)
             wf_thread = QtCore.QThread(self)
             wf_wkr.moveToThread(wf_thread)
-            self._wf_threads[th_idx] = wf_thread
-            wf_thread.started.connect( partial(self.start_thread,th_idx) )
+            self._wf_threads[thd] = wf_thread
             wf_thread.started.connect(wf_wkr.work)
-            wf_thread.finished.connect( partial(self.finish_thread,th_idx) )
+            wf_thread.finished.connect( partial(self.finish_thread,thd) )
+            msg = 'running {} in thread {}'.format([itm.tag() for itm in to_run],thd)
+            if self.logmethod:
+                self.logmethod(msg)
+                self.appref.processEvents()
             wf_thread.start()
             # Calling wf_thread.wait() hands over control to wf_thread.
             # i.e. this makes the current thread wait on wf_thread.
-            #self.appref.processEvents()
-            wf_thread.wait()
+            #wf_thread.wait()
             # When the thread is finished, update the ops it ran.
             for itm in to_run:
                 op = itm.data
                 self.update_op(itm.tag(),op)
+        # Let the thread finish
+        self.wait_for_thread(thd)
         if self.logmethod:
-            self.logmethod('SERIAL EXECUTION FINISHED')
-            #self.appref.processEvents()
-
-    def start_thread(self,th_idx):
-        if self.logmethod:
-            self.logmethod('beginning execution in thread {}...'.format(th_idx))
-        self.appref.processEvents()
+            self.logmethod('SERIAL EXECUTION FINISHED in thread {}'.format(thd))
+            self.appref.processEvents()
 
     def finish_thread(self,th_idx):
         if self.logmethod:
             self.logmethod('finished execution in thread {}.'.format(th_idx))
+            self.appref.processEvents()
         self._wf_threads[th_idx] = None
-        self.appref.processEvents()
 
     def run_wf_realtime(self):
         """
@@ -565,11 +601,12 @@ class WfManager(TreeModel):
         #for rt_item in rt_items:
         if self.logmethod:
             self.logmethod( 'REALTIME EXECUTION STARTING' )
-        if self.logmethod:
             self.logmethod( 'Running dependencies... ' )
+            self.appref.processEvents()
         self.run_deps(rt_item)
         if self.logmethod:
             self.logmethod( 'Preparing Realtime controller... ' )
+            self.appref.processEvents()
         rt = rt_item.data
         self.load_inputs(rt)
         rt.run_and_update()
@@ -593,6 +630,7 @@ class WfManager(TreeModel):
                     self.set_op_input_at_uri(uri,val)
                 if self.logmethod:
                     self.logmethod( 'REALTIME EXECUTION {}'.format(nx))
+                    self.appref.processEvents()
                 self.run_wf_serial(to_run)
                 opdict = {}
                 for op_list in to_run:
@@ -602,14 +640,9 @@ class WfManager(TreeModel):
             else:
                 if self.logmethod and not wait_flag:
                     self.logmethod( 'Waiting...' )
+                    self.appref.processEvents()
                 wait_flag = True
-            # start a local event loop to pause without busywaiting
-            l = QtCore.QEventLoop()
-            t = QtCore.QTimer()
-            t.setSingleShot(True)
-            t.timeout.connect(l.quit)
-            t.start(rt.delay())
-            l.exec_()
+            self.loopwait(rt.delay())
 
     def run_wf_batch(self):
         """
@@ -618,11 +651,12 @@ class WfManager(TreeModel):
         b_item = self.find_batch_item() 
         if self.logmethod:
             self.logmethod( 'BATCH EXECUTION STARTING' )
-        if self.logmethod:
             self.logmethod( 'Running dependencies... ' )
+            self.appref.processEvents()
         self.run_deps(b_item)
         if self.logmethod:
             self.logmethod( 'Preparing Batch controller... ' )
+            self.appref.processEvents()
         b = b_item.data
         self.load_inputs(b)
         b.run_and_update()
@@ -632,22 +666,25 @@ class WfManager(TreeModel):
             to_run = [[optools.parse_wf_input(self,dsname,b) for dsname in b.downstream_ops()]]
         else:
             to_run = self.downstream_stack(b_item)
-        # After b.run(), it is expected that b.input_list()
-        # will refer to a list of dicts, where each dict has the form [workflow tree uri:input value]. 
+        # After b.run(), it is expected that b.input_list() will refer to a list of dicts,
+        # where each dict has the form [workflow tree uri:input value]. 
         for i in range(len(b.input_list())):
             if self._keep_going:
                 input_dict = b.input_list()[i]
                 for uri,val in input_dict.items():
                     self.set_op_input_at_uri(uri,val)
                 # inputs are set, run in serial 
+                thd = self.next_available_thread()
                 if self.logmethod:
-                    self.logmethod( 'BATCH EXECUTION {} / {}'.format(i+1,len(b.input_list())) )
-                self.run_wf_serial(to_run)
+                    self.logmethod( 'BATCH EXECUTION {} / {} in thread {}'.format(i+1,len(b.input_list()),thd) )
+                    self.appref.processEvents()
+                self.run_wf_serial(to_run,thd)
                 for op_list in to_run:
                     b.output_list()[i].update(self.ops_as_dict(op_list))
                 self.update_op(b_item.tag(),b)
         if self.logmethod:
             self.logmethod( 'BATCH EXECUTION FINISHED' )
+            self.appref.processEvents()
 
     def set_op_input_at_uri(self,uri,val):
         """Set an op input, indicated by uri, to provided value."""
