@@ -128,7 +128,7 @@ class UiManager(object):
         # Let the message board ignore line wrapping
         #self.ui.message_board.setLineWrapMode(self.ui.message_board.NoWrap)
         # Tell the status bar that we are ready.
-        self.show_status('Ready')
+        #self.show_status('Ready')
         # Tell the message board that we are ready.
         self.ui.message_board.insertPlainText('--- MESSAGE BOARD ---\n') 
         self.msg_board_log('slacx is ready',timestamp=slacxtools.dtstr) 
@@ -216,6 +216,6 @@ class UiManager(object):
         '- ' + timestamp() + ': ' + msg + '\n') 
         self.ui.message_board.verticalScrollBar().setValue(self.ui.message_board.verticalScrollBar().maximum())
       
-    def show_status(self,msg):
-        self.ui.statusbar.showMessage(msg)
+    #def show_status(self,msg):
+    #    self.ui.statusbar.showMessage(msg)
 

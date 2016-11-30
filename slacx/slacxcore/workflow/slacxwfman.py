@@ -624,25 +624,26 @@ class WfManager(TreeModel):
             vals = rt.input_iter().next()
             inp_dict = dict( zip(rt.input_routes(), vals) )
             if inp_dict and not None in vals:
-                wait_flag = False
+                waiting_flag = False
                 nx += 1
                 for uri,val in inp_dict.items():
                     self.set_op_input_at_uri(uri,val)
+                thd = self.next_available_thread()
                 if self.logmethod:
-                    self.logmethod( 'REALTIME EXECUTION {}'.format(nx))
+                    self.logmethod( 'REALTIME EXECUTION {} in thread {}'.format(nx,thd))
                     self.appref.processEvents()
-                self.run_wf_serial(to_run)
+                self.run_wf_serial(to_run,thd)
                 opdict = {}
                 for op_list in to_run:
                     opdict.update(self.ops_as_dict(op_list))
                 rt.output_list().append(opdict)
                 self.update_op(rt_item.tag(),rt)
             else:
-                if self.logmethod and not wait_flag:
-                    self.logmethod( 'Waiting...' )
+                if self.logmethod and not waiting_flag:
+                    self.logmethod( 'Waiting for new inputs...' )
                     self.appref.processEvents()
-                wait_flag = True
-            self.loopwait(rt.delay())
+                waiting_flag = True
+                self.loopwait(rt.delay())
 
     def run_wf_batch(self):
         """
