@@ -105,8 +105,8 @@ class WfManager(TreeModel):
         Load things in to the Workflow from an OpManager and a YAML .wfl file 
         """
         # TODO: Migrate to own module
-        for row in range(len(self.root_items)):
-            idx = self.index(row,0,QtCore.QModelIndex())
+        while self.root_items:
+            idx = self.index(self.rowCount(QtCore.QModelIndex())-1,0,QtCore.QModelIndex())
             self.remove_op(idx)
         f = open(wfl, "r")
         dct = yaml.load(f)
@@ -190,9 +190,9 @@ class WfManager(TreeModel):
         #self.io_subtree(new_op,indx)
         #self._n_loaded += 1
 
-    def remove_op(self,rm_indx):
+    def remove_op(self,rm_idx):
         """Remove an Operation from the workflow tree"""
-        rm_row = rm_indx.row()
+        rm_row = rm_idx.row()
         self.beginRemoveRows(QtCore.QModelIndex(),rm_row,rm_row)
         # Removal occurs between notification methods
         item_removed = self.root_items.pop(rm_row)
