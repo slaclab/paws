@@ -60,5 +60,5 @@ at `slacx-developers@slac.stanford.edu`.
 ## License
 
 Currently this code is free and open-source. 
-It will be distributed with the GPL license in the near future.
+It will be distributed with some kind of license in the near future.
 

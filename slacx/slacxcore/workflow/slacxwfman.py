@@ -16,8 +16,9 @@ from ..operations.slacxop import Operation, Batch, Realtime
 from ..operations.optools import InputLocator, OutputContainer
 from .. import slacxtools
 
-# TODO: Write a slot that can be called when a set of Operations are finished, 
-# where the slot will make all the right dataChanged() calls. 
+# TODO: Unify the various functions for updating tree data:
+# update_op, build_next, update_dict, update_list, update_io_deps, build_from_dict, build_from_list, io_subtree.
+# Can these all be rolled into one simple tree_update()??
 
 class WfManager(TreeModel):
     """
