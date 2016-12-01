@@ -144,7 +144,7 @@ class PrintMessageAndTime(Operation):
         self.categories = ['MISC.PYTHON OBJECT MANIPULATION','OUTPUT']
 
     def run(self):
-        print time.time(), self.inputs['message']
+        print time.asctime(), self.inputs['message']
 
 
 class DummySequences(Operation):

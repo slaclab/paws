@@ -1,9 +1,11 @@
 import time
 import tifffile
-from os.path import splitext
+from os import rename, mkdir, listdir
+from os.path import splitext, split, join
 
 from slacxop import Operation
 import optools
+from writeCSV import find_by_extension, replace_extension
 
 
 class ReadTxtSSRL15(Operation):
@@ -118,20 +120,28 @@ def read_header(txtfile):
     return header
 
 
-'''
-imfile = "/Users/Amanda/Data20161118/R1/R1_2rdcool1_0001.tif"
+def read_test(base_directory, bad_directory):
+    '''Test header files in *base_directory*; move malformed ones to *bad_directory*.
 
-def readfortest(imfile):
-    image = tifffile.imread(imfile)
-    txtname = txtname_from_tifname(imfile)
+    I won't be packaging this as a slacx operation because
+    the problem it solves (malformed headers) should be solved elsewhere (at the beamline).'''
     try:
-        header = read_header(txtname)
-    except IOError:
-        print "No corresponding header to file %s was found." % imfile
-        header = {}
-    except:
-        print "some other error occured?"  ###
-    print "readfortest returning"
-
-readfortest(imfile)
-'''
+        mkdir(bad_directory)
+    except OSError: # If the directory already exists
+        pass
+    txtfiles = find_by_extension(base_directory, 'txt')
+    print "%i header files will be examined." % len(txtfiles)
+    for ii in txtfiles:
+        try:
+            read_header(ii)
+        except IndexError:
+            print "Header file %s appears to be malformed.  It and its .tif file are being relocated." % ii
+            old_txt = ii
+            new_txt = join(bad_directory, split(ii)[1])
+            rename(old_txt, new_txt)
+            old_tif = replace_extension(ii, 'tif')
+            new_tif = replace_extension(new_txt, 'tif')
+            rename(old_tif, new_tif)
+#        except:
+#            print "Some unexpected error occured in file %s." % ii ###
+    print "read_test done."

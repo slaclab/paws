@@ -4,7 +4,6 @@ import numpy as np
 
 from slacxop import Operation
 import optools
-from SSRL_1_5_readers import read_header
 
 
 class WriteTemperatureIndex(Operation):
@@ -186,6 +185,25 @@ class WriteCSV_q_I_dI(Operation):
         self.outputs['csv_location'] = csv_location
 
 
+class FindUnprocessed(Operation):
+    """Write q, I, and dI to a csv-formatted file."""
+
+    def __init__(self):
+        input_names = ['directory']
+        output_names = ['unprocessed']
+        super(FindUnprocessed, self).__init__(input_names, output_names)
+        # docstrings
+        self.input_doc['directory'] = "path to directory whose contents should be checked"
+        self.output_doc['unprocessed'] = 'list of unprocessed tif files'
+        # source & type
+        self.input_src['directory'] = optools.fs_input
+        self.input_type['directory'] = optools.str_type
+        self.categories = ['MISC']
+
+    def run(self):
+        self.outputs['unprocessed'] = find_unprocessed(self.inputs['directory'])
+
+
 def write_csv_q_I(q, I, nameloc):
     datablock = np.zeros((q.size,2),dtype=float)
     datablock[:,0] = q
@@ -209,6 +227,7 @@ def find_by_extension(directory, extension):
     :return:
 
     Accepts extensions with or without an initial ".".
+    Does not know that tif and tiff are the same thing.
     '''
     # os.splitext gives the extension with '.' in front.
     # Rather than require the user to know this, I take care of it here.
@@ -236,7 +255,7 @@ def replace_extension(old_name, new_extension):
     # os.splitext gives the extension with '.' in front.
     # Rather than require the user to know this, I take care of it here.
     if new_extension[0] != '.':
-        extension = '.' + new_extension
+        new_extension = '.' + new_extension
     root = splitext(old_name)[0]
     new_name = root + new_extension
     return new_name
@@ -257,3 +276,12 @@ def read_csv_q_I_dI(nameloc):
     dI = data[:,2]
     return q, I, dI
 
+def find_unprocessed(directory):
+    '''Checks files in a folder to make sure they have been reduced.'''
+    images = find_by_extension(directory, 'tif')
+    missing_csv = []
+    for ii in images:
+        csvname = replace_extension(ii, 'csv')
+        if not exists(csvname):
+            missing_csv.append(ii)
+    return missing_csv
