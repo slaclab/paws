@@ -13,7 +13,7 @@ from ..treemodel import TreeModel
 from ..treeitem import TreeItem
 from ..operations import optools
 from ..operations.slacxop import Operation, Batch, Realtime
-from ..operations.optools import InputLocator, OutputContainer
+from ..operations.optools import InputLocator#, OutputContainer
 from .. import slacxtools
 
 # TODO: Unify the various functions for updating tree data:
@@ -68,27 +68,22 @@ class WfManager(TreeModel):
                 raise ValueError(msg)
         #import pdb; pdb.set_trace()
 
-    def locate_input(self,inplocator,op):
+    def locate_input(self,il,op):
         """
         Return the data pointed to by a given InputLocator object.
         Takes the Operation that owns this inplocator as a second arg,
         so that if it is a Batch its input routes can be handled properly.
         """
         #if isinstance(inplocator,InputLocator):
-        src = inplocator.src
-        tp = inplocator.tp
-        val = inplocator.val
+        src = il.src
+        tp = il.tp
+        val = il.val
         if src == optools.no_input: 
             return None
         elif src == optools.user_input: 
             return optools.cast_type_val(tp,val)
         elif src == optools.wf_input:
-            if tp == optools.list_type:
-                # val should be a list- get each item from wfman
-                return [optools.parse_wf_input(self,v,op) for v in val]
-            else:
-                # get one item from wfman
-                return optools.parse_wf_input(self,val,op)
+            return optools.parse_wf_input(self,il,op)
         elif src == optools.fs_input:
             # Trust that Operations using fs input 
             # are taking care of parsing the file names in whatever form
@@ -213,15 +208,85 @@ class WfManager(TreeModel):
         # Call out the dataChanged
         self.tree_dataChanged(idx)
 
-    def tree_dataChanged(self,idx):
+    def tree_update(self,idx,x_new):
+        """
+        Call this function to store x_new in the TreeItem at idx 
+        and then build/update/prune the subtree rooted at that item.
+        """
+        # Get the item at idx.
         itm = idx.internalPointer()
+        # Get the item's data
+        x = itm.data
+        # If x_new is not equal to x, replace
+        if not x == x_new:
+            itm.data = x_new
+        # Build dict of the intended children 
+        x_dict = optools.get_child_dict(x_new)
+        # Remove obsolete children
+        c_kill = [] 
+        for j in range(itm.n_children()):
+            if not self.index(j,0,idx).internalPointer().tag() in x_dict.keys():
+                c_kill.append( j )
+        c_kill.sort()
+        for j in c_kill[::-1]:
+            self.removeRows(j,1,idx)
+        # Add items for any new children 
+        c_dict = {itm.children[j].tag():itm.children[j].data for j in range(itm.n_children())}
+        for k in x_dict.keys():
+            if not k in c_dict:
+                nc = itm.n_children()
+                itm = TreeItem(nc,0,idx)
+                itm.set_tag(k)
+                #itm.data = x_dict[k] 
+                self.beginInsertRows(idx,nc,nc)
+                itm.children.insert(nc,itm)
+                self.endInsertRows()
+                #self.tree_update(self.index(nc,0,idx),x_dict[k])
+        # Recurse to update children 
+        for j in range(itm.n_children()):
+            c_idx = self.index(j,0,idx)
+            #if not c_idx.internalPointer().data == c_dict.keys():
+            self.tree_update(c_idx,c_dict[c_idx.internalPointer().tag()])
+        # If x is (was) an Operation, update workflow IO dependencies.
+        if isinstance(x,Operation):
+            self.update_io_deps(idx,x_new)
+        # Finish by informing views that dataChanged().
+        self.tree_dataChanged(idx) 
+
+    def update_io_deps(self,idx,new_op=None):
+        """
+        Explicitly remove any broken dependencies in the workflow
+        created by placing new_op (default new_op=None) at idx.
+        This should only be called after new_op has been placed in the tree,
+        and all of its children have been rendered.
+        """
+        itm = idx.internalPointer()
+        update_uri = itm.tag()
+        for row in range(len(self.root_items)):
+            itm = self.root_items[row]
+            op = itm.data
+            #op_idx = self.index(row,0,QtCore.QModelIndex())
+            for name,il in op.input_locator.items():
+                self.update_input_locator(il,update_uri,new_op)
+
+    def update_input_locator(self,il,update_uri,new_op ... )
+        # If the source is workflow input (optools.wf_input)...
+        if il.src == optools.wf_input:
+            vals = optools.val_list(il)
+            for v in vals:
+                # Check if new_op will provide this input.
+                input_ok_flag = self.is_good_uri(v) 
+                # If not, this input locator must be reset.
+                if not input_ok_flag:
+                    op.input_locator[name] = optools.InputLocator()
+
+    def tree_dataChanged(self,idx):
         self.dataChanged.emit(idx,idx)
-        # Build any new children that resulted from the dataChanged at idx.
-        self.update_children(idx)
+        itm = idx.internalPointer()
         for c_row in range(itm.n_children()):
             c_idx = self.index(c_row,0,idx)
             self.tree_dataChanged(c_idx)
-    
+
     def update_children(self,idx):
         """
         Check the children of the item at idx and compare them against the item's data.
@@ -229,9 +294,6 @@ class WfManager(TreeModel):
         """
         itm = idx.internalPointer()
         x = itm.data
-        # If it is an OutputContainer, unpack it
-        if isinstance(x,OutputContainer):
-            x = x.data
         if isinstance(x,Operation):
             # Operations should never gain children- they only have inputs and outputs
             pass
@@ -272,46 +334,6 @@ class WfManager(TreeModel):
             self.endInsertRows()
         # TODO: Will I ever need to remove children too?
 
-    def update_io_deps(self,uri,new_op=None):
-        """
-        Explicitly remove any broken dependencies in the workflow
-        created by placing new_op (default new_op=None) at uri.
-        """
-        new_op_uri = uri.split('.')[0]
-        # Loop through the existing ops...
-        for row in range(len(self.root_items)):
-            itm = self.root_items[row]
-            op = itm.data
-            idx = self.index(row,0,QtCore.QModelIndex())
-            # For each input locator of this Operation...
-            for name,il in op.input_locator.items():
-                # If the source is workflow input (optools.wf_input)...
-                if il.src == optools.wf_input:
-                    if not il.tp == optools.list_type:
-                        vals = [il.val]
-                    else:
-                        vals = il.val
-                    for val in vals:
-                        # if the uri(s) stored in il.val start(s) with new_op_uri...
-                        uri_parts = val.split('.')
-                        if uri_parts[0] == new_op_uri:
-                            # then check if new_op will provide this input.
-                            input_ok_flag = False
-                            if new_op:
-                                if len(uri_parts) < 3:
-                                    # the input is either the Operation or its inputs or outputs dicts
-                                    input_ok_flag = True
-                                elif uri_parts[1] == optools.inputs_tag and uri_parts[2] in new_op.inputs.keys():
-                                    input_ok_flag = True
-                                elif uri_parts[1] == optools.outputs_tag and uri_parts[2] in new_op.outputs.keys():
-                                    input_ok_flag = True
-                            # If not, this input locator must be reset.
-                            if not input_ok_flag:
-                                op.input_locator[name] = optools.InputLocator()
-                                il_uri = itm.tag()+'.'+optools.inputs_tag+'.'+name
-                                il_itm,il_idx = self.get_from_uri(il_uri)
-                                self.dataChanged.emit(il_idx,il_idx)
-
     def list_from_widget(self,widg):
         print '[{}]: need to implement list_from_widget'.format(__name__)
         return None
@@ -336,7 +358,8 @@ class WfManager(TreeModel):
         i_idx = self.index(optools.inputs_idx,0,idx)
         o_idx = self.index(optools.outputs_idx,0,idx)
         self.build_next(op.input_locator,i_idx)
-        self.build_next(op.output_container,o_idx)
+        #self.build_next(op.output_container,o_idx)
+        self.build_next(op.outputs,o_idx)
 
     def build_from_dict(self,d,idx):
         """
@@ -616,10 +639,10 @@ class WfManager(TreeModel):
         rt.run_and_update()
         self.update_op(rt_item.tag(),rt)
         self.appref.processEvents()
-        if rt.downstream_ops():
-            to_run = [[optools.parse_wf_input(self,dsname,rt) for dsname in rt.downstream_ops()]]
-        else:
-            to_run = self.downstream_stack(rt_item)
+        #if rt.downstream_ops():
+        #    to_run = [[optools.parse_wf_input(self,dsname,rt) for dsname in rt.downstream_ops()]]
+        #else:
+        to_run = self.downstream_stack(rt_item)
         nx = 0
         while self._running:
             # After rt.run(), it is expected that rt.input_iter()
@@ -670,10 +693,10 @@ class WfManager(TreeModel):
         b.run_and_update()
         self.update_op(b_item.tag(),b)
         self.appref.processEvents()
-        if b.downstream_ops():
-            to_run = [[optools.parse_wf_input(self,dsname,b) for dsname in b.downstream_ops()]]
-        else:
-            to_run = self.downstream_stack(b_item)
+        #if b.downstream_ops():
+        #    to_run = [[optools.parse_wf_input(self,dsname,b) for dsname in b.downstream_ops()]]
+        #else:
+        to_run = self.downstream_stack(b_item)
         # After b.run(), it is expected that b.input_list() will refer to a list of dicts,
         # where each dict has the form [workflow tree uri:input value]. 
         for i in range(len(b.input_list())):
@@ -850,11 +873,7 @@ class WfManager(TreeModel):
             for name,il in op.input_locator.items():
                 src = il.src
                 if src == optools.wf_input:
-                    tp = op.input_locator[name].tp
-                    if tp == optools.list_type:
-                        uris = op.input_locator[name].val
-                    else:
-                        uris = [op.input_locator[name].val]
+                    uris = optools.val_list(il)
                     for inp_uri in uris:
                         uri_fields = inp_uri.split('.')
                         # Get the op item and see if it is in items_done

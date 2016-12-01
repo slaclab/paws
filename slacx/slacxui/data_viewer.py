@@ -139,8 +139,8 @@ def display_item(itm,uri,qlayout,logmethod=None):
         widg.widget().deleteLater()
 
     # If the item is an OutputContainer, unpack it.
-    if isinstance(itm,optools.OutputContainer):
-        itm = itm.data
+    #if isinstance(itm,optools.OutputContainer):
+    #    itm = itm.data
 
     if isinstance(itm,Operation):
         op_widget = OpWidget(itm)
