@@ -40,8 +40,7 @@ class WfManager(TreeModel):
             self.appref = None
         self._wf_dict = {}       
         # Flags to assist in thread control
-        #self._exec_ready = True 
-        self._keep_going = True
+        self._running = False
         #self._n_threads = QtCore.QThread.idealThreadCount()
         self._n_threads = 1
         self._wf_threads = dict.fromkeys(range(self._n_threads)) 
@@ -461,18 +460,22 @@ class WfManager(TreeModel):
            #for dep in deps:
            #    self.run_and_update(item)
 
-    @QtCore.Slot()
+    def is_running(self):
+        return self._running
+
     def stop_wf(self):
-        self._keep_going = False
+        self._running = False
 
     def run_wf(self):
+        self._running = True
         if self.find_rt_item():
             self.run_wf_realtime()
         elif self.find_batch_item():
             self.run_wf_batch()
         else:
             self.run_wf_serial()
-        self.wfdone.emit()
+        if self.is_running():
+            self.wfdone.emit()
 
     def next_available_thread(self):
         for idx,th in self._wf_threads.items():
@@ -617,7 +620,7 @@ class WfManager(TreeModel):
         else:
             to_run = self.downstream_stack(rt_item)
         nx = 0
-        while self._keep_going:
+        while self._running:
             # After rt.run(), it is expected that rt.input_iter()
             # will generate lists of input values whose respective routes are rt.input_routes().
             # unless there are no new inputs to run, in which case it will iterate None. 
@@ -644,6 +647,9 @@ class WfManager(TreeModel):
                     self.appref.processEvents()
                 waiting_flag = True
                 self.loopwait(rt.delay())
+        self.logmethod( 'REALTIME EXECUTION TERMINATED' )
+        self.appref.processEvents()
+        return
 
     def run_wf_batch(self):
         """
@@ -670,7 +676,7 @@ class WfManager(TreeModel):
         # After b.run(), it is expected that b.input_list() will refer to a list of dicts,
         # where each dict has the form [workflow tree uri:input value]. 
         for i in range(len(b.input_list())):
-            if self._keep_going:
+            if self._running:
                 input_dict = b.input_list()[i]
                 for uri,val in input_dict.items():
                     self.set_op_input_at_uri(uri,val)
@@ -683,6 +689,10 @@ class WfManager(TreeModel):
                 for op_list in to_run:
                     b.output_list()[i].update(self.ops_as_dict(op_list))
                 self.update_op(b_item.tag(),b)
+            elif self.logmethod:
+                self.logmethod( 'BATCH EXECUTION TERMINATED' )
+                self.appref.processEvents()
+                return
         if self.logmethod:
             self.logmethod( 'BATCH EXECUTION FINISHED' )
             self.appref.processEvents()
