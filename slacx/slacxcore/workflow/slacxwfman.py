@@ -16,9 +16,6 @@ from ..operations.slacxop import Operation, Batch, Realtime
 from ..operations.optools import InputLocator#, OutputContainer
 from .. import slacxtools
 
-# TODO: Unify the various functions for updating tree data:
-# update_op, build_next, update_dict, update_list, update_io_deps, build_from_dict, build_from_list, io_subtree.
-# Can these all be rolled into one simple tree_update()??
 
 class WfManager(TreeModel):
     """
@@ -171,6 +168,52 @@ class WfManager(TreeModel):
             src, optools.valid_sources)
             raise ValueError(msg)
 
+    def get_from_uri(self, uri):
+        """Get from this tree the item at the given uri."""
+        path = uri.split('.')
+        p_idx = QtCore.QModelIndex()
+        try:
+            for itemuri in path:
+                # get QModelIndex of item 
+                row = self.list_tags(p_idx).index(itemuri)
+                idx = self.index(row,0,p_idx)
+                # get TreeItem from QModelIndex
+                item = self.get_item(idx)
+                # set new parent in case the path continues...
+                p_idx = idx
+            return item, idx
+        except Exception as ex:
+            msg = '-----\nbad uri: {}\n-----'.format(uri)
+            print msg
+            raise ex
+
+    def next_uri(self,prefix):
+        indx = 0
+        goodtag = False
+        while not goodtag:
+            testtag = prefix+'_{}'.format(indx)
+            if not testtag in self.list_tags(QtCore.QModelIndex()):
+                goodtag = True
+            else:
+                indx += 1
+        return testtag
+                    
+    def is_good_uri(self,uri):
+        path = uri.split('.')
+        p_idx = QtCore.QModelIndex()
+        for itemuri in path:
+            try:
+                row = self.list_tags(p_idx).index(itemuri)
+            except ValueError as ex:
+                return False
+            idx = self.index(row,0,p_idx)
+            # get TreeItem from QModelIndex
+            item = self.get_item(idx)
+            # set new parent in case the path continues...
+            p_idx = idx
+        return True
+
+
     def add_op(self,uri,new_op):
         """Add an Operation to the tree as a new top-level TreeItem."""
         # Count top-level rows by passing parent=QModelIndex()
@@ -182,16 +225,6 @@ class WfManager(TreeModel):
         self.endInsertRows()
         idx = self.index(ins_row,0,QtCore.QModelIndex()) 
         self.tree_update(idx,new_op)
-        #itm.data = new_op
-        #self.beginInsertRows(
-        #QtCore.QModelIndex(),ins_row,ins_row)
-        # Insertion occurs between notification methods
-        #self.root_items.insert(ins_row,new_treeitem)
-        #self.endInsertRows()
-        # Render Operation inputs and outputs as children
-        #idx = self.index(ins_row,0,QtCore.QModelIndex())
-        #self.build_next(new_op,idx) 
-        #self.io_subtree(new_op,indx)
 
     def remove_op(self,rm_idx):
         """Remove an Operation from the workflow tree"""
@@ -212,27 +245,17 @@ class WfManager(TreeModel):
         """
         itm, idx = self.get_from_uri(uri)
         self.tree_update(idx,new_op)
-        # Take care of any IO dependencies: 
-        #self.update_io_deps(uri,new_op)
-        # Call out the dataChanged
-        #self.tree_dataChanged(idx)
 
     def tree_update(self,idx,x_new):
         """
         Call this function to store x_new in the TreeItem at idx 
         and then build/update/prune the subtree rooted at that item.
         """
-        # Get the item at idx.
         itm = idx.internalPointer()
-        # Get the item's data
         x = itm.data
-        # If x_new is not equal to x, replace
-        #if not x == x_new:
-        #    print 'tree update: data {} --> {}'.format(x,x_new)
         itm.data = x_new
         # Build dict of the intended children 
         x_dict = optools.get_child_dict(x_new)
-        #print 'expected children: {}'.format(x_dict)
         # Remove obsolete children
         c_kill = [] 
         for j in range(itm.n_children()):
@@ -240,7 +263,6 @@ class WfManager(TreeModel):
                 c_kill.append( j )
         c_kill.sort()
         for j in c_kill[::-1]:
-        #    print 'removing child {}'.format(itm.children[j].tag())
             self.beginRemoveRows(idx,j,j)
             itm.children.pop(j)
             self.endRemoveRows()
@@ -248,20 +270,16 @@ class WfManager(TreeModel):
         c_keys = [itm.children[j].tag() for j in range(itm.n_children())]
         for k in x_dict.keys():
             if not k in c_keys:
-        #        print 'adding child {}'.format(k)
                 nc = itm.n_children()
                 c_itm = TreeItem(nc,0,idx)
                 c_itm.set_tag(k)
                 self.beginInsertRows(idx,nc,nc)
                 itm.children.insert(nc,c_itm)
                 self.endInsertRows()
-                #self.tree_update(self.index(nc,0,idx),x_dict[k])
         # Recurse to update children
         for j in range(itm.n_children()):
             c_idx = self.index(j,0,idx)
             c_tag = c_idx.internalPointer().tag()
-        #    print 'updating child {}'.format(c_tag)
-        #    print 'from {} to {}'.format(c_idx.internalPointer().data,x_dict[c_tag])
             self.tree_update(c_idx,x_dict[c_tag])
         # If x is (was) an Operation, update workflow IO dependencies.
         if isinstance(x,Operation):
@@ -306,160 +324,6 @@ class WfManager(TreeModel):
         for c_row in range(itm.n_children()):
             c_idx = self.index(c_row,0,idx)
             self.tree_dataChanged(c_idx)
-
-    #def update_children(self,idx):
-    #    """
-    #    Check the children of the item at idx and compare them against the item's data.
-    #    If new children are found in the data, render them as new children.
-    #    """
-    #    itm = idx.internalPointer()
-    #    x = itm.data
-    #    if isinstance(x,Operation):
-    #        # Operations should never gain children- they only have inputs and outputs
-    #        pass
-    #    elif isinstance(x,dict):
-    #        self.update_dict(x,idx)
-    #    elif isinstance(x,list):
-    #        self.update_list(x,idx)
-    #    else:
-    #        pass
-
-    #def update_dict(self,d,idx):
-    #    itm = idx.internalPointer()
-    #    child_keys = [itm.children[j].tag() for j in range(itm.n_children())]
-    #    nc = itm.n_children()
-    #    for k in d.keys():
-    #        if not k in child_keys:
-    #            self.beginInsertRows(idx,nc,nc)
-    #            d_item = TreeItem(nc,0,idx)
-    #            d_item.set_tag(k)
-    #            d_item.data = d[k] 
-    #            itm.children.insert(nc,d_item)
-    #            self.build_next(d[k],self.index(nc,0,idx))
-    #            self.endInsertRows()
-    #            nc += 1
-    #    # TODO: Will I ever need to remove children too?
-
-    #def update_list(self,l,idx):
-    #    itm = idx.internalPointer()
-    #    nit_old = itm.n_children()
-    #    nit_new = len(l)
-    #    for i in range(nit_old,nit_new):
-    #        self.beginInsertRows(idx,i,i)
-    #        l_item = TreeItem(i,0,idx)
-    #        l_item.set_tag(str(i))
-    #        l_item.data = l[i] 
-    #        itm.children.insert(i,l_item)
-    #        self.build_next(l[i],self.index(i,0,idx))
-    #        self.endInsertRows()
-    #    # TODO: Will I ever need to remove children too?
-
-    #def list_from_widget(self,widg):
-    #    print '[{}]: need to implement list_from_widget'.format(__name__)
-    #    return None
-
-    #def io_subtree(self,op,idx):
-    #    """Add inputs and outputs subtrees as children of an Operation TreeItem"""
-    #    # Get a reference to the parent item
-    #    p_item = idx.internalPointer()
-    #    # TreeItems inputs, outputs dicts
-    #    i_item = TreeItem(optools.inputs_idx,0,idx)
-    #    o_item = TreeItem(optools.outputs_idx,0,idx)
-    #    i_item.set_tag(optools.inputs_tag)
-    #    o_item.set_tag(optools.outputs_tag)
-    #    i_item.data = op.input_locator
-    #    o_item.data = op.outputs
-    #    # Insert the new TreeItems
-    #    self.beginInsertRows(idx,optools.inputs_idx,optools.outputs_idx)
-    #    p_item.children.insert(optools.inputs_idx,i_item)
-    #    p_item.children.insert(optools.outputs_idx,o_item)
-    #    self.endInsertRows()
-    #    # Build io trees from io dicts:
-    #    i_idx = self.index(optools.inputs_idx,0,idx)
-    #    o_idx = self.index(optools.outputs_idx,0,idx)
-    #    self.build_next(op.input_locator,i_idx)
-    #    #self.build_next(op.output_container,o_idx)
-    #    self.build_next(op.outputs,o_idx)
-
-    #def build_from_dict(self,d,idx):
-    #    """
-    #    Add TreeItems from a dict, tagged by their dict keys.
-    #    idx is the QModelIndex of the dict item.
-    #    """
-    #    nit = len(d)
-    #    self.beginInsertRows(idx,0,nit-1)
-    #    itm = idx.internalPointer()
-    #    i=0
-    #    for k,v in d.items():
-    #        d_item = TreeItem(i,0,idx)
-    #        d_item.set_tag(k)
-    #        d_item.data = v
-    #        itm.children.insert(i,d_item)
-    #        self.build_next(v,self.index(i,0,idx))
-    #        i += 1
-    #    self.endInsertRows()
-
-    #def build_from_list(self,l,idx):
-    #    """
-    #    Add TreeItems from a list, tagged by their list index.
-    #    idx is the QModelIndex of the list item.
-    #    """
-    #    nit = len(l)
-    #    self.beginInsertRows(idx,0,nit-1)
-    #    itm = idx.internalPointer()
-    #    for i in range(nit):
-    #        l_item = TreeItem(i,0,idx)
-    #        l_item.set_tag(str(i))
-    #        l_item.data = l[i] 
-    #        itm.children.insert(i,l_item)
-    #        self.build_next(l[i],self.index(i,0,idx))
-    #    self.endInsertRows()
-       
-    #def build_next(self,x,x_idx): 
-    #    """
-    #    Render TreeItems from an object, either an Operation, a dict, or a list.
-    #    x_idx is the index of the input object x.
-    #    """
-    #    if isinstance(x,Operation):
-    #        self.io_subtree(x,x_idx)
-    #    elif isinstance(x,dict):
-    #        self.build_from_dict(x,x_idx)
-    #    elif isinstance(x,list):
-    #        self.build_from_list(x,x_idx)
-    #    else:
-    #        pass
-
-    # Overloaded data() for WfManager
-    def data(self,item_indx,data_role):
-        if (not item_indx.isValid()):
-            return None
-        item = item_indx.internalPointer()
-        if item_indx.column() == 1:
-            if item.data is not None:
-                if ( isinstance(item.data,Operation)
-                    or isinstance(item.data,list)
-                    or isinstance(item.data,dict) ):
-                    return type(item.data).__name__ 
-                else:
-                    return ' '
-            else:
-                return ' '
-        else:
-            return super(WfManager,self).data(item_indx,data_role)
-
-    # Overloaded headerData() for WfManager 
-    def headerData(self,section,orientation,data_role):
-        if (data_role == QtCore.Qt.DisplayRole and section == 0):
-            return "{} operation(s) loaded".format(self.rowCount(QtCore.QModelIndex()))
-        elif (data_role == QtCore.Qt.DisplayRole and section == 1):
-            return "type"
-        else:
-            return None
-
-    # Overload columnCount()
-    def columnCount(self,parent):
-        """Let WfManager have two columns, one for item tag, one for item type"""
-        return 2
 
     def check_wf(self):
         """
@@ -524,17 +388,7 @@ class WfManager(TreeModel):
     def next_available_thread(self):
         for idx,th in self._wf_threads.items():
             if not th:
-                #self._exec_ready = True
                 return idx
-            #else:
-            #    if th.isFinished():
-            #        print 'found finished thread not yet deleted'
-            #        #th.finished.emit()
-            #        #self._exec_ready = True
-            #        #return idx
-        #for idx,th in self._wf_threads.items():
-        #    print 'thread {} running: {}'.format(idx,th.isRunning())
-        #self._exec_ready = False
         return None
 
     def wait_for_thread(self,th_idx):
@@ -621,12 +475,9 @@ class WfManager(TreeModel):
                 self.logmethod(msg)
                 self.appref.processEvents()
             wf_thread.start()
-            # Calling wf_thread.wait() hands over control to wf_thread.
-            # i.e. this makes the current thread wait on wf_thread.
-            #wf_thread.wait()
-            # When the thread is finished, update the ops it ran.
             # Let the thread finish
             self.wait_for_thread(thd)
+            # When the thread is finished, update the ops it ran.
             for itm in to_run:
                 op = itm.data
                 self.update_op(itm.tag(),op)
@@ -660,9 +511,6 @@ class WfManager(TreeModel):
         rt.run()
         self.update_op(rt_item.tag(),rt)
         self.appref.processEvents()
-        #if rt.downstream_ops():
-        #    to_run = [[optools.parse_wf_input(self,dsname,rt) for dsname in rt.downstream_ops()]]
-        #else:
         to_run = self.downstream_stack(rt_item)
         nx = 0
         while self._running:
@@ -715,9 +563,6 @@ class WfManager(TreeModel):
         b.run()
         self.update_op(b_item.tag(),b)
         self.appref.processEvents()
-        #if b.downstream_ops():
-        #    to_run = [[optools.parse_wf_input(self,dsname,b) for dsname in b.downstream_ops()]]
-        #else:
         to_run = self.downstream_stack(b_item)
         # After b.run(), it is expected that b.input_list() will refer to a list of dicts,
         # where each dict has the form [workflow tree uri:input value]. 
@@ -750,13 +595,6 @@ class WfManager(TreeModel):
         op_itm, idx = self.get_from_uri(p[0])
         op = op_itm.data
         op.inputs[p[2]] = val
-        #if not len(path) == 3:
-        #    msg = 'uri '+uri+' should have format Operation.'+optools.inputs_tag+'.inputname'
-        #    raise ValueError(msg)
-        #if p[1] == optools.inputs_tag and p[2] in op.inputs.keys():
-        #else:
-        #    msg = 'uri {} does not specify inputs, or specifies an invalid inputname'.format(uri)
-        #    raise ValueError(msg)
 
     def serial_execution_stack(self):
         """
@@ -806,36 +644,6 @@ class WfManager(TreeModel):
             else:
                 substk.append(lst)
         return substk
-        #ordered_items = [root_item]
-        #done = False
-        #while not done:
-        #    done = True
-        #    for item in ordered_items:
-        #        op = item.data
-        #        for name in op.inputs.keys():
-        #            # Check if this input is supposed to come from a field in another Operation
-        #            # TODO: ensure that when this is called, all Input Locators have already been loaded.
-        #            src = op.input_locator[name].src
-        #            tp = op.input_locator[name].tp
-        #            if src == optools.wf_input:
-        #                if tp == optools.list_type:
-        #                    uris = op.input_locator[name].val
-        #                else:
-        #                    uris = [op.input_locator[name].val]
-        #                for uri in uris:
-        #                    # TODO: Check if this is an Input field that is not in Batch.input_routes()
-        #                    # Check whether or not this is an Output field 
-        #                    uri_items = uri.split('.')
-        #                    if len(uri_items) > 1:
-        #                        op_tag = uri_items[0]
-        #                        io_tag = uri_items[1]
-        #                        op_item, indx = self.get_from_uri(op_tag)
-        #                        if io_tag == 'outputs' and not op_item in ordered_items:
-        #                            ordered_items.insert(0,op_item)
-        #                            done = False
-        ## Remove root_item from the end
-        #ordered_items.pop(-1)
-        #return ordered_items
 
     def downstream_stack(self,root_item):
         """
@@ -854,31 +662,6 @@ class WfManager(TreeModel):
             else:
                 substk.append(lst)
         return substk
-        #ds_items = []
-        #op = op_item.data
-        ## Get uris of inputs that will be set by the op 
-        #inroutes = op.input_routes()
-        #for uri in inroutes:
-        #    in_op_tag = uri.split('.')[0]
-        #    in_op_item, indx = self.get_from_uri(in_op_tag)
-        #    # Exclude Batches and Realtimes from downstream ops.
-        #    # TODO: Consider how / whether embedded Batches / Realtimes should work
-        #    if ( not isinstance(in_op_item.data,Batch)
-        #    and not isinstance(in_op_item.data,Realtime) ):
-        #        ds_items.append(in_op_item)
-        #next_items = self.items_ready(ds_items)
-        #while next_items:
-        #    next_items = self.items_ready(ds_items)
-        #    pop_list = []
-        #    for i in range(len(next_items)):
-        #        in_item = next_items[i]
-        #        if isinstance(in_item.data,Batch) or isinstance(in_item.data,Realtime):
-        #            pop_list.append(i)
-        #        else:
-        #            ds_items.append(in_item)
-        #    for idx in pop_list:
-        #        next_items.pop(idx)
-        #return ds_items
 
     def items_ready(self,items_done):
         """
@@ -919,50 +702,37 @@ class WfManager(TreeModel):
                 rdy.append(itm)
         return rdy 
 
-    def get_from_uri(self, uri):
-        """Get from this tree the item at the given uri."""
-        path = uri.split('.')
-        p_idx = QtCore.QModelIndex()
-        try:
-            for itemuri in path:
-                # get QModelIndex of item 
-                row = self.list_tags(p_idx).index(itemuri)
-                idx = self.index(row,0,p_idx)
-                # get TreeItem from QModelIndex
-                item = self.get_item(idx)
-                # set new parent in case the path continues...
-                p_idx = idx
-            return item, idx
-        except Exception as ex:
-            msg = '-----\nbad uri: {}\n-----'.format(uri)
-            print msg
-            raise ex
-
-    def next_uri(self,prefix):
-        indx = 0
-        goodtag = False
-        while not goodtag:
-            testtag = prefix+'_{}'.format(indx)
-            if not testtag in self.list_tags(QtCore.QModelIndex()):
-                goodtag = True
+    # Overloaded data() for WfManager
+    def data(self,item_indx,data_role):
+        if (not item_indx.isValid()):
+            return None
+        item = item_indx.internalPointer()
+        if item_indx.column() == 1:
+            if item.data is not None:
+                if ( isinstance(item.data,Operation)
+                    or isinstance(item.data,list)
+                    or isinstance(item.data,dict) ):
+                    return type(item.data).__name__ 
+                else:
+                    return ' '
             else:
-                indx += 1
-        return testtag
-                    
-    def is_good_uri(self,uri):
-        path = uri.split('.')
-        p_idx = QtCore.QModelIndex()
-        for itemuri in path:
-            try:
-                row = self.list_tags(p_idx).index(itemuri)
-            except ValueError as ex:
-                return False
-            idx = self.index(row,0,p_idx)
-            # get TreeItem from QModelIndex
-            item = self.get_item(idx)
-            # set new parent in case the path continues...
-            p_idx = idx
-        return True
+                return ' '
+        else:
+            return super(WfManager,self).data(item_indx,data_role)
+
+    # Overloaded headerData() for WfManager 
+    def headerData(self,section,orientation,data_role):
+        if (data_role == QtCore.Qt.DisplayRole and section == 0):
+            return "{} operation(s) loaded".format(self.rowCount(QtCore.QModelIndex()))
+        elif (data_role == QtCore.Qt.DisplayRole and section == 1):
+            return "type"
+        else:
+            return None
+
+    # Overload columnCount()
+    def columnCount(self,parent):
+        """Let WfManager have two columns, one for item tag, one for item type"""
+        return 2
 
     #def run_wf_graph(self):
     #    """
