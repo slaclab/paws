@@ -1,9 +1,11 @@
 import time
 import tifffile
-from os.path import splitext
+from os import rename, mkdir, listdir
+from os.path import splitext, split, join
 
 from slacxop import Operation
 import optools
+from writeCSV import find_by_extension, replace_extension
 
 
 class ReadTxtSSRL15(Operation):
@@ -47,16 +49,15 @@ class ImageAndHeaderSSRL15(Operation):
         txtname = txtname_from_tifname(self.inputs['file'])
         self.outputs['header_file_name'] = txtname
         self.outputs['image'] = tifffile.imread(self.inputs['file'])
-        print "image read from %s" % self.inputs['file']
         try:
             self.outputs['header'] = read_header(txtname)
-            print "header read successfully"
         except IOError:
             print "No corresponding header to file %s was found." % self.inputs['file']
             self.outputs['header'] = {}
+        except IndexError:
+            print "There was an error reading %s.  It may be caused by a malformed header file."  % self.inputs['file']
         except:
-            print "some other error occured?"  ###
-        print "ImageAndHeaderSSRL15 returning"
+            print "Some unexpected error occured."  ###
 
 
 
@@ -102,7 +103,6 @@ def line_to_dict_entries(line, sep, dict):
 
 def read_header(txtfile):
     """Pulls together mini-functions in correct order."""
-    print "read_header running"
     header = {}
     file = open(txtfile, 'r')
     file.readline()  # pass first, commented line
@@ -112,30 +112,36 @@ def read_header(txtfile):
         line = file.readline()  # scroll forward to temp line
     header['temp_celsius'] = float(line[:-2])  # read temperature
     line = file.readline()
-    print "looping over remainder" ###
     while len(line) > 0:
-        print line
         if not (line[0] == '#'):
             if len(line.strip()) > 0:
                 line_to_dict_entries(line, '=', header)
         line = file.readline()
     return header
 
-def readfortest(imfile):
-    image = tifffile.imread(imfile)
-    txtname = txtname_from_tifname(imfile)
-    try:
-        header = read_header(txtname)
-        print "header read successfully"
-    except IOError:
-        print "No corresponding header to file %s was found." % imfile
-        header = {}
-#    except:
-#        print "some other error occured?"  ###
-    print "readfortest returning"
 
-'''
-# change
-imfile = "/Users/Amanda/Data20161118/R1/R1_2rdcool1_0001.tif"
-readfortest(imfile)
-'''
+def read_test(base_directory, bad_directory):
+    '''Test header files in *base_directory*; move malformed ones to *bad_directory*.
+
+    I won't be packaging this as a slacx operation because
+    the problem it solves (malformed headers) should be solved elsewhere (at the beamline).'''
+    try:
+        mkdir(bad_directory)
+    except OSError: # If the directory already exists
+        pass
+    txtfiles = find_by_extension(base_directory, 'txt')
+    print "%i header files will be examined." % len(txtfiles)
+    for ii in txtfiles:
+        try:
+            read_header(ii)
+        except IndexError:
+            print "Header file %s appears to be malformed.  It and its .tif file are being relocated." % ii
+            old_txt = ii
+            new_txt = join(bad_directory, split(ii)[1])
+            rename(old_txt, new_txt)
+            old_tif = replace_extension(ii, 'tif')
+            new_tif = replace_extension(new_txt, 'tif')
+            rename(old_tif, new_tif)
+#        except:
+#            print "Some unexpected error occured in file %s." % ii ###
+    print "read_test done."
