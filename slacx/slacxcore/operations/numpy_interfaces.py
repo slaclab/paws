@@ -157,7 +157,7 @@ class Zip(Operation):
         n = x.size
         if len(x.shape) > 1:
             raise ValueError("ndarray_x and ndarray_y must be 1d arrays")
-        if (x.shape != y.shape):
+        if (x.shape != y.shape):  ###
             raise ValueError("ndarray_x and ndarray_y must have the same shape")
         xy = np.zeros((n,2))
         xy[:,0] = x
@@ -191,7 +191,7 @@ class LogLogZip(Operation):
         if len(x.shape) > 1:
             print "ndarray_x and ndarray_y must be 1d arrays"
             raise ValueError("ndarray_x and ndarray_y must be 1d arrays")
-        if (x.shape != y.shape):
+        if (x.shape != y.shape):  ###
             print "ndarray_x and ndarray_y must have the same shape"
             raise ValueError("ndarray_x and ndarray_y must have the same shape")
         good_vals = ((x > 0) & (y > 0) & (~np.isnan(x)) & (~np.isnan(y)))
