@@ -379,7 +379,7 @@ class WfUiManager(object):
         lm = ListModel([],list_ui)
         list_ui.list_view.setModel(lm)
         list_ui.browse_button.setText('browse...')
-        list_ui.browse_button.clicked.connect( partial(self.load_from_src,src,list_ui) )
+        list_ui.browse_button.clicked.connect( partial(self.load_from_src,name,src,list_ui) )
         list_ui.type_selector = uitools.type_mv_widget(src,list_ui.type_selector)
         if src == optools.user_input:
             list_ui.browse_button.setEnabled(False)
@@ -427,8 +427,8 @@ class WfUiManager(object):
             row = idx.row()
             list_ui.list_view.model().remove_item(row)
 
-    def load_from_src(self,src,list_ui):
-        src_ui = self.data_fetch_ui(src,list_ui)
+    def load_from_src(self,name,src,list_ui):
+        src_ui = self.data_fetch_ui(name,src,list_ui)
         src_ui.load_button.clicked.connect(partial(self.load_path_to_list,src,src_ui,list_ui))
         src_ui.tree.doubleClicked.connect(partial(self.load_path_to_list,src,src_ui,list_ui))
         src_ui.tree.clicked.connect( partial(uitools.toggle_expand,src_ui.tree) )
@@ -438,13 +438,13 @@ class WfUiManager(object):
             src_ui.tree.setColumnWidth(0,400)
         src_ui.show()
 
-    def data_fetch_ui(self,src,parent=None):
+    def data_fetch_ui(self,name,src,parent=None):
         ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/load_browser.ui")
         ui_file.open(QtCore.QFile.ReadOnly)
         src_ui = QtUiTools.QUiLoader().load(ui_file)
         ui_file.close()
         src_ui.setParent(parent,QtCore.Qt.Window)
-        src_ui.setWindowModality(QtCore.Qt.WindowModal)
+        #src_ui.setWindowModality(QtCore.Qt.WindowModal)
         src_ui.setWindowTitle("data loader")
         if src == optools.wf_input:
             trmod = self.wfman
@@ -458,13 +458,13 @@ class WfUiManager(object):
             src_ui.tree.expandAll()
         src_ui.tree.resizeColumnToContents(0)
         src_ui.load_button.setText('Load selected data')
-        src_ui.tree_box.setTitle(optools.input_sources[src])
+        src_ui.tree_box.setTitle(name+' - from '+optools.input_sources[src])
         return src_ui
 
     def fetch_data(self,name):
         """Use a popup to select the input data"""
         src = self.src_widgets[name].currentIndex()
-        src_ui = self.data_fetch_ui(src,self.ui)
+        src_ui = self.data_fetch_ui(name,src,self.ui)
         src_ui.load_button.clicked.connect(partial(self.set_input,name,src_ui))
         src_ui.tree.clicked.connect( partial(uitools.toggle_expand,src_ui.tree) )
         src_ui.tree.doubleClicked.connect(partial(self.set_input,name,src_ui))

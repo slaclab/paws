@@ -333,18 +333,19 @@ class WfManager(TreeModel):
         """
         pass
 
-    def find_batch_item(self):
+    def find_batch_items(self):
         batch_items = [] 
         for item in self.root_items:
             if isinstance(item.data,Batch):
                batch_items.append(item)
-        if len(batch_items) > 1:
-            msg = 'Found {} Batches in workflow. Only one Batch Operation is currently supported.'.format(len(batch_items))
-            raise ValueError(msg)
-        elif batch_items:
-            return batch_items[0] 
-        else:
-            return []
+        return batch_items
+        #if len(batch_items) > 1:
+        #    msg = 'Found {} Batches in workflow. Only one Batch Operation is currently supported.'.format(len(batch_items))
+        #    raise ValueError(msg)
+        #if batch_items:
+        #    return batch_items[0] 
+        #else:
+        #    return []
 
     def find_rt_item(self):
         rt_items = [] 
@@ -378,7 +379,7 @@ class WfManager(TreeModel):
         self._running = True
         if self.find_rt_item():
             self.run_wf_realtime()
-        elif self.find_batch_item():
+        elif any(self.find_batch_items()):
             self.run_wf_batch()
         else:
             self.run_wf_serial()
@@ -548,45 +549,48 @@ class WfManager(TreeModel):
         """
         Executes the workflow under the control of one Batch(Operation)
         """
-        b_item = self.find_batch_item() 
-        if self.logmethod:
-            self.logmethod( 'BATCH EXECUTION STARTING' )
-            self.logmethod( 'Running dependencies... ' )
-            self.appref.processEvents()
-        self.run_deps(b_item)
-        if self.logmethod:
-            self.logmethod( 'Preparing Batch controller... ' )
-            self.appref.processEvents()
-        b = b_item.data
-        self.load_inputs(b)
-        #b.run_and_update()
-        b.run()
-        self.update_op(b_item.tag(),b)
-        self.appref.processEvents()
-        to_run = self.downstream_stack(b_item)
-        # After b.run(), it is expected that b.input_list() will refer to a list of dicts,
-        # where each dict has the form [workflow tree uri:input value]. 
-        for i in range(len(b.input_list())):
-            if self._running:
-                input_dict = b.input_list()[i]
-                for uri,val in input_dict.items():
-                    self.set_op_input_at_uri(uri,val)
-                # inputs are set, run in serial 
-                thd = self.next_available_thread()
-                if self.logmethod:
-                    self.logmethod( 'BATCH EXECUTION {} / {} in thread {}'.format(i+1,len(b.input_list()),thd) )
-                    self.appref.processEvents()
-                self.run_wf_serial(to_run,thd)
-                for op_list in to_run:
-                    b.output_list()[i].update(self.ops_as_dict(op_list))
-                self.update_op(b_item.tag(),b)
-            elif self.logmethod:
-                self.logmethod( 'BATCH EXECUTION TERMINATED' )
+        b_itms = self.find_batch_items() 
+        for j in range(len(b_itms)):
+            b_itm = b_itms[j]
+            if self.logmethod:
+                self.logmethod( 'BATCH {} EXECUTION STARTING'.format(j) )
+                self.logmethod( 'Running dependencies... ' )
                 self.appref.processEvents()
-                return
-        if self.logmethod:
-            self.logmethod( 'BATCH EXECUTION FINISHED' )
+            self.run_deps(b_itm)
+            if self.logmethod:
+                self.logmethod( 'Preparing Batch controller... ' )
+                self.appref.processEvents()
+            b = b_itm.data
+            self.load_inputs(b)
+            b.run()
+            self.update_op(b_itm.tag(),b)
             self.appref.processEvents()
+            to_run = self.downstream_stack(b_itm)
+            # Filter any other batch or realtime items out of to_run
+            to_run = [[itm for itm in r if not isinstance(itm.data,Realtime) and not isinstance(itm.data,Batch)] for r in to_run] 
+            # After b.run(), it is expected that b.input_list() will refer to a list of dicts,
+            # where each dict has the form [workflow tree uri:input value]. 
+            for i in range(len(b.input_list())):
+                if self._running:
+                    input_dict = b.input_list()[i]
+                    for uri,val in input_dict.items():
+                        self.set_op_input_at_uri(uri,val)
+                    # inputs are set, run in serial 
+                    thd = self.next_available_thread()
+                    if self.logmethod:
+                        self.logmethod( 'BATCH {} EXECUTION {} / {} in thread {}'.format(j,i+1,len(b.input_list()),thd) )
+                        self.appref.processEvents()
+                    self.run_wf_serial(to_run,thd)
+                    for op_list in to_run:
+                        b.output_list()[i].update(self.ops_as_dict(op_list))
+                    self.update_op(b_itm.tag(),b)
+                elif self.logmethod:
+                    self.logmethod( 'BATCH {} EXECUTION TERMINATED'.format(j) )
+                    self.appref.processEvents()
+                    return
+            if self.logmethod:
+                self.logmethod( 'BATCH {} EXECUTION FINISHED'.format(j) )
+                self.appref.processEvents()
 
     def set_op_input_at_uri(self,uri,val):
         """Set an op input, indicated by uri, to provided value."""
@@ -687,13 +691,12 @@ class WfManager(TreeModel):
                         #    op_rdy = False
                 elif src == optools.batch_input:
                     inp_uri = itm.tag()+'.'+optools.inputs_tag+'.'+name
-                    # Look for a Batch in items_done
-                    b_itm = self.find_batch_item()
+                    b_itms = self.find_batch_items()
                     rt_itm = self.find_rt_item()
-                    if not b_itm and not rt_itm:
+                    if not any(b_itms) and not rt_itm:
                         op_rdy = False
-                    elif b_itm:
-                        if not inp_uri in b_itm.data.input_routes():
+                    elif any(b_itms):
+                        if not any( [inp_uri in b.data.input_routes() for b in b_itms] ):
                             op_rdy = False
                     elif rt_itm:
                         if not inp_uri in rt_itm.data.input_routes():
