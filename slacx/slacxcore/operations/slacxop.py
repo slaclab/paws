@@ -24,12 +24,12 @@ class Operation(object):
         self.categories = ['CAT1','CAT2.SUBCAT','CAT3'].
         """
         self.inputs = OrderedDict()
-        self.input_locator = {}
+        self.input_locator = OrderedDict() 
+        self.outputs = OrderedDict() 
         self.input_doc = {}
         self.input_src = {}
         self.input_type = {}
-        self.outputs = OrderedDict() 
-        self.output_container = {}
+        #self.output_container = {}
         self.output_doc = {}
         # For each of the var names, assign to None 
         for name in input_names: 
@@ -39,7 +39,7 @@ class Operation(object):
             self.inputs[name] = None
             self.input_doc[name] = None
         for name in output_names: 
-            self.output_container[name] = optools.OutputContainer() 
+            #self.output_container[name] = optools.OutputContainer() 
             self.outputs[name] = None
             self.output_doc[name] = None
         # Set default category to be 'MISC'
@@ -95,17 +95,17 @@ class Operation(object):
             out_indx += 1
         return a
                 
-    def run_and_update(self):
-        """
-        Run the Operation and save its outputs in its output_locator 
-        """
-        self.run()
-        self.save_outputs()
+    #def run_and_update(self):
+    #    """
+    #    Run the Operation and save its outputs in its output_locator 
+    #    """
+    #    self.run()
+    #    self.save_outputs()
 
-    def save_outputs(self):
-        """Loads the data from outputs[names] into output_container[names].data"""
-        for name,d in self.outputs.items():
-            self.output_container[name].data = d
+    #def save_outputs(self):
+    #    """Loads the data from outputs[names] into output_container[names].data"""
+    #    for name,d in self.outputs.items():
+    #        self.output_container[name].data = d
 
 class Realtime(Operation):
     __metaclass__ = abc.ABCMeta

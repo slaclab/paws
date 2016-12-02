@@ -50,15 +50,15 @@ def cast_type_val(tp,val):
 
 def get_child_dict(x):
     """Get a dict to be used in building TreeItem children from structured data object x"""
-    if isinstance(x,Operation):
+    if isinstance(x,slacxop.Operation):
         d = {} 
-        d[str(inputs_idx)] = x.input_locator 
+        d[inputs_tag] = x.input_locator 
         #d[str(outputs_idx)] = x.output_container
-        d[str(outputs_idx)] = x.outputs
+        d[outputs_tag] = x.outputs
     elif isinstance(x,dict):
         d = x 
     elif isinstance(x,list):
-        d = {str(i):l[i] for i in range(len(x))} 
+        d = {str(i):x[i] for i in range(len(x))} 
     else:
         d = {} 
     return d

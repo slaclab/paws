@@ -35,7 +35,8 @@ class WfWorker(QtCore.QObject):
             for item in self.to_run:
                 # run and update the Operation in this TreeItem
                 op = item.data
-                op.run_and_update()
+                #op.run_and_update()
+                op.run()
                 #self.wfman.run_and_update(item)
             self.thread().quit()
         except Exception as ex:

@@ -48,53 +48,6 @@ class WfManager(TreeModel):
         if self.logmethod:
             self.logmethod('Slacx workflow manager started, working with {} threads'.format(self._n_threads))
 
-    def load_inputs(self,op):
-        """
-        Loads data for an Operation from that Operation's input_locators.
-        It is expected that op.input_locator[name] will refer to an InputLocator.
-        """
-        for name,il in op.input_locator.items():
-            if isinstance(il,InputLocator):
-                src = il.src
-                if not src == optools.batch_input:
-                    il.data = self.locate_input(il,op)
-                    op.inputs[name] = il.data
-                else:
-                    # Batch executor should have already set the batch inputs. 
-                    il.data = op.inputs[name]
-            else:
-                msg = '[{}] Found broken Operation.input_locator for {}: {}'.format(
-                __name__, name, il)
-                raise ValueError(msg)
-        #import pdb; pdb.set_trace()
-
-    def locate_input(self,il,op):
-        """
-        Return the data pointed to by a given InputLocator object.
-        Takes the Operation that owns this inplocator as a second arg,
-        so that if it is a Batch its input routes can be handled properly.
-        """
-        #if isinstance(inplocator,InputLocator):
-        src = il.src
-        tp = il.tp
-        val = il.val
-        if src == optools.no_input: 
-            return None
-        elif src == optools.user_input: 
-            return optools.cast_type_val(tp,val)
-        elif src == optools.wf_input:
-            return optools.parse_wf_input(self,il,op)
-        elif src == optools.fs_input:
-            # Trust that Operations using fs input 
-            # are taking care of parsing the file names in whatever form
-            return val 
-        elif src == optools.batch_input:
-            return val 
-        else: 
-            msg = 'found input source {}, should be one of {}'.format(
-            src, optools.valid_sources)
-            raise ValueError(msg)
-
     def load_from_file(self,opman,wfl):
         """
         Load things in to the Workflow from an OpManager and a YAML .wfl file 
@@ -146,6 +99,13 @@ class WfManager(TreeModel):
         #yaml.dump(wf_dict, f, encoding='utf-8')
         yaml.dump(wf_dict, f)
         f.close()
+    def ops_as_dict(self,op_items=None):
+        od = OrderedDict()
+        if not op_items:
+            op_items = self.root_items
+        for itm in op_items:
+            od[itm.tag()] = copy.deepcopy(itm.data)
+        return od
     def op_dict(self,op_item):
         dct = OrderedDict() 
         op = op_item.data
@@ -165,25 +125,73 @@ class WfManager(TreeModel):
     #        dct[name] = str(op.outputs[name])
     #    return dct
 
+    def load_inputs(self,op):
+        """
+        Loads data for an Operation from that Operation's input_locators.
+        It is expected that op.input_locator[name] will refer to an InputLocator.
+        """
+        for name,il in op.input_locator.items():
+            if isinstance(il,InputLocator):
+                src = il.src
+                if not src == optools.batch_input:
+                    il.data = self.locate_input(il,op)
+                    op.inputs[name] = il.data
+                else:
+                    # Batch executor should have already set the batch inputs. 
+                    il.data = op.inputs[name]
+            else:
+                msg = '[{}] Found broken Operation.input_locator for {}: {}'.format(
+                __name__, name, il)
+                raise ValueError(msg)
+
+    def locate_input(self,il,op):
+        """
+        Return the data pointed to by a given InputLocator object.
+        Takes the Operation that owns this inplocator as a second arg,
+        so that if it is a Batch its input routes can be handled properly.
+        """
+        #if isinstance(inplocator,InputLocator):
+        src = il.src
+        tp = il.tp
+        val = il.val
+        if src == optools.no_input: 
+            return None
+        elif src == optools.user_input: 
+            return optools.cast_type_val(tp,val)
+        elif src == optools.wf_input:
+            return optools.parse_wf_input(self,il,op)
+        elif src == optools.fs_input:
+            # Trust that Operations using fs input 
+            # are taking care of parsing the file names in whatever form
+            return val 
+        elif src == optools.batch_input:
+            return val 
+        else: 
+            msg = 'found input source {}, should be one of {}'.format(
+            src, optools.valid_sources)
+            raise ValueError(msg)
+
     def add_op(self,uri,new_op):
         """Add an Operation to the tree as a new top-level TreeItem."""
         # Count top-level rows by passing parent=QModelIndex()
         ins_row = self.rowCount(QtCore.QModelIndex())
-        # Make a new TreeItem, column 0, invalid parent 
-        new_treeitem = TreeItem(ins_row,0,QtCore.QModelIndex())
-        new_treeitem.data = new_op
-        new_treeitem.set_tag( uri )
-        #new_treeitem.set_long_tag( new_op.__doc__ )
-        self.beginInsertRows(
-        QtCore.QModelIndex(),ins_row,ins_row)
-        # Insertion occurs between notification methods
-        self.root_items.insert(ins_row,new_treeitem)
+        itm = TreeItem(ins_row,0,QtCore.QModelIndex())
+        itm.set_tag( uri )
+        self.beginInsertRows(QtCore.QModelIndex(),ins_row,ins_row)
+        self.root_items.insert(ins_row,itm)
         self.endInsertRows()
+        idx = self.index(ins_row,0,QtCore.QModelIndex()) 
+        self.tree_update(idx,new_op)
+        #itm.data = new_op
+        #self.beginInsertRows(
+        #QtCore.QModelIndex(),ins_row,ins_row)
+        # Insertion occurs between notification methods
+        #self.root_items.insert(ins_row,new_treeitem)
+        #self.endInsertRows()
         # Render Operation inputs and outputs as children
-        idx = self.index(ins_row,0,QtCore.QModelIndex())
-        self.build_next(new_op,idx) 
+        #idx = self.index(ins_row,0,QtCore.QModelIndex())
+        #self.build_next(new_op,idx) 
         #self.io_subtree(new_op,indx)
-        #self._n_loaded += 1
 
     def remove_op(self,rm_idx):
         """Remove an Operation from the workflow tree"""
@@ -192,21 +200,22 @@ class WfManager(TreeModel):
         # Removal occurs between notification methods
         item_removed = self.root_items.pop(rm_row)
         self.endRemoveRows()
+        # Inform views 
+        self.tree_dataChanged(rm_idx)
         # Update any Operations that depended on the removed one
-        self.update_io_deps(item_removed.tag())
+        self.update_io_deps()
 
     def update_op(self,uri,new_op):
         """
         Update Operation in treeitem indicated by uri.
-        First, clean up any dependencies that are broken by the change.
-        Then, inform any attached QTreeView(s) that the Operation has been changed.
         It is expected that new_op is a reference to the Operation stored at uri. 
         """
-        item, idx = self.get_from_uri(uri)
+        itm, idx = self.get_from_uri(uri)
+        self.tree_update(idx,new_op)
         # Take care of any IO dependencies: 
-        self.update_io_deps(uri,new_op)
+        #self.update_io_deps(uri,new_op)
         # Call out the dataChanged
-        self.tree_dataChanged(idx)
+        #self.tree_dataChanged(idx)
 
     def tree_update(self,idx,x_new):
         """
@@ -218,10 +227,12 @@ class WfManager(TreeModel):
         # Get the item's data
         x = itm.data
         # If x_new is not equal to x, replace
-        if not x == x_new:
-            itm.data = x_new
+        #if not x == x_new:
+        #    print 'tree update: data {} --> {}'.format(x,x_new)
+        itm.data = x_new
         # Build dict of the intended children 
         x_dict = optools.get_child_dict(x_new)
+        #print 'expected children: {}'.format(x_dict)
         # Remove obsolete children
         c_kill = [] 
         for j in range(itm.n_children()):
@@ -229,56 +240,65 @@ class WfManager(TreeModel):
                 c_kill.append( j )
         c_kill.sort()
         for j in c_kill[::-1]:
-            self.removeRows(j,1,idx)
+        #    print 'removing child {}'.format(itm.children[j].tag())
+            self.beginRemoveRows(idx,j,j)
+            itm.children.pop(j)
+            self.endRemoveRows()
         # Add items for any new children 
-        c_dict = {itm.children[j].tag():itm.children[j].data for j in range(itm.n_children())}
+        c_keys = [itm.children[j].tag() for j in range(itm.n_children())]
         for k in x_dict.keys():
-            if not k in c_dict:
+            if not k in c_keys:
+        #        print 'adding child {}'.format(k)
                 nc = itm.n_children()
-                itm = TreeItem(nc,0,idx)
-                itm.set_tag(k)
-                #itm.data = x_dict[k] 
+                c_itm = TreeItem(nc,0,idx)
+                c_itm.set_tag(k)
                 self.beginInsertRows(idx,nc,nc)
-                itm.children.insert(nc,itm)
+                itm.children.insert(nc,c_itm)
                 self.endInsertRows()
                 #self.tree_update(self.index(nc,0,idx),x_dict[k])
-        # Recurse to update children 
+        # Recurse to update children
         for j in range(itm.n_children()):
             c_idx = self.index(j,0,idx)
-            #if not c_idx.internalPointer().data == c_dict.keys():
-            self.tree_update(c_idx,c_dict[c_idx.internalPointer().tag()])
+            c_tag = c_idx.internalPointer().tag()
+        #    print 'updating child {}'.format(c_tag)
+        #    print 'from {} to {}'.format(c_idx.internalPointer().data,x_dict[c_tag])
+            self.tree_update(c_idx,x_dict[c_tag])
         # If x is (was) an Operation, update workflow IO dependencies.
         if isinstance(x,Operation):
-            self.update_io_deps(idx,x_new)
+            self.update_io_deps()
         # Finish by informing views that dataChanged().
         self.tree_dataChanged(idx) 
 
-    def update_io_deps(self,idx,new_op=None):
+    def update_io_deps(self):
         """
-        Explicitly remove any broken dependencies in the workflow
-        created by placing new_op (default new_op=None) at idx.
-        This should only be called after new_op has been placed in the tree,
-        and all of its children have been rendered.
+        Remove any broken dependencies in the workflow.
+        NB: Only effective after all changes to tree data are finished. 
         """
-        itm = idx.internalPointer()
-        update_uri = itm.tag()
+        #itm = idx.internalPointer()
+        #update_uri = itm.tag()
         for row in range(len(self.root_items)):
             itm = self.root_items[row]
             op = itm.data
             #op_idx = self.index(row,0,QtCore.QModelIndex())
             for name,il in op.input_locator.items():
-                self.update_input_locator(il,update_uri,new_op)
+                self.update_input_locator(il)
 
-    def update_input_locator(self,il,update_uri,new_op ... )
+    def update_input_locator(self,il):
+        """
+        Clear an input_locator if the uris it points to are obsolete.
+        This helps clean up after an Operation is altered or removed.
+        """
         # If the source is workflow input (optools.wf_input)...
         if il.src == optools.wf_input:
             vals = optools.val_list(il)
             for v in vals:
                 # Check if new_op will provide this input.
                 input_ok_flag = self.is_good_uri(v) 
-                # If not, this input locator must be reset.
+                # If not, this should be reset. 
                 if not input_ok_flag:
-                    op.input_locator[name] = optools.InputLocator()
+                    if self.logmethod:
+                        self.logmethod('--- NB: clearing InputLocator for {} ---'.format(v))
+                    il = optools.InputLocator()
 
     def tree_dataChanged(self,idx):
         self.dataChanged.emit(idx,idx)
@@ -287,127 +307,127 @@ class WfManager(TreeModel):
             c_idx = self.index(c_row,0,idx)
             self.tree_dataChanged(c_idx)
 
-    def update_children(self,idx):
-        """
-        Check the children of the item at idx and compare them against the item's data.
-        If new children are found in the data, render them as new children.
-        """
-        itm = idx.internalPointer()
-        x = itm.data
-        if isinstance(x,Operation):
-            # Operations should never gain children- they only have inputs and outputs
-            pass
-        elif isinstance(x,dict):
-            self.update_dict(x,idx)
-        elif isinstance(x,list):
-            self.update_list(x,idx)
-        else:
-            pass
+    #def update_children(self,idx):
+    #    """
+    #    Check the children of the item at idx and compare them against the item's data.
+    #    If new children are found in the data, render them as new children.
+    #    """
+    #    itm = idx.internalPointer()
+    #    x = itm.data
+    #    if isinstance(x,Operation):
+    #        # Operations should never gain children- they only have inputs and outputs
+    #        pass
+    #    elif isinstance(x,dict):
+    #        self.update_dict(x,idx)
+    #    elif isinstance(x,list):
+    #        self.update_list(x,idx)
+    #    else:
+    #        pass
 
-    def update_dict(self,d,idx):
-        itm = idx.internalPointer()
-        child_keys = [itm.children[j].tag() for j in range(itm.n_children())]
-        nc = itm.n_children()
-        for k in d.keys():
-            if not k in child_keys:
-                self.beginInsertRows(idx,nc,nc)
-                d_item = TreeItem(nc,0,idx)
-                d_item.set_tag(k)
-                d_item.data = d[k] 
-                itm.children.insert(nc,d_item)
-                self.build_next(d[k],self.index(nc,0,idx))
-                self.endInsertRows()
-                nc += 1
-        # TODO: Will I ever need to remove children too?
+    #def update_dict(self,d,idx):
+    #    itm = idx.internalPointer()
+    #    child_keys = [itm.children[j].tag() for j in range(itm.n_children())]
+    #    nc = itm.n_children()
+    #    for k in d.keys():
+    #        if not k in child_keys:
+    #            self.beginInsertRows(idx,nc,nc)
+    #            d_item = TreeItem(nc,0,idx)
+    #            d_item.set_tag(k)
+    #            d_item.data = d[k] 
+    #            itm.children.insert(nc,d_item)
+    #            self.build_next(d[k],self.index(nc,0,idx))
+    #            self.endInsertRows()
+    #            nc += 1
+    #    # TODO: Will I ever need to remove children too?
 
-    def update_list(self,l,idx):
-        itm = idx.internalPointer()
-        nit_old = itm.n_children()
-        nit_new = len(l)
-        for i in range(nit_old,nit_new):
-            self.beginInsertRows(idx,i,i)
-            l_item = TreeItem(i,0,idx)
-            l_item.set_tag(str(i))
-            l_item.data = l[i] 
-            itm.children.insert(i,l_item)
-            self.build_next(l[i],self.index(i,0,idx))
-            self.endInsertRows()
-        # TODO: Will I ever need to remove children too?
+    #def update_list(self,l,idx):
+    #    itm = idx.internalPointer()
+    #    nit_old = itm.n_children()
+    #    nit_new = len(l)
+    #    for i in range(nit_old,nit_new):
+    #        self.beginInsertRows(idx,i,i)
+    #        l_item = TreeItem(i,0,idx)
+    #        l_item.set_tag(str(i))
+    #        l_item.data = l[i] 
+    #        itm.children.insert(i,l_item)
+    #        self.build_next(l[i],self.index(i,0,idx))
+    #        self.endInsertRows()
+    #    # TODO: Will I ever need to remove children too?
 
-    def list_from_widget(self,widg):
-        print '[{}]: need to implement list_from_widget'.format(__name__)
-        return None
+    #def list_from_widget(self,widg):
+    #    print '[{}]: need to implement list_from_widget'.format(__name__)
+    #    return None
 
-    def io_subtree(self,op,idx):
-        """Add inputs and outputs subtrees as children of an Operation TreeItem"""
-        # Get a reference to the parent item
-        p_item = idx.internalPointer()
-        # TreeItems inputs, outputs dicts
-        i_item = TreeItem(optools.inputs_idx,0,idx)
-        o_item = TreeItem(optools.outputs_idx,0,idx)
-        i_item.set_tag(optools.inputs_tag)
-        o_item.set_tag(optools.outputs_tag)
-        i_item.data = op.input_locator
-        o_item.data = op.outputs
-        # Insert the new TreeItems
-        self.beginInsertRows(idx,optools.inputs_idx,optools.outputs_idx)
-        p_item.children.insert(optools.inputs_idx,i_item)
-        p_item.children.insert(optools.outputs_idx,o_item)
-        self.endInsertRows()
-        # Build io trees from io dicts:
-        i_idx = self.index(optools.inputs_idx,0,idx)
-        o_idx = self.index(optools.outputs_idx,0,idx)
-        self.build_next(op.input_locator,i_idx)
-        #self.build_next(op.output_container,o_idx)
-        self.build_next(op.outputs,o_idx)
+    #def io_subtree(self,op,idx):
+    #    """Add inputs and outputs subtrees as children of an Operation TreeItem"""
+    #    # Get a reference to the parent item
+    #    p_item = idx.internalPointer()
+    #    # TreeItems inputs, outputs dicts
+    #    i_item = TreeItem(optools.inputs_idx,0,idx)
+    #    o_item = TreeItem(optools.outputs_idx,0,idx)
+    #    i_item.set_tag(optools.inputs_tag)
+    #    o_item.set_tag(optools.outputs_tag)
+    #    i_item.data = op.input_locator
+    #    o_item.data = op.outputs
+    #    # Insert the new TreeItems
+    #    self.beginInsertRows(idx,optools.inputs_idx,optools.outputs_idx)
+    #    p_item.children.insert(optools.inputs_idx,i_item)
+    #    p_item.children.insert(optools.outputs_idx,o_item)
+    #    self.endInsertRows()
+    #    # Build io trees from io dicts:
+    #    i_idx = self.index(optools.inputs_idx,0,idx)
+    #    o_idx = self.index(optools.outputs_idx,0,idx)
+    #    self.build_next(op.input_locator,i_idx)
+    #    #self.build_next(op.output_container,o_idx)
+    #    self.build_next(op.outputs,o_idx)
 
-    def build_from_dict(self,d,idx):
-        """
-        Add TreeItems from a dict, tagged by their dict keys.
-        idx is the QModelIndex of the dict item.
-        """
-        nit = len(d)
-        self.beginInsertRows(idx,0,nit-1)
-        itm = idx.internalPointer()
-        i=0
-        for k,v in d.items():
-            d_item = TreeItem(i,0,idx)
-            d_item.set_tag(k)
-            d_item.data = v
-            itm.children.insert(i,d_item)
-            self.build_next(v,self.index(i,0,idx))
-            i += 1
-        self.endInsertRows()
+    #def build_from_dict(self,d,idx):
+    #    """
+    #    Add TreeItems from a dict, tagged by their dict keys.
+    #    idx is the QModelIndex of the dict item.
+    #    """
+    #    nit = len(d)
+    #    self.beginInsertRows(idx,0,nit-1)
+    #    itm = idx.internalPointer()
+    #    i=0
+    #    for k,v in d.items():
+    #        d_item = TreeItem(i,0,idx)
+    #        d_item.set_tag(k)
+    #        d_item.data = v
+    #        itm.children.insert(i,d_item)
+    #        self.build_next(v,self.index(i,0,idx))
+    #        i += 1
+    #    self.endInsertRows()
 
-    def build_from_list(self,l,idx):
-        """
-        Add TreeItems from a list, tagged by their list index.
-        idx is the QModelIndex of the list item.
-        """
-        nit = len(l)
-        self.beginInsertRows(idx,0,nit-1)
-        itm = idx.internalPointer()
-        for i in range(nit):
-            l_item = TreeItem(i,0,idx)
-            l_item.set_tag(str(i))
-            l_item.data = l[i] 
-            itm.children.insert(i,l_item)
-            self.build_next(l[i],self.index(i,0,idx))
-        self.endInsertRows()
+    #def build_from_list(self,l,idx):
+    #    """
+    #    Add TreeItems from a list, tagged by their list index.
+    #    idx is the QModelIndex of the list item.
+    #    """
+    #    nit = len(l)
+    #    self.beginInsertRows(idx,0,nit-1)
+    #    itm = idx.internalPointer()
+    #    for i in range(nit):
+    #        l_item = TreeItem(i,0,idx)
+    #        l_item.set_tag(str(i))
+    #        l_item.data = l[i] 
+    #        itm.children.insert(i,l_item)
+    #        self.build_next(l[i],self.index(i,0,idx))
+    #    self.endInsertRows()
        
-    def build_next(self,x,x_idx): 
-        """
-        Render TreeItems from an object, either an Operation, a dict, or a list.
-        x_idx is the index of the input object x.
-        """
-        if isinstance(x,Operation):
-            self.io_subtree(x,x_idx)
-        elif isinstance(x,dict):
-            self.build_from_dict(x,x_idx)
-        elif isinstance(x,list):
-            self.build_from_list(x,x_idx)
-        else:
-            pass
+    #def build_next(self,x,x_idx): 
+    #    """
+    #    Render TreeItems from an object, either an Operation, a dict, or a list.
+    #    x_idx is the index of the input object x.
+    #    """
+    #    if isinstance(x,Operation):
+    #        self.io_subtree(x,x_idx)
+    #    elif isinstance(x,dict):
+    #        self.build_from_dict(x,x_idx)
+    #    elif isinstance(x,list):
+    #        self.build_from_list(x,x_idx)
+    #    else:
+    #        pass
 
     # Overloaded data() for WfManager
     def data(self,item_indx,data_role):
@@ -605,11 +625,11 @@ class WfManager(TreeModel):
             # i.e. this makes the current thread wait on wf_thread.
             #wf_thread.wait()
             # When the thread is finished, update the ops it ran.
+            # Let the thread finish
+            self.wait_for_thread(thd)
             for itm in to_run:
                 op = itm.data
                 self.update_op(itm.tag(),op)
-        # Let the thread finish
-        self.wait_for_thread(thd)
         if self.logmethod:
             self.logmethod('SERIAL EXECUTION FINISHED in thread {}'.format(thd))
             self.appref.processEvents()
@@ -636,7 +656,8 @@ class WfManager(TreeModel):
             self.appref.processEvents()
         rt = rt_item.data
         self.load_inputs(rt)
-        rt.run_and_update()
+        #rt.run_and_update()
+        rt.run()
         self.update_op(rt_item.tag(),rt)
         self.appref.processEvents()
         #if rt.downstream_ops():
@@ -690,7 +711,8 @@ class WfManager(TreeModel):
             self.appref.processEvents()
         b = b_item.data
         self.load_inputs(b)
-        b.run_and_update()
+        #b.run_and_update()
+        b.run()
         self.update_op(b_item.tag(),b)
         self.appref.processEvents()
         #if b.downstream_ops():
@@ -723,25 +745,18 @@ class WfManager(TreeModel):
 
     def set_op_input_at_uri(self,uri,val):
         """Set an op input, indicated by uri, to provided value."""
-        path = uri.split('.')
-        if not len(path) == 3:
-            msg = 'uri '+uri+' should have format Operation.'+optools.inputs_tag+'.inputname'
-            raise ValueError(msg)
-        op_itm, idx = self.get_from_uri(path[0])
+        p = uri.split('.')
+        # Allow some structure here: expect no meta-inputs. 
+        op_itm, idx = self.get_from_uri(p[0])
         op = op_itm.data
-        if path[1] == optools.inputs_tag and path[2] in op.inputs.keys():
-            op.inputs[path[2]] = val
-        else:
-            msg = 'uri {} does not specify inputs, or specifies an invalid inputname'.format(uri)
-            raise ValueError(msg)
-
-    def ops_as_dict(self,op_items=None):
-        od = OrderedDict()
-        if not op_items:
-            op_items = self.root_items
-        for itm in op_items:
-            od[itm.tag()] = copy.deepcopy(itm.data)
-        return od
+        op.inputs[p[2]] = val
+        #if not len(path) == 3:
+        #    msg = 'uri '+uri+' should have format Operation.'+optools.inputs_tag+'.inputname'
+        #    raise ValueError(msg)
+        #if p[1] == optools.inputs_tag and p[2] in op.inputs.keys():
+        #else:
+        #    msg = 'uri {} does not specify inputs, or specifies an invalid inputname'.format(uri)
+        #    raise ValueError(msg)
 
     def serial_execution_stack(self):
         """
@@ -753,6 +768,7 @@ class WfManager(TreeModel):
         item_stack = []
         next_items = []
         # Build the first layer of the stack... screen for batch and workflow inputs
+        #import pdb; pdb.set_trace()
         for itm in self.root_items:
             op_rdy = True
             op = itm.data
@@ -775,6 +791,7 @@ class WfManager(TreeModel):
             ordered_items = ordered_items + next_items
             item_stack.append( next_items )
             next_items = self.items_ready(ordered_items)
+        #print item_stack
         return item_stack 
 
     def upstream_stack(self,root_item):
@@ -825,6 +842,7 @@ class WfManager(TreeModel):
         Get the portion of serial_execution_stack() that is level with or downstream of a given item
         """
         stk = self.serial_execution_stack()
+        #print stk
         substk = []
         for lst in stk:
             if root_item in lst:
