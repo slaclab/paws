@@ -93,7 +93,7 @@ class WfUiManager(object):
         if src == optools.no_input:
             il = optools.InputLocator() 
         elif src == optools.batch_input:
-            val = None
+            val = 'auto' 
             il = optools.InputLocator(src,tp,val) 
         elif src == optools.user_input:
             if tp == optools.list_type:
@@ -102,9 +102,20 @@ class WfUiManager(object):
                 val = self.val_widgets[name].text()
             il = optools.InputLocator(src,tp,val)
         elif (src == optools.wf_input or src == optools.fs_input):
-            if tp == optools.list_type:
+            if not ui:
+                if self.op.input_locator[name] is not None:
+                    il = self.op.input_locator[name]
+                else:
+                    # If this is being called without a data loading ui, load some default.
+                    val = self.op.inputs[name]
+                    if not val: 
+                        if tp == optools.list_type:
+                            val = []
+                        else:
+                            val = None
+                    il = optools.InputLocator(src,tp,val)
+            elif tp == optools.list_type:
                 val = ui.list_view.model().list_data() 
-                #import pdb; pdb.set_trace()
                 il = optools.InputLocator(src,tp,val)
             else:
                 il = self.load_from_tree(ui,src,item_indx)
@@ -158,13 +169,7 @@ class WfUiManager(object):
         """ 
         # Make sure all inputs are loaded
         for name in self.op.inputs.keys():
-            # By design, load_op should only be called 
-            # when (modal) input source tree browser windows are closed,
-            # so skip this if src is fs or wf.
-            src = self.src_widgets[name].currentIndex()
-            if not src == optools.wf_input and not src == optools.fs_input:
-                self.set_input(name)
-            #self.op.input_locator[name] = self.load_input(name) 
+            self.set_input(name)
         uri = self.ui.uri_entry.text()
         result = self.wfman.is_good_tag(uri)
         if result[0]:
@@ -338,10 +343,10 @@ class WfUiManager(object):
             else:
                 btn_widget.setText('browse...')
                 btn_widget.clicked.connect( partial(self.fetch_data,name) )
-            if self.op.input_locator[name]:
-                val_widget.setText(str(self.op.input_locator[name].val))
-            elif self.op.inputs[name]:
+            if self.op.inputs[name] is not None:
                 val_widget.setText(str(self.op.inputs[name]))
+            elif self.op.input_locator[name]:
+                val_widget.setText(str(self.op.input_locator[name].val))
             val_widget.setReadOnly(True)
         elif (src == optools.user_input):
             if tp == optools.none_type:
@@ -444,7 +449,7 @@ class WfUiManager(object):
         src_ui = QtUiTools.QUiLoader().load(ui_file)
         ui_file.close()
         src_ui.setParent(parent,QtCore.Qt.Window)
-        #src_ui.setWindowModality(QtCore.Qt.WindowModal)
+        src_ui.setWindowModality(QtCore.Qt.WindowModal)
         src_ui.setWindowTitle("data loader")
         if src == optools.wf_input:
             trmod = self.wfman
