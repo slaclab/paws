@@ -96,7 +96,7 @@ class WfManager(TreeModel):
         #yaml.dump(wf_dict, f, encoding='utf-8')
         yaml.dump(wf_dict, f)
         f.close()
-    def ops_as_dict(self,op_items=None):
+    def op_items_to_dict(self,op_items=None):
         od = OrderedDict()
         if not op_items:
             op_items = self.root_items
@@ -128,17 +128,13 @@ class WfManager(TreeModel):
         It is expected that op.input_locator[name] will refer to an InputLocator.
         """
         for name,il in op.input_locator.items():
-            #print 'load input for {}'.format(name)
             if isinstance(il,InputLocator):
                 src = il.src
                 if not src == optools.batch_input:
-                    #print 'locate_input at src {}, tp {}, val {}'.format(il.src,il.tp,il.val)
                     il.data = self.locate_input(il,op)
                     op.inputs[name] = il.data
-                    #print 'locate_input found {}'.format(op.inputs[name]) 
                 else:
                     # Batch executor should have already set the batch inputs.
-                    #print 'batch loaded {}'.format(op.inputs[name]) 
                     il.data = op.inputs[name]
             else:
                 msg = '[{}] Found broken Operation.input_locator for {}: {}'.format(
@@ -155,23 +151,17 @@ class WfManager(TreeModel):
         src = il.src
         tp = il.tp
         val = il.val
-        #print 'locate_input working with src {}, tp {}, val {}'.format(src,tp,val)
         if src == optools.no_input:
-            #print 'no input' 
             return None
         elif src == optools.user_input: 
-            #print 'call cast_type_val'
             return optools.cast_type_val(tp,val)
         elif src == optools.wf_input:
-            #print 'call parse_wf_input...'
             return optools.parse_wf_input(self,il,op)
         elif src == optools.fs_input:
-            #print 'fs input'
             # Trust that Operations using fs input 
             # are taking care of parsing the file names in whatever form
             return val 
         elif src == optools.batch_input:
-            #print 'batch input'
             return val 
         else: 
             msg = 'found input source {}, should be one of {}'.format(
@@ -302,12 +292,11 @@ class WfManager(TreeModel):
     def update_io_deps(self):
         """
         Remove any broken dependencies in the workflow.
-        NB: Only effective after all changes to tree data are finished. 
+        NB: Only effective after most recent data have been stored in the tree. 
         """
         #itm = idx.internalPointer()
         #update_uri = itm.tag()
-        for row in range(len(self.root_items)):
-            itm = self.root_items[row]
+        for itm in self.root_items:
             op = itm.data
             #op_idx = self.index(row,0,QtCore.QModelIndex())
             for name,il in op.input_locator.items():
@@ -323,10 +312,7 @@ class WfManager(TreeModel):
         if il.src == optools.wf_input:
             vals = optools.val_list(il)
             for v in vals:
-                # Check if new_op will provide this input.
-                input_ok_flag = self.is_good_uri(v) 
-                # If not, this should be reset. 
-                if not input_ok_flag:
+                if not self.is_good_uri(v):
                     if self.logmethod:
                         self.logmethod('--- NB: clearing InputLocator for {} ---'.format(v))
                     il = optools.InputLocator()
@@ -390,14 +376,83 @@ class WfManager(TreeModel):
 
     def run_wf(self):
         self._running = True
-        if self.find_rt_item():
-            self.run_wf_realtime()
-        elif any(self.find_batch_items()):
-            self.run_wf_batch()
+        stk = self.execution_stack()
+        msg = 'STARTING EXECUTION\n----\nexecution stack: '
+        for to_run in stk:
+            msg = msg + '\n{}'.format( [itm.tag() for itm in to_run] ) 
+        msg += '\n----'
+        if self.logmethod:
+            self.logmethod(msg)
+            self.appref.processEvents()
+        substk = []
+        batch_flags = []
+        batch_idx = []
+        rt_flags = []
+        for i in range(len(stk)):
+            lst = stk[i]
+            if isinstance(lst[0].data,Batch):
+                batch_flags.append(True)
+                batch_idx.append(i)
+                rt_flags.append(False)
+            elif isinstance(lst[0].data,Realtime):
+                batch_flags.append(False)
+                rt_flags.append(True)
+            else:   
+                batch_flags.append(False)
+                rt_flags.append(False)
+        if sum(rt_flags)==1 and not any(batch_flags):
+            self.run_wf_realtime(stk)
+        elif any(rt_flags):
+            raise ValueError('[{}] only one Realtime op at a time is supported, found {}'.format(
+            __name__,sum(rt_flags)+sum(batch_flags)))
+        elif not any(batch_flags):
+            self.run_wf_serial(stk)
         else:
-            self.run_wf_serial()
+            n_batch = sum(batch_flags)
+            b_itms = [stk[i][0] for i in batch_idx]
+            # run any batch dependencies a priori
+            prestk = stk[:batch_idx[0]]
+            if prestk:
+                self.run_wf_serial(prestk)
+            for i in range(n_batch):
+                if i == n_batch-1:
+                    substk = stk
+                else:
+                    substk = stk[batch_idx[i]+1:batch_idx[i+1]]
+                #    substk = [stk[i] for i in range(batch_idx[i+1])]
+                runstk = [lst for lst in substk if not isinstance(lst[0].data,Batch)]
+                #for ib in batch_idx[:i]:
+                #    substk = substk[:ib] + substk[ib+1:]
+                self.run_wf_batch(b_itms[i],runstk)
+        # if not interrupted, signal done
         if self.is_running():
             self.wfdone.emit()
+
+        #for itms in stk:
+        #    if any([x for x in itms if isinstance(x.data,Realtime)]):
+        #        self.run_wf_realtime(stk)
+        #    elif any([x for x in itms if isinstance(x.data,Batch)]):
+        #        self.run_wf_batch(stk)
+        #    else:
+        #        self.run_wf_serial()
+
+        #rt_itm = self.find_rt_item()
+        #if rt_itm:
+        #elif any(self.find_batch_items()):
+        #    b_stk = self.batch_execution_stack()
+        #    for itm_list in b_stk:
+        #        b_itms = [itm for itm in itm_list if isinstance(itm.data,Batch)]
+        #        s_itms = [itm for itm in itm_list if not isinstance(itm.data,Batch)]
+        #        if not any(b_itms): 
+        #            self.run_wf_serial(itm_list)
+        #        elif len(b_itms) == 1:
+        #            self.run_wf_batch(itm_list)
+        #        else:
+        #            msg = 'Found {} simultaneous batch items'.format(len(b_itms))
+        #            raise ValueError(msg)
+        #    #self.run_wf_batch()
+        #else:
+        #    self.run_wf_serial()
 
     def next_available_thread(self):
         for idx,th in self._wf_threads.items():
@@ -464,19 +519,11 @@ class WfManager(TreeModel):
             self.logmethod('SERIAL EXECUTION STARTING in thread {}'.format(thd))
             self.appref.processEvents()
         if not stk:
-            stk = self.serial_execution_stack()
-        msg = '\n----\nexecution stack: '
-        for to_run in stk:
-            msg = msg + '\n{}'.format( [itm.tag() for itm in to_run] ) 
-        msg += '\n----'
-        if self.logmethod:
-            self.logmethod(msg)
-            self.appref.processEvents()
+            stk = self.execution_stack()
         for to_run in stk:
             self.wait_for_thread(thd)
             for itm in to_run:
                 op = itm.data
-                #print '--- load inputs for {} ---'.format(itm.tag())
                 self.load_inputs(op)
             # Make a new Worker, give None parent so that it can be thread-mobile
             wf_wkr = slacxtools.WfWorker(to_run,None)
@@ -506,27 +553,25 @@ class WfManager(TreeModel):
             self.appref.processEvents()
         self._wf_threads[th_idx] = None
 
-    def run_wf_realtime(self):
+    def run_wf_realtime(self,rt_itm,stk):
         """
         Executes the workflow under the control of one Realtime(Operation) 
         """
-        rt_item = self.find_rt_item() 
-        #for rt_item in rt_items:
         if self.logmethod:
             self.logmethod( 'REALTIME EXECUTION STARTING' )
             self.logmethod( 'Running dependencies... ' )
             self.appref.processEvents()
-        self.run_deps(rt_item)
+        self.run_deps(rt_itm)
         if self.logmethod:
             self.logmethod( 'Preparing Realtime controller... ' )
             self.appref.processEvents()
-        rt = rt_item.data
+        rt = rt_itm.data
         self.load_inputs(rt)
         #rt.run_and_update()
         rt.run()
-        self.update_op(rt_item.tag(),rt)
+        self.update_op(rt_itm.tag(),rt)
         self.appref.processEvents()
-        to_run = self.downstream_stack(rt_item)
+        to_run = self.downstream_stack(rt_itm)
         nx = 0
         while self._running:
             # After rt.run(), it is expected that rt.input_iter()
@@ -546,9 +591,9 @@ class WfManager(TreeModel):
                 self.run_wf_serial(to_run,thd)
                 opdict = {}
                 for op_list in to_run:
-                    opdict.update(self.ops_as_dict(op_list))
+                    opdict.update(self.op_items_to_dict(op_list))
                 rt.output_list().append(opdict)
-                self.update_op(rt_item.tag(),rt)
+                self.update_op(rt_itm.tag(),rt)
             else:
                 if self.logmethod and not waiting_flag:
                     self.logmethod( 'Waiting for new inputs...' )
@@ -559,56 +604,56 @@ class WfManager(TreeModel):
         self.appref.processEvents()
         return
 
-    def run_wf_batch(self):
+    def run_wf_batch(self,b_itm,stk):
         """
-        Executes the workflow under the control of one Batch(Operation)
+        Executes the items in the stack stk under the control of one Batch(Operation).
         """
-        b_itms = self.find_batch_items() 
-        for j in range(len(b_itms)):
-            b_itm = b_itms[j]
-            if self.logmethod:
-                self.logmethod( 'BATCH {} EXECUTION STARTING'.format(j) )
-                self.logmethod( 'Running dependencies... ' )
-                self.appref.processEvents()
-            self.run_deps(b_itm)
-            if self.logmethod:
-                self.logmethod( 'Preparing Batch controller... ' )
-                self.appref.processEvents()
-            b = b_itm.data
-            self.load_inputs(b)
-            b.run()
-            self.update_op(b_itm.tag(),b)
+        #for j in range(len(b_itms)):
+        #b_itm = b_itms[j]
+        #if self.logmethod:
+        #    self.logmethod( 'BATCH EXECUTION STARTING' )
+        #    self.logmethod( 'Running dependencies... ' )
+        #    self.appref.processEvents()
+        #self.run_deps(b_itm)
+        if self.logmethod:
+            self.logmethod( 'Preparing Batch controller... ' )
             self.appref.processEvents()
-            to_run = self.downstream_stack(b_itm)
-            # Filter any other batch or realtime items out of to_run
-            to_run = [[itm for itm in r if not isinstance(itm.data,Realtime) and not isinstance(itm.data,Batch)] for r in to_run] 
-            # After b.run(), it is expected that b.input_list() will refer to a list of dicts,
-            # where each dict has the form [workflow tree uri:input value]. 
-            for i in range(len(b.input_list())):
-                if self._running:
-                    input_dict = b.input_list()[i]
-                    for uri,val in input_dict.items():
-                        self.set_op_input_at_uri(uri,val)
-                    # inputs are set, run in serial 
-                    thd = self.next_available_thread()
-                    if self.logmethod:
-                        self.logmethod( 'BATCH {} EXECUTION {} / {} in thread {}'.format(j,i+1,len(b.input_list()),thd) )
-                        self.appref.processEvents()
-                    self.run_wf_serial(to_run,thd)
-                    for itm_list in to_run:
-                        if any(b.saved_ops()):
-                            b.output_list()[i].update(self.ops_as_dict(
-                            [itm for itm in itm_list if itm.tag() in b.saved_ops()]))
-                        else:                
-                            b.output_list()[i].update(self.ops_as_dict(itm_list))
-                    self.update_op(b_itm.tag(),b)
-                elif self.logmethod:
-                    self.logmethod( 'BATCH {} EXECUTION TERMINATED'.format(j) )
+        b = b_itm.data
+        self.load_inputs(b)
+        b.run()
+        self.update_op(b_itm.tag(),b)
+        self.appref.processEvents()
+        #to_run = self.downstream_stack(b_itm)
+        # Filter any other batch or realtime items out of to_run
+        #to_run = [[itm for itm in r if not isinstance(itm.data,Realtime) and not isinstance(itm.data,Batch)] for r in to_run] 
+        # After b.run(), it is expected that b.input_list() will refer to a list of dicts,
+        # where each dict has the form [workflow tree uri:input value]. 
+        for i in range(len(b.input_list())):
+            if self._running:
+                input_dict = b.input_list()[i]
+                for uri,val in input_dict.items():
+                    self.set_op_input_at_uri(uri,val)
+                # inputs are set, run in serial 
+                thd = self.next_available_thread()
+                if self.logmethod:
+                    self.logmethod( 'BATCH EXECUTION {} / {} in thread {}'.format(i+1,len(b.input_list()),thd) )
                     self.appref.processEvents()
-                    return
-            if self.logmethod:
-                self.logmethod( 'BATCH {} EXECUTION FINISHED'.format(j) )
+                self.run_wf_serial(stk,thd)
+                #for itm_list in to_run:
+                if any(b.saved_items()):
+                    for uri in b.saved_items():
+                        itm,idx = self.get_from_uri(uri)
+                        b.output_list()[i].update({itm.tag():itm.data})
+                else:                
+                    b.output_list()[i].update(self.op_items_to_dict(stk))
+                self.update_op(b_itm.tag(),b)
+            elif self.logmethod:
+                self.logmethod( 'BATCH EXECUTION TERMINATED' )
                 self.appref.processEvents()
+                return
+        if self.logmethod:
+            self.logmethod( 'BATCH EXECUTION FINISHED' )
+            self.appref.processEvents()
 
     def set_op_input_at_uri(self,uri,val):
         """Set an op input, indicated by uri, to provided value."""
@@ -618,109 +663,165 @@ class WfManager(TreeModel):
         op = op_itm.data
         op.inputs[p[2]] = val
 
-    def serial_execution_stack(self):
+#    def items_ready(self,items_done):
+#        """
+#        Give a list of Operation items whose inputs are satisfied, given items_done
+#        """
+#        rdy = []
+#        for itm in self.root_items:
+#            op = itm.data
+#            op_rdy = True
+#            for name,il in op.input_locator.items():
+#                src = il.src
+#                if src == optools.wf_input:
+#                    uris = optools.val_list(il)
+#                    for inp_uri in uris:
+#                        uri_fields = inp_uri.split('.')
+#                        # Get the op item and see if it is in items_done
+#                        op_itm,idx = self.get_from_uri(uri_fields[0])
+#                        if not op_itm in items_done:
+#                            op_rdy = False
+#                        # Get the op.inout.name three-level uri
+#                        #uri_tl = uri_fields[0]+'.'+uri_fields[1]+'.'+uri_fields[2] 
+#                        #if not self.is_good_uri(uri_tl):
+#                        #    op_rdy = False
+#                elif src == optools.batch_input:
+#                    inp_uri = itm.tag()+'.'+optools.inputs_tag+'.'+name
+#                    b_itms = self.find_batch_items()
+#                    rt_itm = self.find_rt_item()
+#                    if not any(b_itms) and not rt_itm:
+#                        op_rdy = False
+#                    elif any(b_itms):
+#                        if not any( [inp_uri in b.data.input_routes() for b in b_itms] ):
+#                            op_rdy = False
+#                    elif rt_itm:
+#                        if not inp_uri in rt_itm.data.input_routes():
+#                            op_rdy = False
+#            if not itm in items_done and op_rdy:
+#                rdy.append(itm)
+#        return rdy 
+
+    def execution_stack(self):
         """
         Get a stack (list of lists) of Operations,
         such that each list contains a set of Operations whose dependencies are satisfied
         assuming all operations above them have been executed successfully.
+        Give Batch and Realtime execution control Operations special treatment in the stack.
         """
-        ordered_items = []
-        item_stack = []
-        next_items = []
-        # Build the first layer of the stack... screen for batch and workflow inputs
-        #import pdb; pdb.set_trace()
-        for itm in self.root_items:
-            op_rdy = True
-            op = itm.data
-            inp_srcs = [il.src for name,il in op.input_locator.items()] 
-            if optools.batch_input in inp_srcs: 
-                # This Op is not ready until its Batch controller has run.
-                op_rdy = False
-            elif optools.wf_input in inp_srcs:
-                # If the Operation is not a Batch or Realtime, it must not be ready
-                if not isinstance(op,Batch) and not isinstance(op,Realtime):
-                    op_rdy = False
-                else:
-                    # If it is Batch or Realtime, check if this is one of the input_routes() 
-                    # or perhaps one of the saved_ops().
-                    if not il.val in op.input_routes() and any(op.saved_ops()) and not il.val in op.saved_ops():
-                        op_rdy = False
-            if op_rdy:
-                next_items.append(itm)
-        #next_items = self.items_ready(ordered_items)
-        while next_items:
-            ordered_items = ordered_items + next_items
-            item_stack.append( next_items )
-            next_items = self.items_ready(ordered_items)
-        return item_stack 
-
-    def upstream_stack(self,root_item):
-        """
-        Get the portion of serial_execution_stack() that is upstream of a given item
-        """
-        stk = self.serial_execution_stack()
-        substk = []
-        for lst in stk:
-            if root_item in lst:
-                return
-            else:
-                substk.append(lst)
-        return substk
-
-    def downstream_stack(self,root_item):
-        """
-        Get the portion of serial_execution_stack() that is level with or downstream of a given item
-        """
-        stk = self.serial_execution_stack()
-        substk = []
-        for lst in stk:
-            if root_item in lst:
-                lst.pop(lst.index(root_item))
-                if lst:
-                    substk = [lst]
-                else:
-                    substk = []
-            else:
-                substk.append(lst)
-        return substk
-
-    def items_ready(self,items_done):
-        """
-        Give a list of Operation items whose inputs are satisfied, given items_done
-        """
-        rdy = []
-        for itm in self.root_items:
-            op = itm.data
-            op_rdy = True
-            for name,il in op.input_locator.items():
-                src = il.src
-                if src == optools.wf_input:
-                    uris = optools.val_list(il)
-                    for inp_uri in uris:
-                        uri_fields = inp_uri.split('.')
-                        # Get the op item and see if it is in items_done
-                        op_itm,idx = self.get_from_uri(uri_fields[0])
-                        if not op_itm in items_done:
-                            op_rdy = False
-                        # Get the op.inout.name three-level uri
-                        #uri_tl = uri_fields[0]+'.'+uri_fields[1]+'.'+uri_fields[2] 
-                        #if not self.is_good_uri(uri_tl):
-                        #    op_rdy = False
-                elif src == optools.batch_input:
+        lst = []            # list of operations in order they are found to be ready
+        stk = []            # stack, list of lists, of operations for flattening execution order
+        b_rts = []          # list of uris of batch input_routes for batch items in stk
+        valid_inputs = []   # list of uris of things available as inputs from stk
+        nxt = True
+        while nxt:
+            nxt_itms = []
+            for itm in self.root_items:
+                op = itm.data
+                op_rdy = True
+                for name,il in op.input_locator.items(): 
                     inp_uri = itm.tag()+'.'+optools.inputs_tag+'.'+name
-                    b_itms = self.find_batch_items()
-                    rt_itm = self.find_rt_item()
-                    if not any(b_itms) and not rt_itm:
-                        op_rdy = False
-                    elif any(b_itms):
-                        if not any( [inp_uri in b.data.input_routes() for b in b_itms] ):
+                    if il.src == optools.batch_input:
+                        # check if the uri of this input is provided by any input_routes
+                        if not inp_uri in b_rts:
                             op_rdy = False
-                    elif rt_itm:
-                        if not inp_uri in rt_itm.data.input_routes():
-                            op_rdy = False
-            if not itm in items_done and op_rdy:
-                rdy.append(itm)
-        return rdy 
+                    elif il.src == optools.wf_input:
+                        uri = il.val
+                        for uri in optools.val_list(il):
+                            f = uri.split('.')
+                            # check if the uri of this input is one of the fields of a finished op
+                            if not uri in valid_inputs and len(f) < 3:
+                                op_rdy = False
+                            elif len(f) >= 3:
+                                # check if this is pointing to a meta-output.
+                                # if so assume it will be generated during execution.
+                                if not f[0]+'.'+f[1]+'.'+f[2] in valid_inputs:
+                                    op_rdy = False
+                            # but wait, also check if this op is a Batch or Realtime 
+                            # that uses this uri in an input_route() or one of saved_items()
+                            # in either case, it's ok to have this uri pointing down or upstream 
+                            if isinstance(op,Realtime) or isinstance(op,Batch):
+                                if uri in op.input_routes() or uri in op.saved_items():
+                                    op_rdy = True
+                if op_rdy:
+                    if not itm in lst:
+                        nxt_itms.append(itm)
+            if not nxt_itms:
+                nxt = False
+            else:
+                # make sure Batch or Realtime ops get special treatment in the stack
+                b_rt_itms = [x for x in nxt_itms if isinstance(x.data,Realtime) or isinstance(x.data,Batch)]
+                if any(b_rt_itms):
+                    # add only one Batch or Realtime at its own level
+                    # but make sure it is as low as possible in the stack
+                    if len(b_rt_itms) == len(nxt_itms):
+                        b_rts += b_rt_itms[0].data.input_routes()
+                        nxt_itms = [b_rt_itms[0]]
+                    else:
+                        nxt_itms = [x for x in nxt_itms if not isinstance(x.data,Realtime) and not isinstance(x.data,Batch)]
+                for nxt_itm in nxt_itms:
+                    lst.append(nxt_itm)
+                    # valid inputs: the operation, its input and output dicts, and their respective entries
+                    valid_inputs += [nxt_itm.tag(),nxt_itm.tag()+'.'+optools.inputs_tag,nxt_itm.tag()+'.'+optools.outputs_tag]
+                    valid_inputs += [nxt_itm.tag()+'.'+optools.outputs_tag+'.'+k for k in nxt_itm.data.outputs.keys()]
+                    valid_inputs += [nxt_itm.tag()+'.'+optools.inputs_tag+'.'+k for k in nxt_itm.data.inputs.keys()]
+                stk.append(nxt_itms)
+        return stk
+#        for itm in self.root_items:
+#            op_rdy = True
+#            op = itm.data
+#            inp_srcs = [il.src for name,il in op.input_locator.items()] 
+#            if optools.batch_input in inp_srcs: 
+#                # This Op is not ready until its Batch controller has run.
+#                op_rdy = False
+#            elif optools.wf_input in inp_srcs:
+#                # If the Operation is not a Batch or Realtime, it must not be ready
+#                if not isinstance(op,Batch) and not isinstance(op,Realtime):
+#                    op_rdy = False
+#                else:
+#                    # If it is Batch or Realtime, check if this is one of the input_routes() 
+#                    # or perhaps one of the saved_items().
+#                    vlist = optools.val_list(il)
+#                    for v in vlist:
+#                        if not v in op.input_routes() and any(op.saved_items()) and not v in op.saved_items():
+#                            op_rdy = False
+#            if op_rdy:
+#                next_items.append(itm)
+#        #next_items = self.items_ready(ordered_items)
+#        while next_items:
+#            ordered_items = ordered_items + next_items
+#            item_stack.append( next_items )
+#            next_items = self.items_ready(ordered_items)
+#        return item_stack 
+
+#    def upstream_stack(self,root_item):
+#        """
+#        Get the portion of execution_stack() that is upstream of a given item
+#        """
+#        stk = self.execution_stack()
+#        substk = []
+#        for lst in stk:
+#            if root_item in lst:
+#                return
+#            else:
+#                substk.append(lst)
+#        return substk
+
+#    def downstream_stack(self,root_item):
+#        """
+#        Get the portion of execution_stack() that is level with or downstream of a given item
+#        """
+#        stk = self.execution_stack()
+#        substk = []
+#        for lst in stk:
+#            if root_item in lst:
+#                lst.pop(lst.index(root_item))
+#                if lst:
+#                    substk = [lst]
+#                else:
+#                    substk = []
+#            else:
+#                substk.append(lst)
+#        return substk
 
     # Overloaded data() for WfManager
     def data(self,item_indx,data_role):

@@ -103,10 +103,10 @@ class WfUiManager(object):
             il = optools.InputLocator(src,tp,val)
         elif (src == optools.wf_input or src == optools.fs_input):
             if not ui:
+                # If this is being called without a data loading ui, load some default.
                 if self.op.input_locator[name] is not None:
                     il = self.op.input_locator[name]
                 else:
-                    # If this is being called without a data loading ui, load some default.
                     val = self.op.inputs[name]
                     if not val: 
                         if tp == optools.list_type:
@@ -409,15 +409,17 @@ class WfUiManager(object):
         list_ui.type_header.setStyleSheet( "QLineEdit { background-color: transparent }" + list_ui.type_header.styleSheet() )
         list_ui.show()
 
-    @staticmethod
-    def load_path_to_list(src,src_ui,list_ui,idx=None):
+    def load_path_to_list(self,src,src_ui,list_ui,idx=None):
         if not idx:
             idx = src_ui.tree.currentIndex()
         if idx.isValid():
-            list_ui.value_entry.setText( str(src_ui.tree.model().data(idx,QtCore.Qt.DisplayRole)) )
+            if src == optools.wf_input:
+                list_ui.value_entry.setText( self.wfman.build_uri(idx) )
+            elif src == optools.fs_input:
+                list_ui.value_entry.setText( src_ui.tree.model().filePath(idx) )
         src_ui.close()
         src_ui.deleteLater()
-        list_ui.list_view.model().append_item( str(list_ui.value_entry.text()) )
+        list_ui.list_view.model().append_item( self.wfman.build_uri(idx) )
 
     @staticmethod
     def load_value_to_list(src,list_ui):
