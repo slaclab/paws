@@ -459,10 +459,10 @@ class WfUiManager(object):
             trmod = QtGui.QFileSystemModel()
             trmod.setRootPath('.')
         src_ui.tree.setModel(trmod)
-        if src == optools.wf_input:
-            src_ui.tree.expandToDepth(2)
-        elif src == optools.fs_input:
-            src_ui.tree.expandAll()
+        #if src == optools.wf_input:
+        #    src_ui.tree.expandToDepth(2)
+        #elif src == optools.fs_input:
+        #    src_ui.tree.expandAll()
         src_ui.tree.resizeColumnToContents(0)
         src_ui.load_button.setText('Load selected data')
         src_ui.tree_box.setTitle(name+' - from '+optools.input_sources[src])
