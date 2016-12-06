@@ -396,7 +396,6 @@ class WfManager(TreeModel):
             else:   
                 batch_flags.append(False)
                 rt_flags.append(False)
-        import pdb; pdb.set_trace()
         if sum(rt_flags)==1 and not any(batch_flags):
             self.run_wf_realtime(stk)
         elif any(rt_flags):
@@ -409,27 +408,28 @@ class WfManager(TreeModel):
             b_itms = [stk[i][0] for i in batch_idx]
             itms_run = []
             for i in range(n_batch):
-                prestk = stk[:batch_idx[i]]
-                prestk = [[itm for itm in to_run if not itm in itms_run] for to_run in prestk]
+                prestk = [] 
+                for lst in stk[:batch_idx[i]]:
+                    prelst = [itm for itm in lst if not itm in itms_run and not isinstance(itm.data,Batch)]
+                    if any(prelst):
+                        prestk.append(prelst)
                 if any(prestk):
                     msg = '\n----\n pre-batch execution stack: '
-                    for to_run in prestk:
-                        msg = msg + '\n{}'.format( [itm.tag() for itm in to_run] ) 
+                    for lst in prestk:
+                        msg = msg + '\n{}'.format( [itm.tag() for itm in lst] ) 
+                        itms_run = itms_run + lst 
                     msg += '\n----'
                     self.write_log(msg)
                     self.run_wf_serial(prestk)
-                    for lst in prestk:
-                        itms_run = itms_run + lst 
                 bstk = self.downstream_from_batch_item(b_itms[i])
                 if any(bstk):
                     msg = '\n----\n batch execution stack: '
-                    for to_run in bstk:
-                        msg = msg + '\n{}'.format( [itm.tag() for itm in to_run] ) 
+                    for lst in bstk:
+                        msg = msg + '\n{}'.format( [itm.tag() for itm in lst] ) 
+                        itms_run = itms_run + lst 
                     msg += '\n----'
                     self.write_log(msg)
                     self.run_wf_batch(b_itms[i],bstk)
-                    for lst in bstk:
-                        itms_run = itms_run + lst 
             # any more serial ops?
             poststk = []
             for lst in stk:
@@ -475,6 +475,11 @@ class WfManager(TreeModel):
                 itm,idx = self.get_from_uri(op_uri)
                 if not any([itm in lst for lst in stk]):
                     op_rdy = False
+            if il.src == optools.batch_input:
+                # assume all ops taking batch input
+                # were processed in the top layer of the stack
+                op_rdy = False
+                
         return op_rdy
 
     def next_available_thread(self):

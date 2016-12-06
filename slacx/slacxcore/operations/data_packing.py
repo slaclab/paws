@@ -27,7 +27,7 @@ class WindowZip_q_I(Operation):
         q_min = 0.02
         q_max = 0.6
         good_qvals = ((qvals > q_min) & (qvals < q_max))
-        q_I_window = np.zeros((sum(good_qvals),2))
+        q_I_window = np.zeros((good_qvals.sum(),2))
         q_I_window[:,0] = qvals[good_qvals]
         q_I_window[:,1] = ivals[good_qvals]
         self.outputs['q_I_window'] = q_I_window
