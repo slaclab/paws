@@ -41,14 +41,13 @@ class selectBatchItems(Operation):
         self.outputs['var_list'] = var_list
 
 
-'''
-class selectBatchTest(Operation):
+class selectBatchItem(Operation):
     """Return a single output from batch."""
 
     def __init__(self):
         input_names = ['batch_outputs','index','operation','from_outputs','var_name']
-        output_names = ['var0','var1','var2','var3']
-        super(selectBatchTest, self).__init__(input_names, output_names)
+        output_names = ['var']
+        super(selectBatchItem, self).__init__(input_names, output_names)
         # source & type
         self.input_src['batch_outputs'] = optools.wf_input
         self.input_src['index'] = optools.user_input
@@ -68,11 +67,7 @@ class selectBatchTest(Operation):
         index = int(self.inputs['index'])
         op_name = self.inputs['operation']
         var_name = self.inputs['var_name']
-        self.outputs['var0'] = batch_outputs[index]
-        self.outputs['var1'] = batch_outputs[index][op_name]
         if self.inputs['from_outputs'] == True:
-            self.outputs['var2'] = batch_outputs[index][op_name].outputs
+            self.outputs['var'] = batch_outputs[index][op_name].outputs[var_name]
         else:
-            self.outputs['var2'] = batch_outputs[index][op_name].inputs
-        self.outputs['var3'] = self.outputs['var2'][var_name]
-'''
+            self.outputs['var'] = batch_outputs[index][op_name].inputs[var_name]
