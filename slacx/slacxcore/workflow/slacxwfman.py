@@ -544,25 +544,25 @@ class WfManager(TreeModel):
         self.write_log('SERIAL EXECUTION STARTING in thread {}'.format(thd))
         if not stk:
             stk = self.execution_stack()
-        for to_run in stk:
+        for lst in stk:
             self.wait_for_thread(thd)
-            for itm in to_run:
+            for itm in lst: 
                 op = itm.data
                 self.load_inputs(op)
             # Make a new Worker, give None parent so that it can be thread-mobile
-            wf_wkr = slacxtools.WfWorker(to_run,None)
+            wf_wkr = slacxtools.WfWorker(lst,None)
             wf_thread = QtCore.QThread(self)
             wf_wkr.moveToThread(wf_thread)
             self._wf_threads[thd] = wf_thread
             wf_thread.started.connect(wf_wkr.work)
             wf_thread.finished.connect( partial(self.finish_thread,thd) )
-            msg = 'running {} in thread {}'.format([itm.tag() for itm in to_run],thd)
+            msg = 'running {} in thread {}'.format([itm.tag() for itm in lst],thd)
             self.write_log(msg)
             wf_thread.start()
             # Let the thread finish
             self.wait_for_thread(thd)
             # When the thread is finished, update the ops it ran.
-            for itm in to_run:
+            for itm in lst:
                 op = itm.data
                 self.update_op(itm.tag(),op)
         self.write_log('SERIAL EXECUTION FINISHED in thread {}'.format(thd))
@@ -585,7 +585,7 @@ class WfManager(TreeModel):
         rt.run()
         self.update_op(rt_itm.tag(),rt)
         self.appref.processEvents()
-        to_run = self.downstream_stack(rt_itm)
+        stk = self.downstream_stack(rt_itm)
         nx = 0
         while self._running:
             # After rt.run(), it is expected that rt.input_iter()
@@ -600,10 +600,10 @@ class WfManager(TreeModel):
                     self.set_op_input_at_uri(uri,val)
                 thd = self.next_available_thread()
                 self.write_log( 'REALTIME EXECUTION {} in thread {}'.format(nx,thd))
-                self.run_wf_serial(to_run,thd)
+                self.run_wf_serial(stk,thd)
                 opdict = {}
-                for op_list in to_run:
-                    opdict.update(self.op_items_to_dict(op_list))
+                for lst in stk:
+                    opdict.update(self.op_items_to_dict(lst))
                 rt.output_list().append(opdict)
                 self.update_op(rt_itm.tag(),rt)
             else:
@@ -634,13 +634,13 @@ class WfManager(TreeModel):
                 thd = self.next_available_thread()
                 self.write_log( 'BATCH EXECUTION {} / {} in thread {}'.format(i+1,len(b.input_list()),thd) )
                 self.run_wf_serial(stk,thd)
-                #for itm_list in to_run:
                 if any(b.saved_items()):
                     for uri in b.saved_items():
                         itm,idx = self.get_from_uri(uri)
                         b.output_list()[i].update({itm.tag():itm.data})
-                else:                
-                    b.output_list()[i].update(self.op_items_to_dict(stk))
+                else:
+                    for lst in stk:
+                        b.output_list()[i].update(self.op_items_to_dict(lst))
                 self.update_op(b_itm.tag(),b)
             else:
                 self.write_log( 'BATCH EXECUTION TERMINATED' )
