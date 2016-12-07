@@ -109,6 +109,7 @@ class selectBatchItem(Operation):
         op_name = self.inputs['operation']
         var_name = self.inputs['var_name']
         if self.inputs['from_outputs'] == True:
+#            batch.outputs[index][]
             self.outputs['var'] = batch_outputs[index][op_name].outputs[var_name]
         else:
             self.outputs['var'] = batch_outputs[index][op_name].inputs[var_name]
