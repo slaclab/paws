@@ -9,8 +9,8 @@ try:
 except ImportError:
     import pickle
 
-from slacxop import Operation
-import optools
+#from slacxop import Operation
+#import optools
 
 reference_loc = join('slacx','slacxcore','operations','dmz','references','polydispersity_guess_references.pickle')
 global references
@@ -544,7 +544,19 @@ def take_polydispersity_metrics(x, y, dy=np.zeros(1)):
     heightAtZero = polydispersity_metric_heightAtZero(xFirstDip, x, y, dy)
     return xFirstDip, heightFirstDip, sigmaScaledFirstDip, heightAtZero
 
-def choose_dips_and_shoulders(q, I, dI=np.zeros(1)):
+def choose_dips_and_shoulders1(q, I, dI=np.zeros(1)):
+    '''Find the location of dips (low points) and shoulders (high points).'''
+    if not dI.any():
+        dI = np.ones(I.shape, dtype=float)
+    scaled_I = I * q ** 4 / dI
+    scaled_curv = noiseless_curvature(q, scaled_I)
+    dips = local_minima_detector(scaled_curv)
+    shoulders = local_maxima_detector(scaled_curv)
+    # Clean out wildly offensve entries (rapid oscillations, end points)
+    dips, shoulders = clean_extrema(dips, shoulders)
+    return dips, shoulders
+
+def choose_dips_and_shoulders2(q, I, dI=np.zeros(1)):
     '''Find the location of dips (low points) and shoulders (high points).'''
     if not dI.any():
         dI = np.ones(I.shape, dtype=float)
@@ -556,9 +568,28 @@ def choose_dips_and_shoulders(q, I, dI=np.zeros(1)):
     dips, shoulders = clean_extrema(dips, shoulders)
     # Clean out unlikely points of interest by comparing to typical point-to-point variation
     scaled_I_variation = point_to_point_variation(scaled_I)
-    expected_curv_from_noise
+    expected_curv_from_noise = scaled_I_variation * 2**0.5 / ((q.max() - q.min())/q.size)
     # TODO: Need to clean out low-probability ones
     return dips, shoulders
+
+def choose_dips_and_shoulders3(q, I, dI=np.zeros(1)):
+    '''Find the location of dips (low points) and shoulders (high points).'''
+    if not dI.any():
+        dI = np.ones(I.shape, dtype=float)
+    scaled_I = I * q ** 4 / dI
+    scaled_curv = noiseless_curvature(q, scaled_I)
+    dips = local_minima_detector(scaled_curv)
+    shoulders = local_maxima_detector(scaled_curv)
+    # Clean out wildly offensve entries (rapid oscillations, end points)
+    dips, shoulders = clean_extrema(dips, shoulders)
+    # Clean out unlikely points of interest by comparing to typical point-to-point variation
+    scaled_I_variation = point_to_point_variation(scaled_I)
+    expected_curv_from_noise = scaled_I_variation * 2**0.5 / ((q.max() - q.min())/q.size)
+    # TODO: Need to clean out low-probability ones
+    return dips, shoulders
+
+
+
 
 def clean_extrema(dips, shoulders):
     # Forbid rapid oscillation
@@ -814,3 +845,8 @@ def guess_nearest_point_on_nonmonotonic_trace_normalized(loclist, tracelist, coo
 
 no_reference_message = '''No reference file exists.  Use the GenerateReferences operation once to generate
 an appropriate file; the file will be saved and need not be generated again.'''
+
+# Hokay the real weak point here is determining where the dips and shoulders are in noisy data
+# So we are addressing that today
+# And specifically we are addressing it in real goddam data
+
