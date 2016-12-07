@@ -637,7 +637,7 @@ class WfManager(TreeModel):
                 if any(b.saved_items()):
                     for uri in b.saved_items():
                         itm,idx = self.get_from_uri(uri)
-                        b.output_list()[i].update({itm.tag():itm.data})
+                        b.output_list()[i].update({itm.tag():copy.deepcopy(itm.data)})
                 else:
                     for lst in stk:
                         b.output_list()[i].update(self.op_items_to_dict(lst))
