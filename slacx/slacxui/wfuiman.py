@@ -381,7 +381,11 @@ class WfUiManager(object):
         list_ui.setParent(self.ui,QtCore.Qt.Window)
         list_ui.setWindowModality(QtCore.Qt.WindowModal)
         list_ui.setWindowTitle("build list from {}".format(optools.input_sources[src]))
-        lm = ListModel([],list_ui)
+        if self.op.input_locator[name]:
+            if self.op.input_locator[name].src == src and self.op.input_locator[name].tp == optools.list_type:
+                lm = ListModel(self.op.input_locator[name].val,list_ui)
+        else:
+            lm = ListModel([],list_ui)
         list_ui.list_view.setModel(lm)
         list_ui.browse_button.setText('browse...')
         list_ui.browse_button.clicked.connect( partial(self.load_from_src,name,src,list_ui) )

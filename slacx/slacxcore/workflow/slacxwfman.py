@@ -358,13 +358,13 @@ class WfManager(TreeModel):
         else:
             return []
 
-    def run_deps(self,item):
-       deps = self.upstream_stack(item)
-       if deps:
-           self.write_log('Running dependencies for {}: {}'.format(item, [dep.tag() for dep in deps]))
-           self.run_wf_serial(deps)
-           #for dep in deps:
-           #    self.run_and_update(item)
+#    def run_deps(self,item):
+#       deps = self.upstream_stack(item)
+#       if deps:
+#           self.write_log('Running dependencies for {}: {}'.format(item, [dep.tag() for dep in deps]))
+#           self.run_wf_serial(deps)
+#           #for dep in deps:
+#           #    self.run_and_update(item)
 
     def is_running(self):
         return self._running
@@ -384,6 +384,7 @@ class WfManager(TreeModel):
         batch_flags = []
         batch_idx = []
         rt_flags = []
+        rt_idx = []
         for i in range(len(stk)):
             lst = stk[i]
             if isinstance(lst[0].data,Batch):
@@ -393,17 +394,48 @@ class WfManager(TreeModel):
             elif isinstance(lst[0].data,Realtime):
                 batch_flags.append(False)
                 rt_flags.append(True)
+                rt_idx.append(i)
             else:   
                 batch_flags.append(False)
                 rt_flags.append(False)
-        if sum(rt_flags)==1 and not any(batch_flags):
-            self.run_wf_realtime(stk)
+        if sum(rt_flags) == 1 and not any(batch_flags):
+            # Expect only one rt controller at a time.
+            rt_itm = stk[rt_idx[0]][0]
+            prestk = stk[:rt_idx[0]]
+            itms_run = []
+            if any(prestk):
+                msg = '\n----\n pre-realtime execution stack: '
+                for lst in prestk:
+                    msg = msg + '\n{}'.format( [itm.tag() for itm in lst] ) 
+                    itms_run = itms_run + lst 
+                msg += '\n----'
+                self.write_log(msg)
+                self.run_wf_serial(prestk)
+                rtstk = self.downstream_from_batch_item(rt_itm,prestk)
+                if any(rtstk):
+                    msg = '\n----\n realtime execution stack: '
+                    for lst in rtstk:
+                        msg = msg + '\n{}'.format( [itm.tag() for itm in lst] ) 
+                        itms_run = itms_run + lst 
+                    msg += '\n----'
+                    self.write_log(msg)
+                    self.run_wf_realtime(rt_itm,rtstk)
+            poststk = []
+            for lst in stk:
+                postlst = [itm for itm in lst if not itm in itms_run and not isinstance(itm.data,Realtime)] 
+                if any(postlst):
+                    poststk.append(postlst)
+            if any(poststk):
+                msg = '\n----\n post-realtime execution stack: '
+                for to_run in poststk:
+                    msg = msg + '\n{}'.format( [itm.tag() for itm in to_run] ) 
+                msg += '\n----'
+                self.write_log(msg)
+                self.run_wf_serial(poststk)
         elif any(rt_flags):
             raise ValueError('[{}] only one Realtime op at a time is supported, found {}'.format(
             __name__,sum(rt_flags)+sum(batch_flags)))
-        elif not any(batch_flags):
-            self.run_wf_serial(stk)
-        else:
+        elif any(batch_flags):
             n_batch = sum(batch_flags)
             b_itms = [stk[i][0] for i in batch_idx]
             itms_run = []
@@ -421,7 +453,7 @@ class WfManager(TreeModel):
                     msg += '\n----'
                     self.write_log(msg)
                     self.run_wf_serial(prestk)
-                bstk = self.downstream_from_batch_item(b_itms[i])
+                bstk = self.downstream_from_batch_item(b_itms[i],stk[:batch_idx[i]])
                 if any(bstk):
                     msg = '\n----\n batch execution stack: '
                     for lst in bstk:
@@ -443,11 +475,13 @@ class WfManager(TreeModel):
                 msg += '\n----'
                 self.write_log(msg)
                 self.run_wf_serial(poststk)
+        else:
+            self.run_wf_serial(stk)
         # if not interrupted, signal done
         if self.is_running():
             self.wfdone.emit()
 
-    def downstream_from_batch_item(self,b_itm):
+    def downstream_from_batch_item(self,b_itm,stk_done):
         stk = []
         # The top layer will be strictly the batch input routes
         lst = []
@@ -462,18 +496,18 @@ class WfManager(TreeModel):
                 op = itm.data
                 if ( not isinstance(op,Batch) 
                 and not isinstance(op,Realtime)
-                and not any([itm in l for l in stk])
-                and self.batch_op_ready(op,stk) ):
+                and not any([itm in l for l in stk_done+stk])
+                and self.batch_op_ready(op,stk_done+stk) ):
                     lst.append(itm)
         return stk
                 
-    def batch_op_ready(self,op,stk):
+    def batch_op_ready(self,op,stk_done):
         op_rdy = True
         for name,il in op.input_locator.items():
             if il.src == optools.wf_input: 
                 op_uri = il.val.split('.')[0]
                 itm,idx = self.get_from_uri(op_uri)
-                if not any([itm in lst for lst in stk]):
+                if not any([itm in lst for lst in stk_done]):
                     op_rdy = False
             if il.src == optools.batch_input:
                 # assume all ops taking batch input
@@ -486,7 +520,10 @@ class WfManager(TreeModel):
         for idx,th in self._wf_threads.items():
             if not th:
                 return idx
-        return None
+        # if none found, wait for thread 0
+        # TODO: something better
+        self.wait_for_thread(0)
+        return 0 
 
     def wait_for_thread(self,th_idx):
         """Wait for the thread at th_idx to be finished"""
@@ -551,21 +588,28 @@ class WfManager(TreeModel):
                 self.load_inputs(op)
             # Make a new Worker, give None parent so that it can be thread-mobile
             wf_wkr = slacxtools.WfWorker(lst,None)
+            wf_wkr.opDone.connect(self.updateOperation)
             wf_thread = QtCore.QThread(self)
             wf_wkr.moveToThread(wf_thread)
-            self._wf_threads[thd] = wf_thread
             wf_thread.started.connect(wf_wkr.work)
             wf_thread.finished.connect( partial(self.finish_thread,thd) )
             msg = 'running {} in thread {}'.format([itm.tag() for itm in lst],thd)
             self.write_log(msg)
+            self._wf_threads[thd] = wf_thread
             wf_thread.start()
             # Let the thread finish
-            self.wait_for_thread(thd)
+            #self.wait_for_thread(thd)
             # When the thread is finished, update the ops it ran.
-            for itm in lst:
-                op = itm.data
-                self.update_op(itm.tag(),op)
+            #for itm in lst:
+            #    op = itm.data
+            #    self.update_op(itm.tag(),op)
+        self.wait_for_thread(thd)
         self.write_log('SERIAL EXECUTION FINISHED in thread {}'.format(thd))
+
+    @QtCore.Slot(str,Operation)
+    def updateOperation(self,tag,op):
+        #print 'updating op for {}'.format(tag)
+        self.update_op(tag,op)
 
     def finish_thread(self,th_idx):
         self.write_log('finished execution in thread {}.'.format(th_idx))
@@ -575,17 +619,13 @@ class WfManager(TreeModel):
         """
         Executes the workflow under the control of one Realtime(Operation) 
         """
-        self.write_log( 'REALTIME EXECUTION STARTING' )
-        self.write_log( 'Running dependencies... ' )
-        self.run_deps(rt_itm)
         self.write_log( 'Preparing Realtime controller... ' )
         rt = rt_itm.data
         self.load_inputs(rt)
-        #rt.run_and_update()
         rt.run()
         self.update_op(rt_itm.tag(),rt)
         self.appref.processEvents()
-        stk = self.downstream_stack(rt_itm)
+        stk = self.downstream_from_batch_item(rt_itm)
         nx = 0
         while self._running:
             # After rt.run(), it is expected that rt.input_iter()
