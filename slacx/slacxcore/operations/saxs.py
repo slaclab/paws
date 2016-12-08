@@ -61,7 +61,6 @@ class GenerateSphericalDiffractionQ(Operation):
         self.outputs['I'] = \
             generate_spherical_diffraction(self.inputs['q_vector'], self.inputs['intensity_at_zero_q'],
                                            self.inputs['r0'], self.inputs['sigma_r_over_r0'])
-# time to COMMIT
 
 class GenerateSphericalDiffraction(Operation):
     """Generate a SAXS diffraction pattern for spherical nanoparticles.
