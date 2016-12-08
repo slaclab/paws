@@ -180,6 +180,7 @@ class WfUiManager(object):
             # Request a different uri 
             msg_ui = slacxtools.start_message_ui()
             msg_ui.setParent(self.ui,QtCore.Qt.Window)
+            msg_ui.setAttribute(QtCore.Qt.WA_OpaquePaintEvent)
             msg_ui.setWindowModality(QtCore.Qt.WindowModal)
             msg_ui.setWindowTitle("Tag Error")
             msg_ui.message_box.setPlainText(
@@ -379,6 +380,7 @@ class WfUiManager(object):
         list_ui = QtUiTools.QUiLoader().load(ui_file)
         ui_file.close()
         list_ui.setParent(self.ui,QtCore.Qt.Window)
+        list_ui.setAttribute(QtCore.Qt.WA_OpaquePaintEvent)
         list_ui.setWindowModality(QtCore.Qt.WindowModal)
         list_ui.setWindowTitle("build list from {}".format(optools.input_sources[src]))
         if self.op.input_locator[name]:
@@ -455,6 +457,7 @@ class WfUiManager(object):
         src_ui = QtUiTools.QUiLoader().load(ui_file)
         ui_file.close()
         src_ui.setParent(parent,QtCore.Qt.Window)
+        src_ui.setAttribute(QtCore.Qt.WA_OpaquePaintEvent)
         src_ui.setWindowModality(QtCore.Qt.WindowModal)
         src_ui.setWindowTitle("data loader")
         if src == optools.wf_input:
