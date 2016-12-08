@@ -61,7 +61,7 @@ class GenerateSphericalDiffractionQ(Operation):
         self.outputs['I'] = \
             generate_spherical_diffraction(self.inputs['q_vector'], self.inputs['intensity_at_zero_q'],
                                            self.inputs['r0'], self.inputs['sigma_r_over_r0'])
-
+# time to COMMIT
 
 class GenerateSphericalDiffraction(Operation):
     """Generate a SAXS diffraction pattern for spherical nanoparticles.
@@ -361,7 +361,7 @@ def generate_references(x, factorVals):
     for ii in range(num_tests):
         factor = factorVals[ii]
         y = blur(x, factor)
-        xFirstDip[ii], heightFirstDip[ii], sigmaScaledFirstDip[ii], heightAtZero[ii] = take_polydispersity_metrics1(x, y)
+        xFirstDip[ii], heightFirstDip[ii], sigmaScaledFirstDip[ii], heightAtZero[ii] = take_polydispersity_metrics(x, y)
     references = prep_for_pickle(factorVals, xFirstDip, sigmaScaledFirstDip, heightFirstDip, heightAtZero)
     return references
 
