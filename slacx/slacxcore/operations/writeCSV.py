@@ -67,8 +67,8 @@ class ReadTemperatureIndex(Operation):
         directory = self.inputs['background_directory']
         outname = 'temperature_index.csv'
         outloc = join(directory,outname)
-        self.outputs['temperatures'] = np.loadtxt(outloc, dtype=float, delimiter=',', skiprows=1, usecols=(0))
-        self.outputs['filenames'] = np.loadtxt(outloc, dtype=str, delimiter=',', skiprows=1, usecols=(1))
+        self.outputs['temperatures'] = np.loadtxt(outloc, dtype=float, delimiter=',', skiprows=1, usecols=(0,))
+        self.outputs['filenames'] = np.loadtxt(outloc, dtype=str, delimiter=',', skiprows=1, usecols=(1,))
         self.outputs['temperature_index_file'] = outloc
 
 class SelectClosestTemperatureBackgroundFromTemperature(Operation):
@@ -95,8 +95,8 @@ class SelectClosestTemperatureBackgroundFromTemperature(Operation):
         this_temperature = self.inputs['this_temperature']
         indexname = 'temperature_index.csv'
         indexloc = join(directory,indexname)
-        temperatures = np.loadtxt(indexloc, dtype=float, delimiter=',', skiprows=1, usecols=(0))
-        filenames = np.loadtxt(indexloc, dtype=str, delimiter=',', skiprows=1, usecols=(1))
+        temperatures = np.loadtxt(indexloc, dtype=float, delimiter=',', skiprows=1, usecols=(0,))
+        filenames = np.loadtxt(indexloc, dtype=str, delimiter=',', skiprows=1, usecols=(1,))
         diff = np.fabs(temperatures - this_temperature)
         index_of_best_temp = np.where(diff == diff.min())[0][0]
         file_of_best_temp = filenames[index_of_best_temp]

@@ -9,8 +9,8 @@ try:
 except ImportError:
     import pickle
 
-#from slacxop import Operation
-#import optools
+from slacxop import Operation
+import optools
 
 reference_loc = join('slacx','slacxcore','operations','dmz','references','polydispersity_guess_references.pickle')
 global references
@@ -215,7 +215,7 @@ class FetchReferences(Operation):
         except:
             print "No reference file was found at the appropriate location."
 
-
+'''
 class GuessPolydispersityWeighted(Operation):
     """Guess the polydispersity of spherical diffraction pattern.
 
@@ -242,7 +242,6 @@ class GuessPolydispersityWeighted(Operation):
         fractional_variation, qFirstDip, _, _, _, _, _ = guess_polydispersity(q, I, dI)
         self.outputs['fractional_variation'], self.outputs['first_dip_q'] = fractional_variation, qFirstDip
 
-
 class GuessSize(Operation):
         """Guess the mean size of spherical diffraction pattern.
 
@@ -267,8 +266,9 @@ class GuessSize(Operation):
             fractional_variation, first_dip_q = self.outputs['fractional_variation'], self.outputs['first_dip_q']
             mean_size = guess_size(fractional_variation, first_dip_q)
             self.outputs['mean_size'] = mean_size
+'''
 
-class GuessPropertiesWeighted(Operation):
+class GuessProperties(Operation):
     """Guess the polydispersity, mean size, and amplitude of spherical diffraction pattern.
 
     Assumes the data have already been background subtracted, smoothed, and otherwise cleaned."""
@@ -276,11 +276,11 @@ class GuessPropertiesWeighted(Operation):
     def __init__(self):
         input_names = ['q', 'I', 'dI']
         output_names = ['fractional_variation', 'mean_size', 'amplitude_at_zero', 'qFirstDip', 'heightFirstDip', 'sigmaScaledFirstDip', 'heightAtZero', 'dips', 'shoulders']
-        super(GuessPropertiesWeighted, self).__init__(input_names, output_names)
+        super(GuessProperties, self).__init__(input_names, output_names)
         # Documentation
         self.input_doc['q'] = '1d ndarray; wave vector values'
         self.input_doc['I'] = '1d ndarray; intensity values'
-        self.input_doc['dI'] = '1d ndarray; error estimate of intensity values'
+        self.input_doc['dI'] = '1d ndarray; error estimate of intensity values; use default value if none exists'
         self.output_doc['fractional_variation'] = 'normal distribution sigma divided by mean size'
         self.output_doc['mean_size'] = 'mean size of particles'
         self.output_doc['amplitude_at_zero'] = 'projected scattering amplitude at q=0'
@@ -288,6 +288,8 @@ class GuessPropertiesWeighted(Operation):
         self.input_src['q'] = optools.wf_input
         self.input_src['I'] = optools.wf_input
         self.input_src['dI'] = optools.wf_input
+        # defaults
+        self.inputs['dI'] = np.zeros(1, dtype=float)
         self.categories = ['1D DATA PROCESSING.SAXS INTERPRETATION']
 
     def run(self):
@@ -301,7 +303,7 @@ class GuessPropertiesWeighted(Operation):
         self.outputs['shoulders'] = shoulders
         mean_size = guess_size(fractional_variation, qFirstDip)
         amplitude_at_zero = polydispersity_metric_heightAtZero(qFirstDip, q, I, dI)
-        #dips, shoulders = choose_dips_and_shoulders(q, I, dI)
+        #dips, shoulders = choose_dips_and_shoulders1(q, I, dI)
         self.outputs['fractional_variation'], self.outputs['mean_size'], self.outputs['amplitude_at_zero'] = \
             fractional_variation, mean_size, amplitude_at_zero
 
@@ -357,7 +359,7 @@ def generate_references(x, factorVals):
     for ii in range(num_tests):
         factor = factorVals[ii]
         y = blur(x, factor)
-        xFirstDip[ii], heightFirstDip[ii], sigmaScaledFirstDip[ii], heightAtZero[ii] = take_polydispersity_metrics(x, y)
+        xFirstDip[ii], heightFirstDip[ii], sigmaScaledFirstDip[ii], heightAtZero[ii] = take_polydispersity_metrics1(x, y)
     references = prep_for_pickle(factorVals, xFirstDip, sigmaScaledFirstDip, heightFirstDip, heightAtZero)
     return references
 
@@ -406,7 +408,15 @@ def quadratic_extremum(coefficients):
 def polynomial_value(coefficients, x):
     '''Finds the value of a polynomial at a location.'''
     powers = np.arange(coefficients.size)
-    y = ((x ** powers) * coefficients).sum()
+    try:
+        x.size # distinguish sequence x from numeric x
+        powers = horizontal(powers)
+        coefficients = horizontal(coefficients)
+        x = vertical(x)
+        y = ((x ** powers) * coefficients).sum(axis=1)
+        y = y.flatten()
+    except AttributeError:
+        y = ((x ** powers) * coefficients).sum()
     return y
 
 def vertical(array1d):
@@ -534,12 +544,21 @@ def guess_polydispersity(q, I, dI=np.zeros(1)):
     fractional_variation, _, best_xy = guess_nearest_point_on_nonmonotonic_trace_normalized([x0, y0], [x, y], factor)
     return fractional_variation, qFirstDip, heightFirstDip, sigmaScaledFirstDip, heightAtZero, dips, shoulders
 
+def take_polydispersity_metrics1(x, y, dy=np.zeros(1)):
+    if not dy.any():
+        dy = np.ones(y.shape)
+    dips, shoulders = choose_dips_and_shoulders1(x, y, dy)
+    xFirstDip, scaledQuadCoefficients = polydispersity_metric_qFirstDip(x, y, dips, dy)
+    heightFirstDip = polydispersity_metric_heightFirstDip(scaledQuadCoefficients, xFirstDip)
+    sigmaScaledFirstDip = polydispersity_metric_sigmaScaledFirstDip(x, y, dips, shoulders, xFirstDip, heightFirstDip)
+    heightAtZero = polydispersity_metric_heightAtZero(xFirstDip, x, y, dy)
+    return xFirstDip, heightFirstDip, sigmaScaledFirstDip, heightAtZero
+
 def take_polydispersity_metrics(x, y, dy=np.zeros(1)):
     if not dy.any():
         dy = np.ones(y.shape)
     dips, shoulders = choose_dips_and_shoulders(x, y, dy)
-    xFirstDip, scaledQuadCoefficients = polydispersity_metric_qFirstDip(x, y, dips, dy)
-    heightFirstDip = polydispersity_metric_heightFirstDip(scaledQuadCoefficients, xFirstDip)
+    xFirstDip, heightFirstDip, scaledQuadCoefficients = first_dip(x, y, dips, dy)
     sigmaScaledFirstDip = polydispersity_metric_sigmaScaledFirstDip(x, y, dips, shoulders, xFirstDip, heightFirstDip)
     heightAtZero = polydispersity_metric_heightAtZero(xFirstDip, x, y, dy)
     return xFirstDip, heightFirstDip, sigmaScaledFirstDip, heightAtZero
@@ -553,7 +572,7 @@ def choose_dips_and_shoulders1(q, I, dI=np.zeros(1)):
     dips = local_minima_detector(scaled_curv)
     shoulders = local_maxima_detector(scaled_curv)
     # Clean out wildly offensve entries (rapid oscillations, end points)
-    dips, shoulders = clean_extrema(dips, shoulders)
+    dips, shoulders = clean_extrema1(dips, shoulders)
     return dips, shoulders
 
 def choose_dips_and_shoulders2(q, I, dI=np.zeros(1)):
@@ -565,34 +584,33 @@ def choose_dips_and_shoulders2(q, I, dI=np.zeros(1)):
     dips = local_minima_detector(scaled_curv)
     shoulders = local_maxima_detector(scaled_curv)
     # Clean out wildly offensve entries (rapid oscillations, end points)
-    dips, shoulders = clean_extrema(dips, shoulders)
+    dips, shoulders = clean_extrema1(dips, shoulders)
     # Clean out unlikely points of interest by comparing to typical point-to-point variation
     scaled_I_variation = point_to_point_variation(scaled_I)
     expected_curv_from_noise = scaled_I_variation * 2**0.5 / ((q.max() - q.min())/q.size)
-    # TODO: Need to clean out low-probability ones
     return dips, shoulders
 
 def choose_dips_and_shoulders3(q, I, dI=np.zeros(1)):
     '''Find the location of dips (low points) and shoulders (high points).'''
     if not dI.any():
         dI = np.ones(I.shape, dtype=float)
-    log_q = np.log(q)
-    log_I = np.log(I)
-    log_curv = noiseless_curvature(q, scaled_I)
-    dips = local_minima_detector(scaled_curv)
-    shoulders = local_maxima_detector(scaled_curv)
-    # Clean out wildly offensve entries (rapid oscillations, end points)
-    dips, shoulders = clean_extrema(dips, shoulders)
-    # Clean out unlikely points of interest by comparing to typical point-to-point variation
-    scaled_I_variation = point_to_point_variation(scaled_I)
-    expected_curv_from_noise = scaled_I_variation * 2**0.5 / ((q.max() - q.min())/q.size)
-    # TODO: Need to clean out low-probability ones
+    dips = local_minima_detector(I)
+    shoulders = local_maxima_detector(I)
+    # Clean out end points and wussy maxima
+    dips2, shoulders2 = clean_extrema(dips, shoulders, I)
+    return dips, shoulders, dips2, shoulders2
+
+def choose_dips_and_shoulders(q, I, dI=np.zeros(1)):
+    '''Find the location of dips (low points) and shoulders (high points).'''
+    if not dI.any():
+        dI = np.ones(I.shape, dtype=float)
+    dips = local_minima_detector(I)
+    shoulders = local_maxima_detector(I)
+    # Clean out end points and wussy maxima
+    dips, shoulders = clean_extrema(dips, shoulders, I)
     return dips, shoulders
 
-
-
-
-def clean_extrema(dips, shoulders):
+def clean_extrema1(dips, shoulders):
     # Forbid rapid oscillation
     dips_above = dips[1:].copy()
     dips_below = dips[:-1].copy()
@@ -608,6 +626,42 @@ def clean_extrema(dips, shoulders):
     shoulders[0] = False
     shoulders[-1] = False
     return dips, shoulders
+
+def clean_extrema(dips, shoulders, y):
+    # Mark endpoints False
+    dips[0:10] = False
+    dips[-1] = False
+    shoulders[0] = False
+    shoulders[-1] = False
+    # Reject weaksauce local maxima and minima
+    extrema = dips | shoulders
+    extrema_indices = np.where(extrema)[0]
+    for ii in range(len(extrema_indices) - 3):
+        four_indices = extrema_indices[ii:ii+4]
+        is_dip = dips[extrema_indices[ii]]
+        if is_dip:
+            weak = upwards_weaksauce_identifier(four_indices, y)
+        else:
+            weak = downwards_weaksauce_identifier(four_indices, y)
+        if weak:
+            extrema[four_indices[1]] = False
+            extrema[four_indices[2]] = False
+    # Apply mask to shoulders & dips
+    dips = dips * extrema
+    shoulders = shoulders * extrema
+    return dips, shoulders
+
+def upwards_weaksauce_identifier(four_indices, y):
+    a, b, c, d = four_indices
+    if (y[a] < y[c]) & (y[b] < y[d]):
+        weak = True
+    else:
+        weak = False
+    return weak
+
+def downwards_weaksauce_identifier(four_indices, y):
+    weak = upwards_weaksauce_identifier(four_indices, -y)
+    return weak
 
 def guess_size(fractional_variation, first_dip_q):
 #    global references
@@ -634,6 +688,17 @@ def polydispersity_metric_heightAtZero(qFirstDip, q, I, dI=np.zeros(1)):
     coefficients = arbitrary_order_solution(4, q[low_q], I[low_q], dI[low_q])
     heightAtZero = coefficients[0]
     return heightAtZero
+
+def polydispersity_metric_heightAtZero_2(qFirstDip, q, I, dI=np.zeros(1)):
+    if not dI.any():
+        dI = np.ones(I.shape, dtype=float)
+    qlim = max(q[6], (qFirstDip - q[0])/2.)
+    if qlim > 0.75*qFirstDip:
+        print "Low-q sampling is poor and will likely affect estimate quality."
+    low_q = (q < qlim)
+    coefficients = arbitrary_order_solution(4, q[low_q], I[low_q], dI[low_q])
+    heightAtZero = coefficients[0]
+    return heightAtZero, coefficients
 
 def polydispersity_metric_qFirstDip(q, I, dips, dI=np.zeros(1)):
     '''Finds the location in *q* of the first dip.'''
@@ -769,6 +834,107 @@ def point_to_point_variation(y):
     return variation
     
 
+def test():
+    from os import listdir
+    from os.path import join
+    from matplotlib import pyplot as plt
+    import numpy as np
+    dir = "/Users/Amanda/Desktop/test"
+    files = listdir(dir)
+    csvfiles = [ii for ii in files if ii[-3:] == 'csv']
+    fullfiles = [join(dir, ii) for ii in csvfiles]
+    for ii in fullfiles:
+        print "File: %s." % ii
+        q = np.loadtxt(ii, dtype=float, delimiter=',', skiprows=1, usecols=(0,))
+        I = np.loadtxt(ii, dtype=float, delimiter=',', skiprows=1, usecols=(1,))
+        '''
+        lo1, hi1, lo2, hi2 = choose_dips_and_shoulders3(q, I)
+        q0, I0, dip_quadratic = first_dip(lo2, q, I)
+        low_q, low_quadratic = polydispersity_metric_heightAtZero_2(q0, q, I)
+        plot_one(q, I, lo1, hi1, lo2, hi2, q0, I0, dip_quadratic, low_quadratic)
+        '''
+        #xFirstDip, heightFirstDip, sigmaScaledFirstDip, heightAtZero = take_polydispersity_metrics(q, I)
+        fractional_variation, qFirstDip, heightFirstDip, sigmaScaledFirstDip, heightAtZero, dips, shoulders = guess_polydispersity(q, I)
+        mean_size = guess_size(fractional_variation, qFirstDip)
+        plot_dos(q, I, qFirstDip, heightFirstDip, sigmaScaledFirstDip, heightAtZero, fractional_variation, mean_size)
+
+        plt.title(ii)
+
+
+def plot_one(x, y, lo1, hi1, lo2, hi2, x0, y0, coefficients1, coefficients2):
+    from matplotlib import pyplot as plt
+    fig, ax = plt.subplots(1)
+    ax.plot(x, y, ls='-', marker='None', color='k', lw=2)
+    # bad extrema
+    ax.plot(x[lo1 & (~lo2)], y[lo1 & (~lo2)], ls='None', marker='x', color='b', lw=1)
+    ax.plot(x[hi1 & (~hi2)], y[hi1 & (~hi2)], ls='None', marker='x', color='b', lw=1)
+    # good extrema
+    ax.plot(x[lo2], y[lo2], ls='None', marker='x', color='r', lw=1)
+    ax.plot(x[hi2], y[hi2], ls='None', marker='x', color='r', lw=1)
+    selection = ((x < x0*1.2) & (x > x0*0.8))
+    ax.plot(x[selection], polynomial_value(coefficients1, x[selection]), ls='-', marker='None', color='b', lw=1)
+    ax.plot(x0, y0, ls='None', marker='o', color='r', lw=1)
+    selection = (x < x0*0.7)
+    ax.plot(x[selection], polynomial_value(coefficients2, x[selection]), ls='-', marker='None', color='b', lw=1)
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+    return fig, ax
+
+
+def plot_dos(q, I, q1, I1, sigmaScaledFirstDip, I0, poly, size):
+    from matplotlib import pyplot as plt
+    fig, ax = plt.subplots(1)
+    ax.plot(q, I, ls='-', marker='None', color='k', lw=2)
+    ax.plot(q1, I1, ls='None', marker='x', color='r', lw=1)
+    selection = (q < q1*0.3)
+    n = selection.sum()
+    ax.plot(q[selection], np.ones(n)*I0, ls='-', marker='None', color='b', lw=1)
+    modelI = generate_spherical_diffraction(q, I0, size, poly)
+    ax.plot(q, modelI, ls='-', marker='None', color='r', lw=1)
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+    return fig, ax
+
+
+def first_dip(q, I, dips, dI=np.zeros(1)):
+    if not dI.any():
+        dI = np.ones(I.shape, dtype=float)
+    # if the first two "dips" are very close together, they are both marking the first dip
+    # because I can't eliminate all spurious extrema with such a simple test
+    dip_locs = np.where(dips)[0]
+    q1, q2, q3 = q[dip_locs[:3]]
+    mult = 4
+    smult = 1.5
+    # q1, q2 close compared to q2, q3 and compared to 0, q1
+    if ((q2 - q1)*mult < (q3 - q2)) & ((q2 - q1)*mult < q1):
+        case = 'two'
+        scale = 0.5 * q3
+    # q2 - q1 approximately equal to q1
+    elif ((q2 - q1)*smult > q1) & ((q2 - q1) < q1*smult):
+        case = 'one'
+        scale = 0.5 * q2
+    else:
+        case = 'mystery'
+        scale = q1
+    print "Detected case: %s." % case
+    if case == 'two':
+        minq = q1 - scale*0.1
+        maxq = q2 + scale*0.1
+    else:
+        minq = q1 - scale*0.1
+        maxq = q1 + scale*0.1
+    selection = ((q < maxq) & (q > minq))
+    # make sure selection is large enough to get a useful sampling
+    if selection.sum() < 9:
+        print "Your sampling in q seems to be sparse and will likely affect the quality of the estimate."
+    while selection.sum() < 9:
+        selection[1:] = selection[1:] & selection[:-1]
+        selection[:-1] = selection[1:] & selection[:-1]
+    # fit local quadratic
+    coefficients = arbitrary_order_solution(2, q[selection], I[selection], dI[selection])
+    qbest = quadratic_extremum(coefficients)
+    Ibest = polynomial_value(coefficients, qbest)
+    return qbest, Ibest, coefficients
 
 
 '''
@@ -850,4 +1016,5 @@ an appropriate file; the file will be saved and need not be generated again.'''
 # Hokay the real weak point here is determining where the dips and shoulders are in noisy data
 # So we are addressing that today
 # And specifically we are addressing it in real goddam data
-
+# Okay, lesson learned: curvature, even log-log curvature, will not serve us here.
+# We're gonna have to do something involving real minima.
