@@ -59,7 +59,7 @@ def discrete_second_derivative(x, y):
     dx = x[1:] - x[:-1]
     dy = y[1:] - y[:-1]
     slope = dy / dx
-    new_x = x + 0.5 * dx
+    new_x = x[:-1] + 0.5 * dx
     new_dx = new_x[1:] - new_x[:-1]
     dslope = slope[1:] - slope[:-1]
     curvature = dslope/new_dx
