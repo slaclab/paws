@@ -3,34 +3,40 @@ import numpy as np
 from slacxop import Operation
 import optools
 
-class WindowZip_q_I(Operation):
+class WindowZip(Operation):
     """
-    From input iterables of q and I, 
-    produce an n-by-2 vector 
-    where q is greater than 0.02 and less than 0.6
+    From input iterables of x and y, 
+    produce an n-by-2 array 
+    where x is bounded by the specified limits 
     """
 
     def __init__(self):
-        input_names = ['q_list','I_list']
-        output_names = ['q_I_window']
-        super(WindowZip_q_I,self).__init__(input_names,output_names)        
-        self.input_src['q_list'] = optools.wf_input
-        self.input_src['I_list'] = optools.wf_input
-        self.input_doc['q_list'] = '1d iterable listing q values'
-        self.input_doc['I_list'] = '1d iterable listing intensity values'
-        self.output_doc['q_I_window'] = 'n-by-2 array with q, I pairs for q>0.02 and <0.6'
+        input_names = ['x','y','x_min','x_max']
+        output_names = ['x_y_window']
+        super(WindowZip,self).__init__(input_names,output_names)        
+        self.input_src['x'] = optools.wf_input
+        self.input_src['y'] = optools.wf_input
+        self.input_src['x_min'] = optools.user_input
+        self.input_src['x_max'] = optools.user_input
+        self.input_type['x_min'] = optools.float_type
+        self.input_type['x_max'] = optools.float_type
+        self.inputs['x_min'] = 0.02 
+        self.inputs['x_max'] = 0.6 
+        self.input_doc['x'] = 'list (or iterable) of x values'
+        self.input_doc['y'] = 'list (or iterable) of y values'
+        self.output_doc['x_y_window'] = 'n-by-2 array with x, y pairs for x_min<x<x_max'
         self.categories = ['PACKAGING']
 
     def run(self):
-        qvals = self.inputs['q_list']
-        ivals = self.inputs['I_list']
-        q_min = 0.02
-        q_max = 0.6
-        good_qvals = ((qvals > q_min) & (qvals < q_max))
-        q_I_window = np.zeros((good_qvals.sum(),2))
-        q_I_window[:,0] = qvals[good_qvals]
-        q_I_window[:,1] = ivals[good_qvals]
-        self.outputs['q_I_window'] = q_I_window
+        xvals = self.inputs['x']
+        yvals = self.inputs['y']
+        x_min = self.inputs['x_min']
+        x_max = self.inputs['x_max']
+        idx_good = ((xvals > x_min) & (xvals < x_max))
+        x_y_window = np.zeros((idx_good.sum(),2))
+        x_y_window[:,0] = xvals[idx_good]
+        x_y_window[:,1] = yvals[idx_good]
+        self.outputs['x_y_window'] = x_y_window
 
 class Window_q_I_2(Operation):
     """

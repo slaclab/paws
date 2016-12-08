@@ -32,7 +32,7 @@ class BgSubtractByTemperature(Operation):
         bg_out = self.inputs['bg_batch_output']
         T_allbg = [d['header']['TEMP'] for d in bg_out]
         #print 'bg T values are {}'.format(T_allbg)
-        q_I_allbg = [d['q_I_window'] for d in bg_out]
+        q_I_allbg = [d['x_y_window'] for d in bg_out]
         idx = np.argmin(np.abs([T_bg - T for T_bg in T_allbg]))
         #print 'idx of closest T is {}'.format(idx)
         q_I_bg = q_I_allbg[idx]

@@ -344,10 +344,10 @@ class WfUiManager(object):
             else:
                 btn_widget.setText('browse...')
                 btn_widget.clicked.connect( partial(self.fetch_data,name) )
-            if self.op.inputs[name] is not None:
-                val_widget.setText(str(self.op.inputs[name]))
-            elif self.op.input_locator[name]:
+            if self.op.input_locator[name]:
                 val_widget.setText(str(self.op.input_locator[name].val))
+            elif self.op.inputs[name] is not None:
+                val_widget.setText(str(self.op.inputs[name]))
             val_widget.setReadOnly(True)
         elif (src == optools.user_input):
             if tp == optools.none_type:
