@@ -576,8 +576,9 @@ def choose_dips_and_shoulders3(q, I, dI=np.zeros(1)):
     '''Find the location of dips (low points) and shoulders (high points).'''
     if not dI.any():
         dI = np.ones(I.shape, dtype=float)
-    scaled_I = I * q ** 4 / dI
-    scaled_curv = noiseless_curvature(q, scaled_I)
+    log_q = np.log(q)
+    log_I = np.log(I)
+    log_curv = noiseless_curvature(q, scaled_I)
     dips = local_minima_detector(scaled_curv)
     shoulders = local_maxima_detector(scaled_curv)
     # Clean out wildly offensve entries (rapid oscillations, end points)
