@@ -345,6 +345,41 @@ class OptimizeSphericalDiffractionFit(Operation):
         self.outputs['fractional_variation'] = popt[2]
 
 
+class OptimizeSphericalDiffractionFit2(Operation):
+    """From an initial guess, optimize r0, I0, and fractional_variation."""
+
+    def __init__(self):
+        input_names = ['q', 'I', 'amplitude_at_zero', 'mean_size', 'fractional_variation']
+        output_names = ['amplitude_at_zero', 'mean_size', 'fractional_variation']
+        super(OptimizeSphericalDiffractionFit2, self).__init__(input_names, output_names)
+        # Documentation
+        self.input_doc['q'] = '1d ndarray; wave vector values'
+        self.input_doc['I'] = '1d ndarray; intensity values'
+        self.input_doc['amplitude_at_zero'] = 'estimate of intensity at q=0'
+        self.input_doc['mean_size'] = 'estimate of mean particle size'
+        self.input_doc['fractional_variation'] = 'estimate of normal distribution sigma divided by mean size'
+        self.output_doc['fractional_variation'] = 'normal distribution sigma divided by mean size'
+        self.output_doc['mean_size'] = 'mean particle size'
+        self.output_doc['amplitude_at_zero'] = 'projected intensity at q=0'
+        # Source and type
+        self.input_src['q'] = optools.wf_input
+        self.input_src['I'] = optools.wf_input
+        self.input_src['amplitude_at_zero'] = optools.wf_input
+        self.input_src['mean_size'] = optools.wf_input
+        self.input_src['fractional_variation'] = optools.wf_input
+        self.input_type['amplitude_at_zero'] = optools.float_type
+        self.input_type['mean_size'] = optools.float_type
+        self.input_type['fractional_variation'] = optools.float_type
+        self.categories = ['1D DATA PROCESSING.SAXS INTERPRETATION']
+
+    def run(self):
+        q, I = self.inputs['q'], self.inputs['I']
+        I0_in, r0_in, frac_in = self.inputs['amplitude_at_zero'], self.inputs['mean_size'], self.inputs['fractional_variation']
+        popt, pcov = curve_fit(generate_spherical_diffraction, q, I, bounds=([I0_in*0.5, r0_in*0.5, frac_in*0.1], [I0_in/0.5, r0_in/0.5, frac_in/0.1]))
+        self.outputs['amplitude_at_zero'] = popt[0]
+        self.outputs['mean_size'] = popt[1]
+        self.outputs['fractional_variation'] = popt[2]
+
 def generate_references(x, factorVals):
     #y0 = fullFunction(x)
     num_tests = len(factorVals)
