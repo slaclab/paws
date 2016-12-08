@@ -92,11 +92,13 @@ class GenerateSphericalDiffraction(Operation):
         self.categories = ['1D DATA PROCESSING.GENERATE SAXS PATTERNS']
 
     def run(self):
-        self.outputs['I'] = \
-            generate_spherical_diffraction(self.inputs['q_vector'], self.inputs['intensity_at_zero_q'],
-                                           self.inputs['r0'], self.inputs['sigma_r_over_r0'])
+        q_vector, intensity_at_zero_q = self.inputs['q_vector'], self.inputs['intensity_at_zero_q']
+        r0, sigma_r_over_r0 = self.inputs['r0'], self.inputs['sigma_r_over_r0']
+        print 'q_vector size, shape, sum', q_vector.size, q_vector.shape, q_vector.sum()
+        I = generate_spherical_diffraction(q_vector, intensity_at_zero_q, r0, sigma_r_over_r0)
+        self.outputs['I'] = I
 
-'''
+    '''
 class GenerateSphericalDiffractionX(Operation):
     """Generate a SAXS diffraction pattern for spherical nanoparticles.
 
@@ -544,16 +546,6 @@ def guess_polydispersity(q, I, dI=np.zeros(1)):
     fractional_variation, _, best_xy = guess_nearest_point_on_nonmonotonic_trace_normalized([x0, y0], [x, y], factor)
     return fractional_variation, qFirstDip, heightFirstDip, sigmaScaledFirstDip, heightAtZero, dips, shoulders
 
-def take_polydispersity_metrics1(x, y, dy=np.zeros(1)):
-    if not dy.any():
-        dy = np.ones(y.shape)
-    dips, shoulders = choose_dips_and_shoulders1(x, y, dy)
-    xFirstDip, scaledQuadCoefficients = polydispersity_metric_qFirstDip(x, y, dips, dy)
-    heightFirstDip = polydispersity_metric_heightFirstDip(scaledQuadCoefficients, xFirstDip)
-    sigmaScaledFirstDip = polydispersity_metric_sigmaScaledFirstDip(x, y, dips, shoulders, xFirstDip, heightFirstDip)
-    heightAtZero = polydispersity_metric_heightAtZero(xFirstDip, x, y, dy)
-    return xFirstDip, heightFirstDip, sigmaScaledFirstDip, heightAtZero
-
 def take_polydispersity_metrics(x, y, dy=np.zeros(1)):
     if not dy.any():
         dy = np.ones(y.shape)
@@ -563,43 +555,6 @@ def take_polydispersity_metrics(x, y, dy=np.zeros(1)):
     heightAtZero = polydispersity_metric_heightAtZero(xFirstDip, x, y, dy)
     return xFirstDip, heightFirstDip, sigmaScaledFirstDip, heightAtZero
 
-def choose_dips_and_shoulders1(q, I, dI=np.zeros(1)):
-    '''Find the location of dips (low points) and shoulders (high points).'''
-    if not dI.any():
-        dI = np.ones(I.shape, dtype=float)
-    scaled_I = I * q ** 4 / dI
-    scaled_curv = noiseless_curvature(q, scaled_I)
-    dips = local_minima_detector(scaled_curv)
-    shoulders = local_maxima_detector(scaled_curv)
-    # Clean out wildly offensve entries (rapid oscillations, end points)
-    dips, shoulders = clean_extrema1(dips, shoulders)
-    return dips, shoulders
-
-def choose_dips_and_shoulders2(q, I, dI=np.zeros(1)):
-    '''Find the location of dips (low points) and shoulders (high points).'''
-    if not dI.any():
-        dI = np.ones(I.shape, dtype=float)
-    scaled_I = I * q ** 4 / dI
-    scaled_curv = noiseless_curvature(q, scaled_I)
-    dips = local_minima_detector(scaled_curv)
-    shoulders = local_maxima_detector(scaled_curv)
-    # Clean out wildly offensve entries (rapid oscillations, end points)
-    dips, shoulders = clean_extrema1(dips, shoulders)
-    # Clean out unlikely points of interest by comparing to typical point-to-point variation
-    scaled_I_variation = point_to_point_variation(scaled_I)
-    expected_curv_from_noise = scaled_I_variation * 2**0.5 / ((q.max() - q.min())/q.size)
-    return dips, shoulders
-
-def choose_dips_and_shoulders3(q, I, dI=np.zeros(1)):
-    '''Find the location of dips (low points) and shoulders (high points).'''
-    if not dI.any():
-        dI = np.ones(I.shape, dtype=float)
-    dips = local_minima_detector(I)
-    shoulders = local_maxima_detector(I)
-    # Clean out end points and wussy maxima
-    dips2, shoulders2 = clean_extrema(dips, shoulders, I)
-    return dips, shoulders, dips2, shoulders2
-
 def choose_dips_and_shoulders(q, I, dI=np.zeros(1)):
     '''Find the location of dips (low points) and shoulders (high points).'''
     if not dI.any():
@@ -608,23 +563,6 @@ def choose_dips_and_shoulders(q, I, dI=np.zeros(1)):
     shoulders = local_maxima_detector(I)
     # Clean out end points and wussy maxima
     dips, shoulders = clean_extrema(dips, shoulders, I)
-    return dips, shoulders
-
-def clean_extrema1(dips, shoulders):
-    # Forbid rapid oscillation
-    dips_above = dips[1:].copy()
-    dips_below = dips[:-1].copy()
-    shoulders_above = shoulders[1:].copy()
-    shoulders_below = shoulders[:-1].copy()
-    dips[:-1] = dips[:-1] & (~shoulders_above)
-    dips[1:] = dips[1:] & (~shoulders_below)
-    shoulders[:-1] = shoulders[:-1] & (~dips_above)
-    shoulders[1:] = shoulders[1:] & (~dips_below)
-    # Mark endpoints False
-    dips[0:10] = False
-    dips[-1] = False
-    shoulders[0] = False
-    shoulders[-1] = False
     return dips, shoulders
 
 def clean_extrema(dips, shoulders, y):
@@ -688,17 +626,6 @@ def polydispersity_metric_heightAtZero(qFirstDip, q, I, dI=np.zeros(1)):
     coefficients = arbitrary_order_solution(4, q[low_q], I[low_q], dI[low_q])
     heightAtZero = coefficients[0]
     return heightAtZero
-
-def polydispersity_metric_heightAtZero_2(qFirstDip, q, I, dI=np.zeros(1)):
-    if not dI.any():
-        dI = np.ones(I.shape, dtype=float)
-    qlim = max(q[6], (qFirstDip - q[0])/2.)
-    if qlim > 0.75*qFirstDip:
-        print "Low-q sampling is poor and will likely affect estimate quality."
-    low_q = (q < qlim)
-    coefficients = arbitrary_order_solution(4, q[low_q], I[low_q], dI[low_q])
-    heightAtZero = coefficients[0]
-    return heightAtZero, coefficients
 
 def polydispersity_metric_qFirstDip(q, I, dips, dI=np.zeros(1)):
     '''Finds the location in *q* of the first dip.'''
@@ -909,14 +836,14 @@ def first_dip(q, I, dips, dI=np.zeros(1)):
     if ((q2 - q1)*mult < (q3 - q2)) & ((q2 - q1)*mult < q1):
         case = 'two'
         scale = 0.5 * q3
-    # q2 - q1 approximately equal to q1
-    elif ((q2 - q1)*smult > q1) & ((q2 - q1) < q1*smult):
+    # (q2 - q1)*1.5 approximately equal to q1
+    elif ((q2 - q1)*1.5*smult > q1) & ((q2 - q1)*1.5 < q1*smult):
         case = 'one'
         scale = 0.5 * q2
     else:
         case = 'mystery'
         scale = q1
-    print "Detected case: %s." % case
+#    print "Detected case: %s." % case
     if case == 'two':
         minq = q1 - scale*0.1
         maxq = q2 + scale*0.1

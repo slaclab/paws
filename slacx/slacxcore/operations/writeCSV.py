@@ -214,16 +214,12 @@ class WriteCSV_q_I(Operation):
         self.input_doc['q'] = "1d ndarray; independent variable"
         self.input_doc['I'] = "1d ndarray; dependent variable; same shape as *q*"
         self.input_doc['image_location'] = "string path to "
-
-        self.input_doc['this_temperature'] = "temperature we want to find a background for"
-        self.output_doc['background_q'] = 'appropriate background q'
-        self.output_doc['background_I'] = 'appropriate background I'
         # source & type
         self.input_src['q'] = optools.wf_input
         self.input_src['I'] = optools.wf_input
         self.input_src['image_location'] = optools.wf_input
         self.input_type['image_location'] = optools.str_type
-        self.categories = ['OUTPUT']
+        self.categories = ['OUTPUT.CSV']
 
     def run(self):
         csv_location = replace_extension(self.inputs['image_location'], '.csv')
@@ -243,12 +239,38 @@ class WriteCSV_q_I_dI(Operation):
         self.input_src['dI'] = optools.wf_input
         self.input_src['image_location'] = optools.wf_input
         self.input_type['image_location'] = optools.str_type
-        self.categories = ['OUTPUT']
+        self.categories = ['OUTPUT.CSV']
 
     def run(self):
         csv_location = replace_extension(self.inputs['image_location'], '.csv')
         write_csv_q_I_dI(self.inputs['q'], self.inputs['I'], self.inputs['dI'], csv_location)
         self.outputs['csv_location'] = csv_location
+
+
+class ReadCSV_q_I_dI(Operation):
+    """Read q, I, and (if available) dI from a csv-formatted file.
+
+    If the csv has no third column, returns a length-one array of zeros for dI."""
+
+    def __init__(self):
+        input_names = ['csv_location']
+        output_names = ['q','I', 'dI']
+        super(ReadCSV_q_I_dI, self).__init__(input_names, output_names)
+        # docstrings
+        self.output_doc['q'] = "1d ndarray; independent variable"
+        self.output_doc['I'] = "1d ndarray; dependent variable; same shape as *q*"
+        self.output_doc['dI'] = "1d ndarray; error estimate of *I*; same shape as *I*"
+        # source & type
+        self.input_src['csv_location'] = optools.fs_input
+        self.input_type['csv_location'] = optools.str_type
+        self.categories = ['INPUT.CSV']
+
+    def run(self):
+        csv_location = self.inputs['csv_location']
+        q, I, dI = read_csv_q_I_maybe_dI(csv_location)
+        self.outputs['q'] = q
+        self.outputs['I'] = I
+        self.outputs['dI'] = dI
 
 
 class FindUnprocessed(Operation):
@@ -327,20 +349,15 @@ def replace_extension(old_name, new_extension):
     return new_name
 
 
-
-def read_csv_q_I(nameloc):
-    directory = split(nameloc)[0]
-    data = np.loadtxt(nameloc, dtype=float, delimiter=',', skiprows=1, usecols=(0,1))
-    q = data[:,0]
-    I = data[:,1]
-    return q, I
-
-def read_csv_q_I_dI(nameloc):
-    data = np.loadtxt(nameloc, dtype=float, delimiter=',', skiprows=1, usecols=(0,1,2))
-    q = data[:,0]
-    I = data[:,1]
-    dI = data[:,2]
+def read_csv_q_I_maybe_dI(nameloc):
+    q = np.loadtxt(nameloc, dtype=float, delimiter=',', skiprows=1, usecols=(0,))
+    I = np.loadtxt(nameloc, dtype=float, delimiter=',', skiprows=1, usecols=(1,))
+    try:
+        dI = np.loadtxt(nameloc, dtype=float, delimiter=',', skiprows=1, usecols=(2,))
+    except IndexError:
+        dI = np.zeros(1, dtype=float)
     return q, I, dI
+
 
 def find_unprocessed(directory):
     '''Checks files in a folder to make sure they have been reduced.'''
@@ -351,3 +368,5 @@ def find_unprocessed(directory):
         if not exists(csvname):
             missing_csv.append(ii)
     return missing_csv
+
+#TODO: remove print statement from first_dip
