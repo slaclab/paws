@@ -93,7 +93,7 @@ class GenerateSphericalDiffraction(Operation):
     def run(self):
         q_vector, intensity_at_zero_q = self.inputs['q_vector'], self.inputs['intensity_at_zero_q']
         r0, sigma_r_over_r0 = self.inputs['r0'], self.inputs['sigma_r_over_r0']
-        print 'q_vector size, shape, sum', q_vector.size, q_vector.shape, q_vector.sum()
+#        print 'q_vector size, shape, sum', q_vector.size, q_vector.shape, q_vector.sum()
         I = generate_spherical_diffraction(q_vector, intensity_at_zero_q, r0, sigma_r_over_r0)
         self.outputs['I'] = I
 
@@ -337,7 +337,7 @@ class OptimizeSphericalDiffractionFit(Operation):
         self.categories = ['1D DATA PROCESSING.SAXS INTERPRETATION']
 
     def run(self):
-        q, I = self.inputs['I'], self.inputs['q']
+        q, I = self.inputs['q'], self.inputs['I']
         I0_in, r0_in, frac_in = self.inputs['amplitude_at_zero'], self.inputs['mean_size'], self.inputs['fractional_variation']
         popt, pcov = curve_fit(generate_spherical_diffraction, q, I, bounds=([I0_in*0.5, r0_in*0.5, frac_in*0.1], [I0_in/0.5, r0_in/0.5, frac_in/0.1]))
         self.outputs['amplitude_at_zero'] = popt[0]

@@ -2,13 +2,13 @@ from slacxop import Operation
 import optools
 
 
-class selectBatchItems(Operation):
+class selectBatchItemListFromOps(Operation):
     """Return list of outputs for a given variable from batch."""
 
     def __init__(self):
         input_names = ['batch_outputs','operation','from_outputs','var_name']
         output_names = ['var_list']
-        super(selectBatchItems, self).__init__(input_names, output_names)
+        super(selectBatchItemListFromOps, self).__init__(input_names, output_names)
         self.input_doc['batch_outputs'] = 'From the desired batch, select outputs -> batch_outputs in the workflow'
         self.input_doc['operation'] = 'Name of the operation whose items you want, as it appears in your workflow'
         self.input_doc['from_outputs'] = "True if you want an operation's outputs, False if you want its inputs"
@@ -82,13 +82,13 @@ class selectBatchItems2(Operation):
 
 
 
-class selectBatchItem(Operation):
+class selectBatchItemFromOps(Operation):
     """Return a single output from batch."""
 
     def __init__(self):
         input_names = ['batch_outputs','index','operation','from_outputs','var_name']
         output_names = ['var']
-        super(selectBatchItem, self).__init__(input_names, output_names)
+        super(selectBatchItemFromOps, self).__init__(input_names, output_names)
         # source & type
         self.input_src['batch_outputs'] = optools.wf_input
         self.input_src['index'] = optools.user_input
