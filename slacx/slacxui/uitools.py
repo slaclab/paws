@@ -55,11 +55,6 @@ def type_mv_widget(src,widg=None):
             widg.setCurrentIndex(optools.auto_type)
     return widg 
 
-#def type_selection_widget():
-#    widg = QtGui.QComboBox()
-#    widg.addItems(optools.input_types)
-#    return widg 
-
 def src_selection_widget():
     widg = QtGui.QComboBox()
     widg.addItems(optools.input_sources)
@@ -99,14 +94,6 @@ def name_widget(name):
     name_widget.setReadOnly(True)
     name_widget.setAlignment(QtCore.Qt.AlignRight)
     return name_widget
-    
-#def treesource_typval_widgets():
-#    type_widget = type_mv_widget() 
-#    #type_widget = type_selection_widget()
-#    type_widget.setCurrentIndex(optools.auto_type)
-#    val_widget = QtGui.QLineEdit('-')
-#    val_widget.setReadOnly(True)
-#    return type_widget, val_widget
     
 def toggle_load_button(ui,txt):
     idx = ui.tree.model().index(txt)
@@ -212,13 +199,5 @@ def start_load_ui(uiman):
     load_ui.show()
     load_ui.activateWindow()
 
-#class ListBuildManager(object):
-#    
-#    def __init__(self,ui):
-#        self.ui = ui 
-#        super(ListBuildManager,self).__init__()
-#        self.setup_ui()
-#
-#    def setup_ui(self):
-#        self.ui.finish_button.setText('Finish')
+
 

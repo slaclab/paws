@@ -106,8 +106,8 @@ class XYDataFromBatch(Operation):
         self.inputs['y_key'] = 'Operation.outputs.name'
         self.inputs['x_shift_flag'] = False
         self.input_doc['batch_output'] = 'list of dicts produced by a batch execution. keyed by workflow uris.'
-        self.input_doc['x_key'] = 'workflow uri of data for x axis. this uri must also be in batch.saved_items().'
-        self.input_doc['y_key'] = 'workflow uri of data for y axis. this uri must also be in batch.saved_items().' 
+        self.input_doc['x_key'] = 'uri of data for x. Must be in batch.saved_items(). User input as a string.'
+        self.input_doc['y_key'] = 'uri of data for y. Must be in batch.saved_items(). User input as a string.'
         self.input_doc['x_shift_flag'] = 'if True, shift x data so that its minimum value is zero.' 
         self.output_doc['x_y'] = 'n-by-2 array of x and y values, sorted on the x values, shifted to x=0.'
         self.categories = ['PACKAGING']

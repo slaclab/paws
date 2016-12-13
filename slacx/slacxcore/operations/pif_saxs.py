@@ -1,4 +1,4 @@
-from pypif import pif
+import numpy as np
 import pypif.obj as pifobj
 
 from slacxop import Operation
@@ -47,8 +47,10 @@ class PifNPSynthBatch(Operation):
         t0 = np.min(t_all)
         for d in sbatch:
             temp_i = float(d['TimeTempFromHeader_1.outputs.temp'])
+            t_i = float(d['TimeTempFromHeader_1.outputs.time'])-t0 
             chemsys = pifobj.ChemicalSystem()
             chemsys.names = ['Pd nanoparticles']
+            chemsys.sub_systems = []
             for s in subsys:
                 # TODO: Get quantity information built into workflow
                 # so that it can be added to the sub_system 
@@ -58,13 +60,13 @@ class PifNPSynthBatch(Operation):
             saxs_props = self.saxs_to_pifprops(q_I_saxs,t_i,temp_i)
             chemsys.properties = saxs_props
             chemsys.tags = ['SSRL','SLAC','BEAMLINE 1-5','BEAM ENERGY XXXeV','DETECTOR XXX']
-            time_stack.append(float(d['TimeTempFromHeader_1.outputs.time'])-t0) 
+            time_stack.append(t_i)
             pif_stack.append(chemsys)
         # Sort and save the output
         stk_sorted = np.sort(np.array(zip(time_stack,pif_stack)),0)
         for i in range(np.shape(stk_sorted)[0]):
             stk_sorted[i,1].uid = sysname+'_{}'.format(i)
-        self.outputs['pif_stack'] = stk_sorted[:,1]
+        self.outputs['pif_stack'] = list(stk_sorted[:,1])
 
     def saxs_to_pifprops(self,q_I,time_,temp_):
         props = []
