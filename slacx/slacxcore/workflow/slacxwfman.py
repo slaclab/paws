@@ -43,7 +43,6 @@ class WfManager(TreeModel):
         #self._n_threads = QtCore.QThread.idealThreadCount()
         self._n_threads = 1
         self._wf_threads = dict.fromkeys(range(self._n_threads)) 
-        self.write_log('Slacx workflow manager started, working with {} threads'.format(self._n_threads))
 
     def write_log(self,msg):
         if self.logmethod:
@@ -103,13 +102,6 @@ class WfManager(TreeModel):
         #yaml.dump(wf_dict, f, encoding='utf-8')
         yaml.dump(wf_dict, f)
         f.close()
-    def op_items_to_dict(self,op_items=None):
-        od = OrderedDict()
-        if not op_items:
-            op_items = self.root_items
-        for itm in op_items:
-            od[itm.tag()] = copy.deepcopy(itm.data)
-        return od
     def op_dict(self,op_item):
         dct = OrderedDict() 
         op = op_item.data
@@ -379,6 +371,7 @@ class WfManager(TreeModel):
         for to_run in stk:
             msg = msg + '\n{}'.format( [itm.tag() for itm in to_run] ) 
         msg += '\n----'
+        msg += '\nworking with {} threads'.format(self._n_threads)
         self.write_log(msg)
         substk = []
         batch_flags = []
@@ -643,7 +636,8 @@ class WfManager(TreeModel):
                 self.run_wf_serial(stk,thd)
                 opdict = {}
                 for lst in stk:
-                    opdict.update(self.op_items_to_dict(lst))
+                    for itm in lst:
+                        opdict.update(self.wf_item_to_dict(itm.tag(),itm))
                 rt.output_list().append(opdict)
                 self.update_op(rt_itm.tag(),rt)
             else:
@@ -677,14 +671,40 @@ class WfManager(TreeModel):
                 if any(b.saved_items()):
                     for uri in b.saved_items():
                         itm,idx = self.get_from_uri(uri)
-                        b.output_list()[i].update({itm.tag():copy.deepcopy(itm.data)})
+                        b.output_list()[i].update(self.wf_item_to_dict(uri,itm))
                 else:
                     for lst in stk:
-                        b.output_list()[i].update(self.op_items_to_dict(lst))
+                        for itm in lst:
+                            b.output_list()[i].update(self.wf_item_to_dict(itm.tag(),itm))
                 self.update_op(b_itm.tag(),b)
             else:
                 self.write_log( 'BATCH EXECUTION TERMINATED' )
+                return
         self.write_log( 'BATCH EXECUTION FINISHED' )
+
+    def wf_item_to_dict(self,uri,itm):
+        d = {}
+        d[uri] = copy.deepcopy(itm.data)
+        # if item is list, dict, or Operation,
+        # add items to the dict for its children as well
+        if isinstance(itm.data,Operation):
+            inp_uri = uri+'.'+optools.inputs_tag 
+            out_uri = uri+'.'+optools.outputs_tag 
+            inp_itm,idx = self.get_from_uri(inp_uri)
+            out_itm,idx = self.get_from_uri(out_uri)
+            d.update(self.wf_item_to_dict(inp_uri,inp_itm))
+            d.update(self.wf_item_to_dict(out_uri,out_itm))
+        elif isinstance(itm.data,list):
+            for i in range(len(itm.data)):
+                uri_i = uri+'.'+str(i)
+                itm_i,idx = self.get_from_uri(uri_i)
+                d.update(self.wf_item_to_dict(uri_i,itm_i))
+        elif isinstance(itm.data,dict):
+            for k in itm.data.keys():
+                uri_k = uri+'.'+str(k)
+                itm_k,idx = self.get_from_uri(uri_k)
+                d.update(self.wf_item_to_dict(uri_k,itm_k))
+        return d
 
     def set_op_input_at_uri(self,uri,val):
         """Set an op input, indicated by uri, to provided value."""

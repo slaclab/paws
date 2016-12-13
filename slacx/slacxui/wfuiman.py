@@ -501,7 +501,7 @@ class WfUiManager(object):
         self.ui.op_frame.setSizePolicy(
         QtGui.QSizePolicy.Minimum,self.ui.op_frame.sizePolicy().verticalPolicy())
         self.ui.wf_selector.setModel(self.wfman)
-        #self.ui.wf_selector.hideColumn(1)
+        self.ui.wf_selector.hideColumn(1)
         self.ui.wf_selector.clicked.connect( partial(self.get_op,self.wfman) )
         self.ui.rm_op_button.setText("&Delete")
         self.ui.rm_op_button.clicked.connect(self.rm_op)
@@ -523,7 +523,7 @@ class WfUiManager(object):
         self.ui.test_button.setText("&Test")
         self.ui.test_button.setEnabled(False)
         self.ui.test_button.clicked.connect(self.test_op)
-        self.ui.load_button.setText("&Load")
+        self.ui.load_button.setText("&Finish")
         self.ui.load_button.clicked.connect(self.load_op)
         self.ui.load_button.setDefault(True)
         self.ui.test_button.setMinimumWidth(100)

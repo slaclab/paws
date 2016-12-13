@@ -15,6 +15,7 @@ else:
 
 unit_indent = '&nbsp;&nbsp;&nbsp;&nbsp;'
 
+# TODO: Make a PIF Widget
 class OpWidget(QtGui.QWidget):
     
     def __init__(self,op):
@@ -117,10 +118,20 @@ def display_text(itm,indent):
     #elif isinstance(itm,optools.OutputContainer):
     #    t = indent + '(OutputContainer)'
     #    t += '<br>' + indent + 'data: {}'.format(itm.data)
-    elif isinstance(itm,FileSystemIterator):
+    elif type(itm).__name__ == 'FileSystemIterator':
         t = indent + '(FileSystemIterator) - history'
         for p in itm.paths_done:
             t += '<br>' + indent + ' {}'.format(p)
+    elif type(itm).__name__ == 'System':
+        t = indent + '(pypif.obj.System)'
+        if itm.uid:
+            t += '<br>' + indent + 'uid: <br>{}'.format(display_text(itm.uid,indent+unit_indent))
+        if itm.names:
+            t += '<br>' + indent + 'uid: <br>{}'.format(display_text(itm.names,indent+unit_indent))
+        if itm.ids:
+            t += '<br>' + indent + 'uid: <br>{}'.format(display_text(itm.names,indent+unit_indent))
+        if itm.sub_systems:
+            t += '<br>' + indent + '{}: <br>{}'.format(display_text(itm.sub_systems,indent+unit_indent))
     else:
         t = indent + '('+type(itm).__name__+')' + '<br>' + indent + '{}'.format(itm)
     return t

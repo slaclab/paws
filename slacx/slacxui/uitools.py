@@ -84,7 +84,7 @@ def smalltext_widget(text):
     widg.setStyleSheet( "QLineEdit { background-color: transparent }" + widg.styleSheet() )
     return widg
 
-def bigtext_widget(text,trunc_limit=70):
+def bigtext_widget(text,trunc_limit=200):
     if len(text) > trunc_limit:
         display_text = text[:trunc_limit]+'...'
     else:

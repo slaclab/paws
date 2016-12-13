@@ -7,21 +7,21 @@ class BgSubtractByTemperature(Operation):
     """
     Find a background spectrum from a batch of background spectra,
     where the temperature of the background spectrum is as close as possible
-    to the temperature of the measured spectrum.
+    to the (input) temperature of the measured spectrum.
     Then subtract that background spectrum from the input spectrum.
     """
     
     def __init__(self):
-        input_names = ['q_I_meas', 'header', 'bg_batch_output']
+        input_names = ['q_I_meas', 'temperature', 'bg_batch_output']
         output_names = ['q_I_bgsub', 'bg_factor']
         super(BgSubtractByTemperature, self).__init__(input_names, output_names)
         self.input_doc['q_I_meas'] = 'windowed n-by-2 array of q and I(q)'
-        self.input_doc['header'] = 'header file generated with the measured spectrum, expected to be a dict with key \'TEMP\''
+        self.input_doc['temperature'] = 'temperature as taken from the dict produced by the detector header file'
         self.input_doc['bg_batch_output'] = 'the output (list of dicts) of a batch of background spectra at different temperatures'
         self.output_doc['q_I_bgsub'] = 'q_I_meas - bg_factor * (q_I_bg)'
         self.output_doc['bg_factor'] = 'correction factor applied to background before subtraction to ensure positive intensity values'
         self.input_src['q_I_meas'] = optools.wf_input
-        self.input_src['header'] = optools.wf_input
+        self.input_src['temperature'] = optools.wf_input
         self.input_src['bg_batch_output'] = optools.wf_input
         self.categories = ['1D DATA PROCESSING.BACKGROUND SUBTRACTION']
 
@@ -30,9 +30,9 @@ class BgSubtractByTemperature(Operation):
         T = self.inputs['header']['TEMP']
         #print 'T is {}'.format(T)
         bg_out = self.inputs['bg_batch_output']
-        T_allbg = [d['header']['TEMP'] for d in bg_out]
+        T_allbg = [d['ImageAndHeaderSSRL15_0.outputs.header.TEMP'] for d in bg_out]
         #print 'bg T values are {}'.format(T_allbg)
-        q_I_allbg = [d['x_y_window'] for d in bg_out]
+        q_I_allbg = [d['WindowZip_0.outputs.x_y_window'] for d in bg_out]
         idx = np.argmin(np.abs([T_bg - T for T_bg in T_allbg]))
         #print 'idx of closest T is {}'.format(idx)
         q_I_bg = q_I_allbg[idx]
