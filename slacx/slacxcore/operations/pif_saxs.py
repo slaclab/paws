@@ -41,10 +41,12 @@ class CitrinationShipment(Operation):
         for p in pifs:
             try:
                 pif.dump(p, open('tmp.json','w'))
-                cl.upload_file('tmp.json',data_set_id = p.uid)
-                retcodes.append(True)
+                response = cl.create_data_set()
+                dsid = response.json()['id']
+                cl.upload_file('tmp.json',data_set_id = dsid)
+                retcodes.append(int(dsid))
             except:
-                retcodes.append(False)
+                retcodes.append(-1)
         self.outputs['return_codes'] = retcodes
 
 class PifNPSynthBatch(Operation):

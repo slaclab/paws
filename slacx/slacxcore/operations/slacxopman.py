@@ -20,6 +20,9 @@ class OpManager(TreeModel):
         self.load_cats(ops.cat_list) 
         self.load_ops(ops.op_list)
 
+    # TODO: Add Operations to enable and disable Operations
+    # TODO: Write a UI for enabling and disabling Operations
+
     def load_cats(self,cat_list):
         for cat in cat_list:
             parent = QtCore.QModelIndex()

@@ -531,7 +531,7 @@ class WfManager(TreeModel):
                     self.appref.processEvents()
                     wait_iter += 1
         if wait_iter > 0:
-            self.write_log('... waited {}ms for thread {}'.format(wait_iter*interval,th_idx))
+            self.write_log('... waited {} seconds for thread {}'.format(wait_iter*interval*0.001,th_idx))
 
     def wait_for_threads(self):
         """Wait for all workflow execution threads to finish"""
