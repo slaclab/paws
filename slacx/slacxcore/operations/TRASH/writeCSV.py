@@ -367,4 +367,3 @@ def find_unprocessed(directory):
             missing_csv.append(ii)
     return missing_csv
 
-#TODO: remove print statement from first_dip

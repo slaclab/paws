@@ -284,10 +284,16 @@ class GuessProperties(Operation):
         # Documentation
         self.input_doc['q'] = '1d ndarray; wave vector values'
         self.input_doc['I'] = '1d ndarray; intensity values'
-        self.input_doc['dI'] = '1d ndarray; error estimate of intensity values; use default value if none exists'
+        self.input_doc['dI'] = '1d ndarray; error estimate of intensity values; input None if no dI exists'
         self.output_doc['fractional_variation'] = 'normal distribution sigma divided by mean size'
         self.output_doc['mean_size'] = 'mean size of particles'
         self.output_doc['amplitude_at_zero'] = 'projected scattering amplitude at q=0'
+        self.output_doc['qFirstDip'] = 'estimated location in q of the first dip'
+        self.output_doc['heightFirstDip'] = 'estimated intensity at the minimum of the first dip'
+        #self.output_doc['sigmaScaledFirstDip'] = ''
+        self.output_doc['heightAtZero'] = 'estimated intensity at q = 0'
+        self.output_doc['dips'] = 'boolean vector, True where a candidate local minimum is'
+        self.output_doc['shoulders'] = 'boolean vector, True where a candidate local maximum is'
         # Source and type
         self.input_src['q'] = optools.wf_input
         self.input_src['I'] = optools.wf_input
@@ -373,11 +379,14 @@ class OptimizeSphericalDiffractionFit(Operation):
         I0_in, r0_in, frac_in = self.inputs['amplitude_at_zero'], self.inputs['mean_size'], self.inputs['fractional_variation']
         if self.inputs['noise_term_allowed']:
             noise_floor = guess_noise_floor(q, I, r0_in)
+            #noise_floor = guess_noise_floor(q, I, I0_in, r0_in, frac_in)
+            print "initial guess for noise floor is", noise_floor
             popt, pcov = \
                 curve_fit(generate_spherical_diffraction_plus_floor, q, I,
-                          bounds=([I0_in*0.5, r0_in*0.5, frac_in*0.1, noise_floor*0.5],
-                                  [I0_in/0.5, r0_in/0.5, frac_in/0.1, noise_floor/0.5]))
+                          bounds=([I0_in*0.5, r0_in*0.5, frac_in*0.5, noise_floor*0.5],
+                                  [I0_in/0.5, r0_in/0.5, frac_in/0.5, noise_floor/0.5]))
             self.outputs['noise_floor'] = popt[3]
+            print "final guess for noise floor is", self.outputs['noise_floor']
         else:
             self.outputs['noise_floor'] = 0.
             popt, pcov = \
@@ -404,7 +413,13 @@ def guess_noise_floor(q, I, r0):
         print "Your data do not appear to be particularly well sampled.  This might be a problem."
         selection = np.zeros(q.size)
         selection[-10:] = True
-    noise = np.var(I[selection])
+    #noise = np.var(I[selection])
+    noise = np.mean(I[selection])
+    return noise
+
+def guess_noise_floor2(q, I, I0, r0, frac):
+    Imodel = generate_spherical_diffraction(q, I0, r0, frac)
+    noise = np.mean(I - Imodel)
     return noise
 
 def generate_references(x, factorVals):
@@ -610,6 +625,31 @@ def guess_polydispersity(q, I, dI=None):
     factor = references['factorVals']
     fractional_variation, _, best_xy = guess_nearest_point_on_nonmonotonic_trace_normalized([x0, y0], [x, y], factor)
     return fractional_variation, qFirstDip, heightFirstDip, sigmaScaledFirstDip, heightAtZero, dips, shoulders
+
+def refine_guess(q, I, I0, r0, frac, q1, I1):
+    Imodel = generate_spherical_diffraction(q, I0, r0, frac)
+    I_adjustment = I.sum() / Imodel.sum()
+    new_I0 = I0 * I_adjustment
+    #Imodel *= I_adjustment
+    #first_dip_index = np.where(local_minima_detector(Imodel))[0][0]
+    #model_q1 = q[first_dip_index]
+    #model_I1 = I[first_dip_index]
+    try:
+        references = load_references()
+    except:
+        print no_reference_message
+    x = references['factorVals']
+    y1 = references['heightFirstDip']/references['heightAtZero']
+    y2 = references['xFirstDip']
+    if ~(x[1:] > x[:-1]).all():
+        print '''The factorVals entry in the guesser's reference file is not strictly increasing.
+        This is a serious problem likely to result in horrible crashes and/or incorrect results.'''
+    new_frac = float(interp(I1/new_I0, y1, x))
+    #Imodel = generate_spherical_diffraction(q, new_I0, r0, new_frac)
+    # want new r0
+    new_x0 = interp(new_frac, x, y2)
+    new_r0 = float(new_x0/q1)
+    return new_I0, new_r0, new_frac
 
 def take_polydispersity_metrics(x, y, dy=None):
     if dy is None:
