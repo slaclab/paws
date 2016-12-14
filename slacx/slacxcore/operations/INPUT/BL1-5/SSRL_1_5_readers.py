@@ -67,15 +67,15 @@ def firstline_to_dict_entries(line, dict):
         ii = ii.strip()
     dict['User'] = entries[0][6:]
     dict['time'] = entries[1][6:]
+    dict['time_float'] = time_from_text(dict['time'])
     #dict['time'] = time_from_text(entries[1][6:])
 
 def time_from_text(text):
-    """Converts time from text to float.
-
-    Not yet working; needs format info."""
-    #format = ''
+    """Converts time from text to float."""
+    # Sample value of *text*: Sat Nov 19 14:05:29 2016
+    format = "%a %b %d %H:%M:%S %Y"
     timetuple = time.strptime(text, format)
-    timefloat = time.strftime(format, timetuple)
+    timefloat = time.mktime(timetuple)
     return timefloat
 
 
