@@ -17,9 +17,7 @@ class OpManager(TreeModel):
         super(OpManager,self).__init__()
         #self._cat_list = ops.cat_list 
         self._op_list = [op[1] for op in ops.op_list] 
-        print 'loading cats: {}'.format(ops.cat_list)
         self.load_cats(ops.cat_list) 
-        print 'loading ops: {}'.format(ops.op_list)
         self.load_ops(ops.op_list)
 
     # TODO: Add Operations to enable and disable Operations

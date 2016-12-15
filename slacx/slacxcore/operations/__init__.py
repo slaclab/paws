@@ -13,7 +13,6 @@ def load_ops_from_path(path_,pkg,cat_root='MISC'):
     mods = pkgutil.iter_modules(path_)
     mods = [mod for mod in mods if mod[1] not in ['__init__','slacxop','slacxopman','optools']]
     for modloader, modname, ispkg in mods:
-        print 'exploring module {}'.format(modname)
         mod = importlib.import_module('.'+modname,pkg)
         # if it is a package and not DMZ, recurse into that package
         if ispkg and not modname in ['DMZ','TRASH']:
@@ -28,12 +27,9 @@ def load_ops_from_path(path_,pkg,cat_root='MISC'):
             ops = ops + pkg_ops
             cats = cats + pkg_cats
         else:
-            print 'load ops from module {}'.format(modname)
             new_ops, new_cats = load_ops_from_module(mod,cat_root)
             new_ops = [op for op in new_ops if not op in ops]
             new_cats = [cat for cat in new_cats if not cat in cats]
-            print 'found new cats {}'.format(new_cats)
-            print 'found new ops {}'.format(new_ops)
             ops = ops + new_ops
             cats = cats + new_cats
     return ops, cats
@@ -64,7 +60,4 @@ def load_ops_from_module(mod,cat_root):
     return ops, cats
 
 op_list, cat_list = load_ops_from_path(__path__,__name__)
-
-print 'found cats: {}'.format(cat_list)
-print 'found ops: {}'.format(op_list)
 

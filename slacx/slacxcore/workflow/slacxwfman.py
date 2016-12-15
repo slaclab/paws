@@ -16,15 +16,19 @@ from ..operations.slacxop import Operation, Batch, Realtime
 from ..operations.optools import InputLocator#, OutputContainer
 from .. import slacxtools
 
-
 class WfManager(TreeModel):
     """
-    Class for managing a Workflow built from slacx Operations.
+    Tree-like data structure for managing a Workflow built from slacx Operations.
     """
 
     wfdone = QtCore.Signal()
 
+    @QtCore.Slot(str,Operation)
+    def updateOperation(self,tag,op):
+        self.update_op(tag,op)
+
     # TODO: Make appref a required init arg
+    # TODO: kwarg for num threads?
     def __init__(self,**kwargs):
         super(WfManager,self).__init__()
         if 'logmethod' in kwargs:
@@ -40,10 +44,9 @@ class WfManager(TreeModel):
         self._wf_dict = {}       
         # Flags to assist in thread control
         self._running = False
-        #self._n_threads = QtCore.QThread.idealThreadCount()
         self._n_threads = 1
         self._wf_threads = dict.fromkeys(range(self._n_threads)) 
-        self.write_log('Slacx workflow manager started, working with {} threads'.format(self._n_threads))
+        #self._n_threads = QtCore.QThread.idealThreadCount()
 
     def write_log(self,msg):
         if self.logmethod:
@@ -600,11 +603,6 @@ class WfManager(TreeModel):
             #    self.update_op(itm.tag(),op)
         self.wait_for_thread(thd)
         self.write_log('SERIAL EXECUTION FINISHED in thread {}'.format(thd))
-
-    @QtCore.Slot(str,Operation)
-    def updateOperation(self,tag,op):
-        #print 'updating op for {}'.format(tag)
-        self.update_op(tag,op)
 
     def finish_thread(self,th_idx):
         self.write_log('finished execution in thread {}.'.format(th_idx))
