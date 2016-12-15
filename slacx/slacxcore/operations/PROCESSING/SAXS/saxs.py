@@ -13,7 +13,7 @@ except ImportError:
 from ...slacxop import Operation
 from ... import optools
 
-reference_loc = join('slacx','slacxcore','operations','dmz','references','polydispersity_guess_references.pickle')
+reference_loc = join('slacx','slacxcore','operations','DMZ','references','polydispersity_guess_references.pickle')
 global references
 references = {}
 
