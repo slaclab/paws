@@ -18,7 +18,6 @@ class LazyCodeError(Exception):
     def __init__(self,msg):
         super(LazyCodeError,self).__init__(self,msg)
 
-
 class WfWorker(QtCore.QObject):
     """
     Container for storing and executing parts of a workflow,
@@ -63,20 +62,10 @@ class FileSystemIterator(Iterator):
     def next(self):
         #import pdb; pdb.set_trace()
         batch_list = glob.glob(self.dirpath+'/'+self.rx)
-        #print 'the batch list: '
-        #print batch_list
-        #print 'paths done: '
-        #print self.paths_done 
         for path in batch_list:
             if not path in self.paths_done:
-        #        print 'return [{}]'.format(path)
                 self.paths_done.append(path)
                 return [path]
-        #print 'No paths to run.'
-        #print 'the batch list: '
-        #print batch_list
-        #print 'paths done: '
-        #print self.paths_done 
         return [None]
 
 def throw_specific_error(msg):

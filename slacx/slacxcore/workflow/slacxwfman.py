@@ -3,10 +3,9 @@ import time
 import traceback
 from collections import OrderedDict
 import copy
+from functools import partial
 
 from PySide import QtCore
-from functools import partial
-import dask.threaded
 import yaml
 
 from ..treemodel import TreeModel
@@ -31,12 +30,9 @@ class WfManager(TreeModel):
     # TODO: kwarg for num threads?
     def __init__(self,**kwargs):
         super(WfManager,self).__init__()
-        if 'logmethod' in kwargs:
-            self.logmethod = kwargs['logmethod']
-        else:
-            self.logmethod = None
         if 'wfl' in kwargs:
             self.load_from_file( kwargs['wfl'] )
+        # reference to app for helping thread control
         if 'app' in kwargs:
             self.appref = kwargs['app']
         else:
