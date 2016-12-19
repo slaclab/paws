@@ -1,7 +1,7 @@
 import numpy as np
 
-from slacxop import Operation
-import optools
+from ..slacxop import Operation
+from .. import optools
 
 
 

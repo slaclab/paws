@@ -38,7 +38,6 @@ def load_ops_from_path(path_,pkg,cat_root='MISC'):
     for modloader, modname, ispkg in mods:
         if modname in op_load_flags.keys():
             if not op_load_flags[modname]:
-                #print 'do not load {}'.format(modname)
                 load_mod = False
         else:
             mod = importlib.import_module('.'+modname,pkg)
@@ -101,14 +100,10 @@ def load_ops_from_module(mod,cat_root):
 
 op_list, cat_list = load_ops_from_path(__path__,__name__)
 
-print op_load_flags.keys()
-print op_load_keys
-
 # remove any keys from op_load_flags that are not in op_load_keys
 # this updates the cfg file if ops or directories are removed
 for k in op_load_flags.keys():
     if not k in op_load_keys:
-        #print 'did not find {} in {}'.format(k,op_load_keys)
         op_load_flags.pop(k)
 
 
