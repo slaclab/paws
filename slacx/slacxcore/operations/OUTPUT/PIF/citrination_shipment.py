@@ -1,3 +1,5 @@
+import os
+
 from pypif import pif
 from citrination_client import CitrinationClient 
 
@@ -38,11 +40,14 @@ class CitrinationShipment(Operation):
         retcodes = []
         for p in pifs:
             try:
-                pif.dump(p, open('tmp.json','w'))
+                json_file = p.uid+'.json'
+                pif.dump(p, open(json_file,'w'))
                 response = cl.create_data_set()
                 dsid = response.json()['id']
-                cl.upload_file('tmp.json',data_set_id = dsid)
+                cl.upload_file(json_file,data_set_id = dsid)
                 retcodes.append(int(dsid))
+                # delete dataset json
+                os.remove(json_file)       
             except:
                 retcodes.append(-1)
         self.outputs['return_codes'] = retcodes

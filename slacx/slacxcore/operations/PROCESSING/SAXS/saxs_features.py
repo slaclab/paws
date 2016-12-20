@@ -27,7 +27,6 @@ class NanoparticleFeatures(Operation):
         self.output_doc['ok_flag'] = str('this flag is set to False if the spectrum '
         + 'does not resemble that of a typical colloidal nanoparticle solution')
         
-
     def run(self):
         q = self.inputs['q']
         I = self.inputs['I']
@@ -43,22 +42,32 @@ class NanoparticleFeatures(Operation):
         I_at_zero = I[0]
 
         # first minimum of I: walk until find point that is smallest within some window
-        windowsize = 5
+        w = 5
         found = False
-        i = windowsize
+        i = w
         while not found:
-            if np.argmax[q[i-windowsize:i+windowsize+1]] == i:
+            if np.argmax[q[i-w:i+w+1]] == w:
                 found = True
-            if found:
                 q_at_first_min = q[i]
+                curv_at_first_min = ((I[i+w]-I[i])/(q[i+w]-q[i]) 
+                                    - (I[i]-I[i-w])/(q[i]-q[i-w]))/((q[i+w]-q[i-w])/2)
+            elif i+w >= len(q):
+                found = True
+                q_at_first_min = 0
+                curv_at_first_min = 0
             else:
                 i += 1
 
-        # least-squares to refine parameters
+        # least-squares to refine parameters:
+        ### ... ###
+        ### ... ###
 
-        rho = 0
-        p = 0
-        s = 0
+        # any post-processing to extract the key quantities:
+        rho = I_at_zero 
+        p = curv_at_first_min 
+        s = float(1)/q_at_first_min 
+    
+        # save results
         self.outputs['density'] = rho
         self.outputs['polydispersity'] = p
         self.outputs['mean_size'] = s
@@ -91,10 +100,5 @@ class NanoparticleFeatures(Operation):
         """
         x = q * r
         return ((np.sin(x) - x*np.cos(x)) * x**(-3))**2
-
-
-
-
-
 
 
