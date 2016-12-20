@@ -458,7 +458,7 @@ class WfManager(TreeModel):
                 postlst = [itm for itm in lst if not itm in itms_run and not isinstance(itm.data,Batch)] 
                 if any(postlst):
                     poststk.append(postlst)
-            if any(poststk):
+            if any(poststk) and self.is_running():
                 msg = '\n----\n post-batch execution stack: '
                 for to_run in poststk:
                     msg = msg + '\n{}'.format( [itm.tag() for itm in to_run] ) 

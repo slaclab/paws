@@ -1,4 +1,4 @@
-import os
+#import os
 import glob
 import traceback
 from collections import Iterator
@@ -8,11 +8,21 @@ from PySide import QtCore, QtUiTools
 from PySide import QtCore
 from operations.slacxop import Operation
 
+# TODO: Make scratch directory and other cfg'ables into a cfg file
+
 version='0.1.0'
 
 qdir = QtCore.QDir(__file__)
 qdir.cdUp()
-rootdir = os.path.split( qdir.absolutePath() )[0]#+'/slacx'
+qdir.cdUp()
+rootdir = qdir.path() 
+#rootdir = os.path.split( qdir.absolutePath() )[0]
+print 'slacxtools.rootdir: {}'.format(rootdir)
+qdir.cdUp()
+qdir.cd('scratch')
+scratchdir = qdir.path()
+#scratchdir = os.path.split( qdir.absolutePath() )[0]
+print 'slacxtools.scratchdir: {}'.format(scratchdir)
 
 class LazyCodeError(Exception):
     def __init__(self,msg):
