@@ -17,173 +17,60 @@ reference_loc = join('slacx','slacxcore','operations','DMZ','references','polydi
 global references
 references = {}
 
-class GenerateSphericalDiffractionQ(Operation):
-    """Generate a SAXS diffraction pattern for spherical nanoparticles.
-
-    Uses r0 in real units and gives q in real units."""
-
-    def __init__(self):
-        input_names = ['r0', 'sigma_r_over_r0', 'intensity_at_zero_q', 'qmin', 'qmax', 'qstep']
-        output_names = ['q', 'I']
-        super(GenerateSphericalDiffractionQ, self).__init__(input_names, output_names)
-        self.input_doc['r0'] = 'mean particle radius'
-        self.input_doc['sigma_r_over_r0'] = 'width of distribution in r divided by r0'
-        self.input_doc['intensity_at_zero_q'] = 'intensity at q = 0'
-        self.input_doc['qmin'] = 'lower bound of q range of interest'
-        self.input_doc['qmax'] = 'upper bound of q range of interest'
-        self.input_doc['qstep'] = 'step size in q range of interest'
-        self.input_src['r0'] = optools.wf_input
-        self.input_src['sigma_r_over_r0'] = optools.wf_input
-        self.input_src['intensity_at_zero_q'] = optools.wf_input
-        self.input_src['qmin'] = optools.user_input
-        self.input_src['qmax'] = optools.user_input
-        self.input_src['qstep'] = optools.user_input
-        self.input_type['qmin'] = optools.float_type
-        self.input_type['qmax'] = optools.float_type
-        self.input_type['qstep'] = optools.float_type
-        self.output_doc['q'] = '1d ndarray; wave vector values'
-        self.output_doc['I'] = '1d ndarray; intensity values'
-        # source & type
-        self.input_src['r0'] = optools.user_input
-        self.input_src['sigma_r_over_r0'] = optools.user_input
-        self.input_src['intensity_at_zero_q'] = optools.user_input
-        self.input_src['qmin'] = optools.user_input
-        self.input_src['qmax'] = optools.user_input
-        self.input_src['qstep'] = optools.user_input
-        self.input_type['r0'] = optools.float_type
-        self.input_type['sigma_r_over_r0'] = optools.float_type
-        self.input_type['intensity_at_zero_q'] = optools.float_type
-        self.input_type['qmin'] = optools.float_type
-        self.input_type['qmax'] = optools.float_type
-        self.input_type['qstep'] = optools.float_type
-        # defaults
-        self.inputs['qmin'] = 0.02
-        self.inputs['qmax'] = 0.8
-        self.inputs['qstep'] = 0.005
-
-    def run(self):
-        q = gen_q_vector(self.inputs['qmin'], self.inputs['qmax'], self.inputs['qstep'])
-        self.outputs['I'] = \
-            generate_spherical_diffraction(q, self.inputs['intensity_at_zero_q'],
-                                           self.inputs['r0'], self.inputs['sigma_r_over_r0'])
-
-class GenerateSphericalDiffractionX(Operation):
-    """Generate a SAXS diffraction pattern for spherical nanoparticles.
-
-    Uses independent variable x = r0 * q."""
-
-    def __init__(self):
-        input_names = ['sigma_r_over_r0', 'intensity_at_zero_x', 'xmin', 'xmax', 'xstep']
-        output_names = ['x', 'I']
-        super(GenerateSphericalDiffractionX, self).__init__(input_names, output_names)
-        self.input_doc['sigma_r_over_r0'] = 'width of distribution in r divided by r0'
-        self.input_doc['intensity_at_zero_x'] = 'intensity at x = 0'
-        self.input_doc['xmin'] = 'lower bound of x range of interest'
-        self.input_doc['xmax'] = 'upper bound of x range of interest'
-        self.input_doc['xstep'] = 'step size in x range of interest'
-        self.input_src['sigma_r_over_r0'] = optools.wf_input
-        self.input_src['intensity_at_zero_q'] = optools.wf_input
-        self.input_src['xmin'] = optools.user_input
-        self.input_src['xmax'] = optools.user_input
-        self.input_src['xstep'] = optools.user_input
-        self.input_type['xmin'] = optools.float_type
-        self.input_type['xmax'] = optools.float_type
-        self.input_type['xstep'] = optools.float_type
-        self.output_doc['x'] = '1d ndarray; scaled wave vector values'
-        self.output_doc['I'] = '1d ndarray; intensity values'
-        # source & type
-        self.input_src['sigma_r_over_r0'] = optools.user_input
-        self.input_src['intensity_at_zero_x'] = optools.user_input
-        self.input_src['xmin'] = optools.user_input
-        self.input_src['xmax'] = optools.user_input
-        self.input_src['xstep'] = optools.user_input
-        self.input_type['sigma_r_over_r0'] = optools.float_type
-        self.input_type['intensity_at_zero_x'] = optools.float_type
-        self.input_type['xmin'] = optools.float_type
-        self.input_type['xmax'] = optools.float_type
-        self.input_type['xstep'] = optools.float_type
-        # defaults
-        self.inputs['xmin'] = 0.5
-        self.inputs['xmax'] = 20
-        self.inputs['xstep'] = 0.005
-        self.categories = ['1D DATA PROCESSING.GENERATE SAXS PATTERNS']
-
-    def run(self):
-        self.outputs['x'] = gen_q_vector(self.inputs['xmin'], self.inputs['xmax'], self.inputs['xstep'])
-        self.outputs['I'] = \
-            generate_spherical_diffraction(self.outputs['x'], self.inputs['intensity_at_zero_x'],
-                                           1., self.inputs['sigma_r_over_r0'])
 
 class GenerateSphericalDiffraction(Operation):
     """Generate a SAXS diffraction pattern for spherical nanoparticles.
 
-    Uses r0 in real units and gives q in real units."""
+    Uses r0 in real units and, if asked to generate q, gives q in real units."""
 
     def __init__(self):
-        input_names = ['r0', 'sigma_r_over_r0', 'intensity_at_zero_q', 'q_vector']
-        output_names = ['I']
+        input_names = ['r0', 'sigma_r_over_r0', 'intensity_at_zero', 'use_q_space', 'input_vector', 'min', 'max', 'step']
+        output_names = ['I', 'location_vector', 'space']
         super(GenerateSphericalDiffraction, self).__init__(input_names, output_names)
-        self.input_doc['r0'] = 'mean particle radius'
+        self.input_doc['r0'] = 'mean particle radius; irrelevant if computing in x-space'
         self.input_doc['sigma_r_over_r0'] = 'width of distribution in r divided by r0'
-        self.input_doc['intensity_at_zero_q'] = 'intensity at q = 0'
-        self.input_doc['q_vector'] = 'q values of interest'
+        self.input_doc['intensity_at_zero'] = 'intensity at q = 0 / x = 0'
+        self.input_doc['use_q_space'] = '*True* if *input_vector* and/or *min*/*max*/*step* are values in q space; *False* if they are values in x space'
+        self.input_doc['input_vector'] = 'q or x values of interest, if known.  Use *None* to generate a vector from *min*/*max*/*step* instead.'
+        self.input_doc['min'] = 'minimum q or x value of interest'
+        self.input_doc['max'] = 'maximum q or x value of interest'
+        self.input_doc['step'] = 'step size in q or x values of interest'
+        self.output_doc['I'] = '1d ndarray; intensity values'
+        self.output_doc['location_vector'] = '1d ndarray; x or q values'
+        self.output_doc['space'] = '"x" or "q"'
+        # source & type
         self.input_src['r0'] = optools.wf_input
         self.input_src['sigma_r_over_r0'] = optools.wf_input
-        self.input_src['intensity_at_zero_q'] = optools.wf_input
-        self.input_src['q_vector'] = optools.wf_input
-        self.output_doc['I'] = '1d ndarray; intensity values'
-        # source & type
-        self.input_src['r0'] = optools.user_input
-        self.input_src['sigma_r_over_r0'] = optools.user_input
-        self.input_src['intensity_at_zero_q'] = optools.user_input
-        self.input_src['q_vector'] = optools.wf_input
+        self.input_src['intensity_at_zero'] = optools.wf_input
+        self.input_src['use_q_space'] = optools.user_input
+        self.input_src['input_vector'] = optools.wf_input
+        self.input_src['min'] = optools.user_input
+        self.input_src['max'] = optools.user_input
+        self.input_src['step'] = optools.user_input
         self.input_type['r0'] = optools.float_type
         self.input_type['sigma_r_over_r0'] = optools.float_type
-        self.input_type['intensity_at_zero_q'] = optools.float_type
-        self.categories = ['SAXS']
+        self.input_type['intensity_at_zero'] = optools.float_type
+        self.input_type['use_q_space'] = optools.bool_type
+        self.input_type['min'] = optools.float_type
+        self.input_type['max'] = optools.float_type
+        self.input_type['step'] = optools.float_type
+        # defaults
+        self.inputs['use_q_space'] = True
 
     def run(self):
-        q_vector, intensity_at_zero_q = self.inputs['q_vector'], self.inputs['intensity_at_zero_q']
-        r0, sigma_r_over_r0 = self.inputs['r0'], self.inputs['sigma_r_over_r0']
-#        print 'q_vector size, shape, sum', q_vector.size, q_vector.shape, q_vector.sum()
-        I = generate_spherical_diffraction(q_vector, intensity_at_zero_q, r0, sigma_r_over_r0)
+        if self.inputs['input_vector'] is None:
+            input_vector = gen_q_vector(self.inputs['min'],self.inputs['max'], self.inputs['step'])
+        else:
+            input_vector = self.inputs['input_vector']
+        self.outputs['location_vector'] = input_vector
+        if self.inputs['use_q_space'] == True:
+            x_vector = input_vector * self.inputs['r0']
+            self.outputs['space'] = 'q'
+        else:
+            x_vector = input_vector
+            self.outputs['space'] = 'x'
+        I = self.inputs['intensity_at_zero'] * blur(x_vector, self.inputs['sigma_r_over_r0']) * 9.
         self.outputs['I'] = I
-
-    '''
-class GenerateSphericalDiffractionX(Operation):
-    """Generate a SAXS diffraction pattern for spherical nanoparticles.
-
-    Generates pattern in units x = r0 * q, with the assumption that x0 = r0 * q0 = 1."""
-
-    def __init__(self):
-        input_names = ['sigma_x_over_x0', 'intensity_at_zero_q', 'xmin', 'xmax', 'xstep']
-        output_names = ['x', 'I']
-        super(GenerateSphericalDiffractionX, self).__init__(input_names, output_names)
-        self.input_doc['sigma_r_over_r0'] = 'width of distribution in r divided by r0'
-        self.input_doc['intensity_at_zero_q'] = 'intensity at q = 0'
-        self.input_doc['xmin'] = 'lower bound of x range of interest'
-        self.input_doc['xmax'] = 'upper bound of x range of interest'
-        self.input_doc['xstep'] = 'step size in x range of interest'
-        self.input_src['sigma_x_over_x0'] = optools.user_input
-        self.input_src['intensity_at_zero_q'] = optools.user_input
-        self.input_src['xmin'] = optools.user_input
-        self.input_src['xmax'] = optools.user_input
-        self.input_src['xstep'] = optools.user_input
-        self.input_type['sigma_x_over_x0'] = optools.float_type
-        self.input_type['intensity_at_zero_q'] = optools.float_type
-        self.input_type['xmin'] = optools.float_type
-        self.input_type['xmax'] = optools.float_type
-        self.input_type['xstep'] = optools.float_type
-        self.output_doc['x'] = '1d ndarray; wave vector values'
-        self.output_doc['I'] = '1d ndarray; intensity values'
-        self.categories = ['SAXS']
-
-    def run(self):
-        self.outputs['q'], self.outputs['I'] = \
-            generate_spherical_diffraction(self.inputs['r0'], self.inputs['sigma_x_over_x0'],
-                                           self.inputs['intensity_at_zero_q'], self.inputs['qmin'], self.inputs['qmax'],
-                                           self.inputs['qstep'])
-'''
 
 class GenerateReferences(Operation):
     """Generate metrics used for guessing diffraction pattern properties.
@@ -217,12 +104,15 @@ class GenerateReferences(Operation):
         self.input_type['factormin'] = optools.float_type
         self.input_type['factormax'] = optools.float_type
         self.input_type['factorstep'] = optools.float_type
+        # defaults
+        # Values of x
         self.inputs['xmin'] = 0.02
         self.inputs['xmax'] = 50
         self.inputs['xstep'] = 0.02
         self.inputs['factormin'] = 1.
         self.inputs['factormax'] = 35.
         self.inputs['factorstep'] = 0.2
+        self.categories = ['1D DATA PROCESSING.GENERATE SAXS PATTERNS']
 
     def run(self):
         x = gen_q_vector(self.inputs['xmin'], self.inputs['xmax'], self.inputs['xstep'])
@@ -264,7 +154,7 @@ class FetchReferences(Operation):
         super(FetchReferences, self).__init__(input_names, output_names)
         # Documentation
         self.output_doc['references'] = 'dictionary of useful values generated by GenerateReferences'
-        self.categories = ['SAXS']
+        self.categories = ['INPUT.GUESSER']
 
     def run(self):
         try:
@@ -298,6 +188,9 @@ class GuessProperties(Operation):
         self.input_src['q'] = optools.wf_input
         self.input_src['I'] = optools.wf_input
         self.input_src['dI'] = optools.wf_input
+        # defaults
+        #self.inputs['dI'] = None
+        self.categories = ['1D DATA PROCESSING.SAXS INTERPRETATION']
 
     def run(self):
         q, I, dI = self.inputs['q'], self.inputs['I'], self.inputs['dI']
@@ -315,33 +208,6 @@ class GuessProperties(Operation):
         amplitude_at_zero, mean_size, fractional_variation = refine_guess(q, I, amplitude_at_zero, mean_size, fractional_variation, qFirstDip, heightFirstDip)
         self.outputs['fractional_variation'], self.outputs['mean_size'], self.outputs['amplitude_at_zero'] = \
             fractional_variation, mean_size, amplitude_at_zero
-
-
-def refine_guess(q, I, I0, r0, frac, q1, I1):
-    Imodel = generate_spherical_diffraction(q, I0, r0, frac)
-    I_adjustment = I.sum() / Imodel.sum()
-    new_I0 = I0 * I_adjustment
-    Imodel *= I_adjustment
-    first_dip_index = np.where(local_minima_detector(Imodel))[0][0]
-    model_q1 = q[first_dip_index]
-    model_I1 = I[first_dip_index]
-    try:
-        references = load_references()
-    except:
-        print no_reference_message
-    x = references['factorVals']
-    y1 = references['heightFirstDip']/references['heightAtZero']
-    y2 = references['xFirstDip']
-    if (x[1:] > x[:-1]).all():
-        print "we good to go"
-    else:
-        print "we gonna need another way to get there"
-    new_frac = interp(I1/new_I0, y1, x)
-    Imodel = generate_spherical_diffraction(q, new_I0, r0, new_frac)
-    # want new r0
-    new_x0 = interp(new_frac, x, y2)
-    new_r0 = new_x0/q1
-    return new_I0, new_r0, new_frac
 
 class OptimizeSphericalDiffractionFit(Operation):
     """From an initial guess, optimize r0, I0, and fractional_variation."""
@@ -372,7 +238,9 @@ class OptimizeSphericalDiffractionFit(Operation):
         self.input_type['mean_size'] = optools.float_type
         self.input_type['fractional_variation'] = optools.float_type
         self.input_type['noise_term_allowed'] = optools.bool_type
+        # defaults
         self.inputs['noise_term_allowed'] = True
+        self.categories = ['1D DATA PROCESSING.SAXS INTERPRETATION']
 
     def run(self):
         q, I = self.inputs['q'], self.inputs['I']
@@ -395,53 +263,6 @@ class OptimizeSphericalDiffractionFit(Operation):
         self.outputs['amplitude_at_zero'] = popt[0]
         self.outputs['mean_size'] = popt[1]
         self.outputs['fractional_variation'] = popt[2]
-
-
-def guess_noise_floor(q, I, r0):
-    qmin = q[0]
-    qmax = q[-1]
-    # we want q >> q1, ideally
-    # the first dip is at 4.5 <~ x <~ 6, where x = q * r0.  We use pessimistic/strict option.
-    qscale1 = 6/r0
-    # and we know the worst signal to noise is at high q
-    # so check the last tenth
-    qscale2 = qmin + 0.9 * (qmax - qmin)
-    if qscale2 < (qscale1 * 2): # just a sanity check, no real function
-        print "Your data do not appear to be sampled to high q.  This is probably not a problem."
-    selection = (q > qscale2)
-    if selection.sum() < 10: # making sure there's a decent number of points in the sample
-        print "Your data do not appear to be particularly well sampled.  This might be a problem."
-        selection = np.zeros(q.size)
-        selection[-10:] = True
-    #noise = np.var(I[selection])
-    noise = np.mean(I[selection])
-    return noise
-
-def guess_noise_floor2(q, I, I0, r0, frac):
-    Imodel = generate_spherical_diffraction(q, I0, r0, frac)
-    noise = np.mean(I - Imodel)
-    return noise
-
-def generate_references(x, factorVals):
-    #y0 = fullFunction(x)
-    num_tests = len(factorVals)
-    xFirstDip = np.zeros(num_tests)
-    sigmaScaledFirstDip = np.zeros(num_tests)
-    heightFirstDip = np.zeros(num_tests)
-    heightAtZero = np.zeros(num_tests)
-    #powerLawAll = np.zeros((num_tests, 2))
-    #powerLawInitial = np.zeros((num_tests, 2))
-    #depthFirstDip = np.zeros(num_tests)
-    #y_x4_inf = np.zeros(num_tests)
-    #lowQApprox = np.zeros((num_tests, 2))
-    for ii in range(num_tests):
-        factor = factorVals[ii]
-        y = blur(x, factor)
-        xFirstDip[ii], heightFirstDip[ii], sigmaScaledFirstDip[ii], heightAtZero[ii] = take_polydispersity_metrics(x, y)
-    references = prep_for_pickle(factorVals, xFirstDip, sigmaScaledFirstDip, heightFirstDip, heightAtZero)
-    return references
-
-# xFirstDip, heightFirstDip, sigmaScaledFirstDip, heightAtZero # , powerLawAll, powerLawInitial
 
 # I/O functions
 
@@ -586,7 +407,7 @@ def generateRhoFactor(factor):
     factor should be 0.1 for a sigma 10% of size
     '''
     factorCenter = 1
-    factorMin = max(factorCenter-5*factor, 0.02)
+    factorMin = max(factorCenter-5*factor, 0.001)
     factorMax = factorCenter+5*factor
     factorVals = np.arange(factorMin, factorMax, factor*0.02)
     rhoVals = gauss(factorVals, factorCenter, factor)
@@ -605,6 +426,25 @@ def blur(x, factor):
         y = factorStretched(x, factorVals[ii])
         ysum += rhoVals[ii]*y*deltaFactor
     return ysum
+
+def generate_references(x, factorVals):
+    #y0 = fullFunction(x)
+    num_tests = len(factorVals)
+    xFirstDip = np.zeros(num_tests)
+    sigmaScaledFirstDip = np.zeros(num_tests)
+    heightFirstDip = np.zeros(num_tests)
+    heightAtZero = np.zeros(num_tests)
+    #powerLawAll = np.zeros((num_tests, 2))
+    #powerLawInitial = np.zeros((num_tests, 2))
+    #depthFirstDip = np.zeros(num_tests)
+    #y_x4_inf = np.zeros(num_tests)
+    #lowQApprox = np.zeros((num_tests, 2))
+    for ii in range(num_tests):
+        factor = factorVals[ii]
+        y = blur(x, factor)
+        xFirstDip[ii], heightFirstDip[ii], sigmaScaledFirstDip[ii], heightAtZero[ii] = take_polydispersity_metrics(x, y)
+    references = prep_for_pickle(factorVals, xFirstDip, sigmaScaledFirstDip, heightFirstDip, heightAtZero)
+    return references
 
 # Funtions specifically about detecting SAXS properties
 
@@ -717,10 +557,6 @@ def guess_size(fractional_variation, first_dip_q):
     mean_size = first_dip_x / first_dip_q
     return mean_size
 
-def polydispersity_metric_heightFirstDip(scaledQuadCoefficients, xdip):
-    ydip = polynomial_value(scaledQuadCoefficients, xdip) * (xdip**-4)
-    return ydip
-
 def polydispersity_metric_heightAtZero(qFirstDip, q, I, dI=None):
     if dI is None:
         dI = np.ones(I.shape, dtype=float)
@@ -731,228 +567,6 @@ def polydispersity_metric_heightAtZero(qFirstDip, q, I, dI=None):
     coefficients = arbitrary_order_solution(4, q[low_q], I[low_q], dI[low_q])
     heightAtZero = coefficients[0]
     return heightAtZero
-
-def polydispersity_metric_qFirstDip(q, I, dips, dI=None):
-    '''Finds the location in *q* of the first dip.'''
-    if dI is None:
-        dI = np.ones(I.shape, dtype=float)
-    pad = 3
-    firstDipIndex = np.where(dips)[0][0]
-    lolim = firstDipIndex - pad
-    hilim = firstDipIndex + pad
-    scaled_I = I * q**4 / dI
-    scaledQuadCoefficients = arbitrary_order_solution(2, q[lolim:hilim], scaled_I[lolim:hilim])
-    xFirstDip = quadratic_extremum(scaledQuadCoefficients)
-    return xFirstDip, scaledQuadCoefficients
-
-def polydispersity_metric_sigmaScaledFirstDip(q, I, dips, shoulders, qFirstDip, heightFirstDip, dI=None):
-    if dI is None:
-        dI = np.ones(I.shape, dtype=float)
-    scaled_I = I * q ** 4
-    scaled_dI = dI * q ** 4
-    powerCoefficients = power_law_solution(q[shoulders], I[shoulders], dI[shoulders])
-    powerLawAtDip = powerCoefficients[0] * (qFirstDip ** powerCoefficients[1])
-    scaledDipDepth = (powerLawAtDip - heightFirstDip) * (qFirstDip ** 4)
-    pad = 3
-    firstDipIndex = np.where(dips)[0][0]
-    lolim = firstDipIndex - pad
-    hilim = firstDipIndex + pad
-    quadCoefficients = arbitrary_order_solution(2, q[lolim:hilim], scaled_I[lolim:hilim], scaled_dI[lolim:hilim])
-    scaledDipCurvature = 2 * quadCoefficients[2]
-    _, sigma = gauss_guess(scaledDipDepth, scaledDipCurvature)
-    return sigma
-
-# Other functions
-
-def gauss_guess(signalMagnitude, signalCurvature):
-    '''
-    Guesses a gaussian intensity and width from signal magnitude and curvature.
-
-    :param signalMagnitude: number-like with units of magnitude
-    :param signalCurvature: number-like with units of magnitude per distance squared
-    :return intensity, sigma:
-
-    The solution given is not fitted; it is a first estimate to be used in fitting.
-    '''
-    signalMagnitude = np.fabs(signalMagnitude)
-    signalCurvature = np.fabs(signalCurvature)
-    sigma = (signalMagnitude / signalCurvature) ** 0.5
-    intensity = signalMagnitude * sigma * (2 * np.pi) ** 0.5
-    return intensity, sigma
-
-def local_maxima_detector(y):
-    '''
-    Finds local maxima in ordered data y.
-
-    :param y: 1d numpy float array
-    :return maxima: 1d numpy bool array
-
-    *maxima* is *True* at a local maximum, *False* otherwise.
-
-    This function makes no attempt to reject spurious maxima of various sorts.
-    That task is left to other functions.
-    '''
-    length = y.size
-    greater_than_follower = np.zeros(length, dtype=bool)
-    greater_than_leader = np.zeros(length, dtype=bool)
-    greater_than_follower[:-1] = np.greater(y[:-1], y[1:])
-    greater_than_leader[1:] = np.greater(y[1:], y[:-1])
-    maxima = np.logical_and(greater_than_follower, greater_than_leader)
-    # End points
-    maxima[0] = greater_than_follower[0]
-    maxima[-1] = greater_than_leader[-1]
-    return maxima
-
-def local_minima_detector(y):
-    '''
-    Finds local minima in ordered data *y*.
-
-    :param y: 1d numpy float array
-    :return minima: 1d numpy bool array
-
-    *minima* is *True* at a local minimum, *False* otherwise.
-
-    This function makes no attempt to reject spurious minima of various sorts.
-    That task is left to other functions.
-    '''
-    minima = local_maxima_detector(-y)
-    return minima
-
-def noiseless_curvature(x, y):
-    '''
-    Finds the curvature of y locally.  Does not account for noise.
-
-    :param x: numpy float array, independent variable
-    :param y: numpy float array, dependent variable
-    :return curvature: numpy float array
-
-    Compares subsequent pixels to find a local slope.
-    Compares subsequent slopes to find a local curvature.
-    The curvature is defined at a location 0.5*(x3 + x1) = 0.5*(x[2:] + x[:-2]).
-    For evenly spaced data, the curvature is defined at x2 = x[1:-1].
-    The curvature is not defined (np.nan) for the endpoints.
-    '''
-    curvature = np.zeros(x.size, dtype=float)
-    y1 = y[:-2]
-    y2 = y[1:-1]
-    y3 = y[2:]
-    x1 = x[:-2]
-    x2 = x[1:-1]
-    x3 = x[2:]
-    # First derivatives
-    yprime_one = (y2 - y1) / (x2 - x1)  # Defined at location 0.5*(x1 + x2)
-    yprime_two = (y3 - y2) / (x3 - x2)  # Defined at location 0.5*(x2 + x3)
-    # Second derivative
-    # Defined at location 0.5*(x3 + x1).  For evenly spaced data, defined at x2.
-    curvature[1:-1] = (yprime_two - yprime_one) / (0.5 * (x3 - x1))
-    # Undefined at endpoints
-    curvature[0] = np.nan
-    curvature[-1] = np.nan
-    return curvature
-
-def point_to_point_variation(y):
-    '''
-    Calculate typical point-to-point variation as a weak metric of noisiness.
-
-    :param y: A 1d ndarray of data values
-    :return:
-    '''
-    length = y.size()
-    y_low = y[:-1]
-    y_high = y[1:]
-    diff = y_high - y_low
-    diff2mean = (diff**2).mean()
-    variation = diff2mean**0.5
-    return variation
-    
-
-def test():
-    from os import listdir
-    from os.path import join
-    from matplotlib import pyplot as plt
-    import numpy as np
-    dir = "/Users/Amanda/Desktop/test"
-    files = listdir(dir)
-    csvfiles = [ii for ii in files if ii[-3:] == 'csv']
-    fullfiles = [join(dir, ii) for ii in csvfiles]
-    for ii in fullfiles:
-        print "File: %s." % ii
-        q = np.loadtxt(ii, dtype=float, delimiter=',', skiprows=1, usecols=(0,))
-        I = np.loadtxt(ii, dtype=float, delimiter=',', skiprows=1, usecols=(1,))
-        '''
-        lo1, hi1, lo2, hi2 = choose_dips_and_shoulders3(q, I)
-        q0, I0, dip_quadratic = first_dip(lo2, q, I)
-        low_q, low_quadratic = polydispersity_metric_heightAtZero_2(q0, q, I)
-        plot_one(q, I, lo1, hi1, lo2, hi2, q0, I0, dip_quadratic, low_quadratic)
-        '''
-        #xFirstDip, heightFirstDip, sigmaScaledFirstDip, heightAtZero = take_polydispersity_metrics(q, I)
-        fractional_variation, qFirstDip, heightFirstDip, sigmaScaledFirstDip, heightAtZero, dips, shoulders = guess_polydispersity(q, I)
-        mean_size = guess_size(fractional_variation, qFirstDip)
-        stats_1 = [qFirstDip, heightFirstDip, sigmaScaledFirstDip, heightAtZero, fractional_variation, mean_size]
-        # TODO: fit and then...
-        stats_2 = [heightAtZero, fractional_variation, mean_size]
-        plot_dos(q, I, stats_1)
-        #plot_tres(q, I, stats_1, stats_2)
-
-        plt.title(ii)
-
-
-def plot_one(x, y, lo1, hi1, lo2, hi2, x0, y0, coefficients1, coefficients2):
-    from matplotlib import pyplot as plt
-    fig, ax = plt.subplots(1)
-    ax.plot(x, y, ls='-', marker='None', color='k', lw=2)
-    # bad extrema
-    ax.plot(x[lo1 & (~lo2)], y[lo1 & (~lo2)], ls='None', marker='x', color='b', lw=1)
-    ax.plot(x[hi1 & (~hi2)], y[hi1 & (~hi2)], ls='None', marker='x', color='b', lw=1)
-    # good extrema
-    ax.plot(x[lo2], y[lo2], ls='None', marker='x', color='r', lw=1)
-    ax.plot(x[hi2], y[hi2], ls='None', marker='x', color='r', lw=1)
-    selection = ((x < x0*1.2) & (x > x0*0.8))
-    ax.plot(x[selection], polynomial_value(coefficients1, x[selection]), ls='-', marker='None', color='b', lw=1)
-    ax.plot(x0, y0, ls='None', marker='o', color='r', lw=1)
-    selection = (x < x0*0.7)
-    ax.plot(x[selection], polynomial_value(coefficients2, x[selection]), ls='-', marker='None', color='b', lw=1)
-    ax.set_xscale('log')
-    ax.set_yscale('log')
-    return fig, ax
-
-
-def plot_dos(q, I, l_m):
-    # l_m a list of six properties measured from the curve
-    q1, I1, sigmaScaledFirstDip, I0, poly, size = l_m
-    from matplotlib import pyplot as plt
-    fig, ax = plt.subplots(1)
-    ax.plot(q, I, ls='-', marker='None', color='k', lw=2)
-    ax.plot(q1, I1, ls='None', marker='x', color='r', lw=1)
-    selection = (q < q1*0.3)
-    n = selection.sum()
-    #ax.plot(q[selection], np.ones(n)*I0, ls='-', marker='None', color='b', lw=1)
-    modelI = generate_spherical_diffraction(q, I0, size, poly)
-    ax.plot(q, modelI, ls='-', marker='None', color='r', lw=1)
-    ax.set_xscale('log')
-    ax.set_yscale('log')
-    return fig, ax
-
-def plot_tres(q, I, l_m, l_f):
-    # l_m a list of six properties measured from the curve
-    # l_f a list of three properties fitted to the curve
-    q1, I1, sigmaScaledFirstDip, I0, poly, size = l_m
-    from matplotlib import pyplot as plt
-    fig, ax = plt.subplots(1)
-    ax.plot(q, I, ls='-', marker='None', color='k', lw=2)
-    ax.plot(q1, I1, ls='None', marker='x', color='r', lw=1)
-    selection = (q < q1*0.3)
-    n = selection.sum()
-    #ax.plot(q[selection], np.ones(n)*I0, ls='-', marker='None', color='b', lw=1)
-    modelI = generate_spherical_diffraction(q, I0, size, poly)
-    ax.plot(q, modelI, ls='-', marker='None', color='r', lw=1)
-    I0_f, poly_f, size_f = l_f
-    fitI = generate_spherical_diffraction(q, I0_f, size_f, poly_f)
-    ax.plot(q, fitI, ls='-', marker='None', color='g', lw=1)
-    ax.set_xscale('log')
-    ax.set_yscale('log')
-    return fig, ax
-
 
 def first_dip(q, I, dips, dI=None):
     if dI is None:
@@ -1001,6 +615,98 @@ def first_dip(q, I, dips, dI=None):
     Ibest = polynomial_value(coefficients, qbest)
     return qbest, Ibest, coefficients
 
+def polydispersity_metric_sigmaScaledFirstDip(q, I, dips, shoulders, qFirstDip, heightFirstDip, dI=None):
+    if dI is None:
+        dI = np.ones(I.shape, dtype=float)
+    scaled_I = I * q ** 4
+    scaled_dI = dI * q ** 4
+    powerCoefficients = power_law_solution(q[shoulders], I[shoulders], dI[shoulders])
+    powerLawAtDip = powerCoefficients[0] * (qFirstDip ** powerCoefficients[1])
+    scaledDipDepth = (powerLawAtDip - heightFirstDip) * (qFirstDip ** 4)
+    pad = 3
+    firstDipIndex = np.where(dips)[0][0]
+    lolim = firstDipIndex - pad
+    hilim = firstDipIndex + pad
+    quadCoefficients = arbitrary_order_solution(2, q[lolim:hilim], scaled_I[lolim:hilim], scaled_dI[lolim:hilim])
+    scaledDipCurvature = 2 * quadCoefficients[2]
+    _, sigma = gauss_guess(scaledDipDepth, scaledDipCurvature)
+    return sigma
+
+# Other functions
+
+def gauss_guess(signalMagnitude, signalCurvature):
+    '''
+    Guesses a gaussian intensity and width from signal magnitude and curvature.
+
+    :param signalMagnitude: number-like with units of magnitude
+    :param signalCurvature: number-like with units of magnitude per distance squared
+    :return intensity, sigma:
+
+    The solution given is not fitted; it is a first estimate to be used in fitting.
+    '''
+    signalMagnitude = np.fabs(signalMagnitude)
+    signalCurvature = np.fabs(signalCurvature)
+    sigma = (signalMagnitude / signalCurvature) ** 0.5
+    intensity = signalMagnitude * sigma * (2 * np.pi) ** 0.5
+    return intensity, sigma
+
+def guess_noise_floor(q, I, r0):
+    qmin = q[0]
+    qmax = q[-1]
+    # we want q >> q1, ideally
+    # the first dip is at 4.5 <~ x <~ 6, where x = q * r0.  We use pessimistic/strict option.
+    qscale1 = 6/r0
+    # and we know the worst signal to noise is at high q
+    # so check the last tenth
+    qscale2 = qmin + 0.9 * (qmax - qmin)
+    if qscale2 < (qscale1 * 2): # just a sanity check, no real function
+        print "Your data do not appear to be sampled to high q.  This is probably not a problem."
+    selection = (q > qscale2)
+    if selection.sum() < 10: # making sure there's a decent number of points in the sample
+        print "Your data do not appear to be particularly well sampled.  This might be a problem."
+        selection = np.zeros(q.size)
+        selection[-10:] = True
+    #noise = np.var(I[selection])
+    noise = np.mean(I[selection])
+    return noise
+
+def local_maxima_detector(y):
+    '''
+    Finds local maxima in ordered data y.
+
+    :param y: 1d numpy float array
+    :return maxima: 1d numpy bool array
+
+    *maxima* is *True* at a local maximum, *False* otherwise.
+
+    This function makes no attempt to reject spurious maxima of various sorts.
+    That task is left to other functions.
+    '''
+    length = y.size
+    greater_than_follower = np.zeros(length, dtype=bool)
+    greater_than_leader = np.zeros(length, dtype=bool)
+    greater_than_follower[:-1] = np.greater(y[:-1], y[1:])
+    greater_than_leader[1:] = np.greater(y[1:], y[:-1])
+    maxima = np.logical_and(greater_than_follower, greater_than_leader)
+    # End points
+    maxima[0] = greater_than_follower[0]
+    maxima[-1] = greater_than_leader[-1]
+    return maxima
+
+def local_minima_detector(y):
+    '''
+    Finds local minima in ordered data *y*.
+
+    :param y: 1d numpy float array
+    :return minima: 1d numpy bool array
+
+    *minima* is *True* at a local minimum, *False* otherwise.
+
+    This function makes no attempt to reject spurious minima of various sorts.
+    That task is left to other functions.
+    '''
+    minima = local_maxima_detector(-y)
+    return minima
 
 def guess_nearest_point_on_nonmonotonic_trace_normalized(loclist, tracelist, coordinate):
     '''Finds the nearest point to location *loclist* on a trace *tracelist*.
@@ -1065,9 +771,3 @@ def guess_nearest_point_on_nonmonotonic_trace_normalized(loclist, tracelist, coo
 
 no_reference_message = '''No reference file exists.  Use the GenerateReferences operation once to generate
 an appropriate file; the file will be saved and need not be generated again.'''
-
-# Hokay the real weak point here is determining where the dips and shoulders are in noisy data
-# So we are addressing that today
-# And specifically we are addressing it in real goddam data
-# Okay, lesson learned: curvature, even log-log curvature, will not serve us here.
-# We're gonna have to do something involving real minima.
