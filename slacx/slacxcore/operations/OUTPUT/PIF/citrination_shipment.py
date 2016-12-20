@@ -43,6 +43,8 @@ class BuildCitrinationDataSet(Operation):
         #dsid = response.json()['id']
         dsid = 'dummy'
         retcodes = []
+        # TODO: Note that the entire data set can be one json,
+        # of an array of pif records, and this will lead to a faster upload.
         for p in pifs:
             try:
                 json_file = slacxtools.scratchdir+'/'+p.uid+'.json'
@@ -52,10 +54,10 @@ class BuildCitrinationDataSet(Operation):
                 print 'dump {} to data set {}'.format(json_file,dsid)
                 #cl.upload_file(json_file,data_set_id = dsid)
                 print 'NOT SHIPPING {} (this is a test)'.format(json_file)
-                retcodes.append(int(dsid))
+                retcodes.append(dsid)
                 # delete dataset json
                 print 'deleting file {}'.format(json_file)
-                os.remove(json_file)       
+                os.remove(json_file) 
             except:
                 retcodes.append(-1)
         self.outputs['return_codes'] = retcodes
