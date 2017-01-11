@@ -19,7 +19,7 @@ def load_cfg(cfg_file):
     cfg.close()
     return cfg_data
 
-# check for an ops_enabled.cfg file
+# check for an ops.cfg file
 cfg_file = slacxtools.rootdir+'/slacxcore/operations/ops.cfg'
 if os.path.exists(cfg_file):
     op_load_flags = load_cfg(cfg_file)
@@ -27,6 +27,7 @@ else:
     op_load_flags = {}
 
 # list to keep track of keys that get loaded in this run
+# these keys are later used to maintain a lean, sane cfg file
 op_load_keys = []
 
 def load_ops_from_path(path_,pkg,cat_root='MISC'):
@@ -34,7 +35,7 @@ def load_ops_from_path(path_,pkg,cat_root='MISC'):
     cats = []
     # pkgutil.iter_modules returns module_loader, module_name, ispkg forall modules in path
     mods = pkgutil.iter_modules(path_)
-    mods = [mod for mod in mods if mod[1] not in ['__init__','slacxop','slacxopman','optools']]
+    mods = [mod for mod in mods if mod[1] not in ['__init__','slacxop','slacxopman','optools','DMZ','TRASH']]
     for modloader, modname, ispkg in mods:
         if modname in op_load_flags.keys():
             if not op_load_flags[modname]:
@@ -42,8 +43,8 @@ def load_ops_from_path(path_,pkg,cat_root='MISC'):
         else:
             mod = importlib.import_module('.'+modname,pkg)
             load_mod = True
-        # if it is a package and not DMZ or TRASH, recurse into that package
-        if load_mod and ispkg and not modname in ['DMZ','TRASH']:
+        # if it is a package, recurse
+        if load_mod and ispkg:
             pkg_path = [path_[0]+'/'+modname]
             if cat_root == 'MISC':
                 pkg_cat_root = modname 
@@ -73,23 +74,24 @@ def load_ops_from_module(mod,cat_root):
                 # is it a non-abstract subclass of Operation?
                 if issubclass(itm,Operation) and not nm in ['Operation','Realtime','Batch']:
                     op = getattr(mod,nm)
-                    op_cats = [cat_root]
-                    ops.append( (op_cats,op) )
-                    for cat in op_cats:
-                        if not cat in cats:
-                            cats.append(cat)
-                            op_load_flags[cat] = True
-                            op_load_keys.append(cat)
-                        parent_cats_done = False
-                        while not parent_cats_done:
-                            if not cat.rfind('.') == -1:
-                                parcat = cat[:cat.rfind('.')]
-                                if not parcat in cats:
-                                    cats.append(parcat)
-                                    op_load_keys.append(parcat)
-                                cat = parcat
-                            else:
-                                parent_cats_done = True
+                    #op_cats = [cat_root]
+                    ops.append( (cat_root,op) )
+                    #for cat in op_cats:
+                    if not cat_root in cats:
+                        cats.append(cat_root)
+                        op_load_flags[cat_root] = True
+                        op_load_keys.append(cat_root)
+                    cat = cat_root
+                    parent_cats_done = False
+                    while not parent_cats_done:
+                        if not cat.rfind('.') == -1:
+                            parcat = cat[:cat.rfind('.')]
+                            if not parcat in cats:
+                                cats.append(parcat)
+                                op_load_keys.append(parcat)
+                            cat = parcat
+                        else:
+                            parent_cats_done = True
                     op_load_flags[nm] = True
                     op_load_keys.append(nm)
         except ImportError as ex:
@@ -98,10 +100,10 @@ def load_ops_from_module(mod,cat_root):
             pass 
     return ops, cats
 
-op_list, cat_list = load_ops_from_path(__path__,__name__)
+cat_op_list, cat_list = load_ops_from_path(__path__,__name__)
 
 # remove any keys from op_load_flags that are not in op_load_keys
-# this updates the cfg file if ops or directories are removed
+# this serves to update the cfg file if ops or directories are removed
 for k in op_load_flags.keys():
     if not k in op_load_keys:
         op_load_flags.pop(k)

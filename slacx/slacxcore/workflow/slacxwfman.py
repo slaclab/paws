@@ -17,7 +17,7 @@ from .. import slacxtools
 
 class WfManager(TreeModel):
     """
-    Tree-like data structure for managing a Workflow built from slacx Operations.
+    Tree structure for managing a Workflow built from slacx Operations.
     """
 
     wfdone = QtCore.Signal()
@@ -190,17 +190,6 @@ class WfManager(TreeModel):
             print msg
             raise ex
 
-    def next_uri(self,prefix):
-        indx = 0
-        goodtag = False
-        while not goodtag:
-            testtag = prefix+'_{}'.format(indx)
-            if not testtag in self.list_tags(QtCore.QModelIndex()):
-                goodtag = True
-            else:
-                indx += 1
-        return testtag
-                    
     def is_good_uri(self,uri):
         if not uri:
             return True
@@ -795,7 +784,7 @@ class WfManager(TreeModel):
     # Overloaded headerData() for WfManager 
     def headerData(self,section,orientation,data_role):
         if (data_role == QtCore.Qt.DisplayRole and section == 0):
-            return "{} operation(s) loaded".format(self.rowCount(QtCore.QModelIndex()))
+            return "Workflow: {} operation(s)".format(self.rowCount(QtCore.QModelIndex()))
         elif (data_role == QtCore.Qt.DisplayRole and section == 1):
             return "type"
         else:

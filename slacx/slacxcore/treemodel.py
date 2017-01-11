@@ -9,9 +9,8 @@ class TreeModel(QtCore.QAbstractItemModel):
     Other required virtual methods are columnCount() and data():
     these should be implemented by subclassing of TreeModel.
     Resizeable TreeModels must implement: 
-    insertRows(), removeRows(), insertColumns(), removeColumns()
-    If nicely labeled headers are desired, one should implement
-    headerData().
+    insertRows(), removeRows(), insertColumns(), removeColumns().
+    If nicely labeled headers are desired, one should implement headerData().
     """
 
     def __init__(self):
@@ -43,6 +42,17 @@ class TreeModel(QtCore.QAbstractItemModel):
             return [item.tag() for item in self.root_items]
         else:
             return [item.tag() for item in self.get_item(parent).children]
+
+    def auto_uri(self,prefix):
+        indx = 0
+        goodtag = False
+        while not goodtag:
+            testtag = prefix+'_{}'.format(indx)
+            if not testtag in self.list_tags(QtCore.QModelIndex()):
+                goodtag = True
+            else:
+                indx += 1
+        return testtag
     
     # test uniqueness and good form of a tag
     def is_good_tag(self,testtag,parent=QtCore.QModelIndex()):

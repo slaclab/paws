@@ -60,6 +60,9 @@ class ListModel(QtCore.QAbstractListModel):
         #    print 'data at row {}: {}'.format(idx.row(),self._list_data[idx.row()])
         #    print 'DATA IS NONE'
 
+    def get_item(self,idx):
+        return self._list_data[idx.row()]
+
     def insertRows(self,row,count):
         self.beginInsertRows(QtCore.QModelIndex(),row,row+count-1)
         for j in range(row,row+count):
@@ -72,6 +75,6 @@ class ListModel(QtCore.QAbstractListModel):
             self.list_items.pop(j)
         self.endRemoveRows()
 
-    def headerData(self,section,orientation,data_role):
-        return 'dummy header'
+    #def headerData(self,section,orientation,data_role):
+    #    return 'dummy header'
 

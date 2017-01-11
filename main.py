@@ -6,6 +6,7 @@ import qdarkstyle
 
 from slacx.slacxcore.operations import slacxopman
 from slacx.slacxcore.workflow import slacxwfman
+from slacx.slacxcore.plugins import slacxplugman
 from slacx.slacxcore import slacxtools
 
 # TODO: Only do the following imports if we are using a gui
@@ -36,7 +37,8 @@ def main():
     # TODO: give kwargs to these init routines to rebuild saved jobs?
     opman = slacxopman.OpManager()
     wfman = slacxwfman.WfManager(app=app)
-    uiman = slacxuiman.UiManager(opman,wfman)
+    plugman = slacxplugman.PluginManager()
+    uiman = slacxuiman.UiManager(opman,wfman,plugman)
     wfman.logmethod = uiman.msg_board_log
     opman.logmethod = uiman.msg_board_log
 

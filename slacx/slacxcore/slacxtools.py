@@ -17,12 +17,12 @@ qdir.cdUp()
 qdir.cdUp()
 rootdir = qdir.path() 
 #rootdir = os.path.split( qdir.absolutePath() )[0]
-print 'slacxtools.rootdir: {}'.format(rootdir)
+#print 'slacxtools.rootdir: {}'.format(rootdir)
 qdir.cdUp()
 qdir.cd('scratch')
 scratchdir = qdir.path()
 #scratchdir = os.path.split( qdir.absolutePath() )[0]
-print 'slacxtools.scratchdir: {}'.format(scratchdir)
+#print 'slacxtools.scratchdir: {}'.format(scratchdir)
 
 class LazyCodeError(Exception):
     def __init__(self,msg):

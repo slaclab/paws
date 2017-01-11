@@ -6,6 +6,7 @@ from PySide import QtGui, QtCore, QtUiTools
 
 from . import uitools
 from .wfuiman import WfUiManager
+from .pluguiman import PluginUiManager
 from ..slacxcore.operations.slacxop import Operation
 from ..slacxcore import slacxtools
 from . import data_viewer
@@ -24,7 +25,7 @@ class UiManager(object):
     # it will call QWidget.resizeEvent().
     # Try to use this to resize the images in the QImageView.
 
-    def __init__(self,opman,wfman):
+    def __init__(self,opman,wfman,plugman):
         """Make a UI from ui_file, save a reference to it"""
         super(UiManager,self).__init__()
         # Pick a UI definition, load it up
@@ -37,6 +38,7 @@ class UiManager(object):
         self.ui.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         self.opman = opman 
         self.wfman = wfman 
+        self.plugman = plugman
 
     def edit_wf(self,trmod,item_indx=QtCore.QModelIndex()):
         """
@@ -66,16 +68,12 @@ class UiManager(object):
             new_op_flag = issubclass(x,Operation)
         except:
             new_op_flag = False
-        #print 'existing op: {}'.format(existing_op_flag)
-        #print 'new op: {}'.format(new_op_flag)
         if new_op_flag: 
-            #print 'new op'
             uiman = self.start_wf_editor(self.opman,idx)
             uiman.ui.op_selector.setCurrentIndex(idx)
             uiman.ui.show()
             return
         elif existing_op_flag: 
-            #print 'existing op'
             uiman = self.start_wf_editor(self.wfman,idx)
             uiman.ui.wf_selector.setCurrentIndex(idx)
             uiman.ui.show()
@@ -92,15 +90,9 @@ class UiManager(object):
         """
         print 'Operation editing is not yet implemented'
 
-    def add_ops(self,item_indx=None):
-        """
-        interact with user to add existing Operations to the tree of available Operations 
-        """
-        print 'All Operations are enabled- this will change in a near future version'    
-
     def start_wf_editor(self,trmod=None,indx=QtCore.QModelIndex()):
         """
-        Create a QFrame window from ui/wf_editor.ui, then return it
+        Create a WfUiManager (QMainWindow), return it 
         """
         uiman = WfUiManager(self.wfman,self.opman)
         if trmod and indx.isValid():
@@ -118,24 +110,11 @@ class UiManager(object):
             data_viewer.display_item(itm_data,uri,self.ui.image_viewer,None)
 
     def final_setup(self):
-        # Let the message board be read-only
         self.ui.message_board.setReadOnly(True)
-        # Let the message board ignore line wrapping
-        #self.ui.message_board.setLineWrapMode(self.ui.message_board.NoWrap)
-        # Tell the status bar that we are ready.
-        #self.show_status('Ready')
-        # Tell the message board that we are ready.
         self.ui.message_board.insertPlainText('--- MESSAGE BOARD ---\n') 
         self.msg_board_log('slacx is ready',timestamp=slacxtools.dtstr) 
-        # Clear any default tabs out of image_viewer
-        #self.ui.center_frame.setMinimumWidth(200)
-        self.ui.op_tree.resizeColumnToContents(0)
-        self.ui.wf_tree.resizeColumnToContents(0)
-        #self.ui.wf_tree.resizeColumnToContents(1)
-        #self.ui.wf_tree.setColumnWidth(0,300)
         self.ui.wf_tree.hideColumn(1)
         self.ui.hsplitter.setStretchFactor(1,2)    
-        #self.ui.hsplitter.setStretchFactor(2,2)    
         self.ui.vsplitter.setStretchFactor(0,1)    
 
     def toggle_run_wf(self):
@@ -146,25 +125,38 @@ class UiManager(object):
             self.ui.run_wf_button.setText("S&top")
             self.wfman.run_wf()
 
+    def start_load_ui(self):
+        uitools.start_load_ui(self)
+
+    def start_save_ui(self):
+        uitools.start_save_ui(self)
+
+    def start_plugins_ui(self):
+        uiman = PluginUiManager(self.plugman)
+        uiman.ui.setParent(self.ui,QtCore.Qt.Window)
+        uiman.ui.show()
+
     def connect_actions(self):
         """Set up the works for buttons and menu items"""
-        self.ui.add_op_button.setText("Add to Workflow")
-        #self.ui.add_op_button.clicked.connect(self.add_ops)
-        self.ui.add_op_button.clicked.connect( partial(self.edit_wf,self.opman) )
-        self.ui.edit_op_button.setText("Edit Operations")
-        self.ui.edit_op_button.clicked.connect(self.edit_ops)
+        #self.ui.add_op_button.setText("Add to Workflow")
+        #self.ui.add_op_button.clicked.connect( partial(self.edit_wf,self.opman) )
+        self.ui.edit_ops_button.setText("Edit &operations")
+        self.ui.edit_ops_button.clicked.connect(self.edit_ops)
         self.ui.load_wf_button.setText("&Load")
-        self.ui.load_wf_button.clicked.connect(partial(uitools.start_load_ui,self))
-        self.ui.edit_wf_button.setText("&Edit")
+        self.ui.load_wf_button.clicked.connect(self.start_load_ui)
+        self.ui.edit_wf_button.setText("Edit &workflow")
         self.ui.edit_wf_button.clicked.connect( partial(self.edit_wf,self.wfman) )
-        self.ui.run_wf_button.setText("&Run")
+        self.ui.run_wf_button.setText("E&xecute worfkow")
         self.ui.run_wf_button.clicked.connect(self.toggle_run_wf)
-        self.wfman.wfdone.connect(self.toggle_run_wf)
         self.ui.save_wf_button.setText("&Save")
-        self.ui.save_wf_button.clicked.connect(partial(uitools.start_save_ui,self))
+        self.ui.save_wf_button.clicked.connect(self.start_save_ui)
+        self.ui.edit_plugins_button.setText("Edit &plugins")
+        self.ui.edit_plugins_button.clicked.connect(self.start_plugins_ui)
+        self.ui.plugin_tree.setModel(self.plugman)
         self.ui.wf_tree.setModel(self.wfman)
         self.ui.op_tree.setModel(self.opman)
         self.ui.op_tree.hideColumn(1)
+        self.wfman.wfdone.connect(self.toggle_run_wf)
         self.ui.op_tree.clicked.connect( partial(uitools.toggle_expand,self.ui.op_tree) ) 
         self.ui.wf_tree.clicked.connect( partial(uitools.toggle_expand,self.ui.wf_tree) )
         self.ui.wf_tree.clicked.connect( self.display_item )
@@ -201,9 +193,8 @@ class UiManager(object):
         """Print timestamped message to msg board"""
         self.ui.message_board.insertPlainText(
         '- ' + timestamp() + ': ' + msg + '\n') 
+        # TODO: Figure out how to get the message board to stay put if the scrollbar is under user control
         #if not self.ui.message_board.isActive():
         self.ui.message_board.verticalScrollBar().setValue(self.ui.message_board.verticalScrollBar().maximum())
       
-    #def show_status(self,msg):
-    #    self.ui.statusbar.showMessage(msg)
 

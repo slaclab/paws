@@ -5,25 +5,23 @@ from ..treemodel import TreeModel
 from ..treeitem import TreeItem
 
 class OpManager(TreeModel):
-#class OpManager(QtCore.QAbstractListModel):
     """
-    Class for managing operations.
-    Should be able to add operations to the tree 
-    and remove selected operations from the tree.
+    Tree structure for categorized storage and retrieval of Operations.
     """
+
+    # TODO: Add methods to enable and disable Operations
+    # TODO: Write a UI for enabling and disabling Operations
+    # TODO: Ensure that the cfg file of enabled/disabled ops is saved before closing
 
     def __init__(self,**kwargs):
         super(OpManager,self).__init__()
         self._cat_list = ops.cat_list 
-        self._op_list = [cat_op[1] for cat_op in ops.op_list]
+        self._op_list = [cat_op[1] for cat_op in ops.cat_op_list]
         self.load_cats(ops.cat_list) 
-        self.load_ops(ops.op_list)
-
-    # TODO: Add Operations to enable and disable Operations
-    # TODO: Write a UI for enabling and disabling Operations
+        self.load_ops(ops.cat_op_list)
 
     def save_config(self):
-        for k in self._cat_list + self.list_ops():
+        for k in self._cat_list + self.list_op_names():
             ops.op_load_flags[k] = True 
         ops.save_cfg(ops.op_load_flags,ops.cfg_file)
 
@@ -31,18 +29,11 @@ class OpManager(TreeModel):
         for cat in cat_list:
             parent = QtCore.QModelIndex()
             for subcat in cat.split('.'):
-                #if parent.isValid():
-                #    print 'adding {} to parent {}'.format(subcat,parent)
-                #else:
-                #    print 'adding {} to invalid parent'.format(subcat)
                 parent = self.add_cat(subcat,parent)
-                #print 'added at index {}'.format(parent)
-                #parent = self.idx_of_cat(subcat,parent)
 
     def add_cat(self,new_cat,parent):
         """
-        Add a category to the tree under parent if not already there.
-        Then, return its index for convenience
+        Add a category to the tree under parent if not already there. Return its index.
         """
         cat_idx = self.idx_of_cat(new_cat,parent)
         if not cat_idx.isValid():
@@ -71,36 +62,26 @@ class OpManager(TreeModel):
                 return idx
         return QtCore.QModelIndex() 
 
-    #def list_items(self,parent):
-    #    for idx in self.iter_indexes(parent):
-    #        print self.get_item(idx).data
-
-    #def find_cat(self,cat):
-    #    """return the QModelIndex of the given category"""
-    #    pass
-
-    def load_ops(self,op_list):
+    def load_ops(self,cat_op_list):
         """
-        Load OpManager tree from input op_list.
-        Format of op_list is [([categories],op1),([categories],op2),...].
-        i.e. each operation in op_list is specified by a tuple,
-        where the first element is a list of categories,
+        Load OpManager tree from input cat_op_list.
+        Format of cat_op_list is [(category1,op1),(category2,op2),...].
+        i.e. each operation in cat_op_list is specified by a tuple,
+        where the first element is a category,
         and the second element is the Operation itself.
         load_cats() MUST be called before load_ops()
-        and MUST ensure that all cats in op_list exist in the tree.
+        and MUST ensure that all cats in cat_op_list exist in the tree.
         """
         #### BUILD OPERATIONS TREE
         # Tree will consist of nodes indicating categories,
         # with subcategories or Operations as children.
-        for cat_op in op_list:
-            cats = cat_op[0]
-            for cat in cats:
-                parent = QtCore.QModelIndex()
-                for subcat in cat.split('.'):
-                    # get index of subcat
-                    idx = self.idx_of_cat(subcat,parent)
-                    parent = idx
-                self.add_op(cat_op[1],idx)
+        for cat_op in cat_op_list:
+            parent = QtCore.QModelIndex()
+            for subcat in cat_op[0].split('.'):
+                # get index of subcat
+                idx = self.idx_of_cat(subcat,parent)
+                parent = idx
+            self.add_op(cat_op[1],idx)
 
     def add_op(self,op,parent):
         """add op to the tree under QModelIndex parent"""
@@ -121,7 +102,7 @@ class OpManager(TreeModel):
         # set ops.op_load_flags so this op remains disabled at next startup 
         pass
 
-    def list_ops(self):
+    def list_op_names(self):
         return [op.__name__ for op in self._op_list]
 
     # get an Operation by its name 
@@ -147,7 +128,7 @@ class OpManager(TreeModel):
     # Overloaded headerData() for OpManager 
     def headerData(self,section,orientation,data_role):
         if (data_role == QtCore.Qt.DisplayRole and section == 0):
-            return "{} operation(s) available".format(len(self._op_list))
+            return "Operations: {} available".format(len(self._op_list))
         else:
             return None
 
