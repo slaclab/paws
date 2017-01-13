@@ -29,6 +29,9 @@ class ListModel(QtCore.QAbstractListModel):
         self.endRemoveRows()
         self._enabled.pop(row) 
 
+    def set_enabled(self,row):
+        self._enabled[row] = True
+
     def set_disabled(self,row):
         self._enabled[row] = False
 
@@ -75,6 +78,9 @@ class ListModel(QtCore.QAbstractListModel):
             self.list_items.pop(j)
         self.endRemoveRows()
 
-    #def headerData(self,section,orientation,data_role):
-    #    return 'dummy header'
+    def headerData(self,section,orientation,data_role):
+        if (data_role == QtCore.Qt.DisplayRole and section == 0):
+            return "list: {} item(s)".format(self.rowCount(QtCore.QModelIndex()))
+        else:
+            return None
 

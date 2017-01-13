@@ -35,24 +35,16 @@ def toggle_expand(trview,idx):
 def type_mv_widget(src,widg=None):
     if not widg:
         widg = QtGui.QComboBox()
-    lm = ListModel(optools.input_types,widg)
-    widg.setModel(lm)
-    if src == optools.no_input:
-        widg.setCurrentIndex(optools.none_type)
-        for tp in [optools.auto_type,optools.str_type,optools.int_type,optools.float_type,optools.bool_type,optools.list_type]:
-            lm.set_disabled(tp)
-    elif src == optools.batch_input:
-        widg.setCurrentIndex(optools.auto_type)
-        for tp in [optools.none_type,optools.str_type,optools.int_type,optools.float_type,optools.bool_type,optools.list_type]:
-            widg.model().set_disabled(tp)
-    elif src == optools.user_input:
-        for tp in [optools.auto_type]:
-            widg.model().set_disabled(tp)
-            widg.setCurrentIndex(optools.float_type)
-    elif (src == optools.wf_input or src == optools.fs_input):
-        for tp in [optools.str_type,optools.int_type,optools.float_type,optools.bool_type]:
-            widg.model().set_disabled(tp)
-            widg.setCurrentIndex(optools.auto_type)
+        lm = ListModel(optools.input_types,widg)
+        widg.setModel(lm)
+    else:
+        lm = ListModel(optools.input_types,widg)
+        widg.setModel(lm)
+    for tp in optools.valid_types:
+        lm.set_enabled(tp)
+    for tp in optools.invalid_types[src]:
+        lm.set_disabled(tp)
+        #widg.model().set_disabled(tp)
     return widg 
         
 def r_hdr_widget(text):
@@ -69,12 +61,6 @@ def hdr_widget(text):
     widg.setStyleSheet( "QLineEdit { background-color: transparent }" + widg.styleSheet() )
     return widg 
 
-def name_widget(name):
-    name_widget = QtGui.QLineEdit(name)
-    name_widget.setReadOnly(True)
-    name_widget.setAlignment(QtCore.Qt.AlignRight)
-    return name_widget
-
 def src_selection_widget():
     widg = QtGui.QComboBox()
     widg.addItems(optools.input_sources)
@@ -86,8 +72,13 @@ def smalltext_widget(text):
     widg.setStyleSheet( "QLineEdit { background-color: transparent }" + widg.styleSheet() )
     return widg
 
-def input_name_widget(name):
-    name_widget = name_widget(name)
+def name_widget(name):
+    name_widget = QtGui.QLineEdit(name)
+    name_widget.setReadOnly(True)
+    name_widget.setAlignment(QtCore.Qt.AlignRight)
+#    return name_widget
+#def input_name_widget(name):
+#    name_widget = name_widget(name)
     ht = name_widget.sizeHint().height()
     name_widget.sizeHint = lambda: QtCore.QSize(10*len(name_widget.text()),ht)
     name_widget.setSizePolicy(QtGui.QSizePolicy.Minimum,QtGui.QSizePolicy.Fixed)
@@ -110,6 +101,9 @@ def bigtext_widget(text,trunc_limit=200):
     widg = QtGui.QLineEdit(display_text)
     widg.setReadOnly(True)
     widg.setAlignment(QtCore.Qt.AlignLeft)
+    ht = widg.sizeHint().height()
+    widg.sizeHint = lambda: QtCore.QSize(20*len(text),ht)
+    widg.setSizePolicy(QtGui.QSizePolicy.Maximum,QtGui.QSizePolicy.Fixed)
     return widg
 
 def toggle_load_button(ui,txt):

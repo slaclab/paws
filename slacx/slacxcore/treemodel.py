@@ -191,11 +191,8 @@ class TreeModel(QtCore.QAbstractItemModel):
         # Signal listeners that we are done removing rows
         self.endRemoveRows()
 
-    # get a TreeItem from the tree by its QModelIndex
-    # QAbstractItemModel subclass should implement 
-    # headerData(int section,Qt.Orientation orientation[,role=Qt.DisplayRole])
-    # note: section arg indicates row or column number, depending on orientation
     def headerData(self,section,orientation,data_role):
+        # note: section indicates row or column number, depending on orientation
         if (data_role == QtCore.Qt.DisplayRole and section == 0):
             return "{} item(s) open".format(self.rowCount(QtCore.QModelIndex()))
         #elif (data_role == QtCore.Qt.DisplayRole and section == 1):

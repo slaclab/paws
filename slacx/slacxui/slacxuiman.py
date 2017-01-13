@@ -146,7 +146,7 @@ class UiManager(object):
         self.ui.load_wf_button.clicked.connect(self.start_load_ui)
         self.ui.edit_wf_button.setText("Edit &workflow")
         self.ui.edit_wf_button.clicked.connect( partial(self.edit_wf,self.wfman) )
-        self.ui.run_wf_button.setText("E&xecute worfkow")
+        self.ui.run_wf_button.setText("&Run")
         self.ui.run_wf_button.clicked.connect(self.toggle_run_wf)
         self.ui.save_wf_button.setText("&Save")
         self.ui.save_wf_button.clicked.connect(self.start_save_ui)
