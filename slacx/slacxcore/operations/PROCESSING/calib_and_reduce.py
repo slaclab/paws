@@ -50,7 +50,6 @@ class ReduceByWXDDict(Operation):
         x0 = self.inputs['wxd_dict']['x0_pixel']
         y0 = self.inputs['wxd_dict']['y0_pixel']
         s = int(img.shape[0])
-        # PyFAI magic go!
         p = pyFAI.AzimuthalIntegrator(wavelength=l)
         p.setFit2D(d,x0,y0,tilt,rot,pxsz,pxsz)
         # define detector mask, to screen bad pixels

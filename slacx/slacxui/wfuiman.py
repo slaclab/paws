@@ -37,6 +37,13 @@ class WfUiManager(object):
         self.btn_widgets = {} 
         #self.inp_src_windows = {} 
         self.setup_ui()
+        # Column definitions for the io layout        
+        self.name_col = 1
+        self.eq_col = 2
+        self.src_col = 3
+        self.type_col = 4
+        self.val_col = 5
+        self.btn_col = 6
 
     def get_op(self,trmod,item_indx):
         xitem = trmod.get_item(item_indx)
@@ -104,6 +111,7 @@ class WfUiManager(object):
         elif (src == optools.wf_input or src == optools.fs_input):
             if not ui:
                 # If this is being called without a data loading ui, load some default.
+                # TODO: In what case does this happen, and is there a more graceful way to handle?
                 if self.op.input_locator[name] is not None:
                     il = self.op.input_locator[name]
                 else:
@@ -217,39 +225,44 @@ class WfUiManager(object):
         out_count = len(self.op.outputs)
         self.ui.op_name.setText(type(self.op).__name__)
         if inp_count:
-            uitools.input_header_widgets(self.ui.input_layout,0)
+            self.input_header_widgets(self.ui.input_layout,0)
             i=1
             for name in self.op.inputs.keys():
                 # name widget
-                name_widget = uitools.input_name_widget(name,i)
-                self.ui.input_layout.addWidget( name_widget,i,uitools.name_col,1,1 )
+                name_widget = uitools.input_name_widget(name)
+                self.ui.input_layout.addWidget( name_widget,i,self.name_col,1,1 )
                 # '=' widget
-                eq_widget = smalltext_widget('=')
-                eq_widget.setMaximumWidth(20)
-                self.ui.input_layout.addWidget(eq_widget,row,uitools.eq_col,1,1)
+                eq_widget = uitools.smalltext_widget('=')
+                self.ui.input_layout.addWidget(eq_widget,row,self.eq_col,1,1)
                 # source selection widget
-                src_widget = uitools.input_src_widget(name,i)
+                src_widget = uitools.src_selection_widget()
                 if self.op.input_locator[name] is not None:
                     src = self.op.input_locator[name].src
                 else:
                     src = self.op.input_src[name]
                 if not src:
-                    src = self.src_widgets[name].currentIndex()
+                    src = optools.no_input 
                 src_widget.setCurrentIndex(src)
-                self.ui.input_layout.addWidget( src_widget,i,uitools.src_col,1,1 )
+
+
+                #### work from here down- replace input_type_widget with type_mv_widget
+                src_widget.activated.connect( partial(input_type_widget,name,row) )
+                self.ui.input_layout.addWidget( src_widget,i,self.src_col,1,1 )
                 self.src_widgets[name] = src_widget 
                 # type selection widget
                 if name in self.type_widgets.keys():
                     if self.type_widgets[name]:
                         self.type_widgets[name].close()
-                type_widget = uitools.input_type_widget(name,row,src) 
+                type_widget = uitools.type_mv_widget(src) 
                 if self.op.input_locator[name]:
-                    if self.op.input_locator[name].tp not in uitools.nonsense_types[src]:
+                    if self.op.input_locator[name].tp not in optools.invalid_types[src]:
                         type_widget.setCurrentIndex(self.op.input_locator[name].tp)
                 elif self.op.input_type[name]:
-                    if self.op.input_type[name] not in uitools.nonsense_types[src]:
+                    if self.op.input_type[name] not in optools.invalid_types[src]:
                         type_widget.setCurrentIndex(self.op.input_type[name])
-                self.ui.input_layout.addWidget(type_widget,row,uitools.type_col,1,1)
+                self.ui.input_layout.addWidget(type_widget,row,self.type_col,1,1)
+                type_widget.activated.connect( partial(input_val_widget,name,row) )            
+                self.render_val_widget(name,row)
                 self.type_widgets[name] = type_widget
                 # value entry widget
 
@@ -258,12 +271,22 @@ class WfUiManager(object):
 
         # TODO: Refactor output widgets
         if out_count:
-            uitools.output_header_widgets(self.ui.output_layout,0)
+            self.output_header_widgets(0)
             i=1 
             for name in self.op.outputs.keys():
                 self.add_output_widgets(name,i)
                 i+=1 
 
+	def output_header_widgets(self,row):
+	    self.ui.output_layout.addWidget(r_hdr_widget('name'),row,self.name_col,1,1)
+	    self.ui.output_layout.addWidget(hdr_widget('description'),row,self.src_col,1,self.btn_col-self.src_col)
+	
+	def input_header_widgets(self,row):
+	    self.ui.input_layout.addWidget(r_hdr_widget('name'),row,self.name_col,1,1)
+	    self.ui.input_layout.addWidget(hdr_widget('source'),row,self.src_col,1,1)
+	    self.ui.input_layout.addWidget(hdr_widget('type'),row,self.type_col,1,1)
+	    self.ui.input_layout.addWidget(hdr_widget('value'),row,self.val_col,1,1)
+	
     def input_val_widget(name,row,tp=None):
         if name in self.val_widgets.keys():
             if self.val_widgets[name]:
@@ -321,23 +344,23 @@ class WfUiManager(object):
                 else:
                     btn_widget = QtGui.QPushButton('Load')
                     btn_widget.clicked.connect( partial(self.set_input,name) )
-        self.ui.input_layout.addWidget(val_widget,row,uitools.val_col,1,1)
-        self.ui.input_layout.addWidget(btn_widget,row,uitools.btn_col,1,1)
+        self.ui.input_layout.addWidget(val_widget,row,self.val_col,1,1)
+        self.ui.input_layout.addWidget(btn_widget,row,self.btn_col,1,1)
         self.val_widgets[name] = val_widget
         self.btn_widgets[name] = btn_widget
 
 
     def add_output_widgets(self,name,row):
         name_widget = uitools.name_widget(name)
-        self.ui.output_layout.addWidget(name_widget,row,uitools.name_col)
+        self.ui.output_layout.addWidget(name_widget,row,self.name_col)
         eq_widget = uitools.smalltext_widget('=')
         eq_widget.setMaximumWidth(20)
-        self.ui.output_layout.addWidget(eq_widget,row,uitools.eq_col)
+        self.ui.output_layout.addWidget(eq_widget,row,self.eq_col)
         if self.op.output_doc[name]:
             desc_widget = uitools.bigtext_widget(self.op.output_doc[name])
         else:
             desc_widget = uitools.bigtext_widget('No output doc found.')
-        self.ui.output_layout.addWidget(desc_widget,row,uitools.src_col,1,uitools.btn_col-uitools.src_col)
+        self.ui.output_layout.addWidget(desc_widget,row,self.src_col,1,self.btn_col-self.src_col)
         ht = desc_widget.sizeHint().height()
         name_widget.sizeHint = lambda: QtCore.QSize(10*len(name_widget.text()),ht)
         desc_widget.sizeHint = lambda: QtCore.QSize(20*len(desc_widget.text()),ht)

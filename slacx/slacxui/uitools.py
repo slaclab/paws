@@ -55,13 +55,6 @@ def type_mv_widget(src,widg=None):
             widg.setCurrentIndex(optools.auto_type)
     return widg 
         
-name_col = 0
-eq_col = 2
-src_col = 3
-type_col = 4
-val_col = 5
-btn_col = 6
-
 def r_hdr_widget(text):
     widg = QtGui.QLineEdit(text)
     widg.setReadOnly(True)
@@ -76,12 +69,6 @@ def hdr_widget(text):
     widg.setStyleSheet( "QLineEdit { background-color: transparent }" + widg.styleSheet() )
     return widg 
 
-def input_header_widgets(layout,row):
-    layout.addWidget(r_hdr_widget('name'),row,name_col,1,1)
-    layout.addWidget(hdr_widget('source'),row,src_col,1,1)
-    layout.addWidget(hdr_widget('type'),row,type_col,1,1)
-    layout.addWidget(hdr_widget('value'),row,val_col,1,1)
-
 def name_widget(name):
     name_widget = QtGui.QLineEdit(name)
     name_widget.setReadOnly(True)
@@ -95,36 +82,25 @@ def src_selection_widget():
 
 def smalltext_widget(text):
     widg = text_widget(text)
+    widg.setMaximumWidth(20*len(text))
     widg.setStyleSheet( "QLineEdit { background-color: transparent }" + widg.styleSheet() )
     return widg
 
-def input_name_widget(name,row):
+def input_name_widget(name):
     name_widget = name_widget(name)
     ht = name_widget.sizeHint().height()
     name_widget.sizeHint = lambda: QtCore.QSize(10*len(name_widget.text()),ht)
     name_widget.setSizePolicy(QtGui.QSizePolicy.Minimum,QtGui.QSizePolicy.Fixed)
     return name_widget
 
-def input_src_widget(name,row):
-    """Loads a set of widgets for setting input data"""
-    src_widget = src_selection_widget() 
-    src_widget.activated.connect( partial(input_type_widget,name,row) )
-    return src_widget
+#def input_src_widget(name):
+#    """Loads a set of widgets for setting input data"""
+#    src_widget = src_selection_widget() 
+#    return src_widget
 
-nonsense_types = {}                
-nonsense_types[optools.user_input] = [optools.auto_type]
-nonsense_types[optools.fs_input] = [optools.str_type,optools.int_type,optools.float_type,optools.bool_type]
-nonsense_types[optools.wf_input] = [optools.str_type,optools.int_type,optools.float_type,optools.bool_type]
-
-def input_type_widget(name,row,src=None):
-    type_widget = type_mv_widget(src) 
-    type_widget.activated.connect( partial(input_val_widget,name,row) )            
-    return type_widget
-    self.render_val_widget(name,row)
-
-def output_header_widgets(layout,row):
-    layout.addWidget(r_hdr_widget('name'),row,name_col,1,1)
-    layout.addWidget(hdr_widget('description'),row,src_col,1,btn_col-src_col)
+#def input_type_widget(name,src=None):
+#    type_widget = type_mv_widget(src) 
+#    return type_widget
 
 def bigtext_widget(text,trunc_limit=200):
     if len(text) > trunc_limit:

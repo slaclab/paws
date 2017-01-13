@@ -23,6 +23,12 @@ bool_type = 5
 list_type = 6
 valid_types = [none_type,auto_type,str_type,int_type,float_type,bool_type,list_type]
 
+# unsupported types dict, keyed by input source
+invalid_types = {}                
+invalid_types[user_input] = [auto_type]
+invalid_types[fs_input] = [str_type,int_type,float_type,bool_type]
+invalid_types[wf_input] = [str_type,int_type,float_type,bool_type]
+
 # tags and indices for inputs and outputs trees
 inputs_tag = 'inputs'
 outputs_tag = 'outputs'
