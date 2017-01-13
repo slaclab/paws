@@ -20,6 +20,18 @@ from ..slacxcore.plugins.slacxplug import SlacxPlugin
 #from ..slacxcore.operations.optools import InputLocator
 #from . import uitools
 
+class PluginListModel(ListModel):
+    """Just a ListModel with overloaded headerData"""
+
+    def __init__(self,input_list=[],parent=None):
+        super(PluginListModel,self).__init__(input_list,parent)
+
+    def headerData(self,section,orientation,data_role):
+        if (data_role == QtCore.Qt.DisplayRole and section == 0):
+            return "{} plugin(s) available".format(self.rowCount(QtCore.QModelIndex()))
+        else:
+            return None
+
 class PluginUiManager(object):
 
     def __init__(self,plugman):
@@ -28,7 +40,7 @@ class PluginUiManager(object):
         self.ui = QtUiTools.QUiLoader().load(ui_file)
         ui_file.close()
         self.plugman = plugman 
-        self.plugin_list_model = ListModel(pgns.plugin_list,self.ui)
+        self.plugin_list_model = PluginListModel(pgns.plugin_list,self.ui)
         self.current_plugin = None
         self.setup_ui()
         #self.src_widgets = {} 
@@ -91,14 +103,22 @@ class PluginUiManager(object):
     def load_plugin(self):
         print 'load plugin {}'.format(self.current_plugin)        
 
+    def clear_input(self):
+        print 'clear input!'
+
+    def reset_input_headers(self):
+        print 'reset input headers!'
+
     def build_input(self):
         self.clear_input()
-        inp_count = len(self.current_plugin.inputs)
-        if inp_count:
-            uitools.input_header_widgets(self.ui.input_layout,0)
-            i=1
-            for name in self.current_plugin.inputs.keys():
-                uitools.input_widgets(name,i)
-                i+=1
+        self.reset_input_headers()
+        #inp_count = len(self.current_plugin.inputs)
+        #if inp_count:
+        #    uitools.input_header_widgets(self.ui.input_layout,0)
+        #    i=1
+        #    for name in self.current_plugin.inputs.keys():
+        #        uitools.input_widgets(name,i)
+        #        i+=1
+
 
 

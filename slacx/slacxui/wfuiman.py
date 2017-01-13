@@ -397,7 +397,7 @@ class WfUiManager(object):
             list_ui.load_button.setEnabled(False)
             list_ui.value_entry.setReadOnly(True)
             list_ui.type_selector.model().set_disabled(optools.none_type)
-            list_ui.type_selector.model().setCurrentIndex(optools.auto_type)
+            list_ui.type_selector.setCurrentIndex(optools.auto_type)
         list_ui.setWindowTitle("build list from {}".format(optools.input_sources[src]))
         list_ui.type_selector.model().set_disabled(optools.list_type)
         list_ui.load_button.setText('Load')

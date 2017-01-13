@@ -34,7 +34,7 @@
       </property>
       <layout class="QVBoxLayout" name="verticalLayout">
        <item>
-        <widget class="QListView" name="plugins_available"/>
+        <widget class="QTreeView" name="plugins_available"/>
        </item>
        <item>
         <widget class="QTreeView" name="plugins_loaded"/>
