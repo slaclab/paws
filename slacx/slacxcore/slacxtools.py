@@ -10,7 +10,7 @@ from operations.slacxop import Operation
 
 # TODO: Make scratch directory and other cfg'ables into a cfg file
 
-version='0.1.0'
+version='0.2.0'
 
 qdir = QtCore.QDir(__file__)
 qdir.cdUp()
