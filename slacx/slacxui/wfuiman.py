@@ -35,7 +35,6 @@ class WfUiManager(object):
         self.type_widgets = {} 
         self.val_widgets = {} 
         self.btn_widgets = {} 
-        #self.inp_src_windows = {} 
         self.setup_ui()
         # Column definitions for the io layout        
         self.name_col = 0
@@ -273,7 +272,7 @@ class WfUiManager(object):
             #if name in self.type_widgets.keys():
             #    if self.type_widgets[name]:
             #        self.type_widgets[name].close()
-            #type_widget = uitools.type_mv_widget(src) 
+            #type_widget = uitools.type_selection_widget(src) 
             #self.ui.input_layout.addWidget(type_widget,row,self.type_col,1,1)
 
     def reset_val_widget(self,name,row,src=None,tp=None):
@@ -351,7 +350,7 @@ class WfUiManager(object):
         if name in self.type_widgets.keys():
             if self.type_widgets[name]:
                 widg = self.type_widgets[name]
-        new_type_widget = uitools.type_mv_widget(src,widg)
+        new_type_widget = uitools.type_selection_widget(src,widg)
         if src in [optools.wf_input,optools.fs_input]:
             new_type_widget.setCurrentIndex(optools.auto_type)
         if new_type_widget.currentIndex() in optools.invalid_types[src]:
@@ -383,8 +382,8 @@ class WfUiManager(object):
             if self.op.input_locator[name].src == src and self.op.input_locator[name].tp == optools.list_type:
                 lm = ListModel(self.op.input_locator[name].val,list_ui)
         list_ui.list_view.setModel(lm)
-        list_ui.type_selector = uitools.type_mv_widget(src,list_ui.type_selector)
-        #list_ui.type_selector = uitools.type_mv_widget(src)
+        list_ui.type_selector = uitools.type_selection_widget(src,list_ui.type_selector)
+        #list_ui.type_selector = uitools.type_selection_widget(src)
         list_ui.browse_button.setText('browse...')
         list_ui.browse_button.clicked.connect( partial(self.load_from_src,name,src,list_ui) )
         if src == optools.user_input:

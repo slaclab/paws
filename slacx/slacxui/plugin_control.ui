@@ -40,7 +40,7 @@
         <widget class="QTreeView" name="plugins_loaded"/>
        </item>
        <item>
-        <widget class="QPushButton" name="rm_plugin_button">
+        <widget class="QPushButton" name="stop_plugin_button">
          <property name="text">
           <string>PushButton</string>
          </property>

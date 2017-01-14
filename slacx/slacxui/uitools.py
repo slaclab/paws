@@ -32,7 +32,7 @@ def text_widget(text):
 def toggle_expand(trview,idx):
     trview.setExpanded(idx, not trview.isExpanded(idx))
 
-def type_mv_widget(src,widg=None):
+def type_selection_widget(src,widg=None):
     if not widg:
         widg = QtGui.QComboBox()
         lm = ListModel(optools.input_types,widg)
@@ -45,6 +45,13 @@ def type_mv_widget(src,widg=None):
     for tp in optools.invalid_types[src]:
         lm.set_disabled(tp)
         #widg.model().set_disabled(tp)
+    return widg 
+
+def src_selection_widget():
+    widg = QtGui.QComboBox()
+    lm = ListModel(optools.input_sources,widg)
+    #widg.addItems(optools.input_sources)
+    widg.setModel(lm)
     return widg 
         
 def r_hdr_widget(text):
@@ -59,11 +66,6 @@ def hdr_widget(text):
     widg.setReadOnly(True)
     widg.setAlignment(QtCore.Qt.AlignLeft)
     widg.setStyleSheet( "QLineEdit { background-color: transparent }" + widg.styleSheet() )
-    return widg 
-
-def src_selection_widget():
-    widg = QtGui.QComboBox()
-    widg.addItems(optools.input_sources)
     return widg 
 
 def smalltext_widget(text):
@@ -93,12 +95,11 @@ def name_widget(name):
 #    type_widget = type_mv_widget(src) 
 #    return type_widget
 
-def bigtext_widget(text,trunc_limit=200):
-    if len(text) > trunc_limit:
-        display_text = text[:trunc_limit]+'...'
-    else:
-        display_text = text
-    widg = QtGui.QLineEdit(display_text)
+def bigtext_widget(text):
+    #trunc_limit = 200
+    #if len(text) > trunc_limit:
+    #    text = text[:trunc_limit]+'...'
+    widg = QtGui.QLineEdit(text)
     widg.setReadOnly(True)
     widg.setAlignment(QtCore.Qt.AlignLeft)
     ht = widg.sizeHint().height()

@@ -1,6 +1,7 @@
 from pypif import pif
 from citrination_client import CitrinationClient 
 
+from ..operations import optools
 from .. import slacxtools
 from slacxplug import SlacxPlugin
 
@@ -43,15 +44,16 @@ class SlacxCitrinationClient(SlacxPlugin):
         #del self.ctn_client
 
     def content(self): 
-        return self
+        return {'client':self}
 
     def description(self):
-        desc = str('Citrination API Client Plugin for Slacx\n\n'
+        desc = str('Citrination API Client Plugin for Slacx: '
             + 'This is a container for the Citrination Client module. '
             + 'The Citrination Client connects to a Citrination instance '
-            + 'and exposes a portion of the Citrination API.'
+            + 'and exposes some parts of the Citrination API. '
             + 'Startup requires the web address of a Citrination instance '
             + 'and an API key that provides access to that instance.')
+        return desc
 
     def ship_dataset(self,pifs):
         # Create the data set

@@ -1,4 +1,7 @@
 import abc
+from collections import OrderedDict
+
+from ..operations import optools
 
 class SlacxPlugin(object):
     __metaclass__ = abc.ABCMeta
@@ -38,10 +41,10 @@ class SlacxPlugin(object):
 
     def content(self):
         """
-        SlacxPlugin.content() returns a data structure 
+        SlacxPlugin.content() returns a dict
         containing the meaningful objects contained in the plugin.
         The default implementation returns the plugin itself. 
         """
-        return self
+        return {'plugin':self}
 
 
