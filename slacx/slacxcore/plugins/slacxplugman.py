@@ -1,51 +1,79 @@
+import importlib
+
 from PySide import QtCore
 
+from ..operations import optools
 from ..treemodel import TreeModel
 from ..treeitem import TreeItem
-
 from .. import plugins as pgns
+from ..plugins.slacxplug import SlacxPlugin
 
 class PluginManager(TreeModel):
     """
     Tree structure for managing slacx plugins.
     """
 
-    # TODO: Render plugin content as subtree
+    # TODO: Make WfManager.update_io_deps() handle the workflow updates when PluginManager deletes a plugin
 
     def __init__(self,**kwargs):
         super(PluginManager,self).__init__()
+        self.logmethod = None
 
-    # Overloaded headerData() for PluginManager 
-    def headerData(self,section,orientation,data_role):
-        if (data_role == QtCore.Qt.DisplayRole and section == 0):
-            return "Plugins: {} active".format(len(self.root_items))
-        else:
+    def load_from_dict(self,pgin_dict):
+        """
+        Load plugins from a dict that specifies their setup parameters.
+        """
+        while self.root_items:
+            idx = self.index(self.rowCount(QtCore.QModelIndex())-1,0,QtCore.QModelIndex())
+            self.remove_plugin(idx)
+        for uri, pgin_spec in pgin_dict.items():
+            pgin_name = pgin_spec['type']
+            pgin = self.get_plugin_byname(pgin_name)
+            if not issubclass(pgin,SlacxPlugin):
+                self.write_log('Did not find Plugin {} - skipping.'.format(pgin_name))
+            else:
+                pgin = pgin()
+                pgin.inputs = pgin_spec[optools.inputs_tag]
+                pgin.start()
+                self.add_plugin(uri,pgin)
+
+    def get_plugin_byname(self,pgin_name):    
+        try:
+            mod = importlib.import_module('.'+pgin_name,pgns.__name__)
+            if pgin_name in mod.__dict__.keys():
+                return mod.__dict__[pgin_name]
+            else:
+                self.write_log('Did not find plugin {} in module {}'.format(pgin_name,mod.__name__) + ex.message)
+                return None 
+        except Exception as ex:
+            self.write_log('Trouble loading module for plugin {}. Error message: '.format(pgin_name) + ex.message)
             return None
 
-    # Overloaded data() for OpManager
-    def data(self,itm_idx,data_role):
-        if (not itm_idx.isValid()):
-            return None
-        itm = itm_idx.internalPointer()
-        if data_role == QtCore.Qt.DisplayRole:
-            return itm.tag()
-        #elif (data_role == QtCore.Qt.ToolTipRole 
-        #    or data_role == QtCore.Qt.StatusTipRole
-        #    or data_role == QtCore.Qt.WhatsThisRole):
-        #        return item.data.description()
+    def write_log(self,msg):
+        if self.logmethod:
+            self.logmethod(msg)
         else:
-            return None
-    
-    def add_plugin(self,uri,pgin):
+            print(msg)
+
+    def add_plugin(self,pgin_tag,pgin):
         """Add a Plugin to the tree as a new top-level TreeItem."""
         ins_row = self.rowCount(QtCore.QModelIndex())
         itm = TreeItem(ins_row,0,QtCore.QModelIndex())
-        itm.set_tag( uri )
+        itm.set_tag( pgin_tag )
         self.beginInsertRows(QtCore.QModelIndex(),ins_row,ins_row)
         self.root_items.insert(ins_row,itm)
         self.endInsertRows()
         idx = self.index(ins_row,0,QtCore.QModelIndex()) 
-        self.tree_dataChanged(idx)
+        self.tree_update(idx,pgin)
+        #self.tree_dataChanged(idx)
+
+    def build_dict(self,x):
+        """Overloaded build_dict to handle Plugins"""
+        if isinstance(x,SlacxPlugin):
+            d = x.content() 
+        else:
+            d = super(PluginManager,self).build_dict(x)
+        return d
 
     def remove_plugin(self,rm_idx):
         """Remove a Plugin from the tree"""
@@ -54,4 +82,22 @@ class PluginManager(TreeModel):
         item_removed = self.root_items.pop(rm_row)
         self.endRemoveRows()
         self.tree_dataChanged(rm_idx)
+
+    # Overloaded data() for PluginManager
+    def data(self,itm_idx,data_role):
+        if (not itm_idx.isValid()):
+            return None
+        itm = itm_idx.internalPointer()
+        if data_role == QtCore.Qt.DisplayRole:
+            return itm.tag()
+        else:
+            return None
+
+    # Overloaded headerData() for PluginManager 
+    def headerData(self,section,orientation,data_role):
+        if (data_role == QtCore.Qt.DisplayRole and section == 0):
+            return "Plugins: {} active".format(len(self.root_items))
+        else:
+            return None
+
 

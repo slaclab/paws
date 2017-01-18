@@ -22,6 +22,14 @@ class SlacxPlugin(object):
             self.inputs[name] = None
             self.input_doc[name] = None
 
+    def start(self):
+        """
+        SlacxPlugin.start() should perform any setup required by the plugin,
+        for instance setting up connections and reading files used by the plugin.
+        The default implementation does nothing.
+        """
+        pass
+
     def stop(self):
         """
         SlacxPlugin.stop() should provide a clean end for the plugin,
@@ -43,7 +51,8 @@ class SlacxPlugin(object):
         """
         SlacxPlugin.content() returns a dict
         containing the meaningful objects contained in the plugin.
-        The default implementation returns the plugin itself. 
+        The default implementation returns the plugin itself,
+        keyed by 'plugin'.
         """
         return {'plugin':self}
 

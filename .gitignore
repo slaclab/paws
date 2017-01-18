@@ -4,12 +4,10 @@ lib64
 local
 include
 share
-images
-pip-selfcheck.json
 scratch
 *.pyc
 *.swp
 *.swo
-*.wfl
 *.json
+*.wfl
 *.cfg

@@ -4,6 +4,7 @@ import platform
 from functools import partial
 
 from PySide import QtGui, QtCore, QtUiTools
+import yaml
 
 from ..slacxcore.operations import optools
 from ..slacxcore.listmodel import ListModel
@@ -78,22 +79,10 @@ def name_widget(name):
     name_widget = QtGui.QLineEdit(name)
     name_widget.setReadOnly(True)
     name_widget.setAlignment(QtCore.Qt.AlignRight)
-#    return name_widget
-#def input_name_widget(name):
-#    name_widget = name_widget(name)
     ht = name_widget.sizeHint().height()
     name_widget.sizeHint = lambda: QtCore.QSize(10*len(name_widget.text()),ht)
     name_widget.setSizePolicy(QtGui.QSizePolicy.Minimum,QtGui.QSizePolicy.Fixed)
     return name_widget
-
-#def input_src_widget(name):
-#    """Loads a set of widgets for setting input data"""
-#    src_widget = src_selection_widget() 
-#    return src_widget
-
-#def input_type_widget(name,src=None):
-#    type_widget = type_mv_widget(src) 
-#    return type_widget
 
 def bigtext_widget(text):
     #trunc_limit = 200
@@ -135,23 +124,48 @@ def load_path(ui,idx=QtCore.QModelIndex()):
             ui.load_button.setEnabled(False)
         else:
             ui.load_button.setEnabled(True)
+    
+def save_to_file(d,filename):
+    """
+    Save the items in dict d as YAML in filename
+    """
+    f = open(filename, 'w')
+    #yaml.dump(d, f, encoding='utf-8')
+    yaml.dump(d, f)
+    f.close()
 
 def stop_save_ui(ui,uiman):
     fname = ui.filename.text()
     if not os.path.splitext(fname)[1] == '.wfl':
         fname = fname + '.wfl'
-    uiman.wfman.save_to_file(fname)
+    uiman.msg_board_log( 'dumping current state to {}'.format(fname) )
+    d = {} 
+    wf_dict = {} 
+    for itm in uiman.wfman.root_items:
+        wf_dict[str(itm.tag())] = optools.op_dict(itm.data)
+    pgin_dict = {}
+    for itm in uiman.plugman.root_items:
+        pgin_dict[str(itm.tag())] = optools.plugin_dict(itm.data)
+    d['WORKFLOW'] = wf_dict
+    d['PLUGINS'] = pgin_dict
+    save_to_file(d,fname)
     ui.close()
 
 def stop_load_ui(ui,uiman):
     #fname = ui.filename.text()
     fname = ui.tree.model().filePath(ui.tree.currentIndex())
-    uiman.wfman.load_from_file(uiman.opman,fname)
+    f = open(fname,'r')
+    d = yaml.load(f)
+    f.close()
+    if 'WORKFLOW' in d.keys():
+        uiman.wfman.load_from_dict(uiman.opman,d['WORKFLOW'])
+    if 'PLUGINS' in d.keys():
+        uiman.plugman.load_from_dict(d['PLUGINS'])
     ui.close()
 
 def start_save_ui(uiman):
     """
-    Start a modal window dialog to choose a save destination for the workflow in progress 
+    Start a modal window dialog to choose a save destination for the current workflow  
     """
     ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/save_browser.ui")
     ui_file.open(QtCore.QFile.ReadOnly)
@@ -159,8 +173,9 @@ def start_save_ui(uiman):
     ui_file.close()
     #save_ui.setAttribute(QtCore.Qt.WA_DeleteOnClose)
     trmod = QtGui.QFileSystemModel()
+    trmod.setRootPath(QtCore.QDir.currentPath())
     #trmod.setRootPath('.')
-    trmod.setRootPath(slacxtools.rootdir)
+    #trmod.setRootPath(slacxtools.rootdir)
     trmod.setNameFilters(['*.wfl'])
     save_ui.tree_box.setTitle('Select a file to save the current workflow')
     save_ui.tree.setModel(trmod)
@@ -172,7 +187,6 @@ def start_save_ui(uiman):
     save_ui.tree.expanded.connect( partial(save_path,save_ui) )
     #save_ui.tree.activated.connect( save_ui.tree.setCurrentIndex )
     #save_ui.tree.selectionModel().selectionChanged.connect( save_ui.tree.selectionChanged )
-    #import pdb; pdb.set_trace()
     save_ui.setParent(uiman.ui,QtCore.Qt.Window)
     save_ui.setAttribute(QtCore.Qt.WA_OpaquePaintEvent)
     save_ui.setWindowModality(QtCore.Qt.ApplicationModal)
@@ -206,6 +220,7 @@ def start_load_ui(uiman):
     load_ui.setParent(uiman.ui,QtCore.Qt.Window)
     load_ui.setAttribute(QtCore.Qt.WA_OpaquePaintEvent)
     load_ui.setWindowModality(QtCore.Qt.ApplicationModal)
+    load_ui.load_button.setText('&Load')
     load_ui.load_button.clicked.connect(partial(stop_load_ui,load_ui,uiman))
     #load_ui.setWindowModality(QtCore.Qt.WindowModal)
     load_ui.show()
@@ -271,7 +286,7 @@ def data_fetch_ui(parent=None):
     return src_ui
 
 def message_ui(parent=None):
-    ui_file = QtCore.QFile(rootdir+"/slacxui/message.ui")
+    ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/message.ui")
     ui_file.open(QtCore.QFile.ReadOnly)
     msg_ui = QtUiTools.QUiLoader().load(ui_file)
     ui_file.close()

@@ -1,6 +1,3 @@
-import os
-import time
-import traceback
 from collections import OrderedDict
 import copy
 from functools import partial
@@ -12,8 +9,8 @@ from ..treemodel import TreeModel
 from ..treeitem import TreeItem
 from ..operations import optools
 from ..operations.slacxop import Operation, Batch, Realtime
-from ..operations.optools import InputLocator#, OutputContainer
 from .. import slacxtools
+from .slacxwfworker import WfWorker
 
 class WfManager(TreeModel):
     """
@@ -26,23 +23,18 @@ class WfManager(TreeModel):
     def updateOperation(self,tag,op):
         self.update_op(tag,op)
 
-    # TODO: Make appref a required init arg
-    # TODO: kwarg for num threads?
-    def __init__(self,**kwargs):
+    def __init__(self,qapp_reference,plugin_manager,**kwargs):
         super(WfManager,self).__init__()
-        if 'wfl' in kwargs:
-            self.load_from_file( kwargs['wfl'] )
         # reference to app for helping thread control
-        if 'app' in kwargs:
-            self.appref = kwargs['app']
-        else:
-            self.appref = None
+        self.appref = qapp_reference 
+        self.plugman = plugin_manager
         self._wf_dict = {}       
         # Flags to assist in thread control
         self._running = False
         self._n_threads = 1
         self._wf_threads = dict.fromkeys(range(self._n_threads)) 
         #self._n_threads = QtCore.QThread.idealThreadCount()
+        self.logmethod = None
 
     def write_log(self,msg):
         if self.logmethod:
@@ -52,86 +44,39 @@ class WfManager(TreeModel):
         if self.appref:
             self.appref.processEvents()
 
-    def load_from_file(self,opman,wfl):
+    def load_from_dict(self,opman,opdict):
         """
-        Load things in to the Workflow from an OpManager and a YAML .wfl file 
+        Load things in to the Workflow from an OpManager
+        using a dict that specifies operation setup.
         """
-        # TODO: Migrate to own module
         while self.root_items:
             idx = self.index(self.rowCount(QtCore.QModelIndex())-1,0,QtCore.QModelIndex())
             self.remove_op(idx)
-        f = open(wfl, "r")
-        dct = yaml.load(f)
-        f.close()
-        for uri, opdict in dct.items():
-            opname = opdict['type']
+        for uri, op_spec in opdict.items():
+            opname = op_spec['type']
             op = opman.get_op_byname(opname)
             if not issubclass(op,Operation):
                 self.write_log('Did not find Operation {} - skipping.'.format(opname))
-            # TODO: Eventually remove this and deprecate the hard-coded 'Inputs' key
-            #if 'Inputs' in opdict.keys():
-            #    ilspec = opdict['Inputs']
             else:
                 op = op()
-                ilspec = opdict[optools.inputs_tag]
+                ilspec = op_spec[optools.inputs_tag]
                 for name, srctypeval in ilspec.items():
                     src = srctypeval['src']
                     tp = srctypeval['type']
                     val = srctypeval['val'] 
-                    # TODO: Eventually remove this and deprecate the hard-coded 'Inputs' key
-                    #if src == optools.wf_input and isinstance(val,str):
-                    #    val = val.replace('Inputs',optools.inputs_tag)
                     il = optools.InputLocator(src,tp,val)
                     op.input_locator[name] = il
                 self.add_op(uri,op)
-        self.update_io_deps()
+        # Not sure that this is necessary...
+        #self.update_io_deps()
         
-    def save_to_file(self,filename):
-        """
-        Save the current image of the Workflow as a YAML 
-        """
-        # TODO: Migrate to own module
-        if not os.path.splitext(filename)[1] == '.wfl':
-            filename = filename+'.wfl'
-        #filename = slacxtools.rootdir+'/'+'test.wfl'
-        wf_dict = OrderedDict() 
-        #wf_dict = {} 
-        for row in range(len(self.root_items)):
-            item = self.root_items[row]
-            idx = self.index(row,0,QtCore.QModelIndex())
-            uri = self.build_uri(idx)
-            wf_dict[str(uri)] = self.op_dict(item)
-        self.write_log( 'dumping current workflow image to {}'.format(filename) )
-        f = open(filename, "w")
-        #yaml.dump(wf_dict, f, encoding='utf-8')
-        yaml.dump(wf_dict, f)
-        f.close()
-    def op_dict(self,op_item):
-        dct = OrderedDict() 
-        op = op_item.data
-        dct['type'] = type(op).__name__ 
-        dct[optools.inputs_tag] = self.inputs_dict(op)
-        return dct
-    def inputs_dict(self,op):
-        dct = OrderedDict() 
-        for name in op.inputs.keys():
-            il = op.input_locator[name]
-            dct[name] = {'src':il.src,'type':il.tp,'val':il.val}
-        return dct
-    #def outputs_dict(self,op):
-    #    #dct = {}
-    #    dct = OrderedDict() 
-    #    for name in op.outputs.keys():
-    #        dct[name] = str(op.outputs[name])
-    #    return dct
-
     def load_inputs(self,op):
         """
         Loads data for an Operation from that Operation's input_locators.
         It is expected that op.input_locator[name] will refer to an InputLocator.
         """
         for name,il in op.input_locator.items():
-            if isinstance(il,InputLocator):
+            if isinstance(il,optools.InputLocator):
                 src = il.src
                 if not src == optools.batch_input:
                     il.data = self.locate_input(il,op)
@@ -150,7 +95,6 @@ class WfManager(TreeModel):
         Takes the Operation that owns this inplocator as a second arg,
         so that if it is a Batch its input routes can be handled properly.
         """
-        #if isinstance(inplocator,InputLocator):
         src = il.src
         tp = il.tp
         val = il.val
@@ -160,6 +104,8 @@ class WfManager(TreeModel):
             return optools.cast_type_val(tp,val)
         elif src == optools.wf_input:
             return optools.parse_wf_input(self,il,op)
+        elif src == optools.plugin_input:
+            return optools.parse_plugin_input(self.plugman,il,op)
         elif src == optools.fs_input:
             # Trust that Operations using fs input 
             # are taking care of parsing the file names in whatever form
@@ -170,42 +116,6 @@ class WfManager(TreeModel):
             msg = 'found input source {}, should be one of {}'.format(
             src, optools.valid_sources)
             raise ValueError(msg)
-
-    def get_from_uri(self, uri):
-        """Get from this tree the item at the given uri."""
-        path = uri.split('.')
-        p_idx = QtCore.QModelIndex()
-        try:
-            for itemuri in path:
-                # get QModelIndex of item 
-                row = self.list_tags(p_idx).index(itemuri)
-                idx = self.index(row,0,p_idx)
-                # get TreeItem from QModelIndex
-                item = self.get_item(idx)
-                # set new parent in case the path continues...
-                p_idx = idx
-            return item, idx
-        except Exception as ex:
-            msg = '-----\nbad uri: {}\n-----'.format(uri)
-            print msg
-            raise ex
-
-    def is_good_uri(self,uri):
-        if not uri:
-            return True
-        path = uri.split('.')
-        p_idx = QtCore.QModelIndex()
-        for itemuri in path:
-            try:
-                row = self.list_tags(p_idx).index(itemuri)
-            except ValueError as ex:
-                return False
-            idx = self.index(row,0,p_idx)
-            # get TreeItem from QModelIndex
-            item = self.get_item(idx)
-            # set new parent in case the path continues...
-            p_idx = idx
-        return True
 
     def add_op(self,uri,new_op):
         """Add an Operation to the tree as a new top-level TreeItem."""
@@ -218,12 +128,13 @@ class WfManager(TreeModel):
         self.endInsertRows()
         idx = self.index(ins_row,0,QtCore.QModelIndex()) 
         self.tree_update(idx,new_op)
+        # Should not need to update existing io dependencies when adding an op. 
+        #self.update_io_deps()
 
     def remove_op(self,rm_idx):
         """Remove an Operation from the workflow tree"""
         rm_row = rm_idx.row()
         self.beginRemoveRows(QtCore.QModelIndex(),rm_row,rm_row)
-        # Removal occurs between notification methods
         item_removed = self.root_items.pop(rm_row)
         self.endRemoveRows()
         # Inform views 
@@ -238,72 +149,39 @@ class WfManager(TreeModel):
         """
         itm, idx = self.get_from_uri(uri)
         self.tree_update(idx,new_op)
+        self.update_io_deps()
 
-    def tree_update(self,idx,x_new):
-        """
-        Call this function to store x_new in the TreeItem at idx 
-        and then build/update/prune the subtree rooted at that item.
-        Take measures to change as little as possible of the tree,
-        since this can be a big operation and is called frequently.
-        """
-        itm = idx.internalPointer()
-        x = itm.data
-        itm.data = x_new
-        # Build dict of the intended children 
-        x_dict = optools.get_child_dict(x_new)
-        # Remove obsolete children
-        c_kill = [] 
-        for j in range(itm.n_children()):
-            if not self.index(j,0,idx).internalPointer().tag() in x_dict.keys():
-                c_kill.append( j )
-        c_kill.sort()
-        for j in c_kill[::-1]:
-            self.beginRemoveRows(idx,j,j)
-            itm.children.pop(j)
-            self.endRemoveRows()
-        # Add items for any new children 
-        c_keys = [itm.children[j].tag() for j in range(itm.n_children())]
-        for k in x_dict.keys():
-            if not k in c_keys:
-                nc = itm.n_children()
-                c_itm = TreeItem(nc,0,idx)
-                c_itm.set_tag(k)
-                self.beginInsertRows(idx,nc,nc)
-                itm.children.insert(nc,c_itm)
-                self.endInsertRows()
-        # Recurse to update children
-        for j in range(itm.n_children()):
-            c_idx = self.index(j,0,idx)
-            c_tag = c_idx.internalPointer().tag()
-            self.tree_update(c_idx,x_dict[c_tag])
-        # If x is (was) an Operation, update workflow IO dependencies.
+    def build_dict(self,x):
+        """Overloaded build_dict to handle Operations"""
         if isinstance(x,Operation):
-            self.update_io_deps()
-        # Finish by informing views that dataChanged().
-        self.tree_dataChanged(idx) 
+            d = {} 
+            d[optools.inputs_tag] = x.input_locator 
+            d[optools.outputs_tag] = x.outputs
+        else:
+            d = super(WfManager,self).build_dict(x)
+        return d
 
+    # TODO: Add checking of plugins (il.src == optools.plugin_input)
     def update_io_deps(self):
         """
         Remove any broken dependencies in the workflow.
-        NB: Only effective after most recent data have been stored in the tree. 
+        Only effective after most recent data have been stored in the tree. 
         """
-        #itm = idx.internalPointer()
-        #update_uri = itm.tag()
         for r,itm in zip(range(len(self.root_items)),self.root_items):
             op = itm.data
             op_idx = self.index(r,0,QtCore.QModelIndex())
             for name,il in op.input_locator.items():
                 if il:
-                    # If the source is workflow input (optools.wf_input)...
                     if il.src == optools.wf_input:
                         vals = optools.val_list(il)
                         for v in vals:
                             if not self.is_good_uri(v):
-                                self.write_log('--- NB: clearing InputLocator for {} ---'.format(v))
+                                self.write_log('--- clearing InputLocator for {}.{}.{} ---'.format(
+                                itm.tag(),optools.inputs_tag,name))
                                 op.input_locator[name] = optools.InputLocator()
                                 self.tree_dataChanged(op_idx)
 
-    # TODO:
+    # TODO: the following
     def check_wf(self):
         """
         Check the dependencies of the workflow.
@@ -331,14 +209,6 @@ class WfManager(TreeModel):
             return rt_items[0] 
         else:
             return []
-
-#    def run_deps(self,item):
-#       deps = self.upstream_stack(item)
-#       if deps:
-#           self.write_log('Running dependencies for {}: {}'.format(item, [dep.tag() for dep in deps]))
-#           self.run_wf_serial(deps)
-#           #for dep in deps:
-#           #    self.run_and_update(item)
 
     def is_running(self):
         return self._running
@@ -565,7 +435,7 @@ class WfManager(TreeModel):
                 op = itm.data
                 self.load_inputs(op)
             # Make a new Worker, give None parent so that it can be thread-mobile
-            wf_wkr = slacxtools.WfWorker(lst,None)
+            wf_wkr = WfWorker(lst,None)
             wf_wkr.opDone.connect(self.updateOperation)
             wf_thread = QtCore.QThread(self)
             wf_wkr.moveToThread(wf_thread)
@@ -585,7 +455,7 @@ class WfManager(TreeModel):
         self.write_log('SERIAL EXECUTION FINISHED in thread {}'.format(thd))
 
     def finish_thread(self,th_idx):
-        self.write_log('finished execution in thread {}.'.format(th_idx))
+        self.write_log('finished execution in thread {}'.format(th_idx))
         self._wf_threads[th_idx] = None
 
     def run_wf_realtime(self,rt_itm,stk):
@@ -661,7 +531,7 @@ class WfManager(TreeModel):
                 self.write_log( 'BATCH EXECUTION TERMINATED' )
                 return
         self.write_log( 'BATCH EXECUTION FINISHED' )
-    
+
     def wf_item_to_dict(self,uri,itm):
         od = OrderedDict()
         od[uri] = copy.deepcopy(itm.data)
@@ -692,6 +562,7 @@ class WfManager(TreeModel):
         op = op_itm.data
         op.inputs[p[2]] = val
 
+    # TODO: Write self.check_wf, and use it, and add checks for fs_input and plugin_input sources
     def execution_stack(self):
         """
         Get a stack (list of lists) of Operations,

@@ -67,20 +67,20 @@ class WfUiManager(object):
                 self.set_op(x,xitem.tag())
 
     def set_op(self,op,uri):
+        """Set up ui elements around existing input op"""
         self.op = op
         self.ui.op_info.setPlainText(self.op.description())
-        self.build_io()
+        self.ui.op_name.setText(type(self.op).__name__)
         self.ui.uri_entry.setText(uri)
-        # Don't let uri change after already being loaded.
         self.ui.uri_entry.setReadOnly(True)
+        self.build_io()
 
     def create_op(self,op):
-        self.op = op()
-        self.op.load_defaults()
-        self.ui.op_info.setPlainText(self.op.description())
-        self.ui.op_name.setText(type(self.op).__name__)
-        self.build_io()
-        self.ui.uri_entry.setText(self.wfman.auto_uri(type(self.op).__name__))
+        """Instantiate op, call self.set_op(op), and enable uri entry"""
+        new_op = op()
+        new_op_tag = self.wfman.auto_tag(type(new_op).__name__)
+        new_op.load_defaults()
+        self.set_op(new_op,new_op_tag)
         self.ui.uri_entry.setReadOnly(False)
 
     #def test_op(self):
@@ -118,7 +118,7 @@ class WfUiManager(object):
             else:
                 val = self.val_widgets[name].text()
             il = optools.InputLocator(src,tp,val)
-        elif (src == optools.wf_input or src == optools.fs_input):
+        elif (src == optools.wf_input or src == optools.fs_input or src == optools.plugin_input):
             if not ui:
                 # If we get to this point without a data loading ui,
                 # it has either already been loaded, or should be left as None.
@@ -164,7 +164,7 @@ class WfUiManager(object):
         if itm_idx.isValid():
             if src == optools.fs_input:
                 item_uri = trview.model().filePath(itm_idx)
-            elif src == optools.wf_input:
+            elif src == optools.wf_input or src == optools.plugin_input:
                 item_uri = trview.model().build_uri(itm_idx)
             il = optools.InputLocator(src,optools.auto_type,item_uri)
         else:
@@ -300,7 +300,7 @@ class WfUiManager(object):
             btn_widget.setEnabled(False)
             val_widget.setText('batch')
             val_widget.setReadOnly(True)
-        elif src == optools.wf_input or src == optools.fs_input:
+        elif src == optools.wf_input or src == optools.fs_input or src == optools.plugin_input:
             if tp == optools.none_type:
                 btn_widget.setText('no input')
                 btn_widget.setEnabled(False)
@@ -352,20 +352,20 @@ class WfUiManager(object):
         if not src:
             src = self.src_widgets[name].currentIndex()
         widg = None 
-        if name in self.type_widgets.keys():
-            if self.type_widgets[name]:
-                widg = self.type_widgets[name]
+        #if name in self.type_widgets.keys():
+        #    if self.type_widgets[name]:
+        #        widg = self.type_widgets[name]
         new_type_widget = uitools.type_selection_widget(src,widg)
-        if src in [optools.wf_input,optools.fs_input]:
+        if src in [optools.wf_input,optools.fs_input,optools.plugin_input]:
             new_type_widget.setCurrentIndex(optools.auto_type)
         if new_type_widget.currentIndex() in optools.invalid_types[src]:
             new_type_widget.setCurrentIndex(optools.none_type)
-        if self.op.input_type[name]:
-            if self.op.input_type[name] not in optools.invalid_types[src]:
-                new_type_widget.setCurrentIndex(self.op.input_type[name])
-        elif self.op.input_locator[name]:
+        if self.op.input_locator[name]:
             if self.op.input_locator[name].tp not in optools.invalid_types[src]:
                 new_type_widget.setCurrentIndex(self.op.input_locator[name].tp)
+        elif self.op.input_type[name]:
+            if self.op.input_type[name] not in optools.invalid_types[src]:
+                new_type_widget.setCurrentIndex(self.op.input_type[name])
         #new_type_widget.activated.connect( partial(reset_val_widget,name,row) )            
         new_type_widget.currentIndexChanged.connect( partial(self.reset_val_widget,name,row,src) )            
         self.type_widgets[name] = new_type_widget  
@@ -390,6 +390,8 @@ class WfUiManager(object):
         if idx.isValid():
             if src == optools.wf_input:
                 val = self.wfman.build_uri(idx) 
+            if src == optools.plugin_input:
+                val = self.plugman.build_uri(idx) 
             elif src == optools.fs_input:
                 val = src_ui.tree.model().filePath(idx) 
             list_ui.value_entry.setText( val )
@@ -407,21 +409,24 @@ class WfUiManager(object):
         src_ui.tree_box.setTitle(name+' - from '+optools.input_sources[src])
         if src == optools.wf_input:
             trmod = self.wfman
+        elif src == optools.plugin_input:
+            trmod = self.wfman.plugman
         elif src == optools.fs_input:
             trmod = QtGui.QFileSystemModel()
             trmod.setRootPath('.')
         src_ui.tree.setModel(trmod)
         src_ui.tree.clicked.connect( partial(uitools.toggle_expand,src_ui.tree) )
+        src_ui.tree.expandAll()
         # add src_ui to the arguments of data_handler
         h = partial(data_handler,src_ui)
-        # when the load button is clicked or tree is doubleclicked, call data_handler
+        # when the load button is clicked or tree is doubleclicked, call this augmented handler 
         src_ui.load_button.clicked.connect(h)
         src_ui.tree.doubleClicked.connect(h)
         if src == optools.fs_input:
             src_ui.tree.hideColumn(1)
             src_ui.tree.hideColumn(3)
             src_ui.tree.setColumnWidth(0,400)
-        elif src == optools.wf_input:
+        elif src == optools.wf_input or src == optools.plugin_input:
             src_ui.tree.hideColumn(1)
         src_ui.show()
 
@@ -437,7 +442,7 @@ class WfUiManager(object):
         self.ui.wf_selector.setModel(self.wfman)
         self.ui.wf_selector.hideColumn(1)
         self.ui.wf_selector.clicked.connect( partial(self.get_op,self.wfman) )
-        self.ui.rm_op_button.setText("&Delete")
+        self.ui.rm_op_button.setText("&Remove selected operation")
         self.ui.rm_op_button.clicked.connect(self.rm_op)
         self.ui.op_selector.setModel(self.opman)
         self.ui.op_selector.hideColumn(1)

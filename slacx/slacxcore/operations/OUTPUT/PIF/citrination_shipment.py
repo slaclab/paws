@@ -7,6 +7,35 @@ from ...slacxop import Operation
 from ... import optools
 from .... import slacxtools
 
+class CheckCitrinationClient(Operation):
+    """
+    Take a Citrination client as input and query it to ensure that it is working.
+    Output some indication of whether or not the client is working.
+    """
+    
+    def __init__(self):
+        input_names = ['client']
+        output_names = ['ok_flag','status']
+        super(CheckCitrinationClient,self).__init__(input_names,output_names)
+        self.input_doc['client'] = 'A reference to a running Citrination client.'
+        self.output_doc['ok_flag'] = 'Indicator of whether or not the client passes the test.'
+        self.output_doc['status'] = 'Message describing the state of the client'
+        self.input_src['client'] = optools.plugin_input
+
+    def run(self):
+        c = self.inputs['client']
+        f = True
+        dsid = 2667
+        try:
+            r = c.get_dataset_files(dsid)
+            s = 'client successfully queried data set number {}'.format(dsid)
+            f = True
+        except Exception as ex:
+            s = 'client failed to query data set number {}. Error message: '.format(dsid) + ex.message
+            f = False
+        self.outputs['ok_flag'] = f
+        self.outputs['status'] = s
+
 class BuildCitrinationDataSet(Operation):
     """
     Take a list of pypif.obj.System objects and ship them to Citrination as a new data set.    

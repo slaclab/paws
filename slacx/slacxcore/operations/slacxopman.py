@@ -19,6 +19,7 @@ class OpManager(TreeModel):
         self._op_list = [cat_op[1] for cat_op in ops.cat_op_list]
         self.load_cats(ops.cat_list) 
         self.load_ops(ops.cat_op_list)
+        self.logmethod = None
 
     def save_config(self):
         for k in self._cat_list + self.list_op_names():

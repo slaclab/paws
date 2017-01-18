@@ -2,6 +2,8 @@ import string
 
 from PySide import QtCore
 
+from .treeitem import TreeItem
+
 class TreeModel(QtCore.QAbstractItemModel):
     """
     Class for tree management with a QAbstractItemModel.
@@ -18,17 +20,15 @@ class TreeModel(QtCore.QAbstractItemModel):
         # keep root items in a TreeItem list
         self.root_items = []    
 
-    def get_item(self,indx):
-        return indx.internalPointer() 
-
-    def get_item_by_tag(self,req_tag):
-        for item in self.root_items:
-            if item.tag() == req_tag:
-                return item
-        return None
+    def get_item(self,idx):
+        """Just a prettier face in front of idx.internalPointer()"""
+        return idx.internalPointer() 
 
     def build_uri(self,indx):
-        """Build a URI for the TreeItem at indx"""
+        """
+        Build a URI for the TreeItem at indx 
+        by prepending its parent tags with '.' as a delimiter.
+        """
         item_ref = self.get_item(indx)
         item_uri = item_ref.tag()
         while item_ref.parent.isValid():
@@ -36,14 +36,18 @@ class TreeModel(QtCore.QAbstractItemModel):
             item_uri = item_ref.tag()+"."+item_uri
         return item_uri
 
-    # get a list of tags for TreeItems under parent
     def list_tags(self,parent):
+        """Get a list of tags for TreeItems under parent."""
         if not parent.isValid():
             return [item.tag() for item in self.root_items]
         else:
             return [item.tag() for item in self.get_item(parent).children]
 
-    def auto_uri(self,prefix):
+    def auto_tag(self,prefix):
+        """
+        Generate the next unique tag from prefix by appending '_x' to it, 
+        where x is a minimal nonnegative integer.
+        """
         indx = 0
         goodtag = False
         while not goodtag:
@@ -56,6 +60,11 @@ class TreeModel(QtCore.QAbstractItemModel):
     
     # test uniqueness and good form of a tag
     def is_good_tag(self,testtag,parent=QtCore.QModelIndex()):
+        """
+        Checks for usable tags, returns a (bool,string) tuple
+        where the bool indicates whether the tag is good, 
+        and the string provides explanation if the tag is not good. 
+        """
         spec_chars = string.punctuation 
         spec_chars = spec_chars.replace('_','')
         spec_chars = spec_chars.replace('-','')
@@ -72,10 +81,48 @@ class TreeModel(QtCore.QAbstractItemModel):
 
     @staticmethod
     def tag_error(tag,err_msg):
+        """Provide a human-readable error message for bad tags."""
         return str('Tag error for {}: \n{} \n\n'.format(tag,err_msg)
                 + 'Enter a unique alphanumeric tag, '
                 + 'using only letters, numbers, -, and _. (no periods). ')
-        
+
+    def is_good_uri(self,uri):
+        """Returns whether or not input uri points to an item in this tree."""
+        if not uri:
+            return False
+        path = uri.split('.')
+        p_idx = QtCore.QModelIndex()
+        for itemuri in path:
+            try:
+                row = self.list_tags(p_idx).index(itemuri)
+            except ValueError as ex:
+                return False
+            idx = self.index(row,0,p_idx)
+            # get TreeItem from QModelIndex
+            #item = self.get_item(idx)
+            # set new parent in case the path continues...
+            p_idx = idx
+        return True
+
+    def get_from_uri(self, uri):
+        """Get from this tree the item at the given uri."""
+        path = uri.split('.')
+        p_idx = QtCore.QModelIndex()
+        try:
+            for itemuri in path:
+                # get QModelIndex of item 
+                row = self.list_tags(p_idx).index(itemuri)
+                idx = self.index(row,0,p_idx)
+                # get TreeItem from QModelIndex
+                item = self.get_item(idx)
+                # set new parent in case the path continues...
+                p_idx = idx
+            return item, idx
+        except Exception as ex:
+            msg = '-----\nbad uri: {}\n-----\n'.format(uri)
+            #print msg
+            ex.message = msg + ex.message
+            raise ex
 
     # Subclass of QAbstractItemModel must implement index()
     def index(self,row,col,parent):
@@ -93,9 +140,9 @@ class TreeModel(QtCore.QAbstractItemModel):
                 # Bad row: return invalid index
                 return QtCore.QModelIndex()
         else:
-            # We need to grab the parent from its QModelIndex...
+            # Grab the parent from its QModelIndex...
             p_item = parent.internalPointer()
-            # and return the index of the child at row
+            # Return the index of the child at row
             if row < len(p_item.children) and row >= 0:
                 return self.createIndex(row,col,p_item.children[row])
             else:
@@ -144,24 +191,24 @@ class TreeModel(QtCore.QAbstractItemModel):
         if (not item_indx.isValid()):
             return None
         item = item_indx.internalPointer()
+        if (data_role == QtCore.Qt.DisplayRole
+        or data_role == QtCore.Qt.ToolTipRole 
+        or data_role == QtCore.Qt.StatusTipRole
+        or data_role == QtCore.Qt.WhatsThisRole):
+            return item.tag()
+        else:
+            return None
         #if item_indx.column() == 1:
         #    if item.data is not None:
         #        return type(item.data).__name__ 
         #    else:
         #        return ' '
         #else:
-        if (data_role == QtCore.Qt.DisplayRole
-        or data_role == QtCore.Qt.ToolTipRole 
-        or data_role == QtCore.Qt.StatusTipRole
-        or data_role == QtCore.Qt.WhatsThisRole):
-            return item.tag()
         #elif (data_role == QtCore.Qt.ToolTipRole): 
         #    return item.long_tag() #+ '\n\n' + item.data_str()
         #elif (data_role == QtCore.Qt.StatusTipRole
         #    or data_role == QtCore.Qt.WhatsThisRole):
         #    return item.long_tag()
-        else:
-            return None
 
     # Expandable QAbstractItemModel subclass should implement
     # insertRows(row,count[,parent=QModelIndex()])
@@ -248,6 +295,57 @@ class TreeModel(QtCore.QAbstractItemModel):
         for c_row in range(itm.n_children()):
             c_idx = self.index(c_row,0,idx)
             self.tree_dataChanged(c_idx)
+
+    def build_dict(self,x):
+        """Build a dict from structured data object x"""
+        if isinstance(x,dict):
+            d = x 
+        elif isinstance(x,list):
+            d = {str(i):x[i] for i in range(len(x))} 
+        else:
+            d = {} 
+        return d
+
+    def tree_update(self,idx,x_new):
+        """
+        Call this function to store x_new in the TreeItem at idx 
+        and then build/update/prune the subtree rooted at that item.
+        Take measures to change as little as possible of the tree,
+        since this can be a big operation and is called frequently.
+        """
+        itm = idx.internalPointer()
+        x = itm.data
+        itm.data = x_new
+        # Build dict of the intended children 
+        x_dict = self.build_dict(x_new)
+        # Remove obsolete children
+        c_kill = [] 
+        for j in range(itm.n_children()):
+            #if not self.index(j,0,idx).internalPointer().tag() in x_dict.keys():
+            if not itm.children[j].tag() in x_dict.keys():
+                c_kill.append( j )
+        c_kill.sort()
+        for j in c_kill[::-1]:
+            self.beginRemoveRows(idx,j,j)
+            itm.children.pop(j)
+            self.endRemoveRows()
+        # Add items for any new children 
+        c_keys = [itm.children[j].tag() for j in range(itm.n_children())]
+        for k in x_dict.keys():
+            if not k in c_keys:
+                nc = itm.n_children()
+                c_itm = TreeItem(nc,0,idx)
+                c_itm.set_tag(k)
+                self.beginInsertRows(idx,nc,nc)
+                itm.children.insert(nc,c_itm)
+                self.endInsertRows()
+        # Recurse to update children
+        for j in range(itm.n_children()):
+            c_idx = self.index(j,0,idx)
+            c_tag = c_idx.internalPointer().tag()
+            self.tree_update(c_idx,x_dict[c_tag])
+        # Finish by informing views that dataChanged().
+        self.tree_dataChanged(idx) 
 
     # Editable QAbstractItemModel subclasses must implement setData(index,value[,role])
     #def setData(self,idx,value,role=None):

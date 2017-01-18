@@ -30,7 +30,7 @@ class PluginUiManager(object):
         self.ui = QtUiTools.QUiLoader().load(ui_file)
         ui_file.close()
         self.plugman = plugman 
-        self.plugin_list_model = PluginListModel(plugins.plugin_list,self.ui)
+        self.plugin_list_model = PluginListModel(plugins.plugin_name_list,self.ui)
         self.pgin = None
         self.setup_ui()
         self.src_widgets = {} 
@@ -86,7 +86,7 @@ class PluginUiManager(object):
         self.pgin = pgin
         self.ui.plugin_info.setPlainText(self.pgin.description())
         self.build_input()
-        self.ui.uri_entry.setText(self.plugman.auto_uri(type(self.pgin).__name__))
+        self.ui.uri_entry.setText(self.plugman.auto_tag(type(self.pgin).__name__))
         self.ui.uri_entry.setReadOnly(False)
         
     def clear_input(self):
@@ -138,7 +138,7 @@ class PluginUiManager(object):
         if self.pgin.input_type[name]:
             if self.pgin.input_type[name] not in optools.invalid_types[src]:
                 type_widget.setCurrentIndex(self.pgin.input_type[name])
-        if src in [optools.wf_input,optools.fs_input]:
+        if src in [optools.wf_input,optools.fs_input,optools.plugin_input]:
             type_widget.setCurrentIndex(optools.auto_type)
         type_widget.currentIndexChanged.connect( partial(self.reset_val_widget,name,row,src) )            
         self.type_widgets[name] = type_widget  
@@ -158,7 +158,7 @@ class PluginUiManager(object):
             btn_widget.setEnabled(False)
             val_widget.setText('None')
             val_widget.setReadOnly(True)
-        elif src == optools.wf_input or src == optools.fs_input:
+        elif src in [optools.plugin_input,optools.wf_input,optools.fs_input]:
             btn_widget.setText('browse...')
             data_handler = partial(self.set_input,name)
             btn_widget.clicked.connect( partial(self.fetch_data,name,data_handler) )
@@ -186,7 +186,7 @@ class PluginUiManager(object):
         #    il = optools.InputLocator(src,tp,val) 
         if src == optools.user_input:
             val = self.val_widgets[name].text()
-        elif (src == optools.wf_input or src == optools.fs_input):
+        elif src in [optools.wf_input,optools.fs_input,optools.plugin_input]:
             if ui:
                 val = self.load_from_ui(ui,src,itm_idx)
             else:
@@ -209,7 +209,7 @@ class PluginUiManager(object):
         if itm_idx.isValid():
             if src == optools.fs_input:
                 item_uri = trview.model().filePath(item_indx)
-            elif src == optools.wf_input:
+            elif src == optools.wf_input or src == optools.plugin_input:
                 item_uri = trview.model().build_uri(itm_idx)
 
     def fetch_data(self,name,data_handler):
@@ -222,10 +222,13 @@ class PluginUiManager(object):
         src_ui.tree_box.setTitle(name+' - from '+optools.input_sources[src])
         if src == optools.wf_input:
             trmod = self.wfman
+        elif src == optools.plugin_input:
+            trmod = self.plugman
         elif src == optools.fs_input:
             trmod = QtGui.QFileSystemModel()
             trmod.setRootPath('.')
         src_ui.tree.setModel(trmod)
+        src_ui.tree.expandAll()
         src_ui.tree.clicked.connect( partial(uitools.toggle_expand,src_ui.tree) )
         # add src_ui to the arguments of data_handler
         h = partial(data_handler,src_ui)
@@ -236,7 +239,7 @@ class PluginUiManager(object):
             src_ui.tree.hideColumn(1)
             src_ui.tree.hideColumn(3)
             src_ui.tree.setColumnWidth(0,400)
-        elif src == optools.wf_input:
+        elif src == optools.wf_input or src == optools.plugin_input:
             src_ui.tree.hideColumn(1)
         src_ui.show()
 
@@ -250,7 +253,7 @@ class PluginUiManager(object):
             if itm_idx.isValid():
                 if src == optools.fs_input:
                     val = trview.model().filePath(itm_idx)
-                elif src == optools.wf_input:
+                elif src == optools.wf_input or src == optools.plugin_input:
                     val = trview.model().build_uri(itm_idx)
             self.pgin.inputs[name] = val 
             self.val_widgets[name].setText(val)
@@ -267,6 +270,8 @@ class PluginUiManager(object):
         for name in self.pgin.inputs.keys():
             self.set_input(name)
         uri = self.ui.uri_entry.text()
+        # Plugin setup occurs here via SlacxPlugin.start()
+        self.pgin.start()
         result = self.plugman.is_good_tag(uri)
         if result[0]:
             self.plugman.add_plugin(uri,self.pgin) 

@@ -27,24 +27,18 @@ class SlacxCitrinationClient(SlacxPlugin):
         self.input_doc['api_key_file'] = 'path to a file in the local filesystem containing a valid citrination api key'
         self.return_codes = {} 
 
-    def setup(self,address,keyfile):
+    def start(self):
         self.address = self.inputs['address'] 
         f = open(self.inputs['api_key_file'],'r')
         self.api_key = str(f.readline()).strip()
         f.close()
         self.ctn_client = CitrinationClient(api_key = self.api_key, site = self.address)
 
-    #def slacxplugin_start(self):
-    #    # Start Citrination client
-    #    self.ctn_client = CitrinationClient(api_key = self.api_key, site = self.address)
-
-    # TODO: What is the proper way to terminate session?
-    def slacxplugin_stop(self):
+    def stop(self):
         pass
-        #del self.ctn_client
 
     def content(self): 
-        return {'client':self}
+        return {'client':self.ctn_client,'inputs':self.inputs}
 
     def description(self):
         desc = str('Citrination API Client Plugin for Slacx: '
