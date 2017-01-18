@@ -70,6 +70,13 @@ class TreeModel(QtCore.QAbstractItemModel):
         else:
             return (True, '')    
 
+    @staticmethod
+    def tag_error(tag,err_msg):
+        return str('Tag error for {}: \n{} \n\n'.format(tag,err_msg)
+                + 'Enter a unique alphanumeric tag, '
+                + 'using only letters, numbers, -, and _. (no periods). ')
+        
+
     # Subclass of QAbstractItemModel must implement index()
     def index(self,row,col,parent):
         """
@@ -235,11 +242,16 @@ class TreeModel(QtCore.QAbstractItemModel):
                 self.print_tree(rowprefix,self.index(jroot,0,parent))
                 #for j in range(item.n_children()):
             
+    def tree_dataChanged(self,idx):
+        self.dataChanged.emit(idx,idx)
+        itm = idx.internalPointer()
+        for c_row in range(itm.n_children()):
+            c_idx = self.index(c_row,0,idx)
+            self.tree_dataChanged(c_idx)
 
     # Editable QAbstractItemModel subclasses must implement setData(index,value[,role])
-    # TODO: understand whether or not this is necessary and what it means for the tree.
-    def setData(self,idx,value,role=None):
-        # For the TreeItem at index, set data to value
-        treeitem = self.get_item(idx)
-        treeitem.data = value
+    #def setData(self,idx,value,role=None):
+    #    # For the TreeItem at index, set data to value
+    #    treeitem = self.get_item(idx)
+    #    treeitem.data = value
 

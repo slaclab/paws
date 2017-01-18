@@ -106,13 +106,6 @@
            <widget class="QLineEdit" name="uri_entry"/>
           </item>
           <item>
-           <widget class="QPushButton" name="test_button">
-            <property name="text">
-             <string>PushButton</string>
-            </property>
-           </widget>
-          </item>
-          <item>
            <widget class="QPushButton" name="load_button">
             <property name="minimumSize">
              <size>

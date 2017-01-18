@@ -207,7 +207,6 @@ class WfManager(TreeModel):
             p_idx = idx
         return True
 
-
     def add_op(self,uri,new_op):
         """Add an Operation to the tree as a new top-level TreeItem."""
         # Count top-level rows by passing parent=QModelIndex()
@@ -244,6 +243,8 @@ class WfManager(TreeModel):
         """
         Call this function to store x_new in the TreeItem at idx 
         and then build/update/prune the subtree rooted at that item.
+        Take measures to change as little as possible of the tree,
+        since this can be a big operation and is called frequently.
         """
         itm = idx.internalPointer()
         x = itm.data
@@ -302,13 +303,7 @@ class WfManager(TreeModel):
                                 op.input_locator[name] = optools.InputLocator()
                                 self.tree_dataChanged(op_idx)
 
-    def tree_dataChanged(self,idx):
-        self.dataChanged.emit(idx,idx)
-        itm = idx.internalPointer()
-        for c_row in range(itm.n_children()):
-            c_idx = self.index(c_row,0,idx)
-            self.tree_dataChanged(c_idx)
-
+    # TODO:
     def check_wf(self):
         """
         Check the dependencies of the workflow.

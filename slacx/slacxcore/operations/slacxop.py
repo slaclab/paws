@@ -45,6 +45,15 @@ class Operation(object):
         # Set default category to be 'MISC'
         self.categories = ['MISC']
 
+    def load_defaults(self):
+        for k,v in self.inputs.items():
+            if v:
+                if (not self.input_src[name] == optools.no_input
+                and not self.input_type[name] == optools.none_type
+                and self.input_src[name] in optools.valid_sources
+                and not self.input_type[name] in optools.invalid_types[self.input_src[name]]):
+                    self.input_locator[name] = optools.InputLocator(self.input_src[name],self.input_type[name],v)
+
     @abc.abstractmethod
     def run(self):
         """

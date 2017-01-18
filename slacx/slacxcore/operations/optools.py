@@ -38,6 +38,10 @@ inputs_idx = 0
 outputs_idx = 1
 
 def cast_type_val(tp,val):
+    """
+    Perform type casting for operation inputs.
+    Note that this should not be called for inputs of auto_type.
+    """
     if tp == none_type:
         val = None 
     elif tp == int_type:
@@ -52,7 +56,8 @@ def cast_type_val(tp,val):
         # val will be a list of things, already typecast by the list builder 
         val = list(val)
     else:
-        msg = 'type selection {}, should be one of {}'.format(src,valid_types)
+        import pdb; pdb.set_trace()
+        msg = 'type selection {}, should be one of {}'.format(tp,valid_types)
         raise ValueError(msg)
     return val
 
@@ -172,7 +177,7 @@ def parameter_doc(name,value,doc):
         val_str = str(value)
         tp_str = type(value).__name__
         return "- name: {} \n- type: {} \n- value: {} \n- doc: {}".format(name,tp_str,val_str,doc) 
-        
+
 #def loader_extensions():
 #    return str(
 #    "ALL (*.*);;"

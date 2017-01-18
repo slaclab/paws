@@ -12,7 +12,7 @@ class ArrayMirrorVertical(Operation):
     def __init__(self):
         input_names = ['array_in']
         output_names = ['array_out']
-        super(MirrorVertical, self).__init__(input_names, output_names)
+        super(ArrayMirrorVertical, self).__init__(input_names, output_names)
         self.input_doc['array_in'] = '2d array'
         self.output_doc['array_out'] = 'input array mirrored vertically'
         self.input_src['array_in'] = optools.wf_input
@@ -30,7 +30,7 @@ class ArrayMirrorHorizontal(Operation):
     def __init__(self):
         input_names = ['array_in']
         output_names = ['array_out']
-        super(MirrorHorizontal, self).__init__(input_names, output_names)
+        super(ArrayMirrorHorizontal, self).__init__(input_names, output_names)
         self.input_doc['array_in'] = '2d ndarray'
         self.output_doc['array_out'] = 'input array mirrored horizontally'
         self.input_src['array_in'] = optools.wf_input

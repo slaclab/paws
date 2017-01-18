@@ -196,6 +196,7 @@ def start_load_ui(uiman):
     trmod.setRootPath('.')
     trmod.setNameFilters(['*.wfl'])
     load_ui.tree_box.setTitle('Select a .wfl file to load a workflow')
+    load_ui.setWindowTitle('workflow loader')
     load_ui.tree.setModel(trmod)
     load_ui.tree.hideColumn(1)
     load_ui.tree.hideColumn(3)
@@ -205,11 +206,85 @@ def start_load_ui(uiman):
     load_ui.setParent(uiman.ui,QtCore.Qt.Window)
     load_ui.setAttribute(QtCore.Qt.WA_OpaquePaintEvent)
     load_ui.setWindowModality(QtCore.Qt.ApplicationModal)
-    load_ui.load_button.setText('&Load')
     load_ui.load_button.clicked.connect(partial(stop_load_ui,load_ui,uiman))
     #load_ui.setWindowModality(QtCore.Qt.WindowModal)
     load_ui.show()
     load_ui.activateWindow()
 
+def start_list_builder(src,lm,parent=None):
+    """Start list builder for data source src and list model lm"""
+    ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/list_builder.ui")
+    ui_file.open(QtCore.QFile.ReadOnly)
+    list_ui = QtUiTools.QUiLoader().load(ui_file)
+    ui_file.close()
+    list_ui.setParent(parent,QtCore.Qt.Window)
+    list_ui.setAttribute(QtCore.Qt.WA_OpaquePaintEvent)
+    list_ui.setWindowModality(QtCore.Qt.WindowModal)
+    list_ui.setWindowTitle("build list from {}".format(optools.input_sources[src]))
+    list_ui.value_header.setText('value')
+    list_ui.value_header.setStyleSheet( "QLineEdit { background-color: transparent }" + list_ui.value_header.styleSheet() )
+    list_ui.type_header.setText('type')
+    list_ui.type_header.setStyleSheet( "QLineEdit { background-color: transparent }" + list_ui.type_header.styleSheet() )
+    list_ui.list_view.setModel(lm)
+    list_ui.browse_button.setText('browse...')
+    list_ui.type_selector = uitools.type_selection_widget(src,list_ui.type_selector)
+    list_ui.type_selector.model().set_disabled(optools.list_type)
+    if src == optools.user_input:
+        list_ui.browse_button.setEnabled(False)
+        if uitools.have_qt47:
+            list_ui.value_entry.setPlaceholderText('(enter value)')
+        else:
+            list_ui.value_entry.setText('')
+    else:
+        list_ui.load_button.setEnabled(False)
+        list_ui.value_entry.setReadOnly(True)
+        list_ui.type_selector.model().set_disabled(optools.none_type)
+        list_ui.type_selector.setCurrentIndex(optools.auto_type)
+    list_ui.load_button.setText('Load')
+    list_ui.finish_button.setText('Finish')
+    list_ui.remove_button.setText('Remove')
+    list_ui.load_button.clicked.connect( partial(load_value_to_list,list_ui) )
+    list_ui.remove_button.clicked.connect( partial(rm_from_list,list_ui) )
+    return list_ui
+
+def load_value_to_list(list_ui):
+    # typecast and load the value_entry.text()
+    tp = list_ui.type_selector.currentIndex()
+    val = optools.cast_type_val(tp,list_ui.value_entry.text())
+    list_ui.list_view.model().append_item(val)
+
+def rm_from_list(self,list_ui):
+    idx = list_ui.list_view.currentIndex()
+    if idx.isValid():
+        row = idx.row()
+        list_ui.list_view.model().remove_item(row)
+
+def data_fetch_ui(parent=None):
+    ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/load_browser.ui")
+    ui_file.open(QtCore.QFile.ReadOnly)
+    src_ui = QtUiTools.QUiLoader().load(ui_file)
+    ui_file.close()
+    src_ui.setParent(parent,QtCore.Qt.Window)
+    src_ui.setAttribute(QtCore.Qt.WA_OpaquePaintEvent)
+    src_ui.setWindowModality(QtCore.Qt.WindowModal)
+    src_ui.load_button.setText('&Load')
+    return src_ui
+
+def message_ui(parent=None):
+    ui_file = QtCore.QFile(rootdir+"/slacxui/message.ui")
+    ui_file.open(QtCore.QFile.ReadOnly)
+    msg_ui = QtUiTools.QUiLoader().load(ui_file)
+    ui_file.close()
+    msg_ui.setParent(parent,QtCore.Qt.Window)
+    msg_ui.setAttribute(QtCore.Qt.WA_OpaquePaintEvent)
+    msg_ui.setWindowModality(QtCore.Qt.WindowModal)
+    #msg_ui.setMaximumHeight(200)
+    msg_ui.message_box.setReadOnly(True)
+    msg_ui.ok_button.setText('OK')
+    msg_ui.ok_button.clicked.connect(msg_ui.close)
+    msg_ui.ok_button.clicked.connect(msg_ui.deleteLater)
+    msg_ui.ok_button.setFocus()
+    msg_ui.ok_button.setDefault(True)
+    return msg_ui
 
 
