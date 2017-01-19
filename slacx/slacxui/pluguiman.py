@@ -168,9 +168,9 @@ class PluginUiManager(object):
         elif (src == optools.user_input):
             if self.pgin.inputs[name]:
                 val_widget.setText(str(self.pgin.inputs[name]))
-                btn_widget = QtGui.QPushButton('auto')
-                #btn_widget.clicked.connect( partial(self.load_input,name) )
-                btn_widget.setEnabled(False)
+            btn_widget = QtGui.QPushButton('auto')
+            #btn_widget.clicked.connect( partial(self.load_input,name) )
+            btn_widget.setEnabled(False)
         self.ui.input_layout.addWidget(val_widget,row,self.val_col,1,1)
         self.ui.input_layout.addWidget(btn_widget,row,self.btn_col,1,1)
         self.val_widgets[name] = val_widget

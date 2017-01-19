@@ -121,14 +121,14 @@ class SpecClientFactory(ClientFactory):
 
     def clientConnectionFailed(self, connector, reason):
         """Clients call this when they are unable to initialize their connection."""
-        self.history.append('CONNECTION FAILED: {}'.format(reason.getErrorMessage())
+        self.history.append('CONNECTION FAILED: {}'.format(reason.getErrorMessage()))
         self.history.append('STOPPING REACTOR')
         reactor.stop()
 
     def clientConnectionLost(self, connector, reason):
         """Clients call this when their connections are lost."""
         #Note: could optionally use connector.connect() to try to rescue the session.
-        self.history.append('CONNECTION LOST: {}'.format(reason.getErrorMessage())
+        self.history.append('CONNECTION LOST: {}'.format(reason.getErrorMessage()))
         self.history.append('STOPPING REACTOR')
         reactor.stop()
 
