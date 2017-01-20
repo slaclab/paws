@@ -1,7 +1,7 @@
 """
 Operations for remeshing and and reducing an image
 contributors: fangren, apf, lensonp
-Last updated 2016/12/05 by lensonp
+Last updated 2017/01/17 by apf
 """
 import os
 
@@ -26,21 +26,23 @@ class ReduceByWXDDict(Operation):
         + ' PP (polarization factor), pixel_size, and d_pixel')
         self.input_doc['pixel_size'] = 'pixel size in microns'
         self.input_doc['fpolz'] = 'polarization factor'
-        self.input_doc['gain'] = 'detector gain'
-        self.input_doc['readnoise'] = 'detector readnoise'
+        self.input_doc['inversegain'] = str('inverse gain, i.e. electrons on chip per digital count;'
+        + ' applies primarily to CCDs')
+        self.input_doc['readnoise'] = 'detector readnoise; applies primarily to CCDs'
         self.input_doc['mask'] = str('Bad pixel locations, if known (e.g., inactive detector regions, dead pixels,'
-                                     + ' zingers/cosmic rays).  Boolean array of same shape as image or None.')
+        + ' zingers/cosmic rays).  Boolean array of same shape as image, True indicating'
+        + ' bad data and False indicating good, or None for default masking behavior.')
         self.input_src['pixel_size'] = optools.user_input
         self.input_src['fpolz'] = optools.user_input
-        self.input_src['gain'] = optools.user_input
+        self.input_src['inversegain'] = optools.user_input
         self.input_src['readnoise'] = optools.user_input
         self.input_src['mask'] = optools.user_input
         self.input_type['pixel_size'] = optools.float_type
         self.input_type['fpolz'] = optools.float_type
         self.inputs['pixel_size'] = 79 
         self.inputs['fpolz'] = 0.95 
-        self.inputs['gain'] = 1.0
-        self.inputs['readnoise'] = 1.0
+        self.inputs['inversegain'] = 21.97 # 1 for no gain, sort of
+        self.inputs['readnoise'] = 10.0 # 0 for no readnoise
         self.inputs['mask'] = None
         self.output_doc['q'] = 'Scattering vector magnitude q'
         self.output_doc['I_of_q'] = 'Integrated intensity at q'
@@ -51,13 +53,13 @@ class ReduceByWXDDict(Operation):
 
     def run(self):
         img = self.inputs['image_data']
-        pxsz = self.inputs['pixel_size']
+        # initialization parameters, change into Fit2D format
+        pxsz = self.inputs['pixel_size'] # in microns
         fpolz = self.inputs['fpolz']
-        l = self.inputs['wxd_dict']['lambda']
-        d = self.inputs['wxd_dict']['d_pixel']*pxsz*0.001
+        l = self.inputs['wxd_dict']['lambda'] # wavelength (in what units??? need to check)
+        d = self.inputs['wxd_dict']['d_pixel']*pxsz*0.001 # converting distance from pixel-widths to millimeters
         rot = (2*np.pi-self.inputs['wxd_dict']['rotation_rad'])/(2*np.pi)*360
         tilt = self.inputs['wxd_dict']['tilt_rad']/(2*np.pi)*360
-        # initialization parameters, change into Fit2D format
         x0 = self.inputs['wxd_dict']['x0_pixel']
         y0 = self.inputs['wxd_dict']['y0_pixel']
         # PyFAI magic go!
@@ -71,10 +73,14 @@ class ReduceByWXDDict(Operation):
             detector_mask = np.ones(img.shape)*(img <= 0)
         else:
             detector_mask = self.inputs['mask']
-        q, I_of_q = p.integrate1d(img, 1000, mask=detector_mask, polarization_factor=fpolz)
-        q = q * 1E9
+        q, I_of_q = p.integrate1d(img, 1000, mask=detector_mask, polarization_factor=fpolz) # 2nd arg number of bins
+        q = q * 1E9 # unit conversion... to what? nm**-1? thought we wanted/used per angstrom
+        # noise model
+        inversegain = self.inputs['inversegain']
+        readnoise = self.inputs['readnoise']
+        noise_model_squared = inversegain**-2 * (inversegain * img + readnoise**2)
+        _, dI_squared = p.integrate1d(noise_model_squared, 1000, mask=detector_mask, polarization_factor=fpolz)
         # save results to self.outputs
         self.outputs['q'] = q
         self.outputs['I_of_q'] = I_of_q
-        self.outputs['dI_of_q'] = None # placeholder
-
+        self.outputs['dI_of_q'] = dI_squared**0.5
