@@ -46,7 +46,6 @@ def cast_type_val(tp,val):
     Perform type casting for operation inputs.
     Note that this should not be called for inputs of auto_type.
     """
-    import pdb; pdb.set_trace()
     if tp == none_type:
         val = None 
     elif tp == int_type:
