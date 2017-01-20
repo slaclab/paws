@@ -243,18 +243,13 @@ class WfUiManager(object):
             if self.op.input_locator[name] is not None:
                 src = self.op.input_locator[name].src
             else:
-                src = self.op.input_src[name]
-            if not src:
                 src = optools.no_input 
             src_widget.setCurrentIndex(src)
             self.ui.input_layout.addWidget( src_widget,i,self.src_col,1,1 )
             self.src_widgets[name] = src_widget 
             self.src_widgets[name].currentIndexChanged.connect( partial(self.reset_type_widget,name,i) )
-            # type 
             self.reset_type_widget(name,i,src)
-            tp = self.type_widgets[name].currentIndex()
-            # val 
-            self.reset_val_widget(name,i,src,tp)
+        # Now handle outputs, much easier
         for i,name in zip(range(1,len(self.op.outputs)+1),self.op.outputs.keys()):
             name_widget = uitools.name_widget(name)
             self.ui.output_layout.addWidget(name_widget,i,self.name_col)
@@ -265,17 +260,29 @@ class WfUiManager(object):
             else:
                 desc_widget = uitools.bigtext_widget('No description found.')
             self.ui.output_layout.addWidget(desc_widget,i,self.src_col,1,self.btn_col-self.src_col)
-            #ht = desc_widget.sizeHint().height()
-        #name_widget.sizeHint = lambda: QtCore.QSize(10*len(name_widget.text()),ht)
-        #name_widget.setSizePolicy(QtGui.QSizePolicy.Minimum,QtGui.QSizePolicy.Fixed)
-            #self.render_val_widget(name,row)
-            # value entry widget
-            #src_widget.activated.connect( partial(self.reset_type_widget,name) )
-            #if name in self.type_widgets.keys():
-            #    if self.type_widgets[name]:
-            #        self.type_widgets[name].close()
-            #type_widget = uitools.type_selection_widget(src) 
-            #self.ui.input_layout.addWidget(type_widget,row,self.type_col,1,1)
+
+    def reset_type_widget(self,name,row,src=None):
+        if not src:
+            src = self.src_widgets[name].currentIndex()
+        widg = None 
+        new_type_widget = uitools.type_selection_widget(src,widg)
+        if src in [optools.wf_input,optools.fs_input,optools.plugin_input,optools.batch_input]:
+            new_type_widget.setCurrentIndex(optools.auto_type)
+        if new_type_widget.currentIndex() in optools.invalid_types[src]:
+            new_type_widget.setCurrentIndex(optools.none_type)
+        if self.op.input_locator[name]:
+            if (self.op.input_locator[name].tp not in optools.invalid_types[src]
+            and self.op.input_locator[name].src == src):
+                new_type_widget.setCurrentIndex(self.op.input_locator[name].tp)
+        #elif self.op.input_type[name]:
+        #    if self.op.input_type[name] not in optools.invalid_types[src]:
+        #        new_type_widget.setCurrentIndex(self.op.input_type[name])
+        #new_type_widget.activated.connect( partial(reset_val_widget,name,row) )            
+        new_type_widget.currentIndexChanged.connect( partial(self.reset_val_widget,name,row,src) )            
+        self.type_widgets[name] = new_type_widget  
+        self.ui.input_layout.addWidget(new_type_widget,row,self.type_col,1,1)
+        tp = self.type_widgets[name].currentIndex()
+        self.reset_val_widget(name,row,src,tp)
 
     def reset_val_widget(self,name,row,src=None,tp=None):
         if name in self.val_widgets.keys():
@@ -290,15 +297,15 @@ class WfUiManager(object):
             tp = self.type_widgets[name].currentIndex()
         btn_widget = QtGui.QPushButton()
         val_widget = QtGui.QLineEdit()
-        if src == optools.no_input: 
+        if src == optools.no_input or tp == optools.none_type: 
             btn_widget.setText('no input')
             btn_widget.setEnabled(False)
             val_widget.setText('None')
             val_widget.setReadOnly(True)
         elif src == optools.batch_input:
-            btn_widget.setText('batch')
+            btn_widget.setText('auto')
             btn_widget.setEnabled(False)
-            val_widget.setText('batch')
+            val_widget.setText('auto (batch)')
             val_widget.setReadOnly(True)
         elif src == optools.wf_input or src == optools.fs_input or src == optools.plugin_input:
             if tp == optools.none_type:
@@ -348,43 +355,25 @@ class WfUiManager(object):
         self.val_widgets[name] = val_widget
         self.btn_widgets[name] = btn_widget
 
-    def reset_type_widget(self,name,row,src=None):
-        if not src:
-            src = self.src_widgets[name].currentIndex()
-        widg = None 
-        #if name in self.type_widgets.keys():
-        #    if self.type_widgets[name]:
-        #        widg = self.type_widgets[name]
-        new_type_widget = uitools.type_selection_widget(src,widg)
-        if src in [optools.wf_input,optools.fs_input,optools.plugin_input]:
-            new_type_widget.setCurrentIndex(optools.auto_type)
-        if new_type_widget.currentIndex() in optools.invalid_types[src]:
-            new_type_widget.setCurrentIndex(optools.none_type)
-        if self.op.input_locator[name]:
-            if self.op.input_locator[name].tp not in optools.invalid_types[src]:
-                new_type_widget.setCurrentIndex(self.op.input_locator[name].tp)
-        elif self.op.input_type[name]:
-            if self.op.input_type[name] not in optools.invalid_types[src]:
-                new_type_widget.setCurrentIndex(self.op.input_type[name])
-        #new_type_widget.activated.connect( partial(reset_val_widget,name,row) )            
-        new_type_widget.currentIndexChanged.connect( partial(self.reset_val_widget,name,row,src) )            
-        self.type_widgets[name] = new_type_widget  
-        self.ui.input_layout.addWidget(new_type_widget,row,self.type_col,1,1)
-
     def build_list(self,name):
         """Use a popup to build a list of input data"""
+        #ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/list_builder.ui")
+        #ui_file.open(QtCore.QFile.ReadOnly)
+        #list_ui = QtUiTools.QUiLoader().load(ui_file)
+        #ui_file.close()
+        #print 'build_list: list view model is {}'.format(list_ui.list_view.model())
         src = self.src_widgets[name].currentIndex()
-        lm = ListModel([],list_ui)
+        list_ui = uitools.start_list_builder(src,ListModel(),self.ui)
         if self.op.input_locator[name]:
             if self.op.input_locator[name].src == src and self.op.input_locator[name].tp == optools.list_type:
                 lm = ListModel(self.op.input_locator[name].val,list_ui)
         list_ui = uitools.start_list_builder(src,lm,self.ui)
-        data_handler = partial(self.load_path_to_list,list_ui)
+        data_handler = partial(self.load_path_to_list,src,list_ui)
         list_ui.browse_button.clicked.connect( partial(self.fetch_data,name,data_handler) )
         list_ui.finish_button.clicked.connect( partial(self.set_input,name,list_ui) )
         list_ui.show()
 
-    def load_path_to_list(self,list_ui,src,src_ui,idx=None):
+    def load_path_to_list(self,src,list_ui,src_ui,idx=None):
         if not idx:
             idx = src_ui.tree.currentIndex()
         if idx.isValid():
@@ -395,7 +384,7 @@ class WfUiManager(object):
             elif src == optools.fs_input:
                 val = src_ui.tree.model().filePath(idx) 
             list_ui.value_entry.setText( val )
-            self.load_value_to_list(src,list_ui)
+            uitools.load_value_to_list(list_ui)
         src_ui.close()
         src_ui.deleteLater()
 

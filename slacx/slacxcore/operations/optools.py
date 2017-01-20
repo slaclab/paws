@@ -46,6 +46,7 @@ def cast_type_val(tp,val):
     Perform type casting for operation inputs.
     Note that this should not be called for inputs of auto_type.
     """
+    import pdb; pdb.set_trace()
     if tp == none_type:
         val = None 
     elif tp == int_type:
@@ -58,6 +59,7 @@ def cast_type_val(tp,val):
         val = bool(val)
     elif tp == list_type:
         # val will be a list of things, already typecast by the list builder 
+        # TODO: think about how to handle default list inputs?
         val = list(val)
     else:
         msg = 'type selection {}, should be one of {}'.format(tp,valid_types)

@@ -46,13 +46,21 @@ class Operation(object):
         self.categories = ['MISC']
 
     def load_defaults(self):
-        for k,v in self.inputs.items():
-            if v:
-                if (not self.input_src[name] == optools.no_input
-                and not self.input_type[name] == optools.none_type
-                and self.input_src[name] in optools.valid_sources
-                and not self.input_type[name] in optools.invalid_types[self.input_src[name]]):
-                    self.input_locator[name] = optools.InputLocator(self.input_src[name],self.input_type[name],v)
+        for name in self.inputs.keys():
+            src = optools.no_input
+            tp = optools.none_type
+            val = None
+            if not self.input_src[name] == optools.no_input:
+                src = self.input_src[name]
+                if (self.input_type[name] == optools.none_type
+                and src in [optools.wf_input,optools.fs_input,optools.batch_input,optools.plugin_input]):
+                    self.input_type[name] = optools.auto_type
+                if (not self.input_type[name] == optools.none_type
+                and not self.input_type[name] in optools.invalid_types[src]):
+                    tp = self.input_type[name]
+                    if self.inputs[name] is not None:
+                        val = optools.cast_type_val(tp,self.inputs[name])
+            self.input_locator[name] = optools.InputLocator(src,tp,val)
 
     @abc.abstractmethod
     def run(self):

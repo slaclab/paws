@@ -24,11 +24,11 @@ class BatchFromFiles(Batch):
         self.categories = ['EXECUTION']
         self.input_src['dir_path'] = optools.fs_input
         self.input_src['regex'] = optools.user_input 
-        self.input_type['regex'] = optools.str_type
-        self.inputs['regex'] = '*.tif' 
         self.input_src['input_route'] = optools.wf_input 
         self.input_src['saved_items'] = optools.wf_input 
+        self.input_type['regex'] = optools.str_type
         self.input_type['saved_items'] = optools.list_type 
+        self.inputs['regex'] = '*.tif' 
         self.inputs['saved_items'] = []
         
     def run(self):
@@ -59,11 +59,11 @@ class BatchFromFiles(Batch):
 
     def input_routes(self):
         """Use the Batch.input_locator to list uri's of all input routes"""
-        return [ self.input_locator['input_route'].val ]
+        return optools.val_list(self.input_locator['input_route'])
 
     def saved_items(self):
         """Use the Batch.input_locator to list uri's of ops to be saved/stored after execution"""
-        return list(self.input_locator['saved_items'].val)
+        return optools.val_list(self.input_locator['saved_items'])
 
 
 

@@ -3,7 +3,6 @@ import copy
 from functools import partial
 
 from PySide import QtCore
-import yaml
 
 from ..treemodel import TreeModel
 from ..treeitem import TreeItem
@@ -587,7 +586,7 @@ class WfManager(TreeModel):
                         if not inp_uri in b_rts:
                             op_rdy = False
                     elif il.src == optools.wf_input:
-                        uri = il.val
+                        #uri = il.val
                         for uri in optools.val_list(il):
                             f = uri.split('.')
                             # check if the uri of this input is one of the fields of a finished op

@@ -227,7 +227,7 @@ def start_load_ui(uiman):
     load_ui.activateWindow()
 
 def start_list_builder(src,lm,parent=None):
-    """Start list builder for data source src and list model lm"""
+    """Start list builder for data source src and ListModel lm"""
     ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/list_builder.ui")
     ui_file.open(QtCore.QFile.ReadOnly)
     list_ui = QtUiTools.QUiLoader().load(ui_file)
@@ -242,11 +242,11 @@ def start_list_builder(src,lm,parent=None):
     list_ui.type_header.setStyleSheet( "QLineEdit { background-color: transparent }" + list_ui.type_header.styleSheet() )
     list_ui.list_view.setModel(lm)
     list_ui.browse_button.setText('browse...')
-    list_ui.type_selector = uitools.type_selection_widget(src,list_ui.type_selector)
+    list_ui.type_selector = type_selection_widget(src,list_ui.type_selector)
     list_ui.type_selector.model().set_disabled(optools.list_type)
     if src == optools.user_input:
         list_ui.browse_button.setEnabled(False)
-        if uitools.have_qt47:
+        if have_qt47:
             list_ui.value_entry.setPlaceholderText('(enter value)')
         else:
             list_ui.value_entry.setText('')
@@ -264,11 +264,15 @@ def start_list_builder(src,lm,parent=None):
 
 def load_value_to_list(list_ui):
     # typecast and load the value_entry.text()
+    # only typecast if tp is not auto_type
     tp = list_ui.type_selector.currentIndex()
-    val = optools.cast_type_val(tp,list_ui.value_entry.text())
+    if tp == optools.auto_type:
+        val = list_ui.value_entry.text()
+    else:
+        val = optools.cast_type_val(tp,list_ui.value_entry.text())
     list_ui.list_view.model().append_item(val)
 
-def rm_from_list(self,list_ui):
+def rm_from_list(list_ui):
     idx = list_ui.list_view.currentIndex()
     if idx.isValid():
         row = idx.row()
