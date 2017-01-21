@@ -17,7 +17,7 @@ class WindowZip(Operation):
 
     def __init__(self):
         input_names = ['x','y','x_min','x_max']
-        output_names = ['x_y_window']
+        output_names = ['x_window','y_window','x_y_window']
         super(WindowZip,self).__init__(input_names,output_names)        
         self.input_src['x'] = optools.wf_input
         self.input_src['y'] = optools.wf_input
@@ -29,6 +29,8 @@ class WindowZip(Operation):
         self.inputs['x_max'] = 0.6 
         self.input_doc['x'] = 'list (or iterable) of x values'
         self.input_doc['y'] = 'list (or iterable) of y values'
+        self.output_doc['x_window'] = 'n-by-1 array of x_min<x<x_max'
+        self.output_doc['y_window'] = 'n-by-1 array of y for x_min<x<x_max'
         self.output_doc['x_y_window'] = 'n-by-2 array with x, y pairs for x_min<x<x_max'
         self.categories = ['PACKAGING']
 
@@ -41,6 +43,8 @@ class WindowZip(Operation):
         x_y_window = np.zeros((idx_good.sum(),2))
         x_y_window[:,0] = xvals[idx_good]
         x_y_window[:,1] = yvals[idx_good]
+        self.outputs['x_window'] = x_y_window[:,0]
+        self.outputs['y_window'] = x_y_window[:,1]
         self.outputs['x_y_window'] = x_y_window
 
 class TimeTempFromHeader(Operation):

@@ -215,6 +215,188 @@ class WfManager(TreeModel):
     def stop_wf(self):
         self._running = False
 
+    def execution_stack(self):
+        """
+        Build a stack (list) of lists of TreeItems,
+        such that each TreeItem list contains a set of Operations
+        whose dependencies are satisfied by the operations above them.
+        """
+        stk = []
+        valid_wf_inputs = []
+        batch_routes = []
+        continue_flag = True
+        while not sum([len(lst) for lst in stk]) == len(self.root_items) and continue_flag:
+            items_rdy = []
+            for i,itm in zip(range(len(self.root_items)),self.root_items):
+                if not any([itm in lst for lst in stk]):
+                    if self.is_op_ready(itm,valid_wf_inputs,batch_routes):
+                        items_rdy.append(itm)
+            if not any(items_rdy):
+                continue_flag = False
+            else:
+                # Which of these are not Batch/Realtime ops?
+                non_batch_rdy = [itm for itm in items_rdy if not isinstance(itm.data,Batch) and not isinstance(itm.data,Realtime)]
+                if any(non_batch_rdy):
+                    items_rdy = non_batch_rdy
+                else:
+                    # When we are down to only Batch/Realtime ops ready,
+                    # take only one Batch/Realtime into the stack at a time
+                    items_rdy = [items_rdy[0]]
+                for itm in items_rdy:
+                    # valid_wf_inputs gains the operation, its input and output dicts, and their respective entries
+                    valid_wf_inputs += [itm.tag(),itm.tag()+'.'+optools.inputs_tag,itm.tag()+'.'+optools.outputs_tag]
+                    valid_wf_inputs += [itm.tag()+'.'+optools.outputs_tag+'.'+k for k in itm.data.outputs.keys()]
+                    valid_wf_inputs += [itm.tag()+'.'+optools.inputs_tag+'.'+k for k in itm.data.inputs.keys()]
+                    if isinstance(itm.data,Batch) or isinstance(itm.data,Realtime):
+                        batch_routes += itm.data.input_routes()
+                stk.append(items_rdy)
+        return stk
+
+    def is_op_ready(self,itm,valid_wf_inputs,batch_routes):
+        op = itm.data
+        op_rdy = False
+        inputs_rdy = [False for inp in op.inputs]
+        for j,name,il in zip(range(len(op.inputs)),op.input_locator.keys(),op.input_locator.values()):
+            inputs_rdy[j] = True
+            if il.src == optools.wf_input:
+                inp_uris = optools.val_list(il)
+                if not all([uri in valid_wf_inputs for uri in inp_uris]):
+                    inputs_rdy[j] = False
+            elif il.src == optools.batch_input:
+                if not itm.tag()+'.'+optools.inputs_tag+'.'+name in batch_routes:
+                    inputs_rdy[j] = False
+        if all(inputs_rdy):
+            op_rdy = True
+        if isinstance(op,Realtime) or isinstance(op,Batch):
+            # but wait, Realtime/Batch ops are not ready unless their downstream operations are provided for
+            ds_itms = self.downstream_from_batch(itm)
+
+    def downstream_from_batch(self,b_itm):
+        
+            
+    def downstream_from_batch(self,b_itm,stk_done):
+        stk = []
+        # The top layer will be strictly the batch input routes
+        lst = []
+        for uri in b_itm.data.input_routes():
+            op_uri = uri.split('.')[0]
+            itm,idx = self.get_from_uri(op_uri)
+            lst.append(itm)
+        while any(lst):
+            stk.append(lst)
+            lst = []
+            for itm in self.root_items:                
+                op = itm.data
+                if ( not isinstance(op,Batch) 
+                and not isinstance(op,Realtime)
+                and not any([itm in l for l in stk_done+stk])
+                and self.batch_op_ready(op,stk_done+stk) ):
+                    lst.append(itm)
+        return stk
+                
+
+                #if isinstance(op,Batch) or isinstance(op,Realtime):
+                #    # Batch/Realtime ops may have wf_inputs for saved_items() or input_routes()
+                #    if not all([(uri in op.saved_items() or uri in op.input_routes()) for uri in inp_uris]):
+                #        inputs_rdy[j] = False
+#
+#
+#
+#
+#        lst = []            # list of operations in order they are found to be ready
+#        stk = []            # stack, list of lists, of operations for flattening execution order
+#        b_rts = []          # list of uris of batch input_routes for batch items in stk
+#        valid_inputs = []   # list of uris of things available as inputs from stk
+#            ops_rdy = []
+#            for i,itm in zip(range(len(self.root_items)),self.root_items):
+#                op = itm.data
+#                op_is_ready = False
+#                inputs_ready = np.zeros(len(op.inputs))
+#                for il in op.input_locator:
+#                if isinstance(op,Batch) or isinstance(op,Realtime):
+#
+#                    # check if all inputs are in valid_inputs
+#                    # OR are in batch.input_routes() or batch.saved_items()
+#
+#                    b_rts = b_rts + op.input_routes()
+#                else:
+#
+#                    # check if all inputs are in valid_inputs
+#
+#                if all(inputs_ready):
+#                    op_is_ready = True
+#                if op_is_ready:
+#                    ops_rdy.append(op)
+#                    
+#                    # update valid_inputs: the operation, its input and output dicts, and their respective entries
+#                    valid_inputs += [nxt_itm.tag(),nxt_itm.tag()+'.'+optools.inputs_tag,nxt_itm.tag()+'.'+optools.outputs_tag]
+#                    valid_inputs += [nxt_itm.tag()+'.'+optools.outputs_tag+'.'+k for k in nxt_itm.data.outputs.keys()]
+#                    valid_inputs += [nxt_itm.tag()+'.'+optools.inputs_tag+'.'+k for k in nxt_itm.data.inputs.keys()]
+#
+#            stk.append(ops_rdy)
+#            lst = lst + ops_rdy
+#
+#    def execution_stack(self):
+#        lst = []            # list of operations in order they are found to be ready
+#        stk = []            # stack, list of lists, of operations for flattening execution order
+#        b_rts = []          # list of uris of batch input_routes for batch items in stk
+#        valid_inputs = []   # list of uris of things available as inputs from stk
+#        nxt = True
+#        while nxt:
+#            nxt_itms = []
+#            for itm in self.root_items:
+#                op = itm.data
+#                op_rdy = True
+#                for name,il in op.input_locator.items(): 
+#                    inp_uri = itm.tag()+'.'+optools.inputs_tag+'.'+name
+#                    if il.src == optools.batch_input:
+#                        # check if the uri of this input is provided by any input_routes
+#                        if not inp_uri in b_rts:
+#                            op_rdy = False
+#                    elif il.src == optools.wf_input:
+#                        #uri = il.val
+#                        for uri in optools.val_list(il):
+#                            f = uri.split('.')
+#                            # check if the uri of this input is one of the fields of a finished op
+#                            if not uri in valid_inputs and len(f) < 3:
+#                                op_rdy = False
+#                            elif len(f) >= 3:
+#                                # check if this is pointing to a meta-output.
+#                                # if so assume it will be generated during execution.
+#                                if not f[0]+'.'+f[1]+'.'+f[2] in valid_inputs:
+#                                    op_rdy = False
+#                            # but wait, also check if this op is a Batch or Realtime 
+#                            # that uses this uri in an input_route() or one of saved_items()
+#                            # in either case, it's ok to have this uri pointing down or upstream 
+#                            if isinstance(op,Realtime) or isinstance(op,Batch):
+#                                if uri in op.input_routes() or uri in op.saved_items():
+#                                    op_rdy = True
+#                if op_rdy:
+#                    if not itm in lst:
+#                        nxt_itms.append(itm)
+#            if not nxt_itms:
+#                nxt = False
+#            else:
+#                # make sure Batch or Realtime ops get special treatment in the stack
+#                b_rt_itms = [x for x in nxt_itms if isinstance(x.data,Realtime) or isinstance(x.data,Batch)]
+#                if any(b_rt_itms):
+#                    # add only one Batch or Realtime at its own level
+#                    # but make sure it is as low as possible in the stack
+#                    if len(b_rt_itms) == len(nxt_itms):
+#                        b_rts += b_rt_itms[0].data.input_routes()
+#                        nxt_itms = [b_rt_itms[0]]
+#                    else:
+#                        nxt_itms = [x for x in nxt_itms if not isinstance(x.data,Realtime) and not isinstance(x.data,Batch)]
+#                for nxt_itm in nxt_itms:
+#                    lst.append(nxt_itm)
+#                    # valid inputs: the operation, its input and output dicts, and their respective entries
+#                    valid_inputs += [nxt_itm.tag(),nxt_itm.tag()+'.'+optools.inputs_tag,nxt_itm.tag()+'.'+optools.outputs_tag]
+#                    valid_inputs += [nxt_itm.tag()+'.'+optools.outputs_tag+'.'+k for k in nxt_itm.data.outputs.keys()]
+#                    valid_inputs += [nxt_itm.tag()+'.'+optools.inputs_tag+'.'+k for k in nxt_itm.data.inputs.keys()]
+#                stk.append(nxt_itms)
+#        return stk
+
+
     def run_wf(self):
         self._running = True
         stk = self.execution_stack()
@@ -324,26 +506,6 @@ class WfManager(TreeModel):
         if self.is_running():
             self.wfdone.emit()
 
-    def downstream_from_batch_item(self,b_itm,stk_done):
-        stk = []
-        # The top layer will be strictly the batch input routes
-        lst = []
-        for uri in b_itm.data.input_routes():
-            op_uri = uri.split('.')[0]
-            itm,idx = self.get_from_uri(op_uri)
-            lst.append(itm)
-        while any(lst):
-            stk.append(lst)
-            lst = []
-            for itm in self.root_items:                
-                op = itm.data
-                if ( not isinstance(op,Batch) 
-                and not isinstance(op,Realtime)
-                and not any([itm in l for l in stk_done+stk])
-                and self.batch_op_ready(op,stk_done+stk) ):
-                    lst.append(itm)
-        return stk
-                
     def batch_op_ready(self,op,stk_done):
         op_rdy = True
         for name,il in op.input_locator.items():
@@ -356,7 +518,6 @@ class WfManager(TreeModel):
                 # assume all ops taking batch input
                 # were processed in the top layer of the stack
                 op_rdy = False
-                
         return op_rdy
 
     def next_available_thread(self):
@@ -560,73 +721,6 @@ class WfManager(TreeModel):
         op_itm, idx = self.get_from_uri(p[0])
         op = op_itm.data
         op.inputs[p[2]] = val
-
-    # TODO: Write self.check_wf, and use it, and add checks for fs_input and plugin_input sources
-    def execution_stack(self):
-        """
-        Get a stack (list of lists) of Operations,
-        such that each list contains a set of Operations whose dependencies are satisfied
-        assuming all operations above them have been executed successfully.
-        Give Batch and Realtime execution control Operations special treatment in the stack.
-        """
-        lst = []            # list of operations in order they are found to be ready
-        stk = []            # stack, list of lists, of operations for flattening execution order
-        b_rts = []          # list of uris of batch input_routes for batch items in stk
-        valid_inputs = []   # list of uris of things available as inputs from stk
-        nxt = True
-        while nxt:
-            nxt_itms = []
-            for itm in self.root_items:
-                op = itm.data
-                op_rdy = True
-                for name,il in op.input_locator.items(): 
-                    inp_uri = itm.tag()+'.'+optools.inputs_tag+'.'+name
-                    if il.src == optools.batch_input:
-                        # check if the uri of this input is provided by any input_routes
-                        if not inp_uri in b_rts:
-                            op_rdy = False
-                    elif il.src == optools.wf_input:
-                        #uri = il.val
-                        for uri in optools.val_list(il):
-                            f = uri.split('.')
-                            # check if the uri of this input is one of the fields of a finished op
-                            if not uri in valid_inputs and len(f) < 3:
-                                op_rdy = False
-                            elif len(f) >= 3:
-                                # check if this is pointing to a meta-output.
-                                # if so assume it will be generated during execution.
-                                if not f[0]+'.'+f[1]+'.'+f[2] in valid_inputs:
-                                    op_rdy = False
-                            # but wait, also check if this op is a Batch or Realtime 
-                            # that uses this uri in an input_route() or one of saved_items()
-                            # in either case, it's ok to have this uri pointing down or upstream 
-                            if isinstance(op,Realtime) or isinstance(op,Batch):
-                                if uri in op.input_routes() or uri in op.saved_items():
-                                    op_rdy = True
-                if op_rdy:
-                    if not itm in lst:
-                        nxt_itms.append(itm)
-            if not nxt_itms:
-                nxt = False
-            else:
-                # make sure Batch or Realtime ops get special treatment in the stack
-                b_rt_itms = [x for x in nxt_itms if isinstance(x.data,Realtime) or isinstance(x.data,Batch)]
-                if any(b_rt_itms):
-                    # add only one Batch or Realtime at its own level
-                    # but make sure it is as low as possible in the stack
-                    if len(b_rt_itms) == len(nxt_itms):
-                        b_rts += b_rt_itms[0].data.input_routes()
-                        nxt_itms = [b_rt_itms[0]]
-                    else:
-                        nxt_itms = [x for x in nxt_itms if not isinstance(x.data,Realtime) and not isinstance(x.data,Batch)]
-                for nxt_itm in nxt_itms:
-                    lst.append(nxt_itm)
-                    # valid inputs: the operation, its input and output dicts, and their respective entries
-                    valid_inputs += [nxt_itm.tag(),nxt_itm.tag()+'.'+optools.inputs_tag,nxt_itm.tag()+'.'+optools.outputs_tag]
-                    valid_inputs += [nxt_itm.tag()+'.'+optools.outputs_tag+'.'+k for k in nxt_itm.data.outputs.keys()]
-                    valid_inputs += [nxt_itm.tag()+'.'+optools.inputs_tag+'.'+k for k in nxt_itm.data.inputs.keys()]
-                stk.append(nxt_itms)
-        return stk
 
     # Overloaded data() for WfManager
     def data(self,item_indx,data_role):

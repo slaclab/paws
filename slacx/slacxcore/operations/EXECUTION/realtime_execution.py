@@ -53,11 +53,11 @@ class RealtimeFromFiles(Realtime):
 
     def input_routes(self):
         """Use the Realtime.input_locators to list uri's of all input routes"""
-        return [ self.input_locator['input_route'].val ]
+        return optools.val_list(self.input_locator['input_route'])
 
     def saved_items(self):
         """Use the Realtime.input_locator to list uri's of ops to be saved/stored after execution"""
-        return list(self.input_locator['saved_items'].val)
+        return optools.val_list(self.input_locator['saved_items'])
 
     @staticmethod
     def delay():

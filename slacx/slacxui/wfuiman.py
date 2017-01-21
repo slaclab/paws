@@ -405,7 +405,7 @@ class WfUiManager(object):
             trmod.setRootPath('.')
         src_ui.tree.setModel(trmod)
         src_ui.tree.clicked.connect( partial(uitools.toggle_expand,src_ui.tree) )
-        src_ui.tree.expandAll()
+        #src_ui.tree.expandAll()
         # add src_ui to the arguments of data_handler
         h = partial(data_handler,src_ui)
         # when the load button is clicked or tree is doubleclicked, call this augmented handler 

@@ -9,41 +9,49 @@ class BgSubtractByTemperature(Operation):
     where the temperature of the background spectrum is as close as possible
     to the (input) temperature of the measured spectrum.
     Then subtract that background spectrum from the input spectrum.
+    The measured and background spectra are expected to have the same domain.
     """
     
     def __init__(self):
-        input_names = ['q_I_meas', 'temperature', 'bg_batch_output']
-        output_names = ['q_I_bgsub', 'bg_factor']
+        input_names = ['I_meas','T_meas','bg_batch_output','bg_T_key','bg_I_key']
+        output_names = ['I_bgsub', 'bg_factor']
         super(BgSubtractByTemperature, self).__init__(input_names, output_names)
-        self.input_doc['q_I_meas'] = 'windowed n-by-2 array of q and I(q)'
-        self.input_doc['temperature'] = 'temperature as taken from the dict produced by the detector header file'
+        self.input_doc['I_meas'] = 'array of I(q)'
+        self.input_doc['T_meas'] = 'temperature as taken from the dict produced by the detector header file'
         self.input_doc['bg_batch_output'] = 'the output (list of dicts) of a batch of background spectra at different temperatures'
-        self.output_doc['q_I_bgsub'] = 'q_I_meas - bg_factor * (q_I_bg)'
+        self.input_doc['bg_T_key'] = str('each dict in bg_batch_output is expected to have this key in it, '
+        + 'where the value will represent the temperature of the background spectrum')
+        self.input_doc['bg_I_key'] = str('each dict in bg_batch_output is expected to have this key in it, '
+        + 'where the value will represent the measured intensity spectrum')
+        self.output_doc['I_bgsub'] = 'I_meas - bg_factor * (I_bg)'
         self.output_doc['bg_factor'] = 'correction factor applied to background before subtraction to ensure positive intensity values'
-        self.input_src['q_I_meas'] = optools.wf_input
-        self.input_src['temperature'] = optools.wf_input
+        self.input_src['I_meas'] = optools.wf_input
+        self.input_src['T_meas'] = optools.wf_input
         self.input_src['bg_batch_output'] = optools.wf_input
-        self.categories = ['PROCESSING']
+        self.input_src['bg_T_key'] = optools.user_input
+        self.input_src['bg_I_key'] = optools.user_input
+        self.input_type['bg_T_key'] = optools.str_type
+        self.input_type['bg_I_key'] = optools.str_type
 
     def run(self):
-        q_I = self.inputs['q_I_meas']
-        T = self.inputs['header']['TEMP']
-        #print 'T is {}'.format(T)
+        q_meas = self.inputs['q_meas']
+        I_meas = self.inputs['I_meas']
+        T_meas = self.inputs['temperature']
+        bg_T_key = self.inputs['bg_T_key']
+        bg_I_key = self.inputs['bg_I_key']
         bg_out = self.inputs['bg_batch_output']
-        T_allbg = [d['ImageAndHeaderSSRL15_0.outputs.header.TEMP'] for d in bg_out]
-        #print 'bg T values are {}'.format(T_allbg)
-        q_I_allbg = [d['WindowZip_0.outputs.x_y_window'] for d in bg_out]
-        idx = np.argmin(np.abs([T_bg - T for T_bg in T_allbg]))
-        #print 'idx of closest T is {}'.format(idx)
-        q_I_bg = q_I_allbg[idx]
-        if not all(q_I[:,0] == q_I_bg[:,0]):
-            msg = 'SPECTRUM AND BACKGROUND ON DIFFERENT q DOMAINS'
-            raise ValueError(msg)
-        bad_data = (q_I[:,1] <= 0) | (q_I_bg[:,1] <= 0) | np.isnan(q_I[:,1]) | np.isnan(q_I_bg[:,1])
-        bg_factor = np.min(q_I[:,1][~bad_data] / q_I_bg[:,1][~bad_data])
+        T_allbg = [d[bg_T_key] for d in bg_out]
+        I_allbg = [d[bg_I_key] for d in bg_out]
+        idx = np.argmin(np.abs([T_bg - T_meas for T_bg in T_allbg]))
+        I_bg = I_allbg[idx]
+        #if not all(q_I[:,0] == q_I_bg[:,0]):
+        #    msg = 'SPECTRUM AND BACKGROUND ON DIFFERENT q DOMAINS'
+        #    raise ValueError(msg)
+        bad_data = I_meas <= 0 | I_bg <= 0 | np.isnan(I_meas) | np.isnan(I_bg)
+        bg_factor = np.min(I_meas[~bad_data] / I_bg[~bad_data])
         #print 'bg factor is {}'.format(bg_factor)
-        I_bgsub = q_I[:,1] - bg_factor * q_I_bg[:,1]
-        self.outputs['q_I_bgsub'] = np.array(zip(q_I[:,0],I_bgsub))
+        I_bgsub = I_meas - bg_factor * I_bg
+        self.outputs['I_bgsub'] = np.array(I_bgsub)
         self.outputs['bg_factor'] = bg_factor
 
 class SubtractMaximumBackground(Operation):
@@ -73,7 +81,6 @@ class SubtractMaximumBackground(Operation):
             subtract_maximum_background(self.inputs['foreground'], self.inputs['background'],
                                                     self.inputs['foreground_error'], self.inputs['background_error'])
 
-
 def subtract_maximum_background(foreground, background, foreground_error=None, background_error=None):
     # the constraints on background are minutely stricter because we will divide foreground by it
     bad_data = (foreground < 0) | (background <= 0) | np.isnan(foreground) | np.isnan(background)
@@ -91,9 +98,6 @@ def subtract_maximum_background(foreground, background, foreground_error=None, b
     else: # both available
         subtracted_error = (foreground_error ** 2 + (factor * background_error) ** 2) ** 0.5
     return subtracted, subtracted_error, factor
-
-
-
 
 
 

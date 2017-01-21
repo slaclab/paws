@@ -45,11 +45,11 @@ class NanoparticleFeatures(Operation):
         I_at_zero = I[0]
 
         # first minimum of I: walk until find point that is smallest within some window
-        w = 5
+        w = 10 
         found = False
         i = w
         while not found:
-            if np.argmax[q[i-w:i+w+1]] == w:
+            if np.argmax(I[i-w:i+w+1]) == w:
                 found = True
                 q_at_first_min = q[i]
                 curv_at_first_min = ((I[i+w]-I[i])/(q[i+w]-q[i]) 
