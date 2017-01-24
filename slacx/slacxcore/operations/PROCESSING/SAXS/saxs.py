@@ -10,8 +10,8 @@ try:
 except ImportError:
     import pickle
 
-from ..slacxop import Operation
-from .. import optools
+from ...slacxop import Operation
+from ... import optools
 
 reference_loc = join('slacx','slacxcore','operations','DMZ','references','polydispersity_guess_references.pickle')
 global references
@@ -213,12 +213,13 @@ class OptimizeSphericalDiffractionFit(Operation):
     """From an initial guess, optimize r0, I0, and fractional_variation."""
 
     def __init__(self):
-        input_names = ['q', 'I', 'amplitude_at_zero', 'mean_size', 'fractional_variation','noise_term_allowed']
+        input_names = ['q', 'I', 'dI', 'amplitude_at_zero', 'mean_size', 'fractional_variation','noise_term_allowed']
         output_names = ['amplitude_at_zero', 'mean_size', 'fractional_variation','noise_floor']
         super(OptimizeSphericalDiffractionFit, self).__init__(input_names, output_names)
         # Documentation
         self.input_doc['q'] = '1d ndarray; wave vector values'
         self.input_doc['I'] = '1d ndarray; intensity values'
+        self.input_doc['dI'] = '1d ndarray; intensity error estimate'
         self.input_doc['amplitude_at_zero'] = 'estimate of intensity at q=0'
         self.input_doc['mean_size'] = 'estimate of mean particle size'
         self.input_doc['fractional_variation'] = 'estimate of normal distribution sigma divided by mean size'
@@ -230,20 +231,26 @@ class OptimizeSphericalDiffractionFit(Operation):
         # Source and type
         self.input_src['q'] = optools.wf_input
         self.input_src['I'] = optools.wf_input
+        self.input_src['dI'] = optools.user_input
         self.input_src['amplitude_at_zero'] = optools.wf_input
         self.input_src['mean_size'] = optools.wf_input
         self.input_src['fractional_variation'] = optools.wf_input
         self.input_src['noise_term_allowed'] = optools.user_input
-        self.input_type['amplitude_at_zero'] = optools.float_type
-        self.input_type['mean_size'] = optools.float_type
-        self.input_type['fractional_variation'] = optools.float_type
+        #self.input_type['amplitude_at_zero'] = optools.float_type
+        #self.input_type['mean_size'] = optools.float_type
+        #self.input_type['fractional_variation'] = optools.float_type
         self.input_type['noise_term_allowed'] = optools.bool_type
         # defaults
-        self.inputs['noise_term_allowed'] = True
+        self.inputs['noise_term_allowed'] = False
+        self.inputs['dI'] = None
         self.categories = ['1D DATA PROCESSING.SAXS INTERPRETATION']
 
     def run(self):
         q, I = self.inputs['q'], self.inputs['I']
+        if self.inputs['dI'] is None:
+            dI = np.ones(I.shape, dtype=float)
+        else:
+            dI = self.inputs['dI']
         I0_in, r0_in, frac_in = self.inputs['amplitude_at_zero'], self.inputs['mean_size'], self.inputs['fractional_variation']
         if self.inputs['noise_term_allowed']:
             noise_floor = guess_noise_floor(q, I, r0_in)
@@ -498,7 +505,7 @@ def take_polydispersity_metrics(x, y, dy=None):
     xFirstDip, heightFirstDip, scaledQuadCoefficients = first_dip(x, y, dips, dy)
     sigmaScaledFirstDip = polydispersity_metric_sigmaScaledFirstDip(x, y, dips, shoulders, xFirstDip, heightFirstDip)
     heightAtZero = polydispersity_metric_heightAtZero(xFirstDip, x, y, dy)
-    return xFirstDip, heightFirstDip, sigmaScaledFirstDip, heightAtZero
+    return xFirstDip, heightFirstDip[0], sigmaScaledFirstDip[0], heightAtZero
 
 def choose_dips_and_shoulders(q, I, dI=None):
     '''Find the location of dips (low points) and shoulders (high points).'''
