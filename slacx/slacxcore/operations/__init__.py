@@ -17,6 +17,8 @@ def load_cfg(cfg_file):
     cfg = open(cfg_file,'r')
     cfg_data = yaml.load(cfg)
     cfg.close()
+    if not cfg_data:
+        cfg_data = {}
     return cfg_data
 
 # check for an ops.cfg file

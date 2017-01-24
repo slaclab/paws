@@ -226,24 +226,39 @@ class WfManager(TreeModel):
         valid_wf_inputs += [itm.tag()+'.'+optools.inputs_tag+'.'+k for k in itm.data.inputs.keys()]
         return valid_wf_inputs
 
-    def op_stack(self,itm_lst,b_itm):
+    def batch_op_stack(self,itm_lst,b_itm,valid_wf_inputs):
         """
         Starting with batch item b_itm, take as many operations as possible from itm_lst
         and put them into an execution stack with coherent dependencies.
         """
         ds_lst = []
+        rdy = False
         for uri in b_itm.data.input_routes():
             op_uri = uri.split('.')[0]
-            for itm in itm_lst:
-                if itm.tag() == op_uri:
-                    ds_lst.append(itm) 
+            tag_lst = [itm.tag() for itm in itm_lst]
+            op_idx = tag_lst.index(op_uri)
+            ds_lst.append(itm_lst[op_idx])
+            #for itm in itm_lst:
+            #    if itm.tag() == op_uri:
+            #        ds_lst.append(itm) 
         stk = []
         while any(ds_lst):
             stk.append(ds_lst)
-            for itm in ds_lst:
-                next_inputs = self.get_valid_wf_inputs(itm)
-
-        return stk            
+            #next_inputs = []
+            #for itm in ds_lst:
+            #    next_inputs += self.get_valid_wf_inputs(itm)
+            valid_wf_inputs += self.get_valid_wf_inputs(itm)
+            ds_lst = []
+            for test_itm in itm_lst:
+                #op_is_downstream = False
+                #for il in test_itm.data.input_locator.values():
+                #    if il.src == optools.wf_input and any([uri in next_inputs for uri in optools.val_list(il)]):
+                #        op_is_downstream = True
+                #if op_is_downstream and self.is_op_ready(test_itm,valid_wf_inputs+next_inputs):
+                if self.is_op_ready(test_itm,valid_wf_inputs):
+                    ds_lst.append(test_itm)
+        rdy = len(itm_lst) == sum([len(lst) for lst in stk]) 
+        return stk,rdy 
 
     def execution_stack(self):
         """
@@ -253,7 +268,7 @@ class WfManager(TreeModel):
         """
         stk = []
         valid_wf_inputs = []
-        batch_routes = []
+        #batch_routes = []
         continue_flag = True
         while not sum([len(lst) for lst in stk]) == len(self.root_items) and continue_flag:
             items_rdy = []
@@ -267,6 +282,8 @@ class WfManager(TreeModel):
                 if any(non_batch_rdy):
                     items_rdy = non_batch_rdy
                     stk.append(items_rdy)
+                    for itm in items_rdy:
+                        valid_wf_inputs += self.get_valid_wf_inputs(itm)
                 else:
                     # When only Batch/Realtime ops are ready,
                     # take only one Batch/Realtime into the stack at a time,
@@ -274,39 +291,35 @@ class WfManager(TreeModel):
                     b_itm = items_rdy[0]
                     items_rdy = [b_itm]
                     #ds_stk,b_rdy = self.downstream_from_batch(b_itm,valid_wf_inputs) 
-                    ds_lst = b_itm.data.downstream_ops()
-                    ds_stk = self.op_stack(ds_lst,b_itm.data.input_routes())
+                    #ds_lst = b_itm.data.downstream_ops()
+                    ds_itms = [self.get_from_uri(uri)[0] for uri in itm.data.downstream_ops()]
+                    b_stk,b_rdy = self.batch_op_stack(ds_itms,b_itm,valid_wf_inputs)
                     stk.append([b_itm])
-                    stk += ds_stk
-                    for ds_lst in ds_stk:
-                        items_rdy += ds_lst
-                # Finally, add valid_wf_inputs for all items_rdy 
-                for itm in items_rdy:
-                    valid_wf_inputs += self.get_valid_wf_inputs(itm)
+                    stk += b_stk
+                    for b_lst in b_stk:
+                        items_rdy += b_lst
+                    valid_wf_inputs += self.get_valid_wf_inputs(b_itm)
             else:
                 continue_flag = False
         return stk
 
     def is_op_ready(self,itm,valid_wf_inputs):
-        op = itm.data
-        op_rdy = False
-        inputs_rdy = []
-        for j,name,il in zip(range(len(op.inputs)),op.input_locator.keys(),op.input_locator.values()):
-            inp_rdy = True
-            if il.src == optools.wf_input:
-                inp_uris = optools.val_list(il)
-                if isinstance(itm.data,Batch) or isinstance(itm.data,Realtime):
-                    if not all([uri in itm.data.input_routes()+itm.data.saved_items()+valid_wf_inputs for uri in inp_uris]):
-                        inp_rdy = False
-                else:
-                    if not all([uri in valid_wf_inputs for uri in inp_uris]):
-                        inp_rdy = False
-            elif il.src == optools.batch_input:
-                if not itm.tag()+'.'+optools.inputs_tag+'.'+name in batch_routes:
+        if isinstance(itm.data,Batch) or isinstance(itm.data,Realtime):
+            ds_itms = [self.get_from_uri(uri)[0] for uri in itm.data.downstream_ops()]
+            b_stk,op_rdy = self.batch_op_stack(ds_itms,itm,valid_wf_inputs)
+        else:
+            op = itm.data
+            inputs_rdy = []
+            for j,name,il in zip(range(len(op.inputs)),op.input_locator.keys(),op.input_locator.values()):
+                if il.src == optools.wf_input and not all([uri in valid_wf_inputs for uri in optools.val_list(il)]):
                     inp_rdy = False
-            inputs_rdy.append(inp_rdy)
-        if all(inputs_rdy):
-            op_rdy = True
+                else:
+                    inp_rdy = True
+                inputs_rdy.append(inp_rdy)
+            if all(inputs_rdy):
+                op_rdy = True
+            else:
+                op_rdy = False
         return op_rdy 
 
         #if op_rdy and (isinstance(op,Realtime) or isinstance(op,Batch)):
@@ -590,19 +603,19 @@ class WfManager(TreeModel):
         if self.is_running():
             self.wfdone.emit()
 
-    def batch_op_ready(self,op,stk_done):
-        op_rdy = True
-        for name,il in op.input_locator.items():
-            if il.src == optools.wf_input: 
-                op_uri = il.val.split('.')[0]
-                itm,idx = self.get_from_uri(op_uri)
-                if not any([itm in lst for lst in stk_done]):
-                    op_rdy = False
-            if il.src == optools.batch_input:
-                # assume all ops taking batch input
-                # were processed in the top layer of the stack
-                op_rdy = False
-        return op_rdy
+#    def batch_op_ready(self,op,stk_done):
+#        op_rdy = True
+#        for name,il in op.input_locator.items():
+#            if il.src == optools.wf_input: 
+#                op_uri = il.val.split('.')[0]
+#                itm,idx = self.get_from_uri(op_uri)
+#                if not any([itm in lst for lst in stk_done]):
+#                    op_rdy = False
+#            if il.src == optools.batch_input:
+#                # assume all ops taking batch input
+#                # were processed in the top layer of the stack
+#                op_rdy = False
+#        return op_rdy
 
     def next_available_thread(self):
         for idx,th in self._wf_threads.items():
@@ -658,8 +671,7 @@ class WfManager(TreeModel):
         t.timeout.connect(l.quit)
         t.start(interval)
         l.exec_()
-        # This processEvents() is meant to process any Signals
-        # that were emitted during waiting.
+        # This processEvents() is meant to process any Signals that were emitted during waiting.
         self.appref.processEvents()
 
     def run_wf_serial(self,stk=None,thd=0):
@@ -689,12 +701,6 @@ class WfManager(TreeModel):
             self.write_log(msg)
             self._wf_threads[thd] = wf_thread
             wf_thread.start()
-            # Let the thread finish
-            #self.wait_for_thread(thd)
-            # When the thread is finished, update the ops it ran.
-            #for itm in lst:
-            #    op = itm.data
-            #    self.update_op(itm.tag(),op)
         self.wait_for_thread(thd)
         self.write_log('SERIAL EXECUTION FINISHED in thread {}'.format(thd))
 

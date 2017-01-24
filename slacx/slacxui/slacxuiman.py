@@ -40,42 +40,41 @@ class UiManager(object):
         self.wfman = wfman 
         self.plugman = plugman
 
-    def edit_wf(self,trmod,item_indx=QtCore.QModelIndex()):
+    def edit_wf(self,trmod,itm_idx=QtCore.QModelIndex()):
         """
         Interact with user to edit the workflow.
         Pass in a TreeModel and index to open the editor 
         with the item at that index loaded.
         """
-        if item_indx.isValid():
-            idx = item_indx
+        if itm_idx.isValid():
             if trmod == self.wfman:
-                while idx.parent().isValid():
-                    idx = idx.parent()
-            x = trmod.get_item(idx).data
+                while itm_idx.parent().isValid():
+                    itm_idx = itm_idx.parent()
+            x = trmod.get_item(itm_idx).data
         else:
             x = None
-            idx = self.ui.wf_tree.currentIndex()
-            if idx.isValid():
-                while idx.parent().isValid():
-                    idx = idx.parent()
-                x = self.wfman.get_item(idx).data
+            itm_idx = self.ui.wf_tree.currentIndex()
+            if itm_idx.isValid():
+                while itm_idx.parent().isValid():
+                    itm_idx = itm_idx.parent()
+                x = self.wfman.get_item(itm_idx).data
             else:
-                idx = self.ui.op_tree.currentIndex()
-                if idx.isValid():# and self.opman.get_item(idx).data is not None:
-                    x = self.opman.get_item(idx).data
+                itm_idx = self.ui.op_tree.currentIndex()
+                if itm_idx.isValid():# and self.opman.get_item(idx).data is not None:
+                    x = self.opman.get_item(itm_idx).data
         existing_op_flag = isinstance(x,Operation)
         try:
             new_op_flag = issubclass(x,Operation)
         except:
             new_op_flag = False
         if new_op_flag: 
-            uiman = self.start_wf_editor(self.opman,idx)
-            uiman.ui.op_selector.setCurrentIndex(idx)
+            uiman = self.start_wf_editor(self.opman,itm_idx)
+            uiman.ui.op_selector.setCurrentIndex(itm_idx)
             uiman.ui.show()
             return
         elif existing_op_flag: 
-            uiman = self.start_wf_editor(self.wfman,idx)
-            uiman.ui.wf_selector.setCurrentIndex(idx)
+            uiman = self.start_wf_editor(self.wfman,itm_idx)
+            uiman.ui.wf_selector.setCurrentIndex(itm_idx)
             uiman.ui.show()
             return
         else:
