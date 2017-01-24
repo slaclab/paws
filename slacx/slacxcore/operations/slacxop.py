@@ -158,6 +158,19 @@ class Realtime(Operation):
         """
         pass
 
+    @abc.abstractmethod
+    def saved_items(self):
+        """
+        Return a list of item uris to be saved after each execution.
+        """
+        pass 
+
+    @abc.abstractmethod
+    def downstream_ops(self):
+        """
+        Return a list of operation uris to be included in the Realtime execution stack.
+        """
+
     def delay(self):
         """
         Return the number of MILLIseconds to pause between iterations.
@@ -165,12 +178,6 @@ class Realtime(Operation):
         """
         return 1000
 
-    def saved_items(self):
-        """
-        Return a list of item uris to be saved after each execution.
-        Default returns empty list, saves all ops.
-        """
-        return []
 
 class Batch(Operation):
     __metaclass__ = abc.ABCMeta
@@ -206,12 +213,18 @@ class Batch(Operation):
         """
         pass
 
+    @abc.abstractmethod
     def saved_items(self):
         """
         Return a list of items to be saved after each execution.
-        Default returns empty list, saves all Operations.
         """
-        return []
+        pass 
+
+    @abc.abstractmethod
+    def downstream_ops(self):
+        """
+        Return a list of operation uris to be included in the Batch execution stack.
+        """
 
 
 #class Workflow(Operation):
