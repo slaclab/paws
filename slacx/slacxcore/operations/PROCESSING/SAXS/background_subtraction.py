@@ -63,7 +63,7 @@ class SubtractMaximumBackground(Operation):
     Can also, optionally, window to a region in q."""
     def __init__(self):
         input_names = ['q_foreground', 'q_background', 'I_foreground', 'I_background', 'dI_foreground', 'dI_background', 'q_min', 'q_max']
-        output_names = ['I_subtracted', 'dI_subtracted', 'factor','q']
+        output_names = ['I_subtracted', 'dI_subtracted', 'factor', 'q']
         super(SubtractMaximumBackground, self).__init__(input_names, output_names)
 
         self.input_doc['I_foreground'] = '1d ndarray; experimental data'

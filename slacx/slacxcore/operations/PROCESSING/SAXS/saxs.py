@@ -239,9 +239,9 @@ class OptimizeSphericalDiffractionFit(Operation):
         #self.input_type['amplitude_at_zero'] = optools.float_type
         #self.input_type['mean_size'] = optools.float_type
         #self.input_type['fractional_variation'] = optools.float_type
-        self.input_type['noise_term_allowed'] = optools.bool_type
+        self.input_type['noise_term_allowed'] = optools.int_type
         # defaults
-        self.inputs['noise_term_allowed'] = False
+        self.inputs['noise_term_allowed'] = 0
         self.inputs['dI'] = None
         self.categories = ['1D DATA PROCESSING.SAXS INTERPRETATION']
 
@@ -252,7 +252,8 @@ class OptimizeSphericalDiffractionFit(Operation):
         else:
             dI = self.inputs['dI']
         I0_in, r0_in, frac_in = self.inputs['amplitude_at_zero'], self.inputs['mean_size'], self.inputs['fractional_variation']
-        if self.inputs['noise_term_allowed']:
+        noise_allowed = bool(self.inputs['noise_term_allowed'])
+        if noise_allowed:
             noise_floor = guess_noise_floor(q, I, r0_in)
             #noise_floor = guess_noise_floor(q, I, I0_in, r0_in, frac_in)
             print "initial guess for noise floor is", noise_floor
@@ -784,7 +785,6 @@ def chi_squared(y1, y2):
 no_reference_message = '''No reference file exists.  Use the GenerateReferences operation once to generate
 an appropriate file; the file will be saved and need not be generated again.'''
 
-#um wtf
 # testing testing
 
 def safe_log(y):
