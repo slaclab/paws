@@ -364,6 +364,7 @@ class WfUiManager(object):
         #print 'build_list: list view model is {}'.format(list_ui.list_view.model())
         src = self.src_widgets[name].currentIndex()
         list_ui = uitools.start_list_builder(src,ListModel(),self.ui)
+        lm = ListModel()
         if self.op.input_locator[name]:
             if self.op.input_locator[name].src == src and self.op.input_locator[name].tp == optools.list_type:
                 lm = ListModel(self.op.input_locator[name].val,list_ui)

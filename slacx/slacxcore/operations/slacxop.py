@@ -112,73 +112,6 @@ class Operation(object):
             out_indx += 1
         return a
                 
-    #def run_and_update(self):
-    #    """
-    #    Run the Operation and save its outputs in its output_locator 
-    #    """
-    #    self.run()
-    #    self.save_outputs()
-
-    #def save_outputs(self):
-    #    """Loads the data from outputs[names] into output_container[names].data"""
-    #    for name,d in self.outputs.items():
-    #        self.output_container[name].data = d
-
-class Realtime(Operation):
-    __metaclass__ = abc.ABCMeta
-    """
-    Abstract class template for implementing real time execution operations.
-    """
-    def __init__(self,input_names,output_names):
-        super(Realtime,self).__init__(input_names,output_names)
-
-    @abc.abstractmethod
-    def output_list(self):
-        """
-        Produce a list of OrderedDicts representing the outputs for each batch input.
-        Each OrderedDict should be populated with [input_uri:input_value] pairs.
-        """
-        pass
-
-    @abc.abstractmethod
-    def input_iter(self):
-        """
-        Produce an iterator over OrderedDicts representing each set of inputs to run.
-        Each dict should be populated with [input_uri:input_value] pairs.
-        When there is no new set of inputs to run, should return None.
-        """
-        pass
-
-    @abc.abstractmethod
-    def input_routes(self):
-        """
-        Produce a list of [input_uri] routes 
-        in the same order as the OrderedDicts 
-        produced by Batch.input_iter()
-        """
-        pass
-
-    @abc.abstractmethod
-    def saved_items(self):
-        """
-        Return a list of item uris to be saved after each execution.
-        """
-        pass 
-
-    @abc.abstractmethod
-    def downstream_ops(self):
-        """
-        Return a list of operation uris to be included in the Realtime execution stack.
-        """
-
-    def delay(self):
-        """
-        Return the number of MILLIseconds to pause between iterations.
-        Overload this method to change the pause time- default is 1 second.
-        """
-        return 1000
-
-
 class Batch(Operation):
     __metaclass__ = abc.ABCMeta
     """
@@ -221,10 +154,68 @@ class Batch(Operation):
         pass 
 
     @abc.abstractmethod
-    def downstream_ops(self):
+    def batch_ops(self):
         """
         Return a list of operation uris to be included in the Batch execution stack.
         """
+        pass
+
+
+
+class Realtime(Operation):
+    __metaclass__ = abc.ABCMeta
+    """
+    Abstract class template for implementing realtime execution as an Operation.
+    """
+    def __init__(self,input_names,output_names):
+        super(Realtime,self).__init__(input_names,output_names)
+
+    @abc.abstractmethod
+    def output_list(self):
+        """
+        Produce a list of OrderedDicts representing the outputs for each realtime input.
+        Each OrderedDict should be populated with [input_uri:input_value] pairs.
+        """
+        pass
+
+    @abc.abstractmethod
+    def input_iter(self):
+        """
+        Produce an iterator over OrderedDicts representing each set of inputs to run.
+        Each dict should be populated with [input_uri:input_value] pairs.
+        When there is no new set of inputs to run, should return None.
+        """
+        pass
+
+    @abc.abstractmethod
+    def input_routes(self):
+        """
+        Produce a list of [input_uri] routes 
+        in the same order as the OrderedDicts 
+        produced by Realtime.input_iter()
+        """
+        pass
+
+    @abc.abstractmethod
+    def saved_items(self):
+        """
+        Return a list of item uris to be saved after each execution.
+        """
+        pass 
+
+    @abc.abstractmethod
+    def realtime_ops(self):
+        """
+        Return a list of operation uris to be included in the Realtime execution stack.
+        """
+        pass
+
+    def delay(self):
+        """
+        Return the number of MILLIseconds to pause between iterations.
+        Overload this method to change the pause time- default is 1 second.
+        """
+        return 1000
 
 
 #class Workflow(Operation):

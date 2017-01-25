@@ -1,4 +1,5 @@
 import string 
+from collections import OrderedDict
 
 from PySide import QtCore
 
@@ -301,7 +302,7 @@ class TreeModel(QtCore.QAbstractItemModel):
         if isinstance(x,dict):
             d = x 
         elif isinstance(x,list):
-            d = {str(i):x[i] for i in range(len(x))} 
+            d = OrderedDict(zip([str(i) for i in range(len(x))],x)) 
         else:
             d = {} 
         return d
