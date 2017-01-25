@@ -284,8 +284,8 @@ def data_fetch_ui(parent=None):
     src_ui = QtUiTools.QUiLoader().load(ui_file)
     ui_file.close()
     src_ui.setParent(parent,QtCore.Qt.Window)
-    src_ui.setAttribute(QtCore.Qt.WA_OpaquePaintEvent)
-    src_ui.setWindowModality(QtCore.Qt.WindowModal)
+    #src_ui.setAttribute(QtCore.Qt.WA_OpaquePaintEvent)
+    #src_ui.setWindowModality(QtCore.Qt.WindowModal)
     src_ui.load_button.setText('&Load')
     return src_ui
 
