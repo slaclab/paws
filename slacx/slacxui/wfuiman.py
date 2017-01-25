@@ -370,7 +370,7 @@ class WfUiManager(object):
                 lm = ListModel(self.op.input_locator[name].val,list_ui)
         list_ui = uitools.start_list_builder(src,lm,self.ui)
         data_handler = partial(self.load_path_to_list,src,list_ui)
-        list_ui.browse_button.clicked.connect( partial(self.fetch_data,name,data_handler) )
+        list_ui.browse_button.clicked.connect( partial(self.fetch_data,name,data_handler,list_ui) )
         list_ui.finish_button.clicked.connect( partial(self.set_input,name,list_ui) )
         list_ui.show()
 
@@ -389,12 +389,14 @@ class WfUiManager(object):
         src_ui.close()
         src_ui.deleteLater()
 
-    def fetch_data(self,name,data_handler):
+    def fetch_data(self,name,data_handler,parent_ui=None):
         """
         Use a popup to select the input data for named input.
         """
+        if not parent_ui:
+            parent_ui = self.ui
         src = self.src_widgets[name].currentIndex()
-        src_ui = uitools.data_fetch_ui(self.ui)
+        src_ui = uitools.data_fetch_ui(parent_ui)
         src_ui.setWindowTitle('data browser')
         src_ui.tree_box.setTitle(name+' - from '+optools.input_sources[src])
         if src == optools.wf_input:
