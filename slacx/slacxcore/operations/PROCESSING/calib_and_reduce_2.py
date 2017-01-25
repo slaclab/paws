@@ -11,7 +11,7 @@ import pyFAI
 from ..slacxop import Operation
 from .. import optools
 
-class ReduceByWXDDict(Operation):
+class ReduceByWXDDict_mask_error(Operation):
     """
     Input image data (ndarray) and a dict of calibration parameters from a WxDiff .calib file 
     Return q, I(q) 
