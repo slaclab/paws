@@ -239,9 +239,9 @@ class OptimizeSphericalDiffractionFit(Operation):
         #self.input_type['amplitude_at_zero'] = optools.float_type
         #self.input_type['mean_size'] = optools.float_type
         #self.input_type['fractional_variation'] = optools.float_type
-        self.input_type['noise_term_allowed'] = optools.int_type
+        self.input_type['noise_term_allowed'] = optools.int_type  #### TEMPORARY fix!!!!!
         # defaults
-        self.inputs['noise_term_allowed'] = 0
+        self.inputs['noise_term_allowed'] = 0  #### TEMPORARY fix!!!!!
         self.inputs['dI'] = None
         self.categories = ['1D DATA PROCESSING.SAXS INTERPRETATION']
 
@@ -252,22 +252,22 @@ class OptimizeSphericalDiffractionFit(Operation):
         else:
             dI = self.inputs['dI']
         I0_in, r0_in, frac_in = self.inputs['amplitude_at_zero'], self.inputs['mean_size'], self.inputs['fractional_variation']
-        noise_allowed = bool(self.inputs['noise_term_allowed'])
+        noise_allowed = bool(self.inputs['noise_term_allowed'])  #### TEMPORARY fix!!!!!
         if noise_allowed:
             noise_floor = guess_noise_floor(q, I, r0_in)
             #noise_floor = guess_noise_floor(q, I, I0_in, r0_in, frac_in)
-            print "initial guess for noise floor is", noise_floor
+            #print "initial guess for noise floor is", noise_floor
             popt, pcov = \
-                curve_fit(generate_spherical_diffraction_plus_floor, q, I,
+                curve_fit(generate_spherical_diffraction_plus_floor, q, I, [I0_in, r0_in, frac_in, noise_floor], dI,
                           bounds=([I0_in*0.5, r0_in*0.5, frac_in*0.5, noise_floor*0.5],
                                   [I0_in/0.5, r0_in/0.5, frac_in/0.5, noise_floor/0.5]))
             self.outputs['noise_floor'] = popt[3]
-            print "final guess for noise floor is", self.outputs['noise_floor']
+            #print "final guess for noise floor is", self.outputs['noise_floor']
         else:
-            self.outputs['noise_floor'] = 0.
+            self.outputs['noise_floor'] = None
             popt, pcov = \
-                curve_fit(generate_spherical_diffraction, q, I, bounds=([I0_in*0.5, r0_in*0.5, frac_in*0.1],
-                                                                        [I0_in/0.5, r0_in/0.5, frac_in/0.1]))
+                curve_fit(generate_spherical_diffraction, q, I, [I0_in, r0_in, frac_in], dI,
+                          bounds=([I0_in*0.5, r0_in*0.5, frac_in*0.1], [I0_in/0.5, r0_in/0.5, frac_in/0.1]))
         self.outputs['amplitude_at_zero'] = popt[0]
         self.outputs['mean_size'] = popt[1]
         self.outputs['fractional_variation'] = popt[2]
@@ -392,6 +392,11 @@ def generate_spherical_diffraction(q, i0, r0, poly):
     x = q * r0
     i = i0 * blur(x, poly) * 9.
     return i
+
+def generate_spherical_diffraction_over_noise(q, di, i0, r0, poly):
+    x = q * r0
+    i = i0 * blur(x, poly) * 9.
+    return i/di
 
 def generate_spherical_diffraction_plus_floor(q, i0, r0, poly, noise):
     i = generate_spherical_diffraction(q, i0, r0, poly) + noise
@@ -778,8 +783,9 @@ def guess_nearest_point_on_nonmonotonic_trace_normalized(loclist, tracelist, coo
     return best_coordinate, best_distance, best_location #, distances
 
 def chi_squared(y1, y2):
-    n = y1.size
-    chi_2 = np.sum((y1 - y2)**2) / (n - 1)
+    bads = (np.isnan(y1)) | (np.isnan(y2))
+    n = (~bads).sum()
+    chi_2 = np.sum((y1[~bads] - y2[~bads])**2) / (n - 1)
     return chi_2
 
 no_reference_message = '''No reference file exists.  Use the GenerateReferences operation once to generate

@@ -23,7 +23,6 @@ class WriteCSV_q_I_dI(Operation):
         self.input_src['I'] = optools.wf_input
         self.input_src['dI'] = optools.wf_input
         self.input_src['image_location'] = optools.wf_input
-        self.input_type['image_location'] = optools.str_type
         self.categories = ['OUTPUT.CSV']
 
     def run(self):
