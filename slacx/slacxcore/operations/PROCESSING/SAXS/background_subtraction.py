@@ -34,20 +34,21 @@ class BgSubtractByTemperature(Operation):
         self.input_type['bg_I_key'] = optools.str_type
 
     def run(self):
-        q_meas = self.inputs['q_meas']
+        #q_meas = self.inputs['q_meas']
+        #import pdb; pdb.set_trace()
         I_meas = self.inputs['I_meas']
-        T_meas = self.inputs['temperature']
+        T_meas = self.inputs['T_meas']
         bg_T_key = self.inputs['bg_T_key']
         bg_I_key = self.inputs['bg_I_key']
         bg_out = self.inputs['bg_batch_output']
         T_allbg = [d[bg_T_key] for d in bg_out]
         I_allbg = [d[bg_I_key] for d in bg_out]
-        idx = np.argmin(np.abs([T_bg - T_meas for T_bg in T_allbg]))
-        I_bg = I_allbg[idx]
+        closest_T_idx = np.argmin(np.abs([T_bg - T_meas for T_bg in T_allbg]))
+        I_bg = I_allbg[closest_T_idx]
         #if not all(q_I[:,0] == q_I_bg[:,0]):
         #    msg = 'SPECTRUM AND BACKGROUND ON DIFFERENT q DOMAINS'
         #    raise ValueError(msg)
-        bad_data = I_meas <= 0 | I_bg <= 0 | np.isnan(I_meas) | np.isnan(I_bg)
+        bad_data = (I_meas <= 0) | (I_bg <= 0) | np.isnan(I_meas) | np.isnan(I_bg)
         bg_factor = np.min(I_meas[~bad_data] / I_bg[~bad_data])
         #print 'bg factor is {}'.format(bg_factor)
         I_bgsub = I_meas - bg_factor * I_bg
