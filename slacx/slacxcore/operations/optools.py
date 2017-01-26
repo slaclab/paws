@@ -49,13 +49,13 @@ def cast_type_val(tp,val):
     if tp == none_type:
         val = None 
     elif tp == int_type:
-        val = int(val)
+        val = int(eval(val))
     elif tp == float_type:
-        val = float(val)
+        val = float(eval(val))
     elif tp == str_type:
         val = str(val)
     elif tp == bool_type:
-        val = bool(val)
+        val = bool(eval(val))
     elif tp == list_type:
         # val will be a list of things, already typecast by the list builder 
         # TODO: think about how to handle default list inputs?
