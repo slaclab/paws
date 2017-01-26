@@ -49,9 +49,9 @@ def cast_type_val(tp,val):
     if tp == none_type:
         val = None 
     elif tp == int_type:
-        val = int(eval(val))
+        val = int(val)
     elif tp == float_type:
-        val = float(eval(val))
+        val = float(val)
     elif tp == str_type:
         val = str(val)
     elif tp == bool_type:
