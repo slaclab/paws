@@ -52,9 +52,7 @@ class GenerateSphericalDiffraction(Operation):
         self.input_type['max'] = optools.float_type
         self.input_type['step'] = optools.float_type
         # defaults
-        '''
         self.inputs['use_q_space'] = True
-        '''
 
 
     def run(self):
@@ -105,14 +103,12 @@ class GenerateReferences(Operation):
         self.input_type['factormax'] = optools.float_type
         self.input_type['factorstep'] = optools.float_type
         # defaults
-        # Values of x
         self.inputs['xmin'] = 0.02
         self.inputs['xmax'] = 50
         self.inputs['xstep'] = 0.02
         self.inputs['factormin'] = 1.
         self.inputs['factormax'] = 35.
         self.inputs['factorstep'] = 0.2
-        self.categories = ['1D DATA PROCESSING.GENERATE SAXS PATTERNS']
 
     def run(self):
         x = gen_q_vector(self.inputs['xmin'], self.inputs['xmax'], self.inputs['xstep'])
@@ -235,9 +231,7 @@ class OptimizeSphericalDiffractionFit(Operation):
         self.input_src['noise_term_allowed'] = optools.user_input
         self.input_type['noise_term_allowed'] = optools.bool_type
         # defaults
-        '''
         self.inputs['noise_term_allowed'] = False
-        '''
 
 
     def run(self):
@@ -247,7 +241,7 @@ class OptimizeSphericalDiffractionFit(Operation):
         else:
             dI = self.inputs['dI']
         I0_in, r0_in, frac_in = self.inputs['amplitude_at_zero'], self.inputs['mean_size'], self.inputs['fractional_variation']
-        noise_allowed = bool(self.inputs['noise_term_allowed'])
+        noise_allowed = self.inputs['noise_term_allowed']
         if noise_allowed:
             noise_floor = guess_noise_floor(q, I, r0_in)
             #noise_floor = guess_noise_floor(q, I, I0_in, r0_in, frac_in)

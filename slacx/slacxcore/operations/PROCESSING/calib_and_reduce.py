@@ -106,14 +106,12 @@ class ReduceByWXDDict_mask_error(Operation):
         self.input_type['inverse_gain'] = optools.float_type
         self.input_type['readnoise'] = optools.float_type
         # defaults
-        '''
         self.inputs['pixel_size'] = 79.
         self.inputs['fpolz'] = 0.95
         self.inputs['calculate_noise'] = True
         #self.inputs['inverse_gain'] = 21.97 # 1 for no gain, sort of
         self.inputs['inverse_gain'] = 49.44 # 1 for no gain, sort of
         self.inputs['readnoise'] = 9.0 # 0 for no readnoise
-        '''
         self.inputs['mask'] = None
 
     def run(self):
