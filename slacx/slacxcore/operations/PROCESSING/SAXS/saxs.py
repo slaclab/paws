@@ -48,9 +48,9 @@ class GenerateSphericalDiffraction(Operation):
         self.input_src['max'] = optools.user_input
         self.input_src['step'] = optools.user_input
         self.input_type['use_q_space'] = optools.bool_type
-        #self.input_type['min'] = optools.float_type
-        #self.input_type['max'] = optools.float_type
-        #self.input_type['step'] = optools.float_type
+        self.input_type['min'] = optools.float_type
+        self.input_type['max'] = optools.float_type
+        self.input_type['step'] = optools.float_type
         # defaults
         '''
         self.inputs['use_q_space'] = True
@@ -188,9 +188,6 @@ class GuessProperties(Operation):
         self.input_src['q'] = optools.wf_input
         self.input_src['I'] = optools.wf_input
         self.input_src['dI'] = optools.wf_input
-        # defaults
-        #self.inputs['dI'] = None
-        self.categories = ['1D DATA PROCESSING.SAXS INTERPRETATION']
 
     def run(self):
         q, I, dI = self.inputs['q'], self.inputs['I'], self.inputs['dI']
@@ -242,7 +239,6 @@ class OptimizeSphericalDiffractionFit(Operation):
         self.inputs['noise_term_allowed'] = False
         self.inputs['dI'] = None
         '''
-        self.categories = ['1D DATA PROCESSING.SAXS INTERPRETATION']
 
     def run(self):
         q, I = self.inputs['q'], self.inputs['I']
