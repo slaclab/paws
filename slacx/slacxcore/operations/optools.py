@@ -30,8 +30,8 @@ input_types = ['none','auto','string','integer','float','boolean','list']
 invalid_types = {}                
 invalid_types[no_input] = [auto_type,str_type,int_type,float_type,bool_type,list_type]
 invalid_types[user_input] = [auto_type]
-invalid_types[fs_input] = [str_type,int_type,float_type,bool_type]
-invalid_types[wf_input] = [str_type,int_type,float_type,bool_type]
+invalid_types[fs_input] = [auto_type,int_type,float_type,bool_type]
+invalid_types[wf_input] = [int_type,float_type,bool_type]
 invalid_types[plugin_input] = [str_type,int_type,float_type,bool_type]
 invalid_types[batch_input] = [str_type,int_type,float_type,bool_type,list_type]
 
@@ -44,7 +44,8 @@ outputs_idx = 1
 def cast_type_val(tp,val):
     """
     Perform type casting for operation inputs.
-    Note that this should not be called for inputs of auto_type.
+    This should be called for source user_input,
+    and should not be called for type auto_type.
     """
     if tp == none_type:
         val = None 
@@ -55,10 +56,9 @@ def cast_type_val(tp,val):
     elif tp == str_type:
         val = str(val)
     elif tp == bool_type:
-        val = bool(eval(val))
+        val = bool(eval(str(val)))
     elif tp == list_type:
-        # val will be a list of things, already typecast by the list builder 
-        # TODO: think about how to handle default list inputs?
+        # val will be a list of strings, should be typecast on loading or by the list builder 
         val = list(val)
     else:
         msg = 'type selection {}, should be one of {}'.format(tp,valid_types)
@@ -76,40 +76,51 @@ def parse_plugin_input(plugman,il,op):
     return itm.data
 
 def parse_wf_input(wfman,il,op):
-    uris = val_list(il)
-    rets = []
-    for uri in uris:
-        uri_parts = uri.split('.')
-        if len(uri_parts) >= 3:
-            io_type = uri_parts[1]
-            if io_type == inputs_tag:
-                #print 'seeking input {}'.format(uri)
-                inprouteflag = False
-                if isinstance(op,slacxop.Batch) or isinstance(op,slacxop.Realtime):
-                    inprouteflag = uri in op.input_routes()
-                if inprouteflag:
-                    # a uri used to direct a batch executor in setting data.
-                    # It should be returned directly- the batch will use it as is.
-                    rets.append(uri)
-                else:
-                    # an input uri... trusting that this input has already been loaded,
-                    # grab the data from the InputLocator at that uri and return it.
-                    # TODO: make sure this is coherent with wfman.upstream_stack() 
-                    itm, idx = wfman.get_from_uri(uri)
-                    il = itm.data 
-                    rets.append(il.data)
-            else:
-                # an output is requested. fetch and return data.
-                itm, idx = wfman.get_from_uri(uri)
-                rets.append(itm.data)
-        else:
-            # an entire Operation or its inputs or outputs dict is requested. fetch and return data.
-            itm, indx = wfman.get_from_uri(uri)
-            rets.append(itm.data)
-    if il.tp == list_type:
-        return rets
-    else:
-        return rets[0]
+    """
+    Input types supported for workflow source:
+    optools.none_type: trivial case, return None
+    optools.str_type: this input is assumed to be used as a key,
+        used for fetching workflow output data for further processing
+        It should be returned as is.
+    optools.list_type: The listed inputs by val_list(il) are all treated as str_type
+    optools.auto_type: Attempt to use il.val as a uri to fetch data 
+        from the input workflow manager wfman
+    """
+    if il.tp == none_type:
+        return None
+    elif il.tp == str_type:
+        return str(il.val)
+    elif il.tp == list_type:
+        return [str(val) for val in val_list(il)]
+    elif il.tp == auto_type:
+        itm, indx = wfman.get_from_uri(il.val)
+        return itm.data
+    #uris = val_list(il)
+    #rets = []
+    #for uri in uris:
+    #    uri_parts = uri.split('.')
+        #if len(uri_parts) >= 3:
+        #    io_type = uri_parts[1]
+        #    if io_type == inputs_tag:
+        #        input_route_flag = False
+        #        if isinstance(op,slacxop.Batch) or isinstance(op,slacxop.Realtime):
+        #            input_route_flag = uri in op.input_routes()
+        #        if input_route_flag:
+        #            rets.append(uri)
+        #        else:
+        #            itm, idx = wfman.get_from_uri(uri)
+        #            il = itm.data 
+        #            rets.append(il.data)
+        #    else:
+        #        itm, idx = wfman.get_from_uri(uri)
+        #        rets.append(itm.data)
+        #else:
+        #    itm, indx = wfman.get_from_uri(uri)
+        #    rets.append(itm.data)
+    #if il.tp == list_type:
+    #    return rets
+    #else:
+    #    return rets[0]
 
 def op_dict(op):
     dct = OrderedDict() 
