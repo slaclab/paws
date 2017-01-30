@@ -29,6 +29,7 @@ class BatchFromFiles(Batch):
         self.input_src['batch_ops'] = optools.wf_input 
         self.input_src['saved_items'] = optools.wf_input 
         self.input_type['regex'] = optools.str_type
+        self.input_type['input_route'] = optools.str_type
         self.input_type['batch_ops'] = optools.list_type 
         self.input_type['saved_items'] = optools.list_type 
         self.inputs['regex'] = '*.tif' 

@@ -70,18 +70,15 @@ class WfUiManager(object):
         """Set up ui elements around existing input op"""
         self.op = op
         self.ui.op_info.setPlainText(self.op.description())
-        self.ui.op_name.setText(type(self.op).__name__)
-        self.ui.uri_entry.setText(uri)
-        self.ui.uri_entry.setReadOnly(True)
         self.build_io()
+        self.ui.uri_entry.setText(uri)
 
     def create_op(self,op):
-        """Instantiate op, call self.set_op(op), and enable uri entry"""
+        """Instantiate op, call self.set_op()"""
         new_op = op()
         new_op_tag = self.wfman.auto_tag(type(new_op).__name__)
         new_op.load_defaults()
         self.set_op(new_op,new_op_tag)
-        self.ui.uri_entry.setReadOnly(False)
 
     #def test_op(self):
     #    print 'Operation testing not yet implemented'
@@ -120,23 +117,22 @@ class WfUiManager(object):
             il = optools.InputLocator(src,tp,val)
         elif (src == optools.wf_input or src == optools.fs_input or src == optools.plugin_input):
             if not ui:
-                # If we get to this point without a data loading ui,
-                # it has either already been loaded, or should be left as None.
+                # Assume it has already been loaded 
                 if self.op.input_locator[name] is not None:
                     il = self.op.input_locator[name]
-                else:
-                    #val = self.op.inputs[name]
-                    #if not val: 
-                    if tp == optools.list_type:
-                        val = []
-                    else:
-                        val = None
-                    il = optools.InputLocator(src,tp,val)
+            #    else:
+            #        if tp == optools.list_type:
+            #            val = []
+            #        else:
+            #            val = None
+            #        il = optools.InputLocator(src,tp,val)
             elif tp == optools.list_type:
+                # ui is assumed to be list_builder.ui
                 val = ui.list_view.model().list_data() 
                 il = optools.InputLocator(src,tp,val)
             else:
-                il = self.load_from_ui(ui,src,itm_idx)
+                # ui should be the load_browser.ui 
+                il = self.load_from_ui(ui,src,tp,itm_idx)
             if not il: 
                 if self.op.input_locator[name] is not None:
                     il = self.op.input_locator[name]
@@ -151,7 +147,7 @@ class WfUiManager(object):
             ui.deleteLater()
         return il
 
-    def load_from_ui(self,src_ui,src,itm_idx=None):
+    def load_from_ui(self,src_ui,src,tp,itm_idx=None):
         """
         Construct a unique resource identifier (uri) for the selected item.
         return an optools.InputLocator(src,tp,uri).
@@ -162,11 +158,13 @@ class WfUiManager(object):
         if not itm_idx or not itm_idx.isValid():
             itm_idx = trview.currentIndex()
         if itm_idx.isValid():
-            if src == optools.fs_input:
+            if tp == optools.none_type:
+                item_uri = None
+            elif src == optools.fs_input:
                 item_uri = trview.model().filePath(itm_idx)
             elif src == optools.wf_input or src == optools.plugin_input:
                 item_uri = trview.model().build_uri(itm_idx)
-            il = optools.InputLocator(src,optools.auto_type,item_uri)
+            il = optools.InputLocator(src,tp,item_uri)
         else:
             il = None
         return il
@@ -180,6 +178,7 @@ class WfUiManager(object):
             while idx.internalPointer().parent.isValid():
                 idx = idx.internalPointer().parent
             self.wfman.remove_op(idx)
+        self.clear_io()
 
     def load_op(self):
         """
@@ -203,6 +202,7 @@ class WfUiManager(object):
 
     def clear_io(self):
         self.ui.op_name.setText('')
+        self.ui.uri_entry.setText('')
         n_inp_widgets = self.ui.input_layout.count()
         for i in range(n_inp_widgets-1,-1,-1):
             item = self.ui.input_layout.takeAt(i)
@@ -266,14 +266,14 @@ class WfUiManager(object):
             src = self.src_widgets[name].currentIndex()
         widg = None 
         new_type_widget = uitools.type_selection_widget(src,widg)
-        if src in [optools.wf_input,optools.fs_input,optools.plugin_input,optools.batch_input]:
-            new_type_widget.setCurrentIndex(optools.auto_type)
-        if new_type_widget.currentIndex() in optools.invalid_types[src]:
-            new_type_widget.setCurrentIndex(optools.none_type)
-        if self.op.input_locator[name]:
+        if self.op.input_locator[name] is not None:
             if (self.op.input_locator[name].tp not in optools.invalid_types[src]
             and self.op.input_locator[name].src == src):
                 new_type_widget.setCurrentIndex(self.op.input_locator[name].tp)
+        elif src in [optools.fs_input,optools.plugin_input,optools.batch_input]:
+            new_type_widget.setCurrentIndex(optools.auto_type)
+        if new_type_widget.currentIndex() in optools.invalid_types[src]:
+            new_type_widget.setCurrentIndex(optools.none_type)
         #elif self.op.input_type[name]:
         #    if self.op.input_type[name] not in optools.invalid_types[src]:
         #        new_type_widget.setCurrentIndex(self.op.input_type[name])

@@ -79,7 +79,8 @@ class WfManager(TreeModel):
                     il.data = self.locate_input(il,op)
                     op.inputs[name] = il.data
                 else:
-                    # Batch executor should have already set the batch inputs.
+                    # Expect this input to have been set by self.set_op_input_at_uri().
+                    # Refer that input value to il.data.
                     il.data = op.inputs[name]
             else:
                 msg = '[{}] Found broken Operation.input_locator for {}: {}'.format(
@@ -165,14 +166,14 @@ class WfManager(TreeModel):
             op_idx = self.index(r,0,QtCore.QModelIndex())
             for name,il in op.input_locator.items():
                 if il:
-                    if il.src == optools.wf_input:
-                        vals = optools.val_list(il)
-                        for v in vals:
-                            if not self.is_good_uri(v):
-                                self.write_log('--- clearing InputLocator for {}.{}.{} ---'.format(
-                                itm.tag(),optools.inputs_tag,name))
-                                op.input_locator[name] = optools.InputLocator()
-                                self.tree_dataChanged(op_idx)
+                    if il.src == optools.wf_input and il.tp == optools.auto_type and not self.is_good_uri(il.val):
+                        #vals = optools.val_list(il)
+                        #for v in vals:
+                        #    if not self.is_good_uri(v):
+                        self.write_log('--- clearing InputLocator for {}.{}.{} ---'.format(
+                        itm.tag(),optools.inputs_tag,name))
+                        op.input_locator[name] = optools.InputLocator()
+                        self.tree_dataChanged(op_idx)
 
     # TODO: the following
     def check_wf(self):
@@ -295,9 +296,9 @@ class WfManager(TreeModel):
                     valid_wf_inputs += self.get_valid_wf_inputs(b_rt_itm)
             else:
                 continue_flag = False
-        print 'RESOLVED A STACK'
-        print 'STACK PRINTOUT:'
-        print self.print_stack(stk)
+        #print 'RESOLVED A STACK'
+        #print 'STACK PRINTOUT:'
+        #print self.print_stack(stk)
         return stk
 
     def is_op_ready(self,itm,valid_wf_inputs,batch_routes=[]):
@@ -310,7 +311,7 @@ class WfManager(TreeModel):
             inputs_rdy = []
             for name,il in op.input_locator.items():
                 if ( (il.src == optools.batch_input and not itm.tag()+'.'+optools.inputs_tag+'.'+name in batch_routes)
-                or   (il.src == optools.wf_input and not all([uri in valid_wf_inputs for uri in optools.val_list(il)])) ):
+                or   (il.src == optools.wf_input and il.tp == optools.auto_type and not il.val in valid_wf_inputs) ):
                     inp_rdy = False
                 else:
                     inp_rdy = True
@@ -542,9 +543,14 @@ class WfManager(TreeModel):
         return od
 
     def set_op_input_at_uri(self,uri,val):
-        """Set an op input, indicated by uri, to provided value."""
+        """
+        Set an op input, indicated by uri, to provided value.
+        uri must be of the form op_name.inputs.input_name.
+        Currently shallower uris (e.g. op_name.inputs) 
+        and deeper uris (e.g. op_name.inputs.input_dict.input_param)
+        are not supported.
+        """
         p = uri.split('.')
-        # Allow some structure here: expect no meta-inputs. 
         op_itm, idx = self.get_from_uri(p[0])
         op = op_itm.data
         op.inputs[p[2]] = val

@@ -23,7 +23,8 @@ class RealtimeFromFiles(Realtime):
         self.input_doc['realtime_ops'] = str('list of ops to be included in the realtime execution- '
         + 'the order of operations in realtime_ops is unimportant, as the proper execution stack is resolved at runtime')
         self.input_doc['saved_items'] = 'list of ops to be saved in the realtime_outputs'
-        self.output_doc['realtime_inputs'] = 'iterator over dicts of [input_route:input_value] generated in real time from the local filesystem'
+        self.output_doc['realtime_inputs'] = str('iterator over dicts of [input_route:input_value] '
+        + 'generated in real time from the local filesystem')
         self.output_doc['realtime_outputs'] = 'list of dicts of [output_route:output_value]'
         self.input_src['dir_path'] = optools.fs_input
         self.input_src['regex'] = optools.user_input 
@@ -31,6 +32,7 @@ class RealtimeFromFiles(Realtime):
         self.input_src['realtime_ops'] = optools.wf_input 
         self.input_src['saved_items'] = optools.wf_input 
         self.input_type['regex'] = optools.str_type
+        self.input_type['input_route'] = optools.str_type
         self.input_type['realtime_ops'] = optools.list_type 
         self.input_type['saved_items'] = optools.list_type 
         self.inputs['regex'] = '*.tif' 

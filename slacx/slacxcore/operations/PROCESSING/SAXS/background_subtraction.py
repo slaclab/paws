@@ -28,8 +28,8 @@ class BgSubtractByTemperature(Operation):
         self.input_src['I_meas'] = optools.wf_input
         self.input_src['T_meas'] = optools.wf_input
         self.input_src['bg_batch_output'] = optools.wf_input
-        self.input_src['bg_T_key'] = optools.user_input
-        self.input_src['bg_I_key'] = optools.user_input
+        self.input_src['bg_T_key'] = optools.wf_input
+        self.input_src['bg_I_key'] = optools.wf_input
         self.input_type['bg_T_key'] = optools.str_type
         self.input_type['bg_I_key'] = optools.str_type
 
