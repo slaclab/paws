@@ -72,7 +72,7 @@ class ReduceByWXDDict_mask_error(Operation):
     def __init__(self):
         input_names = ['image_data','wxd_dict','pixel_size','fpolz','calculate_noise','inverse_gain','readnoise','mask']
         output_names = ['q','I_of_q','dI_of_q']
-        super(ReduceByWXDDict,self).__init__(input_names,output_names)
+        super(ReduceByWXDDict_mask_error,self).__init__(input_names,output_names)
         # docs
         self.input_doc['image_data'] = '2d array representing intensity for each pixel'
         self.input_doc['wxd_dict'] = str( 'dict of calibration parameters read in from a .calib file,'
