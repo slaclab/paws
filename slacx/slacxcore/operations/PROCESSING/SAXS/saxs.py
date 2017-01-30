@@ -261,6 +261,7 @@ class OptimizeSphericalDiffractionFit(Operation):
         self.outputs['mean_size'] = popt[1]
         self.outputs['fractional_variation'] = popt[2]
 
+
 # I/O functions
 
 def prep_for_pickle(factorVals, xFirstDip, sigmaScaledFirstDip, heightFirstDip, heightAtZero):
