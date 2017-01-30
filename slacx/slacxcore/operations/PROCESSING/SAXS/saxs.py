@@ -239,6 +239,7 @@ class OptimizeSphericalDiffractionFit(Operation):
         self.inputs['noise_term_allowed'] = False
         '''
 
+
     def run(self):
         q, I = self.inputs['q'], self.inputs['I']
         if self.inputs['dI'] is None:
