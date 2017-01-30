@@ -51,11 +51,14 @@ class GenerateSphericalDiffraction(Operation):
         self.input_type['sigma_r_over_r0'] = optools.float_type
         self.input_type['intensity_at_zero'] = optools.float_type
         self.input_type['use_q_space'] = optools.bool_type
-        self.input_type['min'] = optools.float_type
-        self.input_type['max'] = optools.float_type
-        self.input_type['step'] = optools.float_type
+        #self.input_type['min'] = optools.float_type
+        #self.input_type['max'] = optools.float_type
+        #self.input_type['step'] = optools.float_type
         # defaults
+        '''
         self.inputs['use_q_space'] = True
+        '''
+
 
     def run(self):
         if self.inputs['input_vector'] is None:
@@ -236,12 +239,9 @@ class OptimizeSphericalDiffractionFit(Operation):
         self.input_src['mean_size'] = optools.wf_input
         self.input_src['fractional_variation'] = optools.wf_input
         self.input_src['noise_term_allowed'] = optools.user_input
-        #self.input_type['amplitude_at_zero'] = optools.float_type
-        #self.input_type['mean_size'] = optools.float_type
-        #self.input_type['fractional_variation'] = optools.float_type
         self.input_type['noise_term_allowed'] = optools.int_type  #### TEMPORARY fix!!!!!
         # defaults
-        self.inputs['noise_term_allowed'] = 0  #### TEMPORARY fix!!!!!
+        self.inputs['noise_term_allowed'] = False
         self.inputs['dI'] = None
         self.categories = ['1D DATA PROCESSING.SAXS INTERPRETATION']
 
