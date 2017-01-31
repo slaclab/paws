@@ -40,8 +40,10 @@ def load_ops_from_path(path_,pkg,cat_root='MISC'):
     mods = [mod for mod in mods if mod[1] not in ['__init__','slacxop','slacxopman','optools','DMZ','TRASH']]
     for modloader, modname, ispkg in mods:
         if modname in op_load_flags.keys():
-            if not op_load_flags[modname]:
-                load_mod = False
+            if op_load_flags[modname]:
+                load_mod = True
+            else:
+                load_mod = False 
         else:
             mod = importlib.import_module('.'+modname,pkg)
             load_mod = True
