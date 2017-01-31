@@ -31,6 +31,7 @@ class RealtimeFromFiles(Realtime):
         self.input_src['input_route'] = optools.wf_input 
         self.input_src['realtime_ops'] = optools.wf_input 
         self.input_src['saved_items'] = optools.wf_input 
+        self.input_type['dir_path'] = optools.str_type
         self.input_type['regex'] = optools.str_type
         self.input_type['input_route'] = optools.str_type
         self.input_type['realtime_ops'] = optools.list_type 
@@ -58,16 +59,16 @@ class RealtimeFromFiles(Realtime):
         return self.outputs['realtime_outputs']
 
     def input_routes(self):
-        """Use the Realtime.input_locators to list uri's of all input routes"""
-        return optools.val_list(self.input_locator['input_route'])
+        """Use the Realtime.input_locators to list uri's of all input routes- must return list."""
+        return [self.input_locator['input_route'].val]
 
     def realtime_ops(self):
         """Use the Realtime.input_locator to list uri's of ops to be saved/stored after execution"""
-        return optools.val_list(self.input_locator['saved_items'])
+        return self.input_locator['realtime_ops'].val
 
     def saved_items(self):
         """Use the Realtime.input_locator to list uri's of ops to be included in realtime execution"""
-        return optools.val_list(self.input_locator['realtime_ops'])
+        return self.input_locator['saved_items'].val
 
     @staticmethod
     def delay():

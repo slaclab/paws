@@ -63,16 +63,16 @@ class BatchFromFiles(Batch):
         return self.outputs['batch_outputs']
 
     def input_routes(self):
-        """Use the Batch.input_locator to list uri's of all input routes"""
-        return optools.val_list(self.input_locator['input_route'])
+        """Provide the input route in a list- must return list."""
+        return [self.input_locator['input_route'].val]
 
     def batch_ops(self):
-        """Use Batch.batch_ops to list uri's of ops to be included in batch execution"""
-        return optools.val_list(self.input_locator['batch_ops'])
+        """Provide a list of uri's of ops to be included in batch execution"""
+        return self.input_locator['batch_ops'].val
 
     def saved_items(self):
-        """Use the Batch.input_locator to list uri's of ops to be saved/stored after execution"""
-        return optools.val_list(self.input_locator['saved_items'])
+        """List uris to be saved/stored after execution"""
+        return self.input_locator['saved_items'].val
 
 
 

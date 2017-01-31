@@ -6,23 +6,22 @@ from twisted.protocols.policies import TimeoutMixin
 from slacxplug import SlacxPlugin
 from ..operations import optools
 
-class SlacxSpecClient(SlacxPlugin):
+class SlacxTCPClient(SlacxPlugin):
 
     def __init__(self):
         input_names = ['host','port']
-        super(SlacxSpecClient,self).__init__(input_names)
+        super(SlacxTCPClient,self).__init__(input_names)
         self.input_src['host'] = optools.user_input
         self.input_src['port'] = optools.user_input
         self.input_type['host'] = optools.str_type
         self.input_type['port'] = optools.int_type
         self.input_doc['host'] = 'string representing host name or IP address'
-        self.input_doc['port'] = 'integer port number at which SpecInfoServer should be listening on host' 
+        self.input_doc['port'] = 'integer port number at which some server will be listening' 
        
     def start(self):
         self.host = self.inputs['host'] 
         self.port = self.inputs['port'] 
-        # Fire up a ClientFactory whose protocol is SpecInfoServerProtocol.
-        self.client_factory = SpecClientFactory(SpecInfoServerProtocol)
+        self.client_factory = TCPClientFactory(TCPTestProtocol)
         # Set up the TCP connection with host and port, specify the factory
         reactor.connectTCP(self.host, self.port, self.client_factory)
 
@@ -31,26 +30,18 @@ class SlacxSpecClient(SlacxPlugin):
         # TODO: Anything else for cleaning up the connections.
 
     def description(self):
-        desc = str('SpecInfoServer Client Plugin for Slacx: '
-            + 'This is a TCP Client used to communicate with SpecInfoServer. '
-            + 'Startup requires a host name and a port number, '
-            + 'where it is expected that SpecInfoServer will be listening.')
+        desc = str('TCP Client Plugin for Slacx: '
+            + 'This is a TCP Client for general purpose and testing.')
         return desc
 
     def content(self):
         return {'inputs':self.inputs,'history':self.client_factory.history,'client_factory':self.client_factory}
 
-    def send_commands(self,cmd_list):
-        self.client_factory.cmd_list = cmd_list
-        # Run the reactor to start the twisted event loop
-        reactor.run()
-
     def send_text(self,txt):
         self.client_factory.cmd_list = [txt]
         reactor.run()                   
 
-#--------------------------------------------------------------------------------------------------------------------------#
-class SpecInfoServerProtocol(LineReceiver, TimeoutMixin):
+class TCPTestProtocol(LineReceiver):
 
     def __init__(self):
         """
@@ -73,13 +64,7 @@ class SpecInfoServerProtocol(LineReceiver, TimeoutMixin):
         #self.sendLineFromList() 
 
     def lineReceived(self, line):
-        # Handle lines received from Spec server
-        #print "received: %s" % line
-        if line != "spec is busy!":
-            self.factory.history.append('COMMAND: {} RESPONSE: {}'.format(self.factory.cmdList[0],line))
-            del self.cmdList[0]
-        self.resetTimeout()
-        self.send_lines() 
+        self.factory.history.append('RECEIVED: {}'.format(line))
  
     def connectionLost(self):
         # Dereference any objects specific to this Protocol.
@@ -92,20 +77,20 @@ class SpecInfoServerProtocol(LineReceiver, TimeoutMixin):
             self.factory.history.append('COMMAND LIST EMPTY: LOSING CONNECTION')
             self.transport.loseConnection()
         else:
-            line = self.cmdList[0]
+            line = self.cmdList.pop(0)
             #print "send: %s" % line
             self.factory.history.append('SEND: {}'.format(line))
             #LineReceiver.sendLine(self, line)
             self.sendLine(line)
             # call self.timeoutConnection after 5 seconds
-            self.setTimeout(5)
+            #self.setTimeout(5)
 
-    def timeoutConnection(self):
-        #print "Connection timeout, communication aborted"
-        self.factory.history.append('TIMEOUT: aborting connection')
-        self.transport.abortConnection()
+    #def timeoutConnection(self):
+    #    #print "Connection timeout, communication aborted"
+    #    self.factory.history.append('TIMEOUT: aborting connection')
+    #    self.transport.abortConnection()
 
-class SpecClientFactory(ClientFactory):
+class TCPClientFactory(ClientFactory):
 
     def __init__(self, protocol):
         #print "ClientFactory build"

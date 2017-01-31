@@ -310,8 +310,9 @@ class WfManager(TreeModel):
             op = itm.data
             inputs_rdy = []
             for name,il in op.input_locator.items():
-                if ( (il.src == optools.batch_input and not itm.tag()+'.'+optools.inputs_tag+'.'+name in batch_routes)
-                or   (il.src == optools.wf_input and il.tp == optools.auto_type and not il.val in valid_wf_inputs) ):
+                if il.src == optools.wf_input and il.tp == optools.auto_type and not il.val in valid_wf_inputs:
+                    inp_rdy = False
+                elif il.src == optools.batch_input and not itm.tag()+'.'+optools.inputs_tag+'.'+name in batch_routes:
                     inp_rdy = False
                 else:
                     inp_rdy = True
@@ -441,15 +442,13 @@ class WfManager(TreeModel):
         self.wait_for_thread(thd)
         self.write_log('SERIAL EXECUTION FINISHED in thread {}'.format(thd))
 
-    def run_wf_realtime(self,rt_layer):
+    def run_wf_realtime(self,rt_itm,stk):
         """
         Executes the workflow under the control of one Realtime controller Operation.
-        The input rt_layer is expected to be [rt_item,rt_stack],
-        where the realtime controller Operation is found at rt_item.data.
+        where the realtime controller Operation is found at rt_itm.data.
         """
         self.write_log( 'Preparing Realtime controller... ' )
-        rt = rt_layer[0].data
-        rt_stk = rt_layer[1]
+        rt = rt_itm.data
         self.load_inputs(rt)
         rt.run()
         self.update_op(rt_itm.tag(),rt)
@@ -469,16 +468,11 @@ class WfManager(TreeModel):
                     self.set_op_input_at_uri(uri,val)
                 thd = self.next_available_thread()
                 self.write_log( 'REALTIME EXECUTION {} in thread {}'.format(nx,thd))
-                self.run_wf_serial(rt_stk,thd)
+                self.run_wf_serial(stk,thd)
                 opdict = OrderedDict()
                 for uri in rt.saved_items():
                     itm,idx = self.get_from_uri(uri)
                     opdict.update(self.wf_item_to_dict(uri,itm))
-                
-                #opdict = {}
-                #for lst in stk:
-                #    for itm in lst:
-                #        opdict.update(self.wf_item_to_dict(itm.tag(),itm))
                 rt.output_list().append(opdict)
                 self.update_op(rt_itm.tag(),rt)
             else:
