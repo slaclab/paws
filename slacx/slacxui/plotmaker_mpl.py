@@ -8,18 +8,15 @@ from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigCanvas
 
 from . import uitools
 
-def display_item(item,uri,viewer,logmethod=None):
-    # Don't proceed unless the item has something interesting to show.
-    if logmethod: 
-        logmethod('Log messages for image viewer not yet implemented')
-    if type(item).__name__ == 'ndarray':
-        dims = np.shape(item)
+def display_item(itm,uri,viewer,logmethod=None):
+    if type(itm).__name__ == 'ndarray':
+        dims = np.shape(itm)
         if len(dims) == 2 and dims[0] > 2 and dims[1] > 2:
-            plot_widget = array_plot_2d(item)
+            plot_widget = array_plot_2d(itm)
         elif len(dims) == 1:
-            plot_widget = array_plot_1d(item)
-    elif type(item).__name__ == 'Figure':
-        plot_widget = plot_mpl_fig(item)
+            plot_widget = array_plot_1d(itm)
+    elif type(itm).__name__ == 'Figure':
+        plot_widget = plot_mpl_fig(itm)
     else:
         plot_widget = None
     if plot_widget:
@@ -33,7 +30,7 @@ def display_item(item,uri,viewer,logmethod=None):
         qlayout.addWidget(plot_widget,0,0,1,1) 
     else:
         # TODO: dialog box: tell user the selected item is uninteresting.
-        print '[{}]: selected item ({}) has no display method'.format(__name__,type(item).__name__)
+        print '[{}]: selected item ({}) has no display method'.format(__name__,type(itm).__name__)
         pass
 
 def array_plot_2d(data_in):
