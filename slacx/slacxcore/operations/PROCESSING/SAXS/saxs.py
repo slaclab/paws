@@ -383,15 +383,6 @@ def generate_spherical_diffraction(q, i0, r0, poly):
     i = i0 * blur(x, poly) * 9.
     return i
 
-def generate_spherical_diffraction_over_noise(q, di, i0, r0, poly):
-    x = q * r0
-    i = i0 * blur(x, poly) * 9.
-    return i/di
-
-def generate_spherical_diffraction_plus_floor(q, i0, r0, poly, noise):
-    i = generate_spherical_diffraction(q, i0, r0, poly) + noise
-    return i
-
 def fullFunction(x):
     y = ((np.sin(x) - x * np.cos(x)) * x**-3)**2
     return y
@@ -780,15 +771,3 @@ def chi_squared(y1, y2):
 
 no_reference_message = '''No reference file exists.  Use the GenerateReferences operation once to generate
 an appropriate file; the file will be saved and need not be generated again.'''
-
-# testing testing
-
-def safe_log(y):
-    bads = (y <= 0) | (np.isnan(y))
-    logy = np.log(y)
-    logy[bads] = np.min(logy[~bads])
-    return logy
-
-def log_diffraction(q, i0, r0, poly):
-    log_diff = safe_log(generate_spherical_diffraction(q, i0, r0, poly))
-    return log_diff
