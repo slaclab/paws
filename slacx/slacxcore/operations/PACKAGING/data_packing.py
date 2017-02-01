@@ -134,7 +134,7 @@ class XYDataFromBatch(Operation):
         y_all = np.array([d[y_key] for d in b_out if y_key in d.keys()],dtype=float)
         self.outputs['x'] = x_all 
         self.outputs['y'] = y_all 
-        self.outputs['x_y'] = zip(x_all,y_all) 
+        self.outputs['x_y'] = np.array(zip(x_all,y_all))
         self.outputs['x_y_sorted'] = np.sort(np.array(zip(x_all,y_all)),0)
 
 class Window_q_I_2(Operation):

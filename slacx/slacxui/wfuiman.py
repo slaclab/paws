@@ -199,6 +199,8 @@ class WfUiManager(object):
             msg_ui.setWindowTitle("Tag Error")
             msg_ui.message_box.setPlainText(self.wfman.tag_error(uri,result[1]))
             msg_ui.show()
+        self.ui.close()
+        self.ui.deleteLater()
 
     def clear_io(self):
         self.ui.op_name.setText('')
