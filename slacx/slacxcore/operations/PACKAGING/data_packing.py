@@ -124,10 +124,13 @@ class XYDataFromBatch(Operation):
         x_key = self.inputs['x_key']
         y_key = self.inputs['y_key']
         x_all = np.array([d[x_key] for d in b_out if x_key in d.keys()],dtype=float)
-        xmin = np.min(x_all)
+        if any(x_all):
+            xmin = np.min(x_all)
+        else:
+            xmin = 0
         if self.inputs['x_shift_flag']:
             x_all = x_all - xmin
-            xmin = 0 
+            #xmin = 0 
         y_all = np.array([d[y_key] for d in b_out if y_key in d.keys()],dtype=float)
         self.outputs['x'] = x_all 
         self.outputs['y'] = y_all 
