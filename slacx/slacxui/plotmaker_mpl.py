@@ -1,3 +1,4 @@
+import numpy as np
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigCanvas
 #import matplotlib
@@ -13,10 +14,11 @@ def mpl_array_plot_1d(data_in):
     fig = Figure(figsize=(100,100))
     axes = fig.add_subplot(111)
     dims = np.shape(data_in)
-    if dims[1]==2:
-        axes.plot(data_in[:,0],data_in[:,1])
-    elif dims[0]==2: 
-        axes.plot(data_in[0,:],data_in[1,:])
+    if len(dims) > 1:
+        if dims[1]==2:
+            axes.plot(data_in[:,0],data_in[:,1])
+        elif dims[0]==2: 
+            axes.plot(data_in[0,:],data_in[1,:])
     else:
         axes.plot(data_in)
     return FigCanvas(fig)
