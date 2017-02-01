@@ -91,18 +91,19 @@ class TimeTempFromHeader(Operation):
 
 class XYDataFromBatch(Operation):
     """
-    From input iterables of x and y, 
-    produce an n-by-2 array 
+    Given a batch output and appropriate keys, 
+    use the keys to harvest x and y data from the batch.
     """
 
     def __init__(self):
         input_names = ['batch_output','x_key','y_key','x_shift_flag']
-        output_names = ['x_y']
+        output_names = ['x','y','x_y']
         super(XYDataFromBatch,self).__init__(input_names,output_names)        
         self.input_src['batch_output'] = optools.wf_input
-        self.input_src['x_key'] = optools.user_input
-        self.input_src['y_key'] = optools.user_input
+        self.input_src['x_key'] = optools.wf_input
+        self.input_src['y_key'] = optools.wf_input
         self.input_src['x_shift_flag'] = optools.user_input
+        self.input_type['batch_output'] = optools.auto_type
         self.input_type['x_key'] = optools.str_type
         self.input_type['y_key'] = optools.str_type
         self.input_type['x_shift_flag'] = optools.bool_type
@@ -110,23 +111,28 @@ class XYDataFromBatch(Operation):
         self.inputs['y_key'] = 'Operation.outputs.name'
         self.inputs['x_shift_flag'] = False
         self.input_doc['batch_output'] = 'list of dicts produced by a batch execution. keyed by workflow uris.'
-        self.input_doc['x_key'] = 'uri of data for x. Must be in batch.saved_items(). User input as a string.'
-        self.input_doc['y_key'] = 'uri of data for y. Must be in batch.saved_items(). User input as a string.'
+        self.input_doc['x_key'] = 'uri of data for x. Must be in batch.saved_items().'
+        self.input_doc['y_key'] = 'uri of data for y. Must be in batch.saved_items().'
         self.input_doc['x_shift_flag'] = 'if True, shift x data so that its minimum value is zero.' 
-        self.output_doc['x_y'] = 'n-by-2 array of x and y values, sorted on the x values, shifted to x=0.'
-        self.categories = ['PACKAGING']
+        self.output_doc['x'] = 'array of the x values in batch output order.'
+        self.output_doc['y'] = 'array of the y values in batch output order.'
+        self.output_doc['x_y'] = 'n-by-2 array of x and y values in batch output order.'
+        self.output_doc['x_y_sorted'] = 'n-by-2 array of x and y values, sorted for increasing x.'
 
     def run(self):
         b_out = self.inputs['batch_output']
         x_key = self.inputs['x_key']
         y_key = self.inputs['y_key']
-        x_all = np.array([d[x_key] for d in b_out],dtype=float)
-        if self.inputs['x_shift_flag']:
-            x_all = x_all - np.min(x_all)
-        y_all = np.array([d[y_key] for d in b_out],dtype=float)
+        x_all = np.array([d[x_key] for d in b_out if x_key in d.keys()],dtype=float)
         xmin = np.min(x_all)
-        #import pdb; pdb.set_trace()
-        self.outputs['x_y'] = np.sort(np.array(zip(x_all,y_all)),0)
+        if self.inputs['x_shift_flag']:
+            x_all = x_all - xmin
+            xmin = 0 
+        y_all = np.array([d[y_key] for d in b_out if y_key in d.keys()],dtype=float)
+        self.outputs['x'] = x_all 
+        self.outputs['y'] = y_all 
+        self.outputs['x_y'] = zip(x_all,y_all) 
+        self.outputs['x_y_sorted'] = np.sort(np.array(zip(x_all,y_all)),0)
 
 class Window_q_I_2(Operation):
     """

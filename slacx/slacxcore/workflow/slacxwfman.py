@@ -201,37 +201,6 @@ class WfManager(TreeModel):
         valid_wf_inputs += [itm.tag()+'.'+optools.inputs_tag+'.'+k for k in itm.data.inputs.keys()]
         return valid_wf_inputs
 
-    def batch_op_stack(self,b_itm,valid_wf_inputs):
-        """
-        Use b_itm.data.batch_ops() and a list of valid_wf_inputs 
-        (a list of uris that are good inputs from the workflow)   
-        to build a stack (list) of lists of operations 
-        such that all Operations in the stack have their dependencies satisfied
-        by the Operations above them.     
-        """
-        if isinstance(b_itm.data,Realtime):
-            exec_itms = [self.get_from_uri(uri)[0] for uri in b_itm.data.realtime_ops()]
-        elif isinstance(b_itm.data,Batch):
-            exec_itms = [self.get_from_uri(uri)[0] for uri in b_itm.data.batch_ops()]
-        else:
-            exec_itms = []
-        valid_batch_inputs = copy.copy(valid_wf_inputs)
-        layer = []
-        for test_itm in exec_itms:
-            if self.is_op_ready(test_itm,valid_batch_inputs,b_itm.data.input_routes()):
-                layer.append(test_itm)
-        b_stk = []
-        while any(layer):
-            b_stk.append(layer)
-            for itm in layer:
-                valid_batch_inputs += self.get_valid_wf_inputs(itm)
-            layer = []
-            for test_itm in exec_itms:
-                if self.is_op_ready(test_itm,valid_batch_inputs,b_itm.data.input_routes()) and not self.stack_contains(test_itm,b_stk):
-                    layer.append(test_itm)
-        b_rdy = len(exec_itms) == self.stack_size(b_stk) 
-        return b_stk,b_rdy 
-
     def stack_size(self,stk):
         sz = 0
         for lst in stk:
@@ -322,6 +291,37 @@ class WfManager(TreeModel):
             else:
                 op_rdy = False
         return op_rdy 
+
+    def batch_op_stack(self,b_itm,valid_wf_inputs):
+        """
+        Use b_itm.data.batch_ops() and a list of valid_wf_inputs 
+        (a list of uris that are good inputs from the workflow)   
+        to build a stack (list) of lists of operations 
+        such that all Operations in the stack have their dependencies satisfied
+        by the Operations above them.     
+        """
+        if isinstance(b_itm.data,Realtime):
+            exec_itms = [self.get_from_uri(uri)[0] for uri in b_itm.data.realtime_ops()]
+        elif isinstance(b_itm.data,Batch):
+            exec_itms = [self.get_from_uri(uri)[0] for uri in b_itm.data.batch_ops()]
+        else:
+            exec_itms = []
+        valid_batch_inputs = copy.copy(valid_wf_inputs)+self.get_valid_wf_inputs(b_itm)
+        layer = []
+        for test_itm in exec_itms:
+            if self.is_op_ready(test_itm,valid_batch_inputs,b_itm.data.input_routes()):
+                layer.append(test_itm)
+        b_stk = []
+        while any(layer):
+            b_stk.append(layer)
+            for itm in layer:
+                valid_batch_inputs += self.get_valid_wf_inputs(itm)
+            layer = []
+            for test_itm in exec_itms:
+                if self.is_op_ready(test_itm,valid_batch_inputs,b_itm.data.input_routes()) and not self.stack_contains(test_itm,b_stk):
+                    layer.append(test_itm)
+        b_rdy = len(exec_itms) == self.stack_size(b_stk) 
+        return b_stk,b_rdy 
 
     def next_available_thread(self):
         for idx,th in self._wf_threads.items():
