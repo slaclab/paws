@@ -1,12 +1,9 @@
-import re
-
 import numpy as np
 from PySide import QtCore, QtGui
 from matplotlib.figure import Figure
 from pypif.obj import System
 
 from ..slacxcore.operations.slacxop import Operation 
-from ..slacxcore.operations import optools 
 from . import uitools
 from .widgets.op_widget import OpWidget
 from .widgets.pif_widget import PifWidget

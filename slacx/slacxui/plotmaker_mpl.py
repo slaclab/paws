@@ -12,7 +12,13 @@ def array_plot_1d(data_in):
 def mpl_array_plot_1d(data_in):
     fig = Figure(figsize=(100,100))
     axes = fig.add_subplot(111)
-    axes.plot(data_in)
+    dims = np.shape(data_in)
+    if dims[1]==2:
+        axes.plot(data_in[:,0],data_in[:,1])
+    elif dims[0]==2: 
+        axes.plot(data_in[0,:],data_in[1,:])
+    else:
+        axes.plot(data_in)
     return FigCanvas(fig)
 
 def mpl_array_plot_2d(data_in):
