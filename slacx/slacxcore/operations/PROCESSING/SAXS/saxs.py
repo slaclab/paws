@@ -609,6 +609,7 @@ def first_dip(q, I, dips, dI=None):
     Ibest = polynomial_value(coefficients, qbest)
     return qbest, Ibest, coefficients
 
+
 def polydispersity_metric_sigmaScaledFirstDip(q, I, dips, shoulders, qFirstDip, heightFirstDip, dI=None):
     if dI is None:
         dI = np.ones(I.shape, dtype=float)
