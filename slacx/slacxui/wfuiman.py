@@ -191,16 +191,18 @@ class WfUiManager(object):
         result = self.wfman.is_good_tag(uri)
         if result[0]:
             self.wfman.add_op(uri,self.op) 
+            self.ui.close()
+            self.ui.deleteLater()
         elif result[1] == 'Tag not unique':
             self.wfman.update_op(uri,self.op)
+            self.ui.close()
+            self.ui.deleteLater()
         else:
             # Request a different uri 
             msg_ui = uitools.message_ui(self.ui)
             msg_ui.setWindowTitle("Tag Error")
             msg_ui.message_box.setPlainText(self.wfman.tag_error(uri,result[1]))
             msg_ui.show()
-        self.ui.close()
-        self.ui.deleteLater()
 
     def clear_io(self):
         self.ui.op_name.setText('')
@@ -407,7 +409,8 @@ class WfUiManager(object):
             trmod = self.wfman.plugman
         elif src == optools.fs_input:
             trmod = QtGui.QFileSystemModel()
-            trmod.setRootPath('.')
+            #trmod.setRootPath('.')
+            trmod.setRootPath(QtCore.QDir.currentPath())
         src_ui.tree.setModel(trmod)
         src_ui.tree.clicked.connect( partial(uitools.toggle_expand,src_ui.tree) )
         #src_ui.tree.expandAll()

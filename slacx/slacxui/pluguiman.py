@@ -275,12 +275,15 @@ class PluginUiManager(object):
         result = self.plugman.is_good_tag(uri)
         if result[0]:
             self.plugman.add_plugin(uri,self.pgin) 
+            self.ui.close()
+            self.ui.deleteLater()
         else:
             # Request a different uri 
             msg_ui = uitools.message_ui(self.ui)
             msg_ui.setWindowTitle("Tag Error")
             msg_ui.message_box.setPlainText(self.plugman.tag_error(uri,result[1]))
             msg_ui.show()
+
 
     def stop_plugin(self):
         """

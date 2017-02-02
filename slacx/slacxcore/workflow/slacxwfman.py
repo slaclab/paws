@@ -30,9 +30,10 @@ class WfManager(TreeModel):
         self._wf_dict = {}       
         # Flags to assist in thread control
         self._running = False
-        self._n_threads = 1
-        self._wf_threads = dict.fromkeys(range(self._n_threads)) 
-        #self._n_threads = QtCore.QThread.idealThreadCount()
+        self._n_threads = QtCore.QThread.idealThreadCount()
+        self._n_wf_threads = 1
+        self._wf_threads = dict.fromkeys(range(self._n_threads)[:self._n_wf_threads]) 
+        #self._wf_threads = dict.fromkeys(range(self._n_threads)) 
         self.logmethod = None
 
     def write_log(self,msg):
@@ -327,13 +328,13 @@ class WfManager(TreeModel):
         for idx,th in self._wf_threads.items():
             if not th:
                 return idx
-        # if none found, wait for thread 0
+        # if none found, wait for first thread in self._wf_threads 
         # TODO: something better
         self.wait_for_thread(0)
-        return 0 
+        return self._wf_threads[0] 
 
     def wait_for_thread(self,th_idx):
-        """Wait for the thread at th_idx to be finished"""
+        """Wait for the thread at self._wf_threads[th_idx] to be finished"""
         done = False
         interval = 1
         wait_iter = 0
@@ -344,6 +345,10 @@ class WfManager(TreeModel):
                 if not self._wf_threads[th_idx].isFinished():
                     done = False
                 if not done:
+                    if wait_iter == 10:
+                        interval *= 10
+                    if wait_iter == 100:
+                        interval *= 10
                     self.loopwait(interval)
                     self.appref.processEvents()
                     wait_iter += 1
@@ -358,30 +363,36 @@ class WfManager(TreeModel):
         done = False
         interval = 10
         wait_iter = 0
-        while not done:
-            done = True
-            for idx,th in self._wf_threads.items():
-                if not th.isFinished():
-                    done = False
-            if not done:
-                self.loopwait(interval)
-                self.appref.processEvents()
-                wait_iter += 1
-        if wait_iter > 0:
-            self.write_log('... waited {}ms for threads to finish'.format(wait_iter*interval))
+        for idx,th in self._wf_threads.items():
+            self.wait_for_thread(idx)
+        #while not done:
+        #    done = True
+        #    for idx,th in self._wf_threads.items():
+        #        if not th.isFinished():
+        #            done = False
+        #    if not done:
+        #        self.loopwait(interval)
+        #        self.appref.processEvents()
+        #        wait_iter += 1
+        #if wait_iter > 0:
+        #    self.write_log('... waited {}ms for threads to finish'.format(wait_iter*interval))
 
     def finish_thread(self,th_idx):
         self.write_log('finished execution in thread {}'.format(th_idx))
         self._wf_threads[th_idx] = None
 
     def loopwait(self,interval):
+        """
+        Create an event loop to delay some time without busywaiting.
+        Time interval is specified in milliseconds.
+        """
         l = QtCore.QEventLoop()
         t = QtCore.QTimer()
         t.setSingleShot(True)
         t.timeout.connect(l.quit)
         t.start(interval)
         l.exec_()
-        # This processEvents() is meant to process any Signals that were emitted during waiting.
+        # processEvents() to handle Signals while waiting.
         self.appref.processEvents()
 
     def run_wf(self):
@@ -418,13 +429,15 @@ class WfManager(TreeModel):
         if self.is_running():
             self.wfdone.emit()
 
-    def run_wf_serial(self,stk,thd=0):
+    def run_wf_serial(self,stk,thd_idx=None):
         """
         Serially execute the operations contained in the stack stk.
         """
-        self.write_log('SERIAL EXECUTION STARTING in thread {}'.format(thd))
+        if not thd_idx:
+            thd_idx = self.next_available_thread()
+        self.write_log('SERIAL EXECUTION STARTING in thread {}'.format(thd_idx))
         for lst in stk:
-            self.wait_for_thread(thd)
+            self.wait_for_thread(thd_idx)
             for itm in lst: 
                 op = itm.data
                 self.load_inputs(op)
@@ -434,13 +447,13 @@ class WfManager(TreeModel):
             wf_thread = QtCore.QThread(self)
             wf_wkr.moveToThread(wf_thread)
             wf_thread.started.connect(wf_wkr.work)
-            wf_thread.finished.connect( partial(self.finish_thread,thd) )
-            msg = 'running {} in thread {}'.format([itm.tag() for itm in lst],thd)
+            wf_thread.finished.connect( partial(self.finish_thread,thd_idx) )
+            msg = 'running {} in thread {}'.format([itm.tag() for itm in lst],thd_idx)
             self.write_log(msg)
-            self._wf_threads[thd] = wf_thread
+            self._wf_threads[thd_idx] = wf_thread
             wf_thread.start()
-        self.wait_for_thread(thd)
-        self.write_log('SERIAL EXECUTION FINISHED in thread {}'.format(thd))
+        self.wait_for_thread(thd_idx)
+        self.write_log('SERIAL EXECUTION FINISHED in thread {}'.format(thd_idx))
 
     def run_wf_realtime(self,rt_itm,stk):
         """
@@ -476,7 +489,8 @@ class WfManager(TreeModel):
                 rt.output_list().append(opdict)
                 self.update_op(rt_itm.tag(),rt)
             else:
-                self.write_log( 'Waiting for new inputs...' )
+                if not waiting_flag:
+                    self.write_log( 'Waiting for new inputs...' )
                 waiting_flag = True
                 self.loopwait(rt.delay())
         self.write_log( 'REALTIME EXECUTION TERMINATED' )
