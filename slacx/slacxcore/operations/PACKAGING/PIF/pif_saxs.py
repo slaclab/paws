@@ -4,95 +4,79 @@ import pypif.obj as pifobj
 from ...slacxop import Operation
 from ... import optools
 
-class PifNPSynthBatch(Operation):
+class PifNPSynth(Operation):
     """
-    Package a nanoparticle solution synthesis SAXS batch into a list of pypif.obj.ChemicalSystem objects.
-    Tag these objects such that each one has context wrt its related objects.
-    For example, a time series of saxs measurements that were all performed during one synthesis experiment
-    should be packaged with a common tag so that data can be extracted from that series of objects,
-    for example to build time-temperature or time-size plots.
+    Package results from nanoparticle solution synthesis into a pypif.obj.ChemicalSystem object.
     """
 
     def __init__(self):
-        input_names = ['saxs_batch_output','system_name']
-        output_names = ['pif_stack']
-        super(PifNPSynthBatch,self).__init__(input_names,output_names)
-        self.input_doc['saxs_batch_output'] = str('batch output (list of dicts)' 
-        + ' from processing a series of saxs spectra from a nanoparticle synthesis experiment')
-        self.input_doc['system_name'] = 'A globally unique string to be used as a tag for this batch' 
-        self.output_doc['pif_stack'] = 'A stack pif objects, one for each dict in saxs_batch_output'
-        self.categories = ['PACKAGING.PIF']
-        self.input_src['saxs_batch_output'] = optools.wf_input
-        self.input_src['system_name'] = optools.user_input
-        self.input_type['system_name'] = optools.str_type
-        
-    def run(self):
-        sbatch = self.inputs['saxs_batch_output']
-        sysname = self.inputs['system_name']
-        pif_stack = []
-        time_stack = []
-        # ChemicalSystem constructor (all args default None): 
-        # __init__(self,uid,names,ids,source,quantity,chemical_formula,composition,
-        # properties,preparation,sub_systems,references,contact,licenses,tags,kwargs)
-        colloid_sys = pifobj.ChemicalSystem(sysname+'_pd_colloid',['Pd nanoparticle colloid'],None,None,None,'Pd') 
-        acid_sys = pifobj.ChemicalSystem(sysname+'_oleic_acid',['oleic acid'],None,None,None,'C18H34O2') 
-        amine_sys = pifobj.ChemicalSystem(sysname+'_oleylamine',['oleylamine'],None,None,None,'C18H35NH2') 
-        TOP_sys = pifobj.ChemicalSystem(sysname+'_trioctylphosphine',['trioctylphosphine'],None,None,None,'P(C8H17)3')
-        subsys = []
-        subsys.append(colloid_sys)
-        subsys.append(acid_sys)
-        subsys.append(amine_sys)
-        subsys.append(TOP_sys)
-        t_all = np.array([d['TimeTempFromHeader_1.outputs.time'] for d in sbatch],dtype=float)
-        t0 = np.min(t_all)
-        for d in sbatch:
-            temp_i = float(d['TimeTempFromHeader_1.outputs.temp'])
-            t_i = float(d['TimeTempFromHeader_1.outputs.time'])-t0 
-            chemsys = pifobj.ChemicalSystem()
-            chemsys.names = ['Pd nanoparticles']
-            chemsys.sub_systems = []
-            for s in subsys:
-                # TODO: Get quantity information built into workflow
-                # so that it can be added to the sub_system 
-                # TODO ALSO: When quantity info is available, use it to build chemsys.composition
-                chemsys.sub_systems.append(s)
-            q_I_saxs = d['WindowZip_1.outputs.x_y_window']
-            saxs_props = self.saxs_to_pifprops(q_I_saxs,t_i,temp_i)
-            chemsys.properties = saxs_props
-            chemsys.tags = ['SSRL','SLAC','BEAMLINE 1-5','BEAM ENERGY XXXeV','DETECTOR XXX']
-            time_stack.append(t_i)
-            pif_stack.append(chemsys)
-        # Sort and save the output
-        stk_sorted = np.sort(np.array(zip(time_stack,pif_stack)),0)
-        for i in range(np.shape(stk_sorted)[0]):
-            stk_sorted[i,1].uid = sysname+'_{}'.format(i)
-        self.outputs['pif_stack'] = list(stk_sorted[:,1])
+        input_names = ['name','q','I','t','t_utc','T']
+        output_names = ['pif']
+        super(PifNPSynth,self).__init__(input_names,output_names)
+        self.input_doc['name'] = 'user input string used as pif record uid'
+        self.input_doc['q'] = 'array of q values for saxs spectrum'
+        self.input_doc['I'] = 'array of I(q) for saxs spectrum'
+        self.input_doc['t'] = 'string date/time from measurement header file for pif record uid suffix'
+        self.input_doc['t_utc'] = 'time in seconds utc'
+        self.input_doc['T'] = 'temperature in degrees celsius from measurement header file'
+        self.output_doc['pif'] = 'pif object containing the relevant data for this experiment'
+        self.input_src['name'] = optools.user_input
+        self.input_src['q'] = optools.wf_input
+        self.input_src['I'] = optools.wf_input
+        self.input_src['t'] = optools.wf_input
+        self.input_src['t_utc'] = optools.wf_input
+        self.input_src['T'] = optools.wf_input
+        self.input_type['name'] = optools.str_type
+        self.input_type['q'] = optools.auto_type
+        self.input_type['I'] = optools.auto_type
+        self.input_type['t'] = optools.auto_type
+        self.input_type['t_utc'] = optools.auto_type
+        self.input_type['T'] = optools.auto_type
 
-    def saxs_to_pifprops(self,q_I,time_,temp_):
+    def run(self):
+        uid_pre = self.inputs['name']
+        t_str = self.inputs['t']
+        t_utc = self.inputs['t_utc']
+        uid_full = uid_pre+'_'+str(int(t_utc))
+        T_C = self.inputs['T']
+        q = self.inputs['q']
+        I_q = self.inputs['I']
+        # Subsystems for solution ingredients
+        colloid_sys = pifobj.ChemicalSystem(uid_pre+'_pd_colloid',['colloidal Pd nanoparticles'],None,None,None,'Pd') 
+        acid_sys = pifobj.ChemicalSystem(uid_pre+'_oleic_acid',['oleic acid'],None,None,None,'C18H34O2') 
+        amine_sys = pifobj.ChemicalSystem(uid_pre+'_oleylamine',['oleylamine'],None,None,None,'C18H35NH2') 
+        TOP_sys = pifobj.ChemicalSystem(uid_pre+'_trioctylphosphine',['trioctylphosphine'],None,None,None,'P(C8H17)3')
+        subsys = [colloid_sys,acid_sys,amine_sys,TOP_sys]
+        # TODO: Quantity information for subsystems
+        main_sys = pifobj.ChemicalSystem()
+        main_sys.uid = uid_full
+        main_sys.sub_systems = subsys
+        main_sys.properties = self.saxs_to_pif_properties(q,I_q,T_C)
+        main_sys.tags = ['reaction id: '+uid_pre,'date: '+t_str,'utc: '+str(int(t_utc))]
+        self.outputs['pif'] = main_sys
+
+    def saxs_to_pif_properties(self,q,I_q,T_C):
         props = []
-        for i in range(np.shape(q_I)[0]):
-            q = q_I[i,0]
-            I = q_I[i,1]
+        for i in range(len(q)):
             p = pifobj.Property()
             p.name = 'SAXS intensity'
-            p.scalars = [ pifobj.Scalar(I) ]
+            p.scalars = [ pifobj.Scalar(I_q[i]) ]
             p.conditions = [] 
-            p.conditions.append( pifobj.Value('scattering vector',[pifobj.Scalar(q)],None,None,'Angstrom^-1') )
-            p.conditions.append( pifobj.Value('temperature',[pifobj.Scalar(temp_)],None,None,'degrees Celsius') )
-            p.conditions.append( pifobj.Value('time',[pifobj.Scalar(time_)],None,None,'seconds') )
+            p.conditions.append( pifobj.Value('scattering vector',[pifobj.Scalar(q[i])],None,None,'Angstrom^-1') )
+            p.conditions.append( pifobj.Value('temperature',[pifobj.Scalar(T_C)],None,None,'degrees Celsius') )
             p.units = 'counts'
             props.append(p)
         return props
         
-    def make_piftemperature(self,t):
-        v = pifobj.Value()
-        v.name = 'temperature'
-        tscl = pifobj.Scalar()
-        tscl.value = str(t)
-        v.scalars = [tscl]
-        v.units = 'degrees Celsius'
-        return v
-
+#    def make_piftemperature(self,t):
+#        v = pifobj.Value()
+#        v.name = 'temperature'
+#        tscl = pifobj.Scalar()
+#        tscl.value = str(t)
+#        v.scalars = [tscl]
+#        v.units = 'degrees Celsius'
+#        return v
+#
 #    def make_pifvector(self,v):
 #        pifv = []
 #        for n in v:

@@ -8,11 +8,11 @@ from text_widgets import display_text, unit_indent
 class PifWidget(QtGui.QTextEdit):
     
     def __init__(self,itm):
-        t = self.display_pif(itm,unit_indent)
+        t = self.print_pif(itm,unit_indent)
         super(PifWidget,self).__init__()
         self.setText(t) 
 
-    def display_pif(self,itm,indent):
+    def print_pif(self,itm,indent):
         t = indent + '(pypif.obj.System)'
         if itm.uid: 
             #string
@@ -22,84 +22,135 @@ class PifWidget(QtGui.QTextEdit):
                 #string
                 t += '<br>' + indent + 'chemical_formula: <br>{}'.format(display_text(itm.chemical_formula,indent+unit_indent))
             if itm.composition is not None:
-                #list of pypif.obj.Composition
+                #array of pypif.obj.Composition
                 t += '<br>' + indent + 'composition: '
-                t += '<br>' + indent + unit_indent + '(list)'
+                t += '<br>' + indent + unit_indent + '(array)'
                 for i,comp in zip(range(len(itm.composition)),itm.composition):
                     t += '<br>' + indent + unit_indent + '{}: <br>{}'.format(
-                    i,self.display_comp(comp,indent+unit_indent+unit_indent))
+                    i,self.print_comp(comp,indent+unit_indent+unit_indent))
         if itm.names is not None: 
-            #list of string
+            #array of string
             t += '<br>' + indent + 'names: '
-            t += '<br>' + indent + unit_indent + '(list)'
+            t += '<br>' + indent + unit_indent + '(array)'
             for i,nm in zip(range(len(itm.names)),itm.names):
                 t += '<br>' + indent + unit_indent + '{}: <br>{}'.format(
                 i, display_text(nm,indent+unit_indent+unit_indent))
         if itm.quantity: 
             #pypif.obj.Quantity
-            t += '<br>' + indent + 'quantity: <br>{}'.format(self.display_qty(itm.quantity,indent+unit_indent))
+            t += '<br>' + indent + 'quantity: <br>{}'.format(self.print_qty(itm.quantity,indent+unit_indent))
         if itm.source: 
             #pypif.obj.Source
-            t += '<br>' + indent + 'source: <br>{}'.format(self.display_src(itm.source,indent+unit_indent))
+            t += '<br>' + indent + 'source: <br>{}'.format(self.print_src(itm.source,indent+unit_indent))
         if itm.preparation is not None: 
-            #list of pypif.obj.ProcessStep
+            #array of pypif.obj.ProcessStep
             t += '<br>' + indent + 'preparation: '
-            t += '<br>' + indent + unit_indent + '(list)'
+            t += '<br>' + indent + unit_indent + '(array)'
             for i,procstep in zip(range(len(itm.preparation)),itm.preparation):
                 t += '<br>' + indent + unit_indent + '{}: <br>{}'.format(
-                i, self.display_procstep(procstep,indent+unit_indent+unit_indent))
+                i, self.print_procstep(procstep,indent+unit_indent+unit_indent))
         if itm.properties is not None: 
-            #list of pypif.obj.Property
+            #array of pypif.obj.Property
             t += '<br>' + indent + 'properties: '
-            t += '<br>' + indent + unit_indent + '(list)'
+            t += '<br>' + indent + unit_indent + '(array)'
             for i,prop in zip(range(len(itm.properties)),itm.properties):
                 t += '<br>' + indent + unit_indent + '{}: <br>{}'.format(
-                i, self.display_prop(prop,indent+unit_indent+unit_indent))
+                i, self.print_prop(prop,indent+unit_indent+unit_indent))
         if itm.tags is not None: 
-            #list of string
+            #array of string
             t += '<br>' + indent + 'tags: '
-            t += '<br>' + indent + unit_indent + '(list)'
+            t += '<br>' + indent + unit_indent + '(array)'
             for i,tg in zip(range(len(itm.tags)),itm.tags):
                 t += '<br>' + indent + unit_indent + '{}: <br>{}'.format(
                 i, display_text(tg,indent+unit_indent+unit_indent))
         if itm.ids is not None: 
-            #list of pypif.obj.Id
+            #array of pypif.obj.Id
             t += '<br>' + indent + 'ids: '
-            t += '<br>' + indent + unit_indent + '(list)'
+            t += '<br>' + indent + unit_indent + '(array)'
             for i,id_ in zip(range(len(itm.ids)),itm.ids):
                 t += '<br>' + indent + unit_indent + '{}: <br>{}'.format(
-                i, self.display_id(id_,indent+unit_indent+unit_indent))
+                i, self.print_id(id_,indent+unit_indent+unit_indent))
         if itm.sub_systems is not None: 
-            #list of pypif.obj.System
+            #array of pypif.obj.System
             t += '<br>' + indent + 'sub_systems: '
-            t += '<br>' + indent + unit_indent + '(list)'
+            t += '<br>' + indent + unit_indent + '(array)'
             for i,sys in zip(range(len(itm.sub_systems)),itm.sub_systems):
                 t += '<br>' + indent + unit_indent + '{}: <br>{}'.format(
-                i, self.display_pif(sys,indent+unit_indent+unit_indent))
+                i, self.print_pif(sys,indent+unit_indent+unit_indent))
         return t    
+
+    def print_id(self,id_,indent):
+        t = indent + '(pypif.obj.Id)'
+        return t
     
-    def display_comp(self,itm,indent):    
+    def print_comp(self,itm,indent):    
         t = indent + '(pypif.obj.Composition)'
         return t
     
-    def display_qty(self,itm,indent):    
+    def print_qty(self,itm,indent):    
         t = indent + '(pypif.obj.Quantity)'
         return t
 
-    def display_src(self,itm,indent):    
+    def print_src(self,itm,indent):    
         t = indent + '(pypif.obj.Source)'
         return t
 
-    def display_procstep(self,itm,indent):
+    def print_procstep(self,itm,indent):
         t = indent + '(pypif.obj.ProcessStep)'
         return t
 
-    def display_prop(self,itm,indent):
+    def print_prop(self,itm,indent):
         t = indent + '(pypif.obj.Property)'
+        t += '<br>' + indent + 'name: {}'.format(itm.name) 
+        t += '<br>' + indent + 'conditions: ' 
+        t += '<br>' + indent + unit_indent + '(array)'
+        for i,val in zip(range(len(itm.conditions)),itm.conditions):
+            t += '<br>' + indent + unit_indent + '{}: <br>{}'.format(
+            i, self.print_value(val,indent+unit_indent+unit_indent))
+        t += '<br>' + indent + 'scalars: ' 
+        t += '<br>' + indent + unit_indent + '(array)'
+        for i,scl in zip(range(len(itm.scalars)),itm.scalars):
+            t += '<br>' + indent + unit_indent + '{}: <br>{}'.format(
+            i, self.print_scalar(scl,indent+unit_indent+unit_indent))
         return t
 
-    def display_id(self,id_,indent):
-        t = indent + '(pypif.obj.Id)'
+    def print_value(self,itm,indent):
+        t = indent + '(pypif.obj.Value)'
+        if any(itm.scalars):
+            t += '<br>' + indent + 'scalars: '
+            t += '<br>' + indent + unit_indent + '(array)'
+            for i,scl in zip(range(len(itm.scalars)),itm.scalars):
+                t += '<br>' + indent + unit_indent + '{}: <br>{}'.format(
+                i, self.print_scalar(scl,indent+unit_indent+unit_indent))
+        elif any(itm.vectors):
+            t += '<br>' + indent + 'vectors: '
+            t += '<br>' + indent + unit_indent + '(array)'
+            for i,vec in zip(range(len(itm.vectors)),itm.vectors):
+                t += '<br>' + indent + unit_indent + '{}: <br>{}'.format(
+                i, self.print_vector(vec,indent+unit_indent+unit_indent))
+        elif any(itm.matrices):
+            t += '<br>' + indent + 'matrices: '
+            t += '<br>' + indent + unit_indent + '(array)'
+            for i,mat in zip(range(len(itm.matrices)),itm.matrices):
+                t += '<br>' + indent + unit_indent + '{}: <br>{}'.format(
+                i, self.print_matrix(mat,indent+unit_indent+unit_indent))
         return t
 
+    def print_scalar(self,itm,indent):
+        t = indent + '(pypif.obj.Scalar)'
+        t += '<br>' + indent + 'value: {}'.format(itm.value) 
+        return t
+
+    def print_vector(self,itm,indent):
+        t = indent + '(array)'
+        for i,scl in zip(range(len(itm)),itm):
+            t += '<br>' + indent + unit_indent + '{}: <br>{}'.format(
+            i, self.print_scalar(scl,indent+unit_indent+unit_indent))
+        return t
+
+    def print_matrix(self,itm,indent):
+        t = indent + '(array)'
+        for i,vec in zip(range(len(itm)),itm):
+            t += '<br>' + indent + unit_indent + '{}: <br>{}'.format(
+            i, self.print_vector(vec,indent+unit_indent+unit_indent))
+        return t
 

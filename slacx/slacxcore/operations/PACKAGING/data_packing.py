@@ -97,7 +97,7 @@ class XYDataFromBatch(Operation):
 
     def __init__(self):
         input_names = ['batch_output','x_key','y_key','x_shift_flag']
-        output_names = ['x','y','x_y']
+        output_names = ['x','y','x_y','x_y_sorted']
         super(XYDataFromBatch,self).__init__(input_names,output_names)        
         self.input_src['batch_output'] = optools.wf_input
         self.input_src['x_key'] = optools.wf_input
@@ -135,7 +135,10 @@ class XYDataFromBatch(Operation):
         self.outputs['x'] = x_all 
         self.outputs['y'] = y_all 
         self.outputs['x_y'] = np.array(zip(x_all,y_all))
-        self.outputs['x_y_sorted'] = np.sort(np.array(zip(x_all,y_all)),0)
+        #self.outputs['x_y_sorted'] = np.sort(np.array(zip(x_all,y_all)),0)
+        x_sort = np.sort(x_all)
+        y_xsort = np.array([y_all[i] for i in np.argsort(x_all)])
+        self.outputs['x_y_sorted'] = np.array(zip(x_sort,y_xsort))
 
 class Window_q_I_2(Operation):
     """
