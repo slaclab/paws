@@ -7,25 +7,28 @@ from ...slacxop import Operation
 from ... import optools
 from .... import slacxtools
 
-class CheckCitrinationClient(Operation):
+class CheckDataSet(Operation):
     """
-    Take a Citrination client as input and query it to ensure that it is working.
-    Output some indication of whether or not the client is working.
+    Take a Citrination client as input and use it to query a data set.
+    Output some indication of whether or not the query was successful.
     """
     
     def __init__(self):
-        input_names = ['client']
+        input_names = ['client','dsid']
         output_names = ['ok_flag','status']
         super(CheckCitrinationClient,self).__init__(input_names,output_names)
         self.input_doc['client'] = 'A reference to a running Citrination client.'
-        self.output_doc['ok_flag'] = 'Indicator of whether or not the client passes the test.'
-        self.output_doc['status'] = 'Message describing the state of the client'
+        self.input_doc['dsid'] = 'The data set to be queried.'
+        self.output_doc['ok_flag'] = 'Indicator of whether or not the data set passes the test.'
+        self.output_doc['status'] = 'Message describing the state of the data set.'
         self.input_src['client'] = optools.plugin_input
+        self.input_src['dsid'] = optools.plugin_input
+        self.input_type['dsid'] = optools.int_type
 
     def run(self):
         c = self.inputs['client']
+        dsid = self.inputs['dsid'] 
         f = True
-        dsid = 2667
         try:
             r = c.get_dataset_files(dsid)
             s = 'client successfully queried data set number {}'.format(dsid)
