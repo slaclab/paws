@@ -76,6 +76,8 @@ class OpWidget(QtGui.QWidget):
             p.drawLine(QtCore.QPoint(recthorz-5,vcrd),QtCore.QPoint(recthorz+10,vcrd))
             p.drawLine(QtCore.QPoint(recthorz+10,vcrd-10),QtCore.QPoint(recthorz+10,vcrd+10))
             outrec = QtCore.QRectF(QtCore.QPoint(recthorz+12,vcrd-10),QtCore.QPoint(100,vcrd+10))
-            p.drawText(outrec,QtCore.Qt.AlignLeft|QtCore.Qt.AlignVCenter,str(val))#|QtCore.Qt.TextWordWrap,str(val))
+            p.drawText(outrec,QtCore.Qt.AlignLeft|QtCore.Qt.AlignVCenter,type(val).__name__)
+            #p.drawText(outrec,QtCore.Qt.AlignLeft|QtCore.Qt.AlignVCenter,str(val))
+            #|QtCore.Qt.TextWordWrap,str(val))
             vcrd += 2*ispc
 

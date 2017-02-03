@@ -52,9 +52,9 @@ class Operation(object):
             val = None
             if not self.input_src[name] == optools.no_input:
                 src = self.input_src[name]
-                if (self.input_type[name] == optools.none_type
-                and src in [optools.wf_input,optools.fs_input,optools.batch_input,optools.plugin_input]):
-                    self.input_type[name] = optools.auto_type
+                #if (self.input_type[name] == optools.none_type
+                #and src in [optools.wf_input,optools.fs_input,optools.batch_input,optools.plugin_input]):
+                #    self.input_type[name] = optools.auto_type
                 if (not self.input_type[name] == optools.none_type
                 and not self.input_type[name] in optools.invalid_types[src]):
                     tp = self.input_type[name]

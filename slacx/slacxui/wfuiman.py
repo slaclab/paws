@@ -274,7 +274,9 @@ class WfUiManager(object):
             if (self.op.input_locator[name].tp not in optools.invalid_types[src]
             and self.op.input_locator[name].src == src):
                 new_type_widget.setCurrentIndex(self.op.input_locator[name].tp)
-        elif src in [optools.fs_input,optools.plugin_input,optools.batch_input]:
+        elif src == optools.fs_input:
+            new_type_widget.setCurrentIndex(optools.str_type)
+        elif src in [optools.wf_input,optools.plugin_input,optools.batch_input]:
             new_type_widget.setCurrentIndex(optools.auto_type)
         if new_type_widget.currentIndex() in optools.invalid_types[src]:
             new_type_widget.setCurrentIndex(optools.none_type)

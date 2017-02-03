@@ -10,32 +10,32 @@ class PifNPSynth(Operation):
     """
 
     def __init__(self):
-        input_names = ['name','q','I','t','t_utc','T']
+        input_names = ['name','q','I','date_time','t_utc','T']
         output_names = ['pif']
         super(PifNPSynth,self).__init__(input_names,output_names)
         self.input_doc['name'] = 'user input string used as pif record uid'
         self.input_doc['q'] = 'array of q values for saxs spectrum'
         self.input_doc['I'] = 'array of I(q) for saxs spectrum'
-        self.input_doc['t'] = 'string date/time from measurement header file for pif record uid suffix'
+        self.input_doc['date_time'] = 'string date/time from measurement header file for pif record tags'
         self.input_doc['t_utc'] = 'time in seconds utc'
         self.input_doc['T'] = 'temperature in degrees celsius from measurement header file'
         self.output_doc['pif'] = 'pif object containing the relevant data for this experiment'
         self.input_src['name'] = optools.user_input
         self.input_src['q'] = optools.wf_input
         self.input_src['I'] = optools.wf_input
-        self.input_src['t'] = optools.wf_input
+        self.input_src['date_time'] = optools.wf_input
         self.input_src['t_utc'] = optools.wf_input
         self.input_src['T'] = optools.wf_input
         self.input_type['name'] = optools.str_type
         self.input_type['q'] = optools.auto_type
         self.input_type['I'] = optools.auto_type
-        self.input_type['t'] = optools.auto_type
+        self.input_type['date_time'] = optools.auto_type
         self.input_type['t_utc'] = optools.auto_type
         self.input_type['T'] = optools.auto_type
 
     def run(self):
         uid_pre = self.inputs['name']
-        t_str = self.inputs['t']
+        t_str = self.inputs['date_time']
         t_utc = self.inputs['t_utc']
         uid_full = uid_pre+'_'+str(int(t_utc))
         T_C = self.inputs['T']

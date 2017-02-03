@@ -95,30 +95,32 @@ class PifWidget(QtGui.QTextEdit):
     def print_prop(self,itm,indent):
         t = '(pypif.obj.Property)'
         t += '<br>' + indent + 'name: {}'.format(display_text(itm.name,indent+unit_indent))
-        t += '<br>' + indent + 'conditions: (array)' 
-        for i,val in zip(range(len(itm.conditions)),itm.conditions):
-            t += '<br>' + indent + unit_indent + '{}: {}'.format(
-            i, self.print_value(val,indent+unit_indent+unit_indent))
-        t += '<br>' + indent + 'scalars: (array)' 
-        for i,scl in zip(range(len(itm.scalars)),itm.scalars):
-            t += '<br>' + indent + unit_indent + '{}: {}'.format(
-            i, self.print_scalar(scl,indent+unit_indent+unit_indent))
+        if itm.conditions is not None:
+            t += '<br>' + indent + 'conditions: (array)' 
+            for i,val in zip(range(len(itm.conditions)),itm.conditions):
+                t += '<br>' + indent + unit_indent + '{}: {}'.format(
+                i, self.print_value(val,indent+unit_indent+unit_indent))
+        if itm.scalars is not None:
+            t += '<br>' + indent + 'scalars: (array)' 
+            for i,scl in zip(range(len(itm.scalars)),itm.scalars):
+                t += '<br>' + indent + unit_indent + '{}: {}'.format(
+                i, self.print_scalar(scl,indent+unit_indent+unit_indent))
         return t
 
     def print_value(self,itm,indent):
         t = '(pypif.obj.Value)'
         t += '<br>' + indent + 'name: {}'.format(display_text(itm.name,indent+unit_indent))
-        if any(itm.scalars):
+        if itm.scalars is not None:
             t += '<br>' + indent + 'scalars: (array)'
             for i,scl in zip(range(len(itm.scalars)),itm.scalars):
                 t += '<br>' + indent + unit_indent + '{}: {}'.format(
                 i, self.print_scalar(scl,indent+unit_indent+unit_indent))
-        elif any(itm.vectors):
+        elif itm.vectors is not None:
             t += '<br>' + indent + 'vectors: (array)'
             for i,vec in zip(range(len(itm.vectors)),itm.vectors):
                 t += '<br>' + indent + unit_indent + '{}: {}'.format(
                 i, self.print_vector(vec,indent+unit_indent+unit_indent))
-        elif any(itm.matrices):
+        elif itm.matrices is not None:
             t += '<br>' + indent + 'matrices: (array)'
             for i,mat in zip(range(len(itm.matrices)),itm.matrices):
                 t += '<br>' + indent + unit_indent + '{}: {}'.format(

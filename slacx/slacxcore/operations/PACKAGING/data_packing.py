@@ -32,15 +32,17 @@ class WindowZip(Operation):
         self.output_doc['x_window'] = 'n-by-1 array of x_min<x<x_max'
         self.output_doc['y_window'] = 'n-by-1 array of y for x_min<x<x_max'
         self.output_doc['x_y_window'] = 'n-by-2 array with x, y pairs for x_min<x<x_max'
-        self.categories = ['PACKAGING']
 
     def run(self):
         xvals = self.inputs['x']
         yvals = self.inputs['y']
         x_min = self.inputs['x_min']
         x_max = self.inputs['x_max']
-        idx_good = ((xvals > x_min) & (xvals < x_max))
-        x_y_window = np.zeros((idx_good.sum(),2))
+        try:
+            idx_good = ((xvals > x_min) & (xvals < x_max))
+            x_y_window = np.zeros((idx_good.sum(),2))
+        except Exception as ex:
+            import pdb; pdb.set_trace()
         x_y_window[:,0] = xvals[idx_good]
         x_y_window[:,1] = yvals[idx_good]
         self.outputs['x_window'] = x_y_window[:,0]
