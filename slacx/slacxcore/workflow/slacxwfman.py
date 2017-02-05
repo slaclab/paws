@@ -457,7 +457,7 @@ class WfManager(TreeModel):
 
     def run_wf_realtime(self,rt_itm,stk):
         """
-        Executes the workflow under the control of one Realtime controller Operation.
+        Executes the workflow under the control of one Realtime controller Operation,
         where the realtime controller Operation is found at rt_itm.data.
         """
         #self.write_log( 'Preparing Realtime controller... ' )
@@ -473,8 +473,9 @@ class WfManager(TreeModel):
             # will generate lists of input values whose respective routes are rt.input_routes().
             # unless there are no new inputs to run, in which case it will iterate None. 
             vals = rt.input_iter().next()
-            inp_dict = dict( zip(rt.input_routes(), vals) )
-            if inp_dict and not None in vals:
+            if not None in vals:
+                inp_dict = dict( zip(rt.input_routes(), vals) )
+                #if inp_dict and not None in vals:
                 waiting_flag = False
                 nx += 1
                 for uri,val in inp_dict.items():
