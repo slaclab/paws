@@ -68,7 +68,7 @@ class TextureFeatures(Operation):
         chi_count = np.bincount((q.ravel()*100).astype(int), (keep*np.cos(chi)).ravel())
         texture = np.array(texsum) / np.array(I_ave) / np.array(chi_count) - 1
         step = 0.01
-        q_texture = np.arange(step,np.max(q)+step)
+        q_texture = np.arange(step,np.max(q)+step,step)
         tsqr_int = np.nansum(texture ** 2)/float(q_texture[-1]-q_texture[0])
         self.outputs['q_texture'] = q_texture
         self.outputs['texture'] = texture

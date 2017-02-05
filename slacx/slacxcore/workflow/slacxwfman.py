@@ -331,7 +331,7 @@ class WfManager(TreeModel):
         # if none found, wait for first thread in self._wf_threads 
         # TODO: something better
         self.wait_for_thread(0)
-        return self._wf_threads[0] 
+        return 0
 
     def wait_for_thread(self,th_idx):
         """Wait for the thread at self._wf_threads[th_idx] to be finished"""
@@ -355,8 +355,8 @@ class WfManager(TreeModel):
                     total_wait += interval
                     if interval > float(total_wait)*0.1 and interval < 100:
                         interval = interval * 10
-        if wait_iter > 0:
-            self.write_log('... waited {} seconds for thread {}'.format(total_wait*0.001,th_idx))
+        #if wait_iter > 0:
+        #    self.write_log('... waited {} seconds for thread {}'.format(total_wait*0.001,th_idx))
 
     def wait_for_threads(self):
         """Wait for all workflow execution threads to finish"""
@@ -378,7 +378,7 @@ class WfManager(TreeModel):
         #    self.write_log('... waited {}ms for threads to finish'.format(wait_iter*interval))
 
     def finish_thread(self,th_idx):
-        self.write_log('finished execution in thread {}'.format(th_idx))
+        #self.write_log('finished execution in thread {}'.format(th_idx))
         self._wf_threads[th_idx] = None
 
     def loopwait(self,interval):
@@ -435,7 +435,7 @@ class WfManager(TreeModel):
         """
         if not thd_idx:
             thd_idx = self.next_available_thread()
-        self.write_log('SERIAL EXECUTION STARTING in thread {}'.format(thd_idx))
+        #self.write_log('SERIAL EXECUTION STARTING in thread {}'.format(thd_idx))
         for lst in stk:
             self.wait_for_thread(thd_idx)
             for itm in lst: 
@@ -453,14 +453,14 @@ class WfManager(TreeModel):
             self._wf_threads[thd_idx] = wf_thread
             wf_thread.start()
         self.wait_for_thread(thd_idx)
-        self.write_log('SERIAL EXECUTION FINISHED in thread {}'.format(thd_idx))
+        #self.write_log('SERIAL EXECUTION FINISHED in thread {}'.format(thd_idx))
 
     def run_wf_realtime(self,rt_itm,stk):
         """
         Executes the workflow under the control of one Realtime controller Operation.
         where the realtime controller Operation is found at rt_itm.data.
         """
-        self.write_log( 'Preparing Realtime controller... ' )
+        #self.write_log( 'Preparing Realtime controller... ' )
         rt = rt_itm.data
         self.load_inputs(rt)
         rt.run()
@@ -500,7 +500,7 @@ class WfManager(TreeModel):
         """
         Executes the items in the stack stk under the control of one Batch controller Operation
         """
-        self.write_log( 'Preparing Batch controller... ' )
+        #self.write_log( 'Preparing Batch controller... ' )
         b = b_itm.data
         self.load_inputs(b)
         b.run()

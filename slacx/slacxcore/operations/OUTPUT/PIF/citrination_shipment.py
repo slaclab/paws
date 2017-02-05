@@ -42,7 +42,7 @@ class CheckDataSet(Operation):
                 s = 'client queried data set {} but found no dataset in response dict: Response: {}'.format(dsid,r)
                 f = True
         except Exception as ex:
-            s = 'client failed to query data set number {}. Error message: '.format(dsid) + ex.message
+            s = 'client failed to query data set number {}. Error message: {}'.format(dsid,ex.message)
             f = False
         self.outputs['ok_flag'] = f
         self.outputs['status'] = s

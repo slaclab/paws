@@ -256,7 +256,7 @@ def start_list_builder(src,lm,parent=None):
         list_ui.value_entry.setReadOnly(True)
         list_ui.type_selector.model().set_disabled(optools.none_type)
         list_ui.type_selector.model().set_disabled(optools.auto_type)
-        list_ui.type_selector.setCurrentIndex(optools.str_type)
+    list_ui.type_selector.setCurrentIndex(optools.str_type)
     list_ui.load_button.setText('Load')
     list_ui.finish_button.setText('Finish')
     list_ui.remove_button.setText('Remove')

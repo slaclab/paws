@@ -12,8 +12,9 @@ class ListModel(QtCore.QAbstractListModel):
         super(ListModel,self).__init__(parent)
         self._list_data = []
         self._enabled = []
-        for thing in input_list:
-            self.append_item(thing)
+        if input_list is not None:
+            for thing in input_list:
+                self.append_item(thing)
         
     def append_item(self,thing):
         ins_row = self.rowCount()

@@ -5,7 +5,41 @@ import numpy as np
 from ..slacxop import Operation
 from ..import optools
 
+class WriteArrayCSV(Operation):
+    """Write a 2d array to a csv file"""
 
+    def __init__(self):
+        input_names = ['array','headers','filepath','filetag']
+        output_names = ['csv_path']
+        super(WriteArrayCSV, self).__init__(input_names, output_names)
+        self.input_doc['array'] = 'any 2d array'
+        self.input_doc['headers'] = 'list of headers- should be one for each column of array'
+        self.input_doc['filepath'] = 'the destination file path- a .csv extension is substituted or added as necessary'
+        self.input_doc['filetag'] = '(optional) text inserted between filename and extension- result is <filepath><filetag>.csv'
+        self.output_doc['csv_path'] = 'the path to the finished csv file'
+        self.input_src['array'] = optools.wf_input
+        self.input_src['headers'] = optools.user_input
+        self.input_src['filepath'] = optools.wf_input
+        self.input_src['filetag'] = optools.user_input
+        self.input_type['array'] = optools.auto_type
+        self.input_type['headers'] = optools.list_type
+        self.input_type['filepath'] = optools.auto_type
+        self.input_type['filetag'] = optools.str_type
+
+    def run(self):
+        csv_path = self.inputs['filepath']
+        h = self.inputs['headers']
+        a = self.inputs['array']
+        #if not splitext(csv_path)[1] == '.csv'
+        csv_path = splitext(csv_path)[0]+self.inputs['filetag']+'.csv'
+        #else:
+        #    csv_path = splitext(csv_path)[0]+self.inputs['filetag']+'.csv'
+        self.outputs['csv_path'] = csv_path
+        h_str = ''
+        for hitem in h:
+            h_str += hitem+', '
+        h_str = h_str[:-2]
+        np.savetxt(csv_path, a, delimiter=',', newline=linesep, header=h_str)
 
 class WriteCSV_q_I_dI(Operation):
     """Write q, I, and (if available) dI to a csv-formatted file."""

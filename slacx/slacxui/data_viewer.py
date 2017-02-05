@@ -7,7 +7,7 @@ from ..slacxcore.operations.slacxop import Operation
 from . import uitools
 from .widgets.op_widget import OpWidget
 from .widgets.pif_widget import PifWidget
-from .widgets.text_widgets import display_text 
+from .widgets.text_widgets import display_text, display_text_fast
 
 if uitools.have_qt47:
     from . import plotmaker_pqg as plotmaker
@@ -49,7 +49,8 @@ def display_item(itm,uri,qlayout,logmethod=None):
         plot_widget = None
     
     # Produce widgets for displaying strings, dicts, etc.
-    t = display_text(itm)
+    #t = display_text(itm)
+    t = display_text_fast(itm)
     text_widget = QtGui.QTextEdit(t)
 
     # Assemble whatever widgets were produced, add them to the layout    

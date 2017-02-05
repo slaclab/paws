@@ -38,11 +38,11 @@ class WindowZip(Operation):
         yvals = self.inputs['y']
         x_min = self.inputs['x_min']
         x_max = self.inputs['x_max']
-        try:
-            idx_good = ((xvals > x_min) & (xvals < x_max))
-            x_y_window = np.zeros((idx_good.sum(),2))
-        except Exception as ex:
-            import pdb; pdb.set_trace()
+        #try:
+        idx_good = ((xvals > x_min) & (xvals < x_max))
+        x_y_window = np.zeros((idx_good.sum(),2))
+        #except Exception as ex:
+        #    import pdb; pdb.set_trace()
         x_y_window[:,0] = xvals[idx_good]
         x_y_window[:,1] = yvals[idx_good]
         self.outputs['x_window'] = x_y_window[:,0]

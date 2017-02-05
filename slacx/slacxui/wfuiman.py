@@ -104,6 +104,7 @@ class WfUiManager(object):
         """
         src = self.src_widgets[name].currentIndex()
         tp = self.type_widgets[name].currentIndex()
+        il = None
         if src == optools.no_input:
             il = optools.InputLocator() 
         elif src == optools.batch_input:
@@ -111,21 +112,20 @@ class WfUiManager(object):
             il = optools.InputLocator(src,tp,val) 
         elif src == optools.user_input:
             if tp == optools.list_type:
-                val = ui.list_builder.list_data() 
+                if not ui:
+                    if self.op.input_locator[name] is not None:
+                        il = self.op.input_locator[name]
+                else:
+                    val = ui.list_view.model().list_data()
+                    il = optools.InputLocator(src,tp,val)
             else:
                 val = self.val_widgets[name].text()
-            il = optools.InputLocator(src,tp,val)
+                il = optools.InputLocator(src,tp,val)
         elif (src == optools.wf_input or src == optools.fs_input or src == optools.plugin_input):
             if not ui:
                 # Assume it has already been loaded 
                 if self.op.input_locator[name] is not None:
                     il = self.op.input_locator[name]
-            #    else:
-            #        if tp == optools.list_type:
-            #            val = []
-            #        else:
-            #            val = None
-            #        il = optools.InputLocator(src,tp,val)
             elif tp == optools.list_type:
                 # ui is assumed to be list_builder.ui
                 val = ui.list_view.model().list_data() 
@@ -133,14 +133,12 @@ class WfUiManager(object):
             else:
                 # ui should be the load_browser.ui 
                 il = self.load_from_ui(ui,src,tp,itm_idx)
-            if not il: 
-                if self.op.input_locator[name] is not None:
-                    il = self.op.input_locator[name]
-                else: 
-                    val = None
-                    il = optools.InputLocator(src,tp,val)
-        else: 
-            il = optools.InputLocator()
+        if not il: 
+            if self.op.input_locator[name] is not None:
+                il = self.op.input_locator[name]
+            else: 
+                val = None
+                il = optools.InputLocator(src,tp,val)
         self.val_widgets[name].setText(str(il.val))
         if ui:
             ui.close()

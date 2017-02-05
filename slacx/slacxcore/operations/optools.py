@@ -94,7 +94,14 @@ def parse_wf_input(wfman,il,op):
         return [str(val) for val in val_list(il)]
     elif il.tp == auto_type:
         itm, indx = wfman.get_from_uri(il.val)
-        return itm.data
+        #TODO: fix the following hack
+        # If this points to an input, an InputLocator will be returned.
+        # Fetch its data.
+        if isinstance(itm.data,InputLocator):
+            return itm.data.data
+        else:
+            # itm.data should be actual data.
+            return itm.data
     #uris = val_list(il)
     #rets = []
     #for uri in uris:
