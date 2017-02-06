@@ -90,10 +90,12 @@ class WfUiManager(object):
         This is called on all inputs when an Operation is loaded,
         so leaving the optional arguments as None should not change an already-loaded input.
         This is also called as a signal from data fetching ui's,
-        in which case both optional arguments are expected (see self.load_input).
+        in which case a reference to the ui and a selected item index are expected (optional arguments).
         """
         il = self.load_input(name,src_ui,itm_idx)
         self.op.input_locator[name] = il
+        # dereference the old input
+        self.op.inputs[name] = None 
 
     def load_input(self,name,ui=None,itm_idx=None):
         """

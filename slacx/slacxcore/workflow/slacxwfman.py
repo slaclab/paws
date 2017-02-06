@@ -77,7 +77,7 @@ class WfManager(TreeModel):
             if isinstance(il,optools.InputLocator):
                 src = il.src
                 if not src == optools.batch_input:
-                    il.data = self.locate_input(il,op)
+                    il.data = self.locate_input(il)
                     op.inputs[name] = il.data
                 else:
                     # Expect this input to have been set by self.set_op_input_at_uri().
@@ -88,29 +88,31 @@ class WfManager(TreeModel):
                 __name__, name, il)
                 raise ValueError(msg)
 
-    def locate_input(self,il,op):
+    def locate_input(self,il):
         """
         Return the data pointed to by a given InputLocator object.
-        Takes the Operation that owns this inplocator as a second arg,
-        so that if it is a Batch its input routes can be handled properly.
         """
-        src = il.src
-        tp = il.tp
-        val = il.val
+        if il.tp == optools.none_type:
+            return None
         if src == optools.no_input:
             return None
         elif src == optools.user_input: 
-            return optools.cast_type_val(tp,val)
+            return optools.cast_type_val(tp,il.val)
         elif src == optools.wf_input:
-            return optools.parse_wf_input(self,il,op)
+            if il.tp == str_type:
+                return str(il.val)
+            elif il.tp == auto_type:
+                itm, idx = wfman.get_from_uri(il.val)
+                # Note, this will return an InputLocator
+                # if il.val references an input that has not yet been loaded.
+                return itm.data
         elif src == optools.plugin_input:
-            return optools.parse_plugin_input(self.plugman,il,op)
+            itm, idx = self.plugman.get_from_uri(il.val)
+            return itm.data
         elif src == optools.fs_input:
-            # Trust that Operations using fs input 
-            # are taking care of parsing the file names in whatever form
-            return val 
+            return str(il.val)
         elif src == optools.batch_input:
-            return val 
+            return il.data 
         else: 
             msg = 'found input source {}, should be one of {}'.format(
             src, optools.valid_sources)
@@ -149,8 +151,14 @@ class WfManager(TreeModel):
     def build_dict(self,x):
         """Overloaded build_dict to handle Operations"""
         if isinstance(x,Operation):
-            d = OrderedDict() 
-            d[optools.inputs_tag] = x.input_locator 
+            d = OrderedDict()
+            inp_dict = {}
+            for nm in x.inputs.keys():
+                if x.inputs[nm] is not None:
+                    inp_dict[nm] = x.inputs[nm]
+                else:
+                    inp_dict[nm] = x.input_locator[nm]
+            d[optools.inputs_tag] = inp_dict 
             d[optools.outputs_tag] = x.outputs
         else:
             d = super(WfManager,self).build_dict(x)
@@ -468,6 +476,7 @@ class WfManager(TreeModel):
         self.appref.processEvents()
         nx = 0
         while self._running:
+            # TODO: Ensure rt execution runs smoothly on an initially empty input_iter().
             # TODO: Add a way to stop a realtime execution without stopping the whole workflow.
             # After rt.run(), it is expected that rt.input_iter()
             # will generate lists of input values whose respective routes are rt.input_routes().
@@ -556,13 +565,14 @@ class WfManager(TreeModel):
         Set an op input, indicated by uri, to provided value.
         uri must be of the form op_name.inputs.input_name.
         Currently shallower uris (e.g. op_name.inputs) 
-        and deeper uris (e.g. op_name.inputs.input_dict.input_param)
+        and deeper uris (e.g. op_name.inputs.input_list.0)
         are not supported.
         """
         p = uri.split('.')
         op_itm, idx = self.get_from_uri(p[0])
         op = op_itm.data
         op.inputs[p[2]] = val
+        op.input_locator[p[2]].data = val
 
     # Overloaded data() for WfManager
     def data(self,item_indx,data_role):

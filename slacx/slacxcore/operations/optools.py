@@ -22,18 +22,17 @@ str_type = 2
 int_type = 3
 float_type = 4
 bool_type = 5
-list_type = 6
-valid_types = [none_type,auto_type,str_type,int_type,float_type,bool_type,list_type]
-input_types = ['none','auto','string','integer','float','boolean','list']
+valid_types = [none_type,auto_type,str_type,int_type,float_type,bool_type]
+input_types = ['none','auto','string','integer','float','boolean']
 
 # unsupported types for each source, keyed by source
 invalid_types = {}                
-invalid_types[no_input] = [auto_type,str_type,int_type,float_type,bool_type,list_type]
+invalid_types[no_input] = [auto_type,str_type,int_type,float_type,bool_type]
 invalid_types[user_input] = [auto_type]
 invalid_types[fs_input] = [auto_type,int_type,float_type,bool_type]
 invalid_types[wf_input] = [int_type,float_type,bool_type]
 invalid_types[plugin_input] = [str_type,int_type,float_type,bool_type]
-invalid_types[batch_input] = [str_type,int_type,float_type,bool_type,list_type]
+invalid_types[batch_input] = [str_type,int_type,float_type,bool_type]
 
 # tags and indices for inputs and outputs trees
 inputs_tag = 'inputs'
@@ -57,77 +56,10 @@ def cast_type_val(tp,val):
         val = str(val)
     elif tp == bool_type:
         val = bool(eval(str(val)))
-    elif tp == list_type:
-        # val will be a list of strings, should be typecast on loading or by the list builder 
-        val = list(val)
     else:
         msg = 'type selection {}, should be one of {}'.format(tp,valid_types)
         raise ValueError(msg)
     return val
-
-def val_list(il):
-    if il.tp == list_type:
-        return il.val
-    else:
-        return [il.val]
-
-def parse_plugin_input(plugman,il,op):
-    itm, indx = plugman.get_from_uri(il.val)
-    return itm.data
-
-def parse_wf_input(wfman,il,op):
-    """
-    Input types supported for workflow source:
-    optools.none_type: trivial case, return None
-    optools.str_type: this input is assumed to be used as a key,
-        used for fetching workflow output data for further processing
-        It should be returned as is.
-    optools.list_type: The listed inputs by val_list(il) are all treated as str_type
-    optools.auto_type: Attempt to use il.val as a uri to fetch data 
-        from the input workflow manager wfman
-    """
-    if il.tp == none_type:
-        return None
-    elif il.tp == str_type:
-        return str(il.val)
-    elif il.tp == list_type:
-        return [str(val) for val in val_list(il)]
-    elif il.tp == auto_type:
-        itm, indx = wfman.get_from_uri(il.val)
-        #TODO: fix the following hack
-        # If this points to an input, an InputLocator will be returned.
-        # Fetch its data.
-        if isinstance(itm.data,InputLocator):
-            return itm.data.data
-        else:
-            # itm.data should be actual data.
-            return itm.data
-    #uris = val_list(il)
-    #rets = []
-    #for uri in uris:
-    #    uri_parts = uri.split('.')
-        #if len(uri_parts) >= 3:
-        #    io_type = uri_parts[1]
-        #    if io_type == inputs_tag:
-        #        input_route_flag = False
-        #        if isinstance(op,slacxop.Batch) or isinstance(op,slacxop.Realtime):
-        #            input_route_flag = uri in op.input_routes()
-        #        if input_route_flag:
-        #            rets.append(uri)
-        #        else:
-        #            itm, idx = wfman.get_from_uri(uri)
-        #            il = itm.data 
-        #            rets.append(il.data)
-        #    else:
-        #        itm, idx = wfman.get_from_uri(uri)
-        #        rets.append(itm.data)
-        #else:
-        #    itm, indx = wfman.get_from_uri(uri)
-        #    rets.append(itm.data)
-    #if il.tp == list_type:
-    #    return rets
-    #else:
-    #    return rets[0]
 
 def op_dict(op):
     dct = OrderedDict() 
