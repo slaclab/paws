@@ -59,7 +59,10 @@ class Operation(object):
                 and not self.input_type[name] in optools.invalid_types[src]):
                     tp = self.input_type[name]
                     if self.inputs[name] is not None:
-                        val = optools.cast_type_val(tp,self.inputs[name])
+                        if isinstance(self.inputs[name],list):
+                            val = [str(v) for v in self.inputs[name]]
+                        else:
+                            val = str(self.inputs[name])
             self.input_locator[name] = optools.InputLocator(src,tp,val)
 
     @abc.abstractmethod

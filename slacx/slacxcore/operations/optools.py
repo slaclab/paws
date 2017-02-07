@@ -4,47 +4,41 @@ from PySide import QtCore
 
 import slacxop
 
-##### TODO: the following but gracefully 
-# definitions for operation input sources 
+##### TODO: the following but gracefully
+# definitions for operation input sources
 no_input = 0
-user_input = 1
+text_input = 1
 fs_input = 2
 wf_input = 3
 plugin_input = 4
 batch_input = 5 
-valid_sources = [no_input,user_input,fs_input,wf_input,plugin_input,batch_input]
-input_sources = ['None','User Input','Filesystem','Workflow','Plugins','Batch'] 
+valid_sources = [no_input,text_input,fs_input,wf_input,plugin_input,batch_input]
+input_sources = ['None','Text Input','Filesystem','Workflow','Plugins','Batch'] 
 
-# supported types for operation inputs
+# supported types for user input
 none_type = 0
-auto_type = 1
-str_type = 2
-int_type = 3
-float_type = 4
-bool_type = 5
-valid_types = [none_type,auto_type,str_type,int_type,float_type,bool_type]
-input_types = ['none','auto','string','integer','float','boolean']
+str_type = 1
+int_type = 2
+float_type = 3
+bool_type = 4
+ref_type = 5
+path_type = 6
+auto_type = 7
+input_types = ['none','string','integer','float','boolean','reference','path','auto']
 
 # unsupported types for each source, keyed by source
 invalid_types = {}                
-invalid_types[no_input] = [auto_type,str_type,int_type,float_type,bool_type]
-invalid_types[user_input] = [auto_type]
-invalid_types[fs_input] = [auto_type,int_type,float_type,bool_type]
-invalid_types[wf_input] = [int_type,float_type,bool_type]
-invalid_types[plugin_input] = [str_type,int_type,float_type,bool_type]
-invalid_types[batch_input] = [str_type,int_type,float_type,bool_type]
-
-# tags and indices for inputs and outputs trees
-inputs_tag = 'inputs'
-outputs_tag = 'outputs'
-inputs_idx = 0
-outputs_idx = 1
+invalid_types[no_input] = [str_type,int_type,float_type,bool_type,ref_type,path_type,auto_type]
+invalid_types[text_input] = [ref_type,path_type,auto_type]
+invalid_types[fs_input] = [str_type,int_type,float_type,bool_type,ref_type,auto_type]
+invalid_types[wf_input] = [str_type,int_type,float_type,bool_type,auto_type]
+invalid_types[plugin_input] = [str_type,int_type,float_type,bool_type,auto_type]
+invalid_types[batch_input] = [str_type,int_type,float_type,bool_type,ref_type,path_type]
 
 def cast_type_val(tp,val):
     """
     Perform type casting for operation inputs.
-    This should be called for source user_input,
-    and should not be called for type auto_type.
+    This should be called only for source = text_input.
     """
     if tp == none_type:
         val = None 
@@ -112,6 +106,36 @@ def parameter_doc(name,value,doc):
         val_str = str(value)
         tp_str = type(value).__name__
         return "- name: {} \n- type: {} \n- value: {} \n- doc: {}".format(name,tp_str,val_str,doc) 
+
+def stack_size(stk):
+    sz = 0
+    for lst in stk:
+        if isinstance(lst[0].data,Batch) or isinstance(lst[0].data,Realtime):
+            sz += stack_size(lst[1])+1
+        else:
+            sz += len(lst)
+    return sz
+
+def stack_contains(itm,stk):
+    for lst in stk:
+        if isinstance(lst[0].data,Batch) or isinstance(lst[0].data,Realtime):
+            if itm == lst[0] or stack_contains(itm,lst[1]):
+                return True
+        else:
+            if itm in lst:
+                return True
+    return False
+
+def print_stack(stk):
+    stktxt = ''
+    for lst in stk:
+        if isinstance(lst[0].data,Batch) or isinstance(lst[0].data,Realtime):
+            substk = lst[1]
+            stktxt += '[{}:\n{}]\n'.format(lst[0].tag(),print_stack(lst[1]))
+            #[[itm.tag() for itm in sublst] for sublst in substk])
+        else:
+            stktxt += '{}\n'.format([itm.tag() for itm in lst])
+    return stktxt
 
 #def loader_extensions():
 #    return str(

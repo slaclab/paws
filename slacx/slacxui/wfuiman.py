@@ -15,22 +15,16 @@ from ..slacxcore.operations.optools import InputLocator
 from . import uitools
 
 class WfUiManager(object):
-    """
-    Stores a reference to the op_builder QGroupBox, 
-    performs operations on it
-    """
 
     def __init__(self,wfman,opman):
         ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/wf_editor.ui")
-        # Load the op_builder popup
         ui_file.open(QtCore.QFile.ReadOnly)
         self.ui = QtUiTools.QUiLoader().load(ui_file)
         ui_file.close()
         self.wfman = wfman 
         self.opman = opman 
         self.op = None
-        # Dicts to keep track of input widgets,
-        # keyed by input variable names
+        # Dicts to keep track of input widgets, keyed by input variable names
         self.src_widgets = {} 
         self.type_widgets = {} 
         self.val_widgets = {} 
@@ -80,72 +74,85 @@ class WfUiManager(object):
         new_op.load_defaults()
         self.set_op(new_op,new_op_tag)
 
-    #def test_op(self):
-    #    print 'Operation testing not yet implemented'
-
     def set_input(self,name,src_ui=None,itm_idx=None):
         """
-        Call load_input to package an InputLocator for named input. 
+        Call build_input_locator to package an InputLocator for named input. 
         Store it in self.op.input_locator[name].
         This is called on all inputs when an Operation is loaded,
         so leaving the optional arguments as None should not change an already-loaded input.
         This is also called as a signal from data fetching ui's,
         in which case a reference to the ui and a selected item index are expected (optional arguments).
         """
-        il = self.load_input(name,src_ui,itm_idx)
+        il = self.build_input_locator(name,src_ui,itm_idx)
         self.op.input_locator[name] = il
         # dereference the old input
         self.op.inputs[name] = None 
 
-    def load_input(self,name,ui=None,itm_idx=None):
+    def build_input_locator(self,name,ui=None):
         """
         Create an InputLocator for named input.
         If a ui is provided, then this is being signalled to load data from that ui.
-        The ui should have a view called ui.tree, where ui.tree.model() contains the data of interest.
-        itm_idx is then used to index ui.tree.model() and fetch the desired data.
+        If not, then the input has already been loaded or should be set to None.
         """
         src = self.src_widgets[name].currentIndex()
-        tp = self.type_widgets[name].currentIndex()
         il = None
         if src == optools.no_input:
             il = optools.InputLocator() 
         elif src == optools.batch_input:
-            val = 'auto' 
-            il = optools.InputLocator(src,tp,val) 
-        elif src == optools.user_input:
-            if tp == optools.list_type:
-                if not ui:
-                    if self.op.input_locator[name] is not None:
-                        il = self.op.input_locator[name]
-                else:
-                    val = ui.list_view.model().list_data()
-                    il = optools.InputLocator(src,tp,val)
+            tp = self.type_widgets[name].currentIndex()
+            if tp == optools.auto_type:
+                # TODO: set val to indicate which batch (if any) will set this input 
+                val = 'auto' 
             else:
-                val = self.val_widgets[name].text()
-                il = optools.InputLocator(src,tp,val)
-        elif (src == optools.wf_input or src == optools.fs_input or src == optools.plugin_input):
-            if not ui:
-                # Assume it has already been loaded 
-                if self.op.input_locator[name] is not None:
-                    il = self.op.input_locator[name]
-            elif tp == optools.list_type:
-                # ui is assumed to be list_builder.ui
-                val = ui.list_view.model().list_data() 
-                il = optools.InputLocator(src,tp,val)
-            else:
-                # ui should be the load_browser.ui 
-                il = self.load_from_ui(ui,src,tp,itm_idx)
-        if not il: 
-            if self.op.input_locator[name] is not None:
-                il = self.op.input_locator[name]
-            else: 
                 val = None
+            il = optools.InputLocator(src,tp,val) 
+        else:
+            # all other input sources use a ui for loading
+            if ui:
+                tp, val = self.fetch_from_input_ui(ui) 
                 il = optools.InputLocator(src,tp,val)
-        self.val_widgets[name].setText(str(il.val))
-        if ui:
-            ui.close()
-            ui.deleteLater()
+            else:
+                # else, the input has already been loaded, so do nothing.
+                il = self.op.input_locator[name]
         return il
+
+    def fetch_from_input_ui(self,ui):
+        
+
+        #elif src == optools.text_input:
+        #    if tp == optools.list_type:
+        #        if not ui:
+        #            if self.op.input_locator[name] is not None:
+        #                il = self.op.input_locator[name]
+        #        else:
+        #            val = ui.list_view.model().list_data()
+        #            il = optools.InputLocator(src,tp,val)
+        #    else:
+        #        val = self.val_widgets[name].text()
+        #        il = optools.InputLocator(src,tp,val)
+        #elif (src == optools.wf_input or src == optools.fs_input or src == optools.plugin_input):
+        #    if not ui:
+        #        # Assume it has already been loaded 
+        #        if self.op.input_locator[name] is not None:
+        #            il = self.op.input_locator[name]
+        #    elif tp == optools.list_type:
+        #        # ui is assumed to be list_builder.ui
+        #        val = ui.list_view.model().list_data() 
+        #        il = optools.InputLocator(src,tp,val)
+        #    else:
+        #        # ui should be the load_browser.ui 
+        #        il = self.load_from_ui(ui,src,tp,itm_idx)
+        #if ui:
+        #    ui.close()
+        #    ui.deleteLater()
+        #if not il: 
+        #    if self.op.input_locator[name] is not None:
+        #        il = self.op.input_locator[name]
+        #    else: 
+        #        val = None
+        #        il = optools.InputLocator(src,tp,val)
+        #self.val_widgets[name].setText(str(il.val))
+        #return il
 
     def load_from_ui(self,src_ui,src,tp,itm_idx=None):
         """
@@ -333,7 +340,7 @@ class WfUiManager(object):
             #elif self.op.inputs[name] is not None:
             #    val_widget.setText(str(self.op.inputs[name]))
             val_widget.setReadOnly(True)
-        elif (src == optools.user_input):
+        elif (src == optools.text_input):
             if tp == optools.none_type:
                 btn_widget.setText('no input')
                 btn_widget.setEnabled(False)

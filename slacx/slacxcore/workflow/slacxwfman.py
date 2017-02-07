@@ -21,6 +21,12 @@ class WfManager(TreeModel):
     @QtCore.Slot(str,Operation)
     def updateOperation(self,tag,op):
         self.update_op(tag,op)
+        
+    # tags and indices for rendering TreeModel portions from Operations
+    inputs_tag = 'inputs'
+    outputs_tag = 'outputs'
+    #inputs_idx = 0
+    #outputs_idx = 1
 
     def __init__(self,qapp_reference,plugin_manager,**kwargs):
         super(WfManager,self).__init__()
@@ -29,6 +35,7 @@ class WfManager(TreeModel):
         self.plugman = plugin_manager
         self._wf_dict = {}       
         # Flags to assist in thread control
+        # TODO: Migrate this to a ThreadPool?
         self._running = False
         self._n_threads = QtCore.QThread.idealThreadCount()
         self._n_wf_threads = 1
@@ -49,7 +56,7 @@ class WfManager(TreeModel):
         Load things in to the Workflow from an OpManager
         using a dict that specifies operation setup.
         """
-        while self.root_items:
+        while any(self.root_items):
             idx = self.index(self.rowCount(QtCore.QModelIndex())-1,0,QtCore.QModelIndex())
             self.remove_op(idx)
         for uri, op_spec in opdict.items():
@@ -59,7 +66,7 @@ class WfManager(TreeModel):
                 self.write_log('Did not find Operation {} - skipping.'.format(opname))
             else:
                 op = op()
-                ilspec = op_spec[optools.inputs_tag]
+                ilspec = op_spec[inputs_tag]
                 for name, srctypeval in ilspec.items():
                     src = srctypeval['src']
                     tp = srctypeval['type']
@@ -70,19 +77,13 @@ class WfManager(TreeModel):
         
     def load_inputs(self,op):
         """
-        Loads data for an Operation from that Operation's input_locators.
+        Loads input data for an Operation from that Operation's input_locators.
         It is expected that op.input_locator[name] will refer to an InputLocator.
         """
         for name,il in op.input_locator.items():
             if isinstance(il,optools.InputLocator):
-                src = il.src
-                if not src == optools.batch_input:
-                    il.data = self.locate_input(il)
-                    op.inputs[name] = il.data
-                else:
-                    # Expect this input to have been set by self.set_op_input_at_uri().
-                    # Refer that input value to il.data.
-                    il.data = op.inputs[name]
+                il.data = self.locate_input(il)
+                op.inputs[name] = il.data
             else:
                 msg = '[{}] Found broken Operation.input_locator for {}: {}'.format(
                 __name__, name, il)
@@ -92,27 +93,47 @@ class WfManager(TreeModel):
         """
         Return the data pointed to by a given InputLocator object.
         """
-        if il.tp == optools.none_type:
+        if src == optools.no_input or il.tp == optools.none_type:
             return None
-        if src == optools.no_input:
-            return None
-        elif src == optools.user_input: 
-            return optools.cast_type_val(tp,il.val)
-        elif src == optools.wf_input:
-            if il.tp == str_type:
-                return str(il.val)
-            elif il.tp == auto_type:
-                itm, idx = wfman.get_from_uri(il.val)
-                # Note, this will return an InputLocator
-                # if il.val references an input that has not yet been loaded.
-                return itm.data
-        elif src == optools.plugin_input:
-            itm, idx = self.plugman.get_from_uri(il.val)
-            return itm.data
-        elif src == optools.fs_input:
-            return str(il.val)
         elif src == optools.batch_input:
+            # Expect this input to have been set by self.set_op_input_at_uri().
             return il.data 
+        elif src == optools.text_input: 
+            if isinstance(il.val,list):
+                return [optools.cast_type_val(tp,v) for v in il.val]
+            else:
+                return optools.cast_type_val(tp,il.val)
+        elif src == optools.wf_input:
+            if il.tp == optools.ref_type:
+                # Note, this will return whatever data is stored in the TreeItem at uri.
+                # If il.val is the uri of an input that has not yet been loaded,
+                # this means it will get the InputLocator that currently inhabits that uri.
+                if isinstance(il.val,list):
+                    return [self.get_from_uri(v)[0].data for v in il.val]
+                else:
+                    return self.get_from_uri(il.val)[0].data
+            elif il.tp == optools.path_type: 
+                if isinstance(il.val,list):
+                    return [str(v) for v in il.val]
+                else:
+                    return str(il.val)
+        elif src == optools.plugin_input:
+            if il.tp == optools.ref_type:
+                if isinstance(il.val,list):
+                    return [self.plugman.get_from_uri(v)[0].data for v in il.val]
+                else:
+                    return self.plugman.get_from_uri(il.val)[0].data
+            elif il.tp == optools.path_type:
+                if isinstance(il.val,list):
+                    return [str(v) for v in il.val]
+                else:
+                    return str(il.val)
+        elif src == optools.fs_input:
+            if isinstance(il.val,list):
+                return [str(v) for v in il.val]
+            else:
+                return str(il.val)
+            return str(il.val)
         else: 
             msg = 'found input source {}, should be one of {}'.format(
             src, optools.valid_sources)
@@ -148,8 +169,34 @@ class WfManager(TreeModel):
         self.tree_update(idx,new_op)
         self.update_io_deps()
 
+    # TODO: replace this with a call to build_dict
+    #def wf_item_to_dict(self,uri,itm):
+    #    od = OrderedDict()
+    #    od[uri] = copy.deepcopy(itm.data)
+    #    if isinstance(itm.data,Operation):
+    #        inp_uri = uri+'.'+inputs_tag  
+    #        inp_itm,idx = self.get_from_uri(inp_uri)
+    #        od.update(self.wf_item_to_dict(inp_uri,inp_itm))
+    #        out_uri = uri+'.'+outputs_tag  
+    #        out_itm,idx = self.get_from_uri(out_uri)
+    #        od.update(self.wf_item_to_dict(out_uri,out_itm))
+    #    elif isinstance(itm.data,dict):
+    #        for k,v in itm.data.items():
+    #            itm_uri = uri+'.'+str(k)
+    #            itm,idx = self.get_from_uri(itm_uri)
+    #            od.update(self.wf_item_to_dict(itm_uri,itm))
+    #    elif isinstance(itm.data,list):
+    #        for i,itm in zip(range(len(itm.data)),itm.data):
+    #            itm_uri = uri+'.'+str(i)
+    #            itm,idx = self.get_from_uri(itm_uri)
+    #            od.update(self.wf_item_to_dict(itm_uri,itm))
+    #    return od
+
     def build_dict(self,x):
-        """Overloaded build_dict to handle Operations"""
+        """
+        Overloaded build_dict to handle Operations.
+        Base class method builds dicts from other data types.
+        """
         if isinstance(x,Operation):
             d = OrderedDict()
             inp_dict = {}
@@ -158,30 +205,31 @@ class WfManager(TreeModel):
                     inp_dict[nm] = x.inputs[nm]
                 else:
                     inp_dict[nm] = x.input_locator[nm]
-            d[optools.inputs_tag] = inp_dict 
-            d[optools.outputs_tag] = x.outputs
+            d[inputs_tag] = inp_dict 
+            d[outputs_tag] = x.outputs
         else:
             d = super(WfManager,self).build_dict(x)
         return d
 
     # TODO: Add checking of plugins (il.src == optools.plugin_input)
+    # TODO: Add checking of fs paths (il.src == optools.fs_input)
     def update_io_deps(self):
         """
         Remove any broken dependencies in the workflow.
-        Only effective after most recent data have been stored in the tree. 
+        Should only be called after all current data have been stored in the tree. 
         """
         for r,itm in zip(range(len(self.root_items)),self.root_items):
             op = itm.data
             op_idx = self.index(r,0,QtCore.QModelIndex())
             for name,il in op.input_locator.items():
                 if il:
-                    if il.src == optools.wf_input and il.tp == optools.auto_type and not self.is_good_uri(il.val):
+                    if il.src == optools.wf_input and il.tp == optools.ref_type and not self.is_good_uri(il.val):
                         #vals = optools.val_list(il)
                         #for v in vals:
                         #    if not self.is_good_uri(v):
                         self.write_log('--- clearing InputLocator for {}.{}.{} ---'.format(
-                        itm.tag(),optools.inputs_tag,name))
-                        op.input_locator[name] = optools.InputLocator()
+                        itm.tag(),inputs_tag,name))
+                        op.input_locator[name] = optools.InputLocator(il.src,il.tp,None)
                         self.tree_dataChanged(op_idx)
 
     # TODO: the following
@@ -205,41 +253,11 @@ class WfManager(TreeModel):
         which can be used as downstream inputs in the workflow.
         """
         # valid_wf_inputs gains the operation, its input and output dicts, and their respective entries
-        valid_wf_inputs = [itm.tag(),itm.tag()+'.'+optools.inputs_tag,itm.tag()+'.'+optools.outputs_tag]
-        valid_wf_inputs += [itm.tag()+'.'+optools.outputs_tag+'.'+k for k in itm.data.outputs.keys()]
-        valid_wf_inputs += [itm.tag()+'.'+optools.inputs_tag+'.'+k for k in itm.data.inputs.keys()]
+        valid_wf_inputs = [itm.tag(),itm.tag()+'.'+inputs_tag,itm.tag()+'.'+outputs_tag]
+        valid_wf_inputs += [itm.tag()+'.'+outputs_tag+'.'+k for k in itm.data.outputs.keys()]
+        valid_wf_inputs += [itm.tag()+'.'+inputs_tag+'.'+k for k in itm.data.inputs.keys()]
         return valid_wf_inputs
-
-    def stack_size(self,stk):
-        sz = 0
-        for lst in stk:
-            if isinstance(lst[0].data,Batch) or isinstance(lst[0].data,Realtime):
-                sz += self.stack_size(lst[1])+1
-            else:
-                sz += len(lst)
-        return sz
-
-    def stack_contains(self,itm,stk):
-        for lst in stk:
-            if isinstance(lst[0].data,Batch) or isinstance(lst[0].data,Realtime):
-                if itm == lst[0] or self.stack_contains(itm,lst[1]):
-                    return True
-            else:
-                if itm in lst:
-                    return True
-        return False
-
-    def print_stack(self,stk):
-        stktxt = ''
-        for lst in stk:
-            if isinstance(lst[0].data,Batch) or isinstance(lst[0].data,Realtime):
-                substk = lst[1]
-                stktxt += '[{}:\n{}]\n'.format(lst[0].tag(),self.print_stack(lst[1]))
-                #[[itm.tag() for itm in sublst] for sublst in substk])
-            else:
-                stktxt += '{}\n'.format([itm.tag() for itm in lst])
-        return stktxt
-
+    
     def execution_stack(self):
         """
         Build a stack (list) of lists of TreeItems,
@@ -252,10 +270,10 @@ class WfManager(TreeModel):
         stk = []
         valid_wf_inputs = []
         continue_flag = True
-        while not self.stack_size(stk) == len(self.root_items) and continue_flag:
+        while not optools.stack_size(stk) == len(self.root_items) and continue_flag:
             items_rdy = []
             for itm in self.root_items:
-                if not self.stack_contains(itm,stk):
+                if not optools.stack_contains(itm,stk):
                     if self.is_op_ready(itm,valid_wf_inputs):
                         items_rdy.append(itm)
             if any(items_rdy):
@@ -276,7 +294,7 @@ class WfManager(TreeModel):
                 continue_flag = False
         #print 'RESOLVED A STACK'
         #print 'STACK PRINTOUT:'
-        #print self.print_stack(stk)
+        #print optools.print_stack(stk)
         return stk
 
     def is_op_ready(self,itm,valid_wf_inputs,batch_routes=[]):
@@ -288,9 +306,10 @@ class WfManager(TreeModel):
             op = itm.data
             inputs_rdy = []
             for name,il in op.input_locator.items():
-                if il.src == optools.wf_input and il.tp == optools.auto_type and not il.val in valid_wf_inputs:
+                # TODO: Come up with a more airtight set of conditions here.
+                if il.src == optools.wf_input and il.tp == optools.ref_type and not il.val in valid_wf_inputs:
                     inp_rdy = False
-                elif il.src == optools.batch_input and not itm.tag()+'.'+optools.inputs_tag+'.'+name in batch_routes:
+                elif il.src == optools.batch_input and not itm.tag()+'.'+inputs_tag+'.'+name in batch_routes:
                     inp_rdy = False
                 else:
                     inp_rdy = True
@@ -315,6 +334,7 @@ class WfManager(TreeModel):
             exec_itms = [self.get_from_uri(uri)[0] for uri in b_itm.data.batch_ops()]
         else:
             exec_itms = []
+        # make a copy of valid_wf_inputs and add the batch's own i/o items to the list
         valid_batch_inputs = copy.copy(valid_wf_inputs)+self.get_valid_wf_inputs(b_itm)
         layer = []
         for test_itm in exec_itms:
@@ -327,9 +347,9 @@ class WfManager(TreeModel):
                 valid_batch_inputs += self.get_valid_wf_inputs(itm)
             layer = []
             for test_itm in exec_itms:
-                if self.is_op_ready(test_itm,valid_batch_inputs,b_itm.data.input_routes()) and not self.stack_contains(test_itm,b_stk):
+                if self.is_op_ready(test_itm,valid_batch_inputs,b_itm.data.input_routes()) and not optools.stack_contains(test_itm,b_stk):
                     layer.append(test_itm)
-        b_rdy = len(exec_itms) == self.stack_size(b_stk) 
+        b_rdy = len(exec_itms) == optools.stack_size(b_stk) 
         return b_stk,b_rdy 
 
     def next_available_thread(self):
@@ -337,12 +357,13 @@ class WfManager(TreeModel):
             if not th:
                 return idx
         # if none found, wait for first thread in self._wf_threads 
-        # TODO: something better
+        # TODO: migrate threading to a ThreadPool 
         self.wait_for_thread(0)
         return 0
 
     def wait_for_thread(self,th_idx):
         """Wait for the thread at self._wf_threads[th_idx] to be finished"""
+        # TODO: migrate threading to a ThreadPool 
         done = False
         interval = 1
         wait_iter = 0
@@ -363,30 +384,18 @@ class WfManager(TreeModel):
                     total_wait += interval
                     if interval > float(total_wait)*0.1 and interval < 100:
                         interval = interval * 10
-        #if wait_iter > 0:
-        #    self.write_log('... waited {} seconds for thread {}'.format(total_wait*0.001,th_idx))
 
     def wait_for_threads(self):
         """Wait for all workflow execution threads to finish"""
+        # TODO: migrate threading to a ThreadPool 
         done = False
         interval = 10
         wait_iter = 0
         for idx,th in self._wf_threads.items():
             self.wait_for_thread(idx)
-        #while not done:
-        #    done = True
-        #    for idx,th in self._wf_threads.items():
-        #        if not th.isFinished():
-        #            done = False
-        #    if not done:
-        #        self.loopwait(interval)
-        #        self.appref.processEvents()
-        #        wait_iter += 1
-        #if wait_iter > 0:
-        #    self.write_log('... waited {}ms for threads to finish'.format(wait_iter*interval))
 
     def finish_thread(self,th_idx):
-        #self.write_log('finished execution in thread {}'.format(th_idx))
+        # TODO: migrate threading to a ThreadPool 
         self._wf_threads[th_idx] = None
 
     def loopwait(self,interval):
@@ -400,16 +409,14 @@ class WfManager(TreeModel):
         t.timeout.connect(l.quit)
         t.start(interval)
         l.exec_()
-        # processEvents() to handle Signals while waiting.
+        # processEvents() to continue the main event loop while waiting.
         self.appref.processEvents()
 
     def run_wf(self):
         self._running = True
         stk = self.execution_stack()
         msg = 'STARTING EXECUTION\n----\nexecution stack: \n'
-        #for to_run in stk:
-        #    msg = msg + '\n{}'.format( [itm.tag() for itm in to_run] ) 
-        msg += self.print_stack(stk)
+        msg += optools.print_stack(stk)
         msg += '\n----'
         self.write_log(msg)
         batch_flags = [isinstance(itm_lst[0].data,Batch) for itm_lst in stk]
@@ -495,8 +502,10 @@ class WfManager(TreeModel):
                 opdict = OrderedDict()
                 for uri in rt.saved_items():
                     itm,idx = self.get_from_uri(uri)
-                    opdict.update(self.wf_item_to_dict(uri,itm))
+                    #opdict.update(self.wf_item_to_dict(uri,itm))
+                    opdict.update(copy.deepcopy(self.build_dict(itm)))
                 rt.output_list().append(opdict)
+                # TODO: not a full op update here- just update the new/changed children of the rt op
                 self.update_op(rt_itm.tag(),rt)
             else:
                 if not waiting_flag:
@@ -530,35 +539,14 @@ class WfManager(TreeModel):
                 opdict = OrderedDict()
                 for uri in b.saved_items():
                     itm,idx = self.get_from_uri(uri)
-                    opdict.update(self.wf_item_to_dict(uri,itm))
+                    #opdict.update(self.wf_item_to_dict(uri,itm))
+                    opdict.update(copy.deepcopy(self.build_dict(itm)))
                 b.output_list()[i] = opdict
                 self.update_op(b_itm.tag(),b)
             else:
                 self.write_log( 'BATCH EXECUTION TERMINATED' )
                 return
         self.write_log( 'BATCH EXECUTION FINISHED' )
-
-    def wf_item_to_dict(self,uri,itm):
-        od = OrderedDict()
-        od[uri] = copy.deepcopy(itm.data)
-        if isinstance(itm.data,Operation):
-            inp_uri = uri+'.'+optools.inputs_tag  
-            inp_itm,idx = self.get_from_uri(inp_uri)
-            od.update(self.wf_item_to_dict(inp_uri,inp_itm))
-            out_uri = uri+'.'+optools.outputs_tag  
-            out_itm,idx = self.get_from_uri(out_uri)
-            od.update(self.wf_item_to_dict(out_uri,out_itm))
-        elif isinstance(itm.data,dict):
-            for k,v in itm.data.items():
-                itm_uri = uri+'.'+str(k)
-                itm,idx = self.get_from_uri(itm_uri)
-                od.update(self.wf_item_to_dict(itm_uri,itm))
-        elif isinstance(itm.data,list):
-            for i,itm in zip(range(len(itm.data)),itm.data):
-                itm_uri = uri+'.'+str(i)
-                itm,idx = self.get_from_uri(itm_uri)
-                od.update(self.wf_item_to_dict(itm_uri,itm))
-        return od
 
     def set_op_input_at_uri(self,uri,val):
         """

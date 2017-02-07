@@ -16,6 +16,8 @@ class TreeItem(object):
         self.children = []      # list of other TreeItems
         #self._long_tag = None 
         self._tag = None
+        self._checked = False
+
 
     #def n_data(self):
     #    return len(self.data)
@@ -43,6 +45,18 @@ class TreeItem(object):
 
     def set_tag(self,tag_in):
         self._tag = tag_in
+
+    def is_checked(self):
+        return self._checked
+    
+    def children_checked(self):
+        if self.n_children > 0:
+            return any([c_itm.children_checked() for c_itm in self.children])
+        else:
+            return self.is_checked
+
+    def set_checked(self,val):
+        self._checked = bool(val)
 
     #def set_long_tag(self,tag_in):
     #    self._long_tag = tag_in

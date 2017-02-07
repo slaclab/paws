@@ -25,12 +25,12 @@ class TreeModel(QtCore.QAbstractItemModel):
         """Just a prettier face in front of idx.internalPointer()"""
         return idx.internalPointer() 
 
-    def build_uri(self,indx):
+    def build_uri(self,idx):
         """
-        Build a URI for the TreeItem at indx 
+        Build a URI for the TreeItem at idx 
         by prepending its parent tags with '.' as a delimiter.
         """
-        item_ref = self.get_item(indx)
+        item_ref = self.get_item(idx)
         item_uri = item_ref.tag()
         while item_ref.parent.isValid():
             item_ref = self.get_item(item_ref.parent)
@@ -199,17 +199,6 @@ class TreeModel(QtCore.QAbstractItemModel):
             return item.tag()
         else:
             return None
-        #if item_indx.column() == 1:
-        #    if item.data is not None:
-        #        return type(item.data).__name__ 
-        #    else:
-        #        return ' '
-        #else:
-        #elif (data_role == QtCore.Qt.ToolTipRole): 
-        #    return item.long_tag() #+ '\n\n' + item.data_str()
-        #elif (data_role == QtCore.Qt.StatusTipRole
-        #    or data_role == QtCore.Qt.WhatsThisRole):
-        #    return item.long_tag()
 
     # Expandable QAbstractItemModel subclass should implement
     # insertRows(row,count[,parent=QModelIndex()])
@@ -278,17 +267,11 @@ class TreeModel(QtCore.QAbstractItemModel):
             item = self.get_item(parent)
             print rowprefix+str(item.data)
             for j in range(item.n_children()):
-                #print 'calling print_tree for {} more children'.format(item.n_children()-j)
-                #time.sleep(1)
                 self.print_tree(rowprefix+'\t',self.index(j,0,parent))
         else:
             for jroot in range(len(self.root_items)):
-                #print 'calling print_tree for {} more root items'.format(len(self.root_items)-jroot)
-                #time.sleep(1)
                 item = self.root_items[jroot]
-                #print rowprefix+str(item.data)
                 self.print_tree(rowprefix,self.index(jroot,0,parent))
-                #for j in range(item.n_children()):
             
     def tree_dataChanged(self,idx):
         self.dataChanged.emit(idx,idx)
@@ -348,9 +331,71 @@ class TreeModel(QtCore.QAbstractItemModel):
         # Finish by informing views that dataChanged().
         self.tree_dataChanged(idx) 
 
-    # Editable QAbstractItemModel subclasses must implement setData(index,value[,role])
-    #def setData(self,idx,value,role=None):
-    #    # For the TreeItem at index, set data to value
-    #    treeitem = self.get_item(idx)
-    #    treeitem.data = value
+    def setData(self,idx,value,data_role):
+        return False
 
+
+class TreeSelectionModel(TreeModel):
+
+    def __init__(self):
+        super(TreeSelectionModel,self).__init__()
+
+    # Subclass of QAbstractItemModel must implement columnCount()
+    def columnCount(self,parent):
+        """
+        Let TreeSelectionModel have two columns:
+        one for the TreeItem tag, one for selection status.
+        """
+        return 2
+
+    def headerData(self,section,orientation,data_role):
+        # note: section indicates row or column number, depending on orientation
+        if (data_role == QtCore.Qt.DisplayRole and section == 0):
+            return super(TreeSelectionModel,self).data(section,orientation,data_role) 
+        elif (data_role == QtCore.Qt.DisplayRole and section == 1):
+            return "selection"
+
+    # QAbstractItemModel subclass must implement 
+    # data(QModelIndex[,role=Qt.DisplayRole])
+    def data(self,item_idx,data_role):
+        if (not item_idx.isValid()):
+            return None
+        itm = item_idx.internalPointer()
+        if (data_role == QtCore.Qt.DisplayRole
+        or data_role == QtCore.Qt.ToolTipRole 
+        or data_role == QtCore.Qt.StatusTipRole
+        or data_role == QtCore.Qt.WhatsThisRole):
+            return itm.tag()
+        elif data_role == Qt.CheckStateRole and item_idx.column() == 1:
+            if itm.is_checked():
+                return Qt.Checked
+            elif itm.children_checked();
+                return Qt.PartiallyChecked
+            else:
+                return Qt.Unchecked
+        else:
+            return None
+
+    # Need flags to reflect checkability
+    def flags(self, idx):
+        if not idx.isValid():
+            return None
+        elif idx.column() == 1:
+            return super(TreeSelectionModel,self).flags(idx) | Qt.ItemIsUserCheckable
+        else:
+            return super(TreeModel, self).flags(index)
+
+    # Ui-editable QAbstractItemModel subclasses must implement setData(index,value[,role])
+    def setData(self,idx,value,data_role):
+        if idx.column() == 1:
+            #if role == Qt.EditRole:
+            #    return False
+            if data_role == Qt.CheckStateRole:
+                itm = self.get_item(idx)
+                itm.set_checked(value)
+                self.dataChanged.emit(idx, idx)
+                return True
+            else:
+                return super(TreeModel, self).setData(index, value, data_role)
+        else:
+            return super(TreeModel, self).setData(index, value, data_role)
