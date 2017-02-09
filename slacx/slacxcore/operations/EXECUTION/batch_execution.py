@@ -18,8 +18,8 @@ class BatchFromFiles(Batch):
         self.input_doc['dir_path'] = 'path to directory containing batch of files to be used as input'
         self.input_doc['regex'] = 'string with * wildcards that will be substituted to indicate input files'
         self.input_doc['input_route'] = 'inputs constructed by the batch executor are directed to this uri'
-        self.input_doc['batch_ops'] = str('list of operation uris to be included in batch execution- '
-        + 'the order of operations in batch_ops unimportant, as the proper execution stack is resolved at runtime')
+        self.input_doc['batch_ops'] = str('list of workflow uris pointing to Operations to be included in batch execution- '
+        + 'the order of entries is unimportant, as the proper execution stack is resolved at runtime')
         self.input_doc['saved_items'] = 'list of uris to be saved in the batch_outputs'
         self.output_doc['batch_inputs'] = 'list of dicts of [input_route:input_value]'
         self.output_doc['batch_outputs'] = 'list of dicts of [output_route:output_value] for all saved_items '
@@ -28,10 +28,11 @@ class BatchFromFiles(Batch):
         self.input_src['input_route'] = optools.wf_input 
         self.input_src['batch_ops'] = optools.wf_input 
         self.input_src['saved_items'] = optools.wf_input 
+        self.input_type['dir_path'] = optools.path_type
         self.input_type['regex'] = optools.str_type
-        self.input_type['input_route'] = optools.str_type
-        self.input_type['batch_ops'] = optools.list_type 
-        self.input_type['saved_items'] = optools.list_type 
+        self.input_type['input_route'] = optools.path_type
+        self.input_type['batch_ops'] = optools.path_type 
+        self.input_type['saved_items'] = optools.path_type 
         self.inputs['regex'] = '*.tif' 
         self.inputs['batch_ops'] = []
         self.inputs['saved_items'] = []

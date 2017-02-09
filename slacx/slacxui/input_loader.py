@@ -50,8 +50,6 @@ class InputLoader(object):
 
     def add_selection(self):
         if self.src == optools.text_input:
-            print 'load text input'
-            import pdb; pdb.set_trace()
             lines = self.ui.source_textedit.toPlainText().split()
             for l in lines:
                 self.add_value(str(l).strip())

@@ -23,8 +23,8 @@ class WfManager(TreeModel):
         self.update_op(tag,op)
         
     # tags and indices for rendering TreeModel portions from Operations
-    inputs_tag = 'inputs'
-    outputs_tag = 'outputs'
+    inputs_tag = optools.inputs_tag 
+    outputs_tag = optools.outputs_tag 
     #inputs_idx = 0
     #outputs_idx = 1
 
@@ -93,17 +93,17 @@ class WfManager(TreeModel):
         """
         Return the data pointed to by a given InputLocator object.
         """
-        if src == optools.no_input or il.tp == optools.none_type:
+        if il.src == optools.no_input or il.tp == optools.none_type:
             return None
-        elif src == optools.batch_input:
+        elif il.src == optools.batch_input:
             # Expect this input to have been set by self.set_op_input_at_uri().
             return il.data 
-        elif src == optools.text_input: 
+        elif il.src == optools.text_input: 
             if isinstance(il.val,list):
-                return [optools.cast_type_val(tp,v) for v in il.val]
+                return [optools.cast_type_val(il.tp,v) for v in il.val]
             else:
-                return optools.cast_type_val(tp,il.val)
-        elif src == optools.wf_input:
+                return optools.cast_type_val(il.tp,il.val)
+        elif il.src == optools.wf_input:
             if il.tp == optools.ref_type:
                 # Note, this will return whatever data is stored in the TreeItem at uri.
                 # If il.val is the uri of an input that has not yet been loaded,
@@ -117,7 +117,7 @@ class WfManager(TreeModel):
                     return [str(v) for v in il.val]
                 else:
                     return str(il.val)
-        elif src == optools.plugin_input:
+        elif il.src == optools.plugin_input:
             if il.tp == optools.ref_type:
                 if isinstance(il.val,list):
                     return [self.plugman.get_from_uri(v)[0].data for v in il.val]
@@ -128,7 +128,7 @@ class WfManager(TreeModel):
                     return [str(v) for v in il.val]
                 else:
                     return str(il.val)
-        elif src == optools.fs_input:
+        elif il.src == optools.fs_input:
             if isinstance(il.val,list):
                 return [str(v) for v in il.val]
             else:
@@ -136,7 +136,7 @@ class WfManager(TreeModel):
             return str(il.val)
         else: 
             msg = 'found input source {}, should be one of {}'.format(
-            src, optools.valid_sources)
+            il.src, optools.valid_sources)
             raise ValueError(msg)
 
     def add_op(self,uri,new_op):
@@ -169,28 +169,34 @@ class WfManager(TreeModel):
         self.tree_update(idx,new_op)
         self.update_io_deps()
 
-    # TODO: replace this with a call to build_dict
-    #def wf_item_to_dict(self,uri,itm):
-    #    od = OrderedDict()
-    #    od[uri] = copy.deepcopy(itm.data)
-    #    if isinstance(itm.data,Operation):
-    #        inp_uri = uri+'.'+inputs_tag  
-    #        inp_itm,idx = self.get_from_uri(inp_uri)
-    #        od.update(self.wf_item_to_dict(inp_uri,inp_itm))
-    #        out_uri = uri+'.'+outputs_tag  
-    #        out_itm,idx = self.get_from_uri(out_uri)
-    #        od.update(self.wf_item_to_dict(out_uri,out_itm))
-    #    elif isinstance(itm.data,dict):
-    #        for k,v in itm.data.items():
-    #            itm_uri = uri+'.'+str(k)
-    #            itm,idx = self.get_from_uri(itm_uri)
-    #            od.update(self.wf_item_to_dict(itm_uri,itm))
-    #    elif isinstance(itm.data,list):
-    #        for i,itm in zip(range(len(itm.data)),itm.data):
-    #            itm_uri = uri+'.'+str(i)
-    #            itm,idx = self.get_from_uri(itm_uri)
-    #            od.update(self.wf_item_to_dict(itm_uri,itm))
-    #    return od
+    def uri_to_dict(self,uri,data):
+        itm,idx = self.get_from_uri(uri)
+        od = OrderedDict()
+        od[itm.tag()] = (data)
+        p_idx = self.parent(idx)
+        # if this is a top level item, return od
+        if not p_idx.isValid():
+            return od
+        # else, package od under its parent's tag
+        else:
+            return self.uri_to_dict(self.build_uri(p_idx),od)
+
+    @staticmethod
+    def update_uri_dict(d,d_new):
+        #print '\n-------------\nupdating \n{} \nwith \n{}'.format(d,d_new)
+        for k,v in d_new.items():
+            if k in d.keys():
+                if isinstance(d[k],dict) and isinstance(d_new[k],dict):
+                    # embedded dicts: recurse
+                    d[k] = self.update_uri_dict(d[k],d_new[k])
+                else:
+                    # existing key refers to non-dict: replace
+                    d[k] = d_new[k]
+            else:
+                # no entry for this key: insert
+                d[k] = v
+        #print 'result: \n{} \n---------'.format(d)
+        return d
 
     def build_dict(self,x):
         """
@@ -502,8 +508,8 @@ class WfManager(TreeModel):
                 opdict = OrderedDict()
                 for uri in rt.saved_items():
                     itm,idx = self.get_from_uri(uri)
-                    #opdict.update(self.wf_item_to_dict(uri,itm))
-                    opdict.update(copy.deepcopy(self.build_dict(itm)))
+                    itm_dict = self.uri_to_dict(uri,copy.deepcopy(itm.data))
+                    opdict = self.update_uri_dict(opdict,itm_dict)
                 rt.output_list().append(opdict)
                 # TODO: not a full op update here- just update the new/changed children of the rt op
                 self.update_op(rt_itm.tag(),rt)
@@ -539,8 +545,8 @@ class WfManager(TreeModel):
                 opdict = OrderedDict()
                 for uri in b.saved_items():
                     itm,idx = self.get_from_uri(uri)
-                    #opdict.update(self.wf_item_to_dict(uri,itm))
-                    opdict.update(copy.deepcopy(self.build_dict(itm)))
+                    itm_dict = self.uri_to_dict(uri,copy.deepcopy(itm.data))
+                    opdict = self.update_uri_dict(opdict,itm_dict)
                 b.output_list()[i] = opdict
                 self.update_op(b_itm.tag(),b)
             else:

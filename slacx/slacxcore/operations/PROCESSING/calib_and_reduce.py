@@ -26,16 +26,18 @@ class ReduceByWXDDict(Operation):
         + ' PP (polarization factor), pixel_size, and d_pixel')
         self.input_doc['pixel_size'] = 'pixel size in microns'
         self.input_doc['fpolz'] = 'polarization factor'
+        self.input_src['image_data'] = optools.wf_input
+        self.input_src['wxd_dict'] = optools.wf_input
         self.input_src['pixel_size'] = optools.text_input 
         self.input_src['fpolz'] = optools.text_input
+        self.input_type['image_data'] = optools.ref_type
+        self.input_type['wxd_dict'] = optools.ref_type
         self.input_type['pixel_size'] = optools.float_type
         self.input_type['fpolz'] = optools.float_type
         self.inputs['pixel_size'] = 79 
         self.inputs['fpolz'] = 0.95 
         self.output_doc['q'] = 'Scattering vector magnitude q'
         self.output_doc['I_of_q'] = 'Integrated intensity at q'
-        self.input_src['image_data'] = optools.wf_input
-        self.input_src['wxd_dict'] = optools.wf_input
 
     def run(self):
         img = self.inputs['image_data']
@@ -169,6 +171,8 @@ class CalByWXDDict(Operation):
         self.input_src['wxd_dict'] = optools.wf_input
         self.input_src['pixel_size'] = optools.text_input 
         self.input_src['fpolz'] = optools.text_input
+        self.input_type['image_data'] = optools.ref_type
+        self.input_type['wxd_dict'] = optools.ref_type
         self.input_type['pixel_size'] = optools.float_type
         self.input_type['fpolz'] = optools.float_type
         self.inputs['pixel_size'] = 79 

@@ -13,7 +13,7 @@ class WXDCalibToDict(Operation):
         self.input_doc['calib_file'] = 'filesystem path to a .calib file as produced by WXDiff calibration'
         self.output_doc['calib_dict'] = 'a dict containing the calibration parameters from the file'
         self.input_src['calib_file'] = optools.fs_input
-        self.input_type['calib_file'] = optools.str_type
+        self.input_type['calib_file'] = optools.path_type
 
     def run(self):
         d = {}

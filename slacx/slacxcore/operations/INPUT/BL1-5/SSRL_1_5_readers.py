@@ -26,10 +26,10 @@ class ImageAndHeaderSSRL15(Operation):
 
     def run(self):
         #txtname = txtname_from_tifname(self.inputs['file'])
-        self.outputs['header_file_name'] = splitext(self.inputs['file'])[0] + '.txt'
+        hdr_file_name = splitext(self.inputs['file'])[0] + '.txt'
         self.outputs['image'] = tifffile.imread(self.inputs['file'])
         d = OrderedDict()
-        for l in open(txtname,'r').readlines():
+        for l in open(hdr_file_name,'r').readlines():
             try:
                 if not l.strip() == '' and not l.strip()[0] == '#':
                     kvs = l.split(',')
@@ -47,6 +47,7 @@ class ImageAndHeaderSSRL15(Operation):
             except e:
                 d['ERROR'] = e.message
         self.outputs['header'] = d
+        self.outputs['header_file_name'] = hdr_file_name 
 
 #ii = ii.split(sep)
 #key = ii[0].strip()

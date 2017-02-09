@@ -9,6 +9,7 @@ class TreeItem(object):
     """
 
     def __init__(self,row,column,parent):
+        # TODO: Consider whether TreeItem.parent is a good idea...
         self.parent = parent
         self.row = row
         self.column = column

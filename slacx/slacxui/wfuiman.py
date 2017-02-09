@@ -161,7 +161,10 @@ class WfUiManager(object):
         val = ui.values_list.model().list_data()
         # if ui.list_toggle is not checked, the value should be unpacked. 
         if not ui.list_toggle.isChecked():
-            val = val[0]
+            if len(val) == 0:
+                val = None
+            else:
+                val = val[0]
         return val
 
     def fetch_data(self,name):
@@ -194,6 +197,7 @@ class WfUiManager(object):
     def clear_io(self):
         self.ui.op_name.setText('')
         self.ui.uri_entry.setText('')
+        self.ui.load_button.setEnabled(False)
         n_inp_widgets = self.ui.input_layout.count()
         for i in range(n_inp_widgets-1,-1,-1):
             item = self.ui.input_layout.takeAt(i)
@@ -227,6 +231,7 @@ class WfUiManager(object):
         self.reset_input_headers()
         self.reset_output_headers()
         self.ui.op_name.setText(type(self.op).__name__)
+        self.ui.load_button.setEnabled(True)
         for i,name in zip(range(1,len(self.op.inputs)+1),self.op.inputs.keys()):
             # name 
             name_widget = uitools.name_widget(name)
@@ -266,18 +271,18 @@ class WfUiManager(object):
             src = self.src_widgets[name].currentIndex()
         new_type_widget = uitools.type_selection_widget(src)
         if not self.op.input_locator[name].src == optools.no_input:
-            # load operation defaults
             if (self.op.input_locator[name].tp not in optools.invalid_types[src]
             and self.op.input_locator[name].src == src):
+                # load operation defaults
                 new_type_widget.setCurrentIndex(self.op.input_locator[name].tp)
-        else:
-            # set sensible defaults
-            if src == optools.fs_input:
-                new_type_widget.setCurrentIndex(optools.path_type)
-            elif src in [optools.wf_input,optools.plugin_input]:
-                new_type_widget.setCurrentIndex(optools.ref_type)
-            elif src == optools.batch_input:
-                new_type_widget.setCurrentIndex(optools.auto_type)
+            else:
+                # set sensible defaults
+                if src == optools.fs_input:
+                    new_type_widget.setCurrentIndex(optools.path_type)
+                elif src in [optools.wf_input,optools.plugin_input]:
+                    new_type_widget.setCurrentIndex(optools.ref_type)
+                elif src == optools.batch_input:
+                    new_type_widget.setCurrentIndex(optools.auto_type)
         #if new_type_widget.currentIndex() in optools.invalid_types[src]:
         #    new_type_widget.setCurrentIndex(optools.none_type)
         #elif self.op.input_type[name]:
@@ -360,6 +365,7 @@ class WfUiManager(object):
         self.ui.load_button.setText("&Finish")
         self.ui.load_button.clicked.connect(self.load_op)
         self.ui.load_button.setDefault(True)
+        self.ui.load_button.setEnabled(False)
         self.ui.load_button.setMinimumWidth(100)
         self.ui.splitter.setStretchFactor(0,1000)    
         self.ui.setStyleSheet( "QLineEdit { border: none }" + self.ui.styleSheet() )

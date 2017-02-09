@@ -36,6 +36,10 @@ invalid_types[wf_input] = [str_type,int_type,float_type,bool_type,auto_type]
 invalid_types[plugin_input] = [str_type,int_type,float_type,bool_type,auto_type]
 invalid_types[batch_input] = [str_type,int_type,float_type,bool_type,ref_type,path_type]
 
+# tags for inputs and outputs TreeItems    
+inputs_tag = 'inputs'
+outputs_tag = 'outputs'
+
 def cast_type_val(tp,val):
     """
     Perform type casting for operation inputs.
@@ -55,6 +59,27 @@ def cast_type_val(tp,val):
         msg = 'type selection {}, should be one of {}'.format(tp,valid_types)
         raise ValueError(msg)
     return val
+
+def get_uri_from_dict(uri,d):
+    keys = uri.split('.')
+    itm = d
+    for k in keys:
+        if not k in itm.keys():
+            msg = 'did not find uri {} in dict'.format(uri)
+            raise KeyError(msg)
+        else:
+            itm = itm[k]
+    return itm
+
+def dict_contains_uri(uri,d):
+    keys = uri.split('.')
+    itm = d
+    for k in keys:
+        if not k in itm.keys():
+            return False
+        else:
+            itm = itm[k]
+    return True
 
 def op_dict(op):
     dct = OrderedDict() 
@@ -111,7 +136,7 @@ def parameter_doc(name,value,doc):
 def stack_size(stk):
     sz = 0
     for lst in stk:
-        if isinstance(lst[0].data,Batch) or isinstance(lst[0].data,Realtime):
+        if isinstance(lst[0].data,slacxop.Batch) or isinstance(lst[0].data,slacxop.Realtime):
             sz += stack_size(lst[1])+1
         else:
             sz += len(lst)
@@ -119,7 +144,7 @@ def stack_size(stk):
 
 def stack_contains(itm,stk):
     for lst in stk:
-        if isinstance(lst[0].data,Batch) or isinstance(lst[0].data,Realtime):
+        if isinstance(lst[0].data,slacxop.Batch) or isinstance(lst[0].data,slacxop.Realtime):
             if itm == lst[0] or stack_contains(itm,lst[1]):
                 return True
         else:
@@ -130,7 +155,7 @@ def stack_contains(itm,stk):
 def print_stack(stk):
     stktxt = ''
     for lst in stk:
-        if isinstance(lst[0].data,Batch) or isinstance(lst[0].data,Realtime):
+        if isinstance(lst[0].data,slacxop.Batch) or isinstance(lst[0].data,slacxop.Realtime):
             substk = lst[1]
             stktxt += '[{}:\n{}]\n'.format(lst[0].tag(),print_stack(lst[1]))
             #[[itm.tag() for itm in sublst] for sublst in substk])

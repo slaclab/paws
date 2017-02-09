@@ -13,36 +13,35 @@ class BgSubtractByTemperature(Operation):
     """
     
     def __init__(self):
-        input_names = ['I_meas','T_meas','bg_batch_output','bg_T_key','bg_I_key']
+        input_names = ['I_meas','T_meas','bg_batch_output','bg_I_uri','bg_T_uri']
         output_names = ['I_bgsub', 'bg_factor']
         super(BgSubtractByTemperature, self).__init__(input_names, output_names)
         self.input_doc['I_meas'] = 'array of I(q)'
         self.input_doc['T_meas'] = 'temperature as taken from the dict produced by the detector header file'
         self.input_doc['bg_batch_output'] = 'the output (list of dicts) of a batch of background spectra at different temperatures'
-        self.input_doc['bg_T_key'] = str('each dict in bg_batch_output is expected to have this key in it, '
-        + 'where the value will represent the temperature of the background spectrum')
-        self.input_doc['bg_I_key'] = str('each dict in bg_batch_output is expected to have this key in it, '
-        + 'where the value will represent the measured intensity spectrum')
+        self.input_doc['bg_I_uri'] = 'the uri for the items saved in bg_batch_output containing the background intensity spectrum' 
+        self.input_doc['bg_T_uri'] = 'the uri for the items saved in bg_batch_output containing the background spectrum temperatures'
         self.output_doc['I_bgsub'] = 'I_meas - bg_factor * (I_bg)'
         self.output_doc['bg_factor'] = 'correction factor applied to background before subtraction to ensure positive intensity values'
         self.input_src['I_meas'] = optools.wf_input
         self.input_src['T_meas'] = optools.wf_input
         self.input_src['bg_batch_output'] = optools.wf_input
-        self.input_src['bg_T_key'] = optools.wf_input
-        self.input_src['bg_I_key'] = optools.wf_input
-        self.input_type['bg_T_key'] = optools.str_type
-        self.input_type['bg_I_key'] = optools.str_type
+        self.input_src['bg_I_uri'] = optools.wf_input
+        self.input_src['bg_T_uri'] = optools.wf_input
+        self.input_type['I_meas'] = optools.ref_type
+        self.input_type['T_meas'] = optools.ref_type
+        self.input_type['bg_batch_output'] = optools.ref_type
+        self.input_type['bg_T_uri'] = optools.path_type
+        self.input_type['bg_I_uri'] = optools.path_type
 
     def run(self):
-        #q_meas = self.inputs['q_meas']
-        #import pdb; pdb.set_trace()
         I_meas = self.inputs['I_meas']
         T_meas = self.inputs['T_meas']
-        bg_T_key = self.inputs['bg_T_key']
-        bg_I_key = self.inputs['bg_I_key']
+        bg_I_uri = self.inputs['bg_I_uri']
+        bg_T_uri = self.inputs['bg_T_uri']
         bg_out = self.inputs['bg_batch_output']
-        T_allbg = [d[bg_T_key] for d in bg_out]
-        I_allbg = [d[bg_I_key] for d in bg_out]
+        T_allbg = [optools.get_uri_from_dict(bg_T_uri,d) for d in bg_out]
+        I_allbg = [optools.get_uri_from_dict(bg_I_uri,d) for d in bg_out]
         closest_T_idx = np.argmin(np.abs([T_bg - T_meas for T_bg in T_allbg]))
         I_bg = I_allbg[closest_T_idx]
         #if not all(q_I[:,0] == q_I_bg[:,0]):

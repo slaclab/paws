@@ -115,10 +115,10 @@ class TreeModel(QtCore.QAbstractItemModel):
                 row = self.list_tags(p_idx).index(itemuri)
                 idx = self.index(row,0,p_idx)
                 # get TreeItem from QModelIndex
-                item = self.get_item(idx)
+                itm = self.get_item(idx)
                 # set new parent in case the path continues...
                 p_idx = idx
-            return item, idx
+            return itm, idx
         except Exception as ex:
             msg = '-----\nbad uri: {}\n-----\n'.format(uri)
             #print msg
