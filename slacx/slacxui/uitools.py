@@ -169,7 +169,7 @@ def start_save_ui(uiman):
     """
     Start a modal window dialog to choose a save destination for the current workflow  
     """
-    ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/save_browser.ui")
+    ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/qtui/save_browser.ui")
     ui_file.open(QtCore.QFile.ReadOnly)
     save_ui = QtUiTools.QUiLoader().load(ui_file)
     ui_file.close()
@@ -204,7 +204,7 @@ def start_load_ui(uiman):
     """
     Start a modal window dialog to load a previously saved workflow
     """
-    ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/load_browser.ui")
+    ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/qtui/load_browser.ui")
     ui_file.open(QtCore.QFile.ReadOnly)
     load_ui = QtUiTools.QUiLoader().load(ui_file)
     ui_file.close()
@@ -228,7 +228,7 @@ def start_load_ui(uiman):
     load_ui.activateWindow()
 
 def message_ui(parent=None):
-    ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/message.ui")
+    ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/qtui/message.ui")
     ui_file.open(QtCore.QFile.ReadOnly)
     msg_ui = QtUiTools.QUiLoader().load(ui_file)
     ui_file.close()
@@ -246,7 +246,7 @@ def message_ui(parent=None):
 
 #def start_list_builder(src,lm,parent=None):
 #    """Start list builder for data source src and ListModel lm"""
-#    ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/list_builder.ui")
+#    ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/qtui/list_builder.ui")
 #    ui_file.open(QtCore.QFile.ReadOnly)
 #    list_ui = QtUiTools.QUiLoader().load(ui_file)
 #    ui_file.close()
@@ -298,7 +298,7 @@ def message_ui(parent=None):
 #        list_ui.list_view.model().remove_item(row)
 
 #def data_fetch_ui(parent=None):
-#    ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/load_browser.ui")
+#    ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/qtui/load_browser.ui")
 #    ui_file.open(QtCore.QFile.ReadOnly)
 #    src_ui = QtUiTools.QUiLoader().load(ui_file)
 #    ui_file.close()

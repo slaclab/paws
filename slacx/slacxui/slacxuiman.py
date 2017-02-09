@@ -29,7 +29,7 @@ class UiManager(object):
         """Make a UI from ui_file, save a reference to it"""
         super(UiManager,self).__init__()
         # Pick a UI definition, load it up
-        ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/basic.ui")
+        ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/qtui/basic.ui")
         ui_file.open(QtCore.QFile.ReadOnly)
         # load() produces a QMainWindow(QWidget).
         self.ui = QtUiTools.QUiLoader().load(ui_file)
@@ -169,7 +169,7 @@ class UiManager(object):
     def make_title(self):
         """Display the slacx logo in the image viewer"""
         # Load the slacx graphic  
-        slacx_img_file = os.path.join(slacxtools.rootdir, "slacxui/slacx_icon_white.png")
+        slacx_img_file = os.path.join(slacxtools.rootdir, "slacxui/graphics/slacx_icon_white.png")
         # Make a QtGui.QPixmap from this file
         slacx_pixmap = QtGui.QPixmap(slacx_img_file)
         # Make a QtGui.QGraphicsPixmapItem from this QPixmap

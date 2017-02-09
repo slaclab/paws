@@ -18,7 +18,7 @@ from . import uitools
 class WfUiManager(object):
 
     def __init__(self,wfman,opman):
-        ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/wf_editor.ui")
+        ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/qtui/wf_editor.ui")
         ui_file.open(QtCore.QFile.ReadOnly)
         self.ui = QtUiTools.QUiLoader().load(ui_file)
         ui_file.close()
@@ -367,7 +367,7 @@ class WfUiManager(object):
 
     #def build_list(self,name):
     #    """Use a popup to build a list of input data"""
-    #    #ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/list_builder.ui")
+    #    #ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/qtui/list_builder.ui")
     #    #ui_file.open(QtCore.QFile.ReadOnly)
     #    #list_ui = QtUiTools.QUiLoader().load(ui_file)
     #    #ui_file.close()

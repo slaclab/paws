@@ -23,9 +23,9 @@ class InputLoader(object):
 
     def setup_ui(self):
         if self.src == optools.text_input:
-            ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/text_input_loader.ui")
+            ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/qtui/text_input_loader.ui")
         elif self.src in [optools.wf_input,optools.plugin_input,optools.fs_input]:
-            ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/tree_input_loader.ui")
+            ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/qtui/tree_input_loader.ui")
         ui_file.open(QtCore.QFile.ReadOnly)
         self.ui = QtUiTools.QUiLoader().load(ui_file)
         ui_file.close()

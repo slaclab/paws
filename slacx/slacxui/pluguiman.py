@@ -25,7 +25,7 @@ class PluginListModel(ListModel):
 class PluginUiManager(object):
 
     def __init__(self,plugman):
-        ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/plugin_control.ui")
+        ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/qtui/plugin_control.ui")
         ui_file.open(QtCore.QFile.ReadOnly)
         self.ui = QtUiTools.QUiLoader().load(ui_file)
         ui_file.close()
