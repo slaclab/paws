@@ -20,7 +20,7 @@ class PifTernary(Operation):
         self.input_doc['pk_idx'] = 'indices in q,I where peaks can be found'
         self.input_doc['date_time'] = 'string date/time from measurement header file for pif record tags'
         self.input_doc['t_utc'] = 'time in seconds utc'
-        self.input_src['name'] = optools.user_input
+        self.input_src['name'] = optools.text_input
         self.input_src['q_I'] = optools.wf_input
         self.input_src['q_texture'] = optools.wf_input
         self.input_src['I_features'] = optools.wf_input

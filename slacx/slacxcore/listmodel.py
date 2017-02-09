@@ -76,7 +76,7 @@ class ListModel(QtCore.QAbstractListModel):
     def removeRows(self, row, count, parent=QtCore.QModelIndex()):
         self.beginRemoveRows(parent,row,row+count-1)
         for j in range(row,row+count)[::-1]:
-            self.list_items.pop(j)
+            self._list_data.pop(j)
         self.endRemoveRows()
 
     def headerData(self,section,orientation,data_role):

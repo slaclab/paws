@@ -20,7 +20,7 @@ class ItemFromSequence(Operation):
         self.categories = ['MISC.PYTHON OBJECT MANIPULATION']
         # source & type
         self.input_src['sequence'] = optools.wf_input
-        self.input_src['index'] = optools.user_input
+        self.input_src['index'] = optools.text_input
         self.input_type['index'] = optools.int_type
 
     def run(self):
@@ -96,7 +96,7 @@ class ItemToMap(Operation):
         self.output_doc['new_map'] = 'map with added key-value pair'
         # source & type
         self.input_src['map'] = optools.wf_input
-        self.input_src['key'] = optools.user_input
+        self.input_src['key'] = optools.text_input
         self.input_src['value'] = optools.wf_input
         self.input_type['key'] = optools.str_type
         self.categories = ['MISC.PYTHON OBJECT MANIPULATION']

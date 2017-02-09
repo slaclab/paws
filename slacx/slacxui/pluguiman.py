@@ -165,7 +165,7 @@ class PluginUiManager(object):
             if self.pgin.inputs[name] is not None:
                 val_widget.setText(str(self.pgin.inputs[name]))
             val_widget.setReadOnly(True)
-        elif (src == optools.user_input):
+        elif (src == optools.text_input):
             if self.pgin.inputs[name]:
                 val_widget.setText(str(self.pgin.inputs[name]))
             btn_widget = QtGui.QPushButton('auto')
@@ -184,7 +184,7 @@ class PluginUiManager(object):
         #elif src == optools.batch_input:
         #    val = 'auto' 
         #    il = optools.InputLocator(src,tp,val) 
-        if src == optools.user_input:
+        if src == optools.text_input:
             val = self.val_widgets[name].text()
         elif src in [optools.wf_input,optools.fs_input,optools.plugin_input]:
             if ui:
@@ -259,7 +259,7 @@ class PluginUiManager(object):
             self.val_widgets[name].setText(val)
             src_ui.close()
             src_ui.deleteLater()
-        elif src == optools.user_input:
+        elif src == optools.text_input:
             val = self.val_widgets[name].text()
             self.pgin.inputs[name] = optools.cast_type_val(tp,val)
 

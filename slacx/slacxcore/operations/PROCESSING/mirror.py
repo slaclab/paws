@@ -54,8 +54,8 @@ class MirrorVertically(Operation):
         self.output_doc['image_out'] = '2d ndarray'
         # source & type
         self.input_src['image_in'] = optools.wf_input
-        self.input_src['channel_2_in'] = optools.user_input
-        self.input_src['channel_3_in'] = optools.user_input
+        self.input_src['channel_2_in'] = optools.text_input
+        self.input_src['channel_3_in'] = optools.text_input
         # defaults
         self.inputs['channel_2_in'] = None
         self.inputs['channel_3_in'] = None

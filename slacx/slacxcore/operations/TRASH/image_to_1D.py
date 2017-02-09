@@ -36,14 +36,14 @@ class image_to_1D(Operation):
         self.output_doc['Qlist'] = 'momentum transfer in a list'
         # source & type
         self.input_src['image_data'] = optools.wf_input
-        self.input_src['d_pixel'] = optools.user_input
-        self.input_src['rotation_rad'] = optools.user_input
-        self.input_src['tilt_rad'] = optools.user_input
-        self.input_src['lamda'] = optools.user_input
-        self.input_src['x0_pixel'] = optools.user_input
-        self.input_src['y0_pixel'] = optools.user_input
-        self.input_src['PP'] = optools.user_input
-        self.input_src['pixel_size'] = optools.user_input
+        self.input_src['d_pixel'] = optools.text_input
+        self.input_src['rotation_rad'] = optools.text_input
+        self.input_src['tilt_rad'] = optools.text_input
+        self.input_src['lamda'] = optools.text_input
+        self.input_src['x0_pixel'] = optools.text_input
+        self.input_src['y0_pixel'] = optools.text_input
+        self.input_src['PP'] = optools.text_input
+        self.input_src['pixel_size'] = optools.text_input
         self.input_type['d_pixel'] = optools.float_type
         self.input_type['rotation_rad'] = optools.float_type
         self.input_type['tilt_rad'] = optools.float_type
@@ -105,8 +105,8 @@ class image_to_1D_simple(Operation):
         # source & type
         self.input_src['image_data'] = optools.wf_input
         self.input_src['calib_file'] = optools.fs_input
-        self.input_src['PP'] = optools.user_input
-        self.input_src['pixel_size'] = optools.user_input
+        self.input_src['PP'] = optools.text_input
+        self.input_src['pixel_size'] = optools.text_input
         self.input_type['PP'] = optools.float_type
         self.input_type['pixel_size'] = optools.float_type
         self.inputs['PP'] = 0.95

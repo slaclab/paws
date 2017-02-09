@@ -53,6 +53,8 @@ def src_selection_widget():
     lm = ListModel(optools.input_sources,widg)
     #widg.addItems(optools.input_sources)
     widg.setModel(lm)
+    maxlen = max([len(srctext) for srctext in optools.input_sources])
+    widg.setMinimumWidth(20*maxlen)
     return widg 
         
 def r_hdr_widget(text):
@@ -188,7 +190,7 @@ def start_save_ui(uiman):
     #save_ui.tree.activated.connect( save_ui.tree.setCurrentIndex )
     #save_ui.tree.selectionModel().selectionChanged.connect( save_ui.tree.selectionChanged )
     save_ui.setParent(uiman.ui,QtCore.Qt.Window)
-    save_ui.setAttribute(QtCore.Qt.WA_OpaquePaintEvent)
+    #save_ui.setAttribute(QtCore.Qt.WA_OpaquePaintEvent)
     save_ui.setWindowModality(QtCore.Qt.ApplicationModal)
     save_ui.save_button.setText('&Save')
     save_ui.save_button.clicked.connect(partial(stop_save_ui,save_ui,uiman))
@@ -207,7 +209,6 @@ def start_load_ui(uiman):
     load_ui = QtUiTools.QUiLoader().load(ui_file)
     ui_file.close()
     trmod = QtGui.QFileSystemModel()
-    #trmod.setRootPath('.')
     trmod.setRootPath(QtCore.QDir.currentPath())
     trmod.setNameFilters(['*.wfl'])
     load_ui.tree_box.setTitle('Select a .wfl file to load a workflow')
@@ -219,77 +220,12 @@ def start_load_ui(uiman):
     load_ui.tree.expandAll()
     load_ui.tree.clicked.connect( partial(load_path,load_ui) )
     load_ui.setParent(uiman.ui,QtCore.Qt.Window)
-    load_ui.setAttribute(QtCore.Qt.WA_OpaquePaintEvent)
+    #load_ui.setAttribute(QtCore.Qt.WA_OpaquePaintEvent)
     load_ui.setWindowModality(QtCore.Qt.ApplicationModal)
     load_ui.load_button.setText('&Load')
     load_ui.load_button.clicked.connect(partial(stop_load_ui,load_ui,uiman))
-    #load_ui.setWindowModality(QtCore.Qt.WindowModal)
     load_ui.show()
     load_ui.activateWindow()
-
-def start_list_builder(src,lm,parent=None):
-    """Start list builder for data source src and ListModel lm"""
-    ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/list_builder.ui")
-    ui_file.open(QtCore.QFile.ReadOnly)
-    list_ui = QtUiTools.QUiLoader().load(ui_file)
-    ui_file.close()
-    list_ui.setParent(parent,QtCore.Qt.Window)
-    #list_ui.setAttribute(QtCore.Qt.WA_OpaquePaintEvent)
-    #list_ui.setWindowModality(QtCore.Qt.WindowModal)
-    list_ui.setWindowTitle("build list from {}".format(optools.input_sources[src]))
-    list_ui.value_header.setText('value')
-    list_ui.value_header.setStyleSheet( "QLineEdit { background-color: transparent }" + list_ui.value_header.styleSheet() )
-    list_ui.type_header.setText('type')
-    list_ui.type_header.setStyleSheet( "QLineEdit { background-color: transparent }" + list_ui.type_header.styleSheet() )
-    list_ui.list_view.setModel(lm)
-    list_ui.browse_button.setText('browse...')
-    list_ui.type_selector = type_selection_widget(src,list_ui.type_selector)
-    list_ui.type_selector.model().set_disabled(optools.list_type)
-    if src == optools.user_input:
-        list_ui.browse_button.setEnabled(False)
-        if have_qt47:
-            list_ui.value_entry.setPlaceholderText('(enter value)')
-        else:
-            list_ui.value_entry.setText('')
-    else:
-        list_ui.load_button.setEnabled(False)
-        list_ui.value_entry.setReadOnly(True)
-        list_ui.type_selector.model().set_disabled(optools.none_type)
-        list_ui.type_selector.model().set_disabled(optools.auto_type)
-    list_ui.type_selector.setCurrentIndex(optools.str_type)
-    list_ui.load_button.setText('Load')
-    list_ui.finish_button.setText('Finish')
-    list_ui.remove_button.setText('Remove')
-    list_ui.load_button.clicked.connect( partial(load_value_to_list,list_ui) )
-    list_ui.remove_button.clicked.connect( partial(rm_from_list,list_ui) )
-    return list_ui
-
-def load_value_to_list(list_ui):
-    # typecast and load the value_entry.text()
-    # only typecast if tp is not auto_type
-    tp = list_ui.type_selector.currentIndex()
-    if tp == optools.auto_type:
-        val = list_ui.value_entry.text()
-    else:
-        val = optools.cast_type_val(tp,list_ui.value_entry.text())
-    list_ui.list_view.model().append_item(val)
-
-def rm_from_list(list_ui):
-    idx = list_ui.list_view.currentIndex()
-    if idx.isValid():
-        row = idx.row()
-        list_ui.list_view.model().remove_item(row)
-
-def data_fetch_ui(parent=None):
-    ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/load_browser.ui")
-    ui_file.open(QtCore.QFile.ReadOnly)
-    src_ui = QtUiTools.QUiLoader().load(ui_file)
-    ui_file.close()
-    src_ui.setParent(parent,QtCore.Qt.Window)
-    #src_ui.setAttribute(QtCore.Qt.WA_OpaquePaintEvent)
-    #src_ui.setWindowModality(QtCore.Qt.WindowModal)
-    src_ui.load_button.setText('&Load')
-    return src_ui
 
 def message_ui(parent=None):
     ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/message.ui")
@@ -307,5 +243,69 @@ def message_ui(parent=None):
     msg_ui.ok_button.setFocus()
     msg_ui.ok_button.setDefault(True)
     return msg_ui
+
+#def start_list_builder(src,lm,parent=None):
+#    """Start list builder for data source src and ListModel lm"""
+#    ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/list_builder.ui")
+#    ui_file.open(QtCore.QFile.ReadOnly)
+#    list_ui = QtUiTools.QUiLoader().load(ui_file)
+#    ui_file.close()
+#    list_ui.setParent(parent,QtCore.Qt.Window)
+#    #list_ui.setAttribute(QtCore.Qt.WA_OpaquePaintEvent)
+#    #list_ui.setWindowModality(QtCore.Qt.WindowModal)
+#    list_ui.setWindowTitle("build list from {}".format(optools.input_sources[src]))
+#    list_ui.value_header.setText('value')
+#    list_ui.value_header.setStyleSheet( "QLineEdit { background-color: transparent }" + list_ui.value_header.styleSheet() )
+#    list_ui.type_header.setText('type')
+#    list_ui.type_header.setStyleSheet( "QLineEdit { background-color: transparent }" + list_ui.type_header.styleSheet() )
+#    list_ui.list_view.setModel(lm)
+#    list_ui.browse_button.setText('browse...')
+#    list_ui.type_selector = type_selection_widget(src,list_ui.type_selector)
+#    list_ui.type_selector.model().set_disabled(optools.list_type)
+#    if src == optools.text_input:
+#        list_ui.browse_button.setEnabled(False)
+#        if have_qt47:
+#            list_ui.value_entry.setPlaceholderText('(enter value)')
+#        else:
+#            list_ui.value_entry.setText('')
+#    else:
+#        list_ui.load_button.setEnabled(False)
+#        list_ui.value_entry.setReadOnly(True)
+#        list_ui.type_selector.model().set_disabled(optools.none_type)
+#        list_ui.type_selector.model().set_disabled(optools.auto_type)
+#    list_ui.type_selector.setCurrentIndex(optools.str_type)
+#    list_ui.load_button.setText('Load')
+#    list_ui.finish_button.setText('Finish')
+#    list_ui.remove_button.setText('Remove')
+#    list_ui.load_button.clicked.connect( partial(load_value_to_list,list_ui) )
+#    list_ui.remove_button.clicked.connect( partial(rm_from_list,list_ui) )
+#    return list_ui
+
+#def load_value_to_list(list_ui):
+#    # typecast and load the value_entry.text()
+#    # only typecast if tp is not auto_type
+#    tp = list_ui.type_selector.currentIndex()
+#    if tp == optools.auto_type:
+#        val = list_ui.value_entry.text()
+#    else:
+#        val = optools.cast_type_val(tp,list_ui.value_entry.text())
+#    list_ui.list_view.model().append_item(val)
+
+#def rm_from_list(list_ui):
+#    idx = list_ui.list_view.currentIndex()
+#    if idx.isValid():
+#        row = idx.row()
+#        list_ui.list_view.model().remove_item(row)
+
+#def data_fetch_ui(parent=None):
+#    ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/load_browser.ui")
+#    ui_file.open(QtCore.QFile.ReadOnly)
+#    src_ui = QtUiTools.QUiLoader().load(ui_file)
+#    ui_file.close()
+#    src_ui.setParent(parent,QtCore.Qt.Window)
+#    #src_ui.setAttribute(QtCore.Qt.WA_OpaquePaintEvent)
+#    #src_ui.setWindowModality(QtCore.Qt.WindowModal)
+#    src_ui.load_button.setText('&Load')
+#    return src_ui
 
 

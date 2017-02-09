@@ -98,7 +98,7 @@ class Exponentiate(Operation):
         self.input_doc['exponent'] = 'array or number for which exponentiating base is defined'
         self.output_doc['power'] = 'base raised by exponent'
         # source & type
-        self.input_src['base'] = optools.user_input
+        self.input_src['base'] = optools.text_input
         self.input_src['exponent'] = optools.wf_input
         self.input_type['base'] = optools.float_type
         self.input_type['exponent'] = optools.float_type
@@ -124,7 +124,7 @@ class Logarithm(Operation):
         self.output_doc['exponent'] = 'array or number'
         # source & type
         self.input_src['power'] = optools.wf_input
-        self.input_src['base'] = optools.user_input
+        self.input_src['base'] = optools.text_input
         self.input_type['power'] = optools.float_type
         self.input_type['base'] = optools.float_type
         # defaults

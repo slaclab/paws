@@ -27,7 +27,7 @@ class RealtimeFromFiles(Realtime):
         + 'generated in real time from the local filesystem')
         self.output_doc['realtime_outputs'] = 'list of dicts of [output_route:output_value]'
         self.input_src['dir_path'] = optools.fs_input
-        self.input_src['regex'] = optools.user_input 
+        self.input_src['regex'] = optools.text_input 
         self.input_src['input_route'] = optools.wf_input 
         self.input_src['realtime_ops'] = optools.wf_input 
         self.input_src['saved_items'] = optools.wf_input 

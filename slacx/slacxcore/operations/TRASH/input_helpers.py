@@ -15,7 +15,7 @@ class BuildList(Operation):
         self.input_doc['text'] = 'comma-separated text to be packaged as an array'
         self.output_doc['list'] = 'output from array constructor'
         self.categories = ['INPUT.TESTS'] 
-        self.input_src['text'] = optools.user_input
+        self.input_src['text'] = optools.text_input
         self.input_type['text'] = optools.str_type
         self.inputs['text'] = '0,1,2,3'
         

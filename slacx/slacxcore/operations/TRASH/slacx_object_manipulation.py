@@ -16,9 +16,9 @@ class selectBatchItemListFromOps(Operation):
         self.output_doc['var_list'] = 'A list, ordered by index in batch, of the selected variable'
         # source & type
         self.input_src['batch_outputs'] = optools.wf_input
-        self.input_src['from_outputs'] = optools.user_input
+        self.input_src['from_outputs'] = optools.text_input
         self.input_src['operation'] = optools.wf_input
-        self.input_src['var_name'] = optools.user_input
+        self.input_src['var_name'] = optools.text_input
         self.input_type['from_outputs'] = optools.bool_type
         self.input_type['operation'] = optools.str_type
         self.input_type['var_name'] = optools.str_type
@@ -55,9 +55,9 @@ class selectBatchItems2(Operation):
         self.output_doc['var_list'] = 'A list, ordered by index in batch, of the selected variable'
         # source & type
         self.input_src['batch_outputs'] = optools.wf_input
-        self.input_src['from_outputs'] = optools.user_input
+        self.input_src['from_outputs'] = optools.text_input
         self.input_src['operation'] = optools.wf_input
-        self.input_src['var_name'] = optools.user_input
+        self.input_src['var_name'] = optools.text_input
         self.input_type['from_outputs'] = optools.bool_type
         #self.input_type['operation'] = optools.str_type
         self.input_type['var_name'] = optools.str_type
@@ -91,10 +91,10 @@ class selectBatchItemFromOps(Operation):
         super(selectBatchItemFromOps, self).__init__(input_names, output_names)
         # source & type
         self.input_src['batch_outputs'] = optools.wf_input
-        self.input_src['index'] = optools.user_input
-        self.input_src['from_outputs'] = optools.user_input
+        self.input_src['index'] = optools.text_input
+        self.input_src['from_outputs'] = optools.text_input
         self.input_src['operation'] = optools.wf_input
-        self.input_src['var_name'] = optools.user_input
+        self.input_src['var_name'] = optools.text_input
         self.input_type['index'] = optools.int_type
         self.input_type['from_outputs'] = optools.bool_type
         self.input_type['operation'] = optools.str_type

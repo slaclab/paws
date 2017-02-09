@@ -369,7 +369,7 @@ class TreeSelectionModel(TreeModel):
         elif data_role == Qt.CheckStateRole and item_idx.column() == 1:
             if itm.is_checked():
                 return Qt.Checked
-            elif itm.children_checked();
+            elif itm.children_checked():
                 return Qt.PartiallyChecked
             else:
                 return Qt.Unchecked

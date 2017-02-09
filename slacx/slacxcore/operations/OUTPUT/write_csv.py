@@ -18,9 +18,9 @@ class WriteArrayCSV(Operation):
         self.input_doc['filename'] = 'the name of the file to be saved- the .csv extension will be added/replaced if not provided'
         self.output_doc['csv_path'] = 'the path to the finished csv file'
         self.input_src['array'] = optools.wf_input
-        self.input_src['headers'] = optools.user_input
+        self.input_src['headers'] = optools.text_input
         self.input_src['filepath'] = optools.fs_input
-        self.input_src['filename'] = optools.user_input
+        self.input_src['filename'] = optools.text_input
         self.input_type['array'] = optools.auto_type
         self.input_type['headers'] = optools.str_type
         self.input_type['filepath'] = optools.str_type

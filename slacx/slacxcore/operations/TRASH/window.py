@@ -23,10 +23,10 @@ class WindowByWavelength(Operation):
         # source & type
         self.input_src['q'] = optools.wf_input
         self.input_src['I'] = optools.wf_input
-        self.input_src['q1'] = optools.user_input
-        self.input_src['q2'] = optools.user_input
-        self.input_src['zip'] = optools.user_input
-        self.input_src['log_zip'] = optools.user_input
+        self.input_src['q1'] = optools.text_input
+        self.input_src['q2'] = optools.text_input
+        self.input_src['zip'] = optools.text_input
+        self.input_src['log_zip'] = optools.text_input
         self.input_type['q1'] = optools.float_type
         self.input_type['q2'] = optools.float_type
         self.input_type['zip'] = optools.bool_type

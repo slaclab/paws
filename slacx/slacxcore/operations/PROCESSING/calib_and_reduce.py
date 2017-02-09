@@ -1,8 +1,8 @@
 """
 Operations for remeshing and and reducing an image
 contributors: fangren, apf, lensonp
-Last updated 2016/12/05 by lensonp
 """
+
 import os
 
 import numpy as np
@@ -26,8 +26,8 @@ class ReduceByWXDDict(Operation):
         + ' PP (polarization factor), pixel_size, and d_pixel')
         self.input_doc['pixel_size'] = 'pixel size in microns'
         self.input_doc['fpolz'] = 'polarization factor'
-        self.input_src['pixel_size'] = optools.user_input 
-        self.input_src['fpolz'] = optools.user_input
+        self.input_src['pixel_size'] = optools.text_input 
+        self.input_src['fpolz'] = optools.text_input
         self.input_type['pixel_size'] = optools.float_type
         self.input_type['fpolz'] = optools.float_type
         self.inputs['pixel_size'] = 79 
@@ -93,12 +93,12 @@ class ReduceByWXDDict_mask_error(Operation):
         # src & type
         self.input_src['image_data'] = optools.wf_input
         self.input_src['wxd_dict'] = optools.wf_input
-        self.input_src['pixel_size'] = optools.user_input
-        self.input_src['fpolz'] = optools.user_input
-        self.input_src['calculate_noise'] = optools.user_input
-        self.input_src['inverse_gain'] = optools.user_input
-        self.input_src['readnoise'] = optools.user_input
-        self.input_src['mask'] = optools.user_input
+        self.input_src['pixel_size'] = optools.text_input
+        self.input_src['fpolz'] = optools.text_input
+        self.input_src['calculate_noise'] = optools.text_input
+        self.input_src['inverse_gain'] = optools.text_input
+        self.input_src['readnoise'] = optools.text_input
+        self.input_src['mask'] = optools.text_input
         self.input_type['pixel_size'] = optools.float_type
         self.input_type['fpolz'] = optools.float_type
         self.input_type['calculate_noise'] = optools.bool_type
@@ -167,8 +167,8 @@ class CalByWXDDict(Operation):
         self.input_doc['fpolz'] = 'polarization factor'
         self.input_src['image_data'] = optools.wf_input
         self.input_src['wxd_dict'] = optools.wf_input
-        self.input_src['pixel_size'] = optools.user_input 
-        self.input_src['fpolz'] = optools.user_input
+        self.input_src['pixel_size'] = optools.text_input 
+        self.input_src['fpolz'] = optools.text_input
         self.input_type['pixel_size'] = optools.float_type
         self.input_type['fpolz'] = optools.float_type
         self.inputs['pixel_size'] = 79 

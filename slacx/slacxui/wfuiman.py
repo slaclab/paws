@@ -12,6 +12,7 @@ from ..slacxcore.operations.slacxop import Operation
 from ..slacxcore.workflow.slacxwfman import WfManager
 from ..slacxcore import slacxtools
 from ..slacxcore.operations.optools import InputLocator
+from .input_loader import InputLoader
 from . import uitools
 
 class WfUiManager(object):
@@ -29,6 +30,7 @@ class WfUiManager(object):
         self.type_widgets = {} 
         self.val_widgets = {} 
         self.btn_widgets = {} 
+        self.input_loaders = {} 
         self.setup_ui()
         # Column definitions for the io layout        
         self.name_col = 0
@@ -62,6 +64,8 @@ class WfUiManager(object):
 
     def set_op(self,op,uri):
         """Set up ui elements around existing input op"""
+        # TODO: Instead, copy the input op, then load it,
+        # and ensure that the workflow updates properly when finished
         self.op = op
         self.ui.op_info.setPlainText(self.op.description())
         self.build_io()
@@ -73,108 +77,6 @@ class WfUiManager(object):
         new_op_tag = self.wfman.auto_tag(type(new_op).__name__)
         new_op.load_defaults()
         self.set_op(new_op,new_op_tag)
-
-    def set_input(self,name,src_ui=None,itm_idx=None):
-        """
-        Call build_input_locator to package an InputLocator for named input. 
-        Store it in self.op.input_locator[name].
-        This is called on all inputs when an Operation is loaded,
-        so leaving the optional arguments as None should not change an already-loaded input.
-        This is also called as a signal from data fetching ui's,
-        in which case a reference to the ui and a selected item index are expected (optional arguments).
-        """
-        il = self.build_input_locator(name,src_ui,itm_idx)
-        self.op.input_locator[name] = il
-        # dereference the old input
-        self.op.inputs[name] = None 
-
-    def build_input_locator(self,name,ui=None):
-        """
-        Create an InputLocator for named input.
-        If a ui is provided, then this is being signalled to load data from that ui.
-        If not, then the input has already been loaded or should be set to None.
-        """
-        src = self.src_widgets[name].currentIndex()
-        il = None
-        if src == optools.no_input:
-            il = optools.InputLocator() 
-        elif src == optools.batch_input:
-            tp = self.type_widgets[name].currentIndex()
-            if tp == optools.auto_type:
-                # TODO: set val to indicate which batch (if any) will set this input 
-                val = 'auto' 
-            else:
-                val = None
-            il = optools.InputLocator(src,tp,val) 
-        else:
-            # all other input sources use a ui for loading
-            if ui:
-                tp, val = self.fetch_from_input_ui(ui) 
-                il = optools.InputLocator(src,tp,val)
-            else:
-                # else, the input has already been loaded, so do nothing.
-                il = self.op.input_locator[name]
-        return il
-
-    def fetch_from_input_ui(self,ui):
-        
-
-        #elif src == optools.text_input:
-        #    if tp == optools.list_type:
-        #        if not ui:
-        #            if self.op.input_locator[name] is not None:
-        #                il = self.op.input_locator[name]
-        #        else:
-        #            val = ui.list_view.model().list_data()
-        #            il = optools.InputLocator(src,tp,val)
-        #    else:
-        #        val = self.val_widgets[name].text()
-        #        il = optools.InputLocator(src,tp,val)
-        #elif (src == optools.wf_input or src == optools.fs_input or src == optools.plugin_input):
-        #    if not ui:
-        #        # Assume it has already been loaded 
-        #        if self.op.input_locator[name] is not None:
-        #            il = self.op.input_locator[name]
-        #    elif tp == optools.list_type:
-        #        # ui is assumed to be list_builder.ui
-        #        val = ui.list_view.model().list_data() 
-        #        il = optools.InputLocator(src,tp,val)
-        #    else:
-        #        # ui should be the load_browser.ui 
-        #        il = self.load_from_ui(ui,src,tp,itm_idx)
-        #if ui:
-        #    ui.close()
-        #    ui.deleteLater()
-        #if not il: 
-        #    if self.op.input_locator[name] is not None:
-        #        il = self.op.input_locator[name]
-        #    else: 
-        #        val = None
-        #        il = optools.InputLocator(src,tp,val)
-        #self.val_widgets[name].setText(str(il.val))
-        #return il
-
-    def load_from_ui(self,src_ui,src,tp,itm_idx=None):
-        """
-        Construct a unique resource identifier (uri) for the selected item.
-        return an optools.InputLocator(src,tp,uri).
-        By design this should only be called when the corresponding input source window
-        (containing a TreeView widget) is open.
-        """
-        trview = src_ui.tree
-        if not itm_idx or not itm_idx.isValid():
-            itm_idx = trview.currentIndex()
-        if itm_idx.isValid():
-            if tp == optools.none_type:
-                item_uri = None
-            elif src == optools.fs_input:
-                item_uri = trview.model().filePath(itm_idx)
-            elif src == optools.wf_input or src == optools.plugin_input:
-                item_uri = trview.model().build_uri(itm_idx)
-            il = optools.InputLocator(src,tp,item_uri)
-        else:
-            il = None
-        return il
 
     def rm_op(self):
         """
@@ -198,18 +100,96 @@ class WfUiManager(object):
         result = self.wfman.is_good_tag(uri)
         if result[0]:
             self.wfman.add_op(uri,self.op) 
-            self.ui.close()
-            self.ui.deleteLater()
+            self.clear_io()
         elif result[1] == 'Tag not unique':
             self.wfman.update_op(uri,self.op)
-            self.ui.close()
-            self.ui.deleteLater()
+            self.clear_io()
         else:
             # Request a different uri 
             msg_ui = uitools.message_ui(self.ui)
             msg_ui.setWindowTitle("Tag Error")
             msg_ui.message_box.setPlainText(self.wfman.tag_error(uri,result[1]))
             msg_ui.show()
+
+    def set_input(self,name,src_ui=None):
+        """
+        Call build_input_locator to package an InputLocator for named input. 
+        Store it in self.op.input_locator[name].
+        This is called on all inputs when an Operation is loaded,
+        so it MUST not alter an already-loaded input.
+        """
+        il = self.build_input_locator(name,src_ui)
+        self.op.input_locator[name] = il
+        # dereference the old input
+        self.op.inputs[name] = None 
+
+    def build_input_locator(self,name,ui=None):
+        """
+        Create an InputLocator for named input.
+        If a ui is provided, it should be an input_loader.ui,
+        and this should load data from that ui.
+        """
+        src = self.src_widgets[name].currentIndex()
+        tp = self.type_widgets[name].currentIndex()
+        il = None
+        if src == optools.no_input:
+            il = optools.InputLocator() 
+        elif src == optools.batch_input:
+            if tp == optools.auto_type:
+                # TODO: set val to indicate which batch (if any) will set this input 
+                val = 'auto' 
+            else:
+                val = None
+            il = optools.InputLocator(src,tp,val) 
+        else:
+            # all other input sources use a ui for loading
+            if ui:
+                val = self.fetch_from_input_ui(ui) 
+                il = optools.InputLocator(src,tp,val)
+                self.val_widgets[name].setText(str(il.val))
+                ui.close()
+                #ui.deleteLater()
+                # dereference the ui now that it is closed...
+                self.input_loaders[name] = None
+            else:
+                # else, the input has already been loaded, so do nothing.
+                il = self.op.input_locator[name]
+        return il
+
+    def fetch_from_input_ui(self,ui):
+        # no matter the input source, ui.values_list.model().list_data() should be a list of strings.
+        val = ui.values_list.model().list_data()
+        # if ui.list_toggle is not checked, the value should be unpacked. 
+        if not ui.list_toggle.isChecked():
+            val = val[0]
+        return val
+
+    def fetch_data(self,name):
+        if name in self.input_loaders.keys():
+            if self.input_loaders[name]:
+                self.input_loaders[name].ui.close()
+                self.input_loaders[name] = None
+        src = self.src_widgets[name].currentIndex()
+        if src == optools.wf_input:
+            inp_loader = InputLoader(name,src,self.wfman,self.ui)
+        elif src == optools.fs_input:
+            trmod = QtGui.QFileSystemModel()
+            #trmod.setRootPath(QtCore.QDir.currentPath())
+            #trmod.setRootPath('.')
+            inp_loader = InputLoader(name,src,trmod,self.ui)
+        elif src == optools.plugin_input:
+            inp_loader = InputLoader(name,src,self.plugman,self.ui)
+        elif src == optools.text_input:
+            inp_loader = InputLoader(name,src,None,self.ui)
+        if self.op.input_locator[name].src == src and self.op.input_locator[name].val is not None:
+            if isinstance(self.op.input_locator[name].val,list):
+                inp_loader.set_list_toggle()
+                for v in self.op.input_locator[name].val:
+                    inp_loader.add_value(str(v))
+            else:
+                inp_loader.add_value(self.op.input_locator[name].val)
+        inp_loader.ui.finish_button.clicked.connect( partial(self.set_input,name,inp_loader.ui) )
+        self.input_loaders[name] = inp_loader
 
     def clear_io(self):
         self.ui.op_name.setText('')
@@ -224,7 +204,12 @@ class WfUiManager(object):
             item = self.ui.output_layout.takeAt(i)
             item.widget().close()
             #item.widget().deleteLater()
-
+        self.src_widgets = {}
+        self.type_widgets = {}
+        self.val_widgets = {}
+        self.btn_widgets = {}
+        self.input_loaders = {}
+    
     def reset_input_headers(self):
         if len(self.op.inputs) > 0:
             self.ui.input_layout.addWidget(uitools.r_hdr_widget('name'),0,self.name_col,1,1)
@@ -262,6 +247,7 @@ class WfUiManager(object):
             self.reset_type_widget(name,i,src)
         # Now handle outputs, much easier
         for i,name in zip(range(1,len(self.op.outputs)+1),self.op.outputs.keys()):
+            # TODO: allow multiple lines for the desc_widgets.
             name_widget = uitools.name_widget(name)
             self.ui.output_layout.addWidget(name_widget,i,self.name_col)
             eq_widget = uitools.smalltext_widget('=')
@@ -273,20 +259,27 @@ class WfUiManager(object):
             self.ui.output_layout.addWidget(desc_widget,i,self.src_col,1,self.btn_col-self.src_col)
 
     def reset_type_widget(self,name,row,src=None):
+        if name in self.type_widgets.keys():
+            if self.type_widgets[name]:
+                self.type_widgets[name].close()
         if not src:
             src = self.src_widgets[name].currentIndex()
-        widg = None 
-        new_type_widget = uitools.type_selection_widget(src,widg)
-        if self.op.input_locator[name] is not None:
+        new_type_widget = uitools.type_selection_widget(src)
+        if not self.op.input_locator[name].src == optools.no_input:
+            # load operation defaults
             if (self.op.input_locator[name].tp not in optools.invalid_types[src]
             and self.op.input_locator[name].src == src):
                 new_type_widget.setCurrentIndex(self.op.input_locator[name].tp)
-        elif src == optools.fs_input:
-            new_type_widget.setCurrentIndex(optools.str_type)
-        elif src in [optools.wf_input,optools.plugin_input,optools.batch_input]:
-            new_type_widget.setCurrentIndex(optools.auto_type)
-        if new_type_widget.currentIndex() in optools.invalid_types[src]:
-            new_type_widget.setCurrentIndex(optools.none_type)
+        else:
+            # set sensible defaults
+            if src == optools.fs_input:
+                new_type_widget.setCurrentIndex(optools.path_type)
+            elif src in [optools.wf_input,optools.plugin_input]:
+                new_type_widget.setCurrentIndex(optools.ref_type)
+            elif src == optools.batch_input:
+                new_type_widget.setCurrentIndex(optools.auto_type)
+        #if new_type_widget.currentIndex() in optools.invalid_types[src]:
+        #    new_type_widget.setCurrentIndex(optools.none_type)
         #elif self.op.input_type[name]:
         #    if self.op.input_type[name] not in optools.invalid_types[src]:
         #        new_type_widget.setCurrentIndex(self.op.input_type[name])
@@ -298,145 +291,46 @@ class WfUiManager(object):
         self.reset_val_widget(name,row,src,tp)
 
     def reset_val_widget(self,name,row,src=None,tp=None):
+        # TODO: Make val widgets expand height according to their content 
         if name in self.val_widgets.keys():
             if self.val_widgets[name]:
                 self.val_widgets[name].close()
         if name in self.btn_widgets.keys():
             if self.btn_widgets[name]:
                 self.btn_widgets[name].close()
+        if name in self.input_loaders.keys():
+            if self.input_loaders[name]:
+                self.input_loaders[name].ui.close()
+                self.input_loaders[name] = None
         if not src:
             src = self.src_widgets[name].currentIndex()
         if not tp:
             tp = self.type_widgets[name].currentIndex()
         btn_widget = QtGui.QPushButton()
         val_widget = QtGui.QLineEdit()
+        #val_widget = QtGui.QTextEdit()
         if src == optools.no_input or tp == optools.none_type: 
             btn_widget.setText('no input')
             btn_widget.setEnabled(False)
             val_widget.setText('None')
-            val_widget.setReadOnly(True)
         elif src == optools.batch_input:
             btn_widget.setText('auto')
             btn_widget.setEnabled(False)
             val_widget.setText('auto (batch)')
-            val_widget.setReadOnly(True)
-        elif src == optools.wf_input or src == optools.fs_input or src == optools.plugin_input:
-            if tp == optools.none_type:
-                btn_widget.setText('no input')
-                btn_widget.setEnabled(False)
-                val_widget.setText('None')
-                val_widget.setReadOnly(True)
-            else:
-                if tp == optools.list_type:
-                    btn_widget.setText("build list...")
-                    btn_widget.clicked.connect( partial(self.build_list,name) )
-                else:
-                    btn_widget.setText('browse...')
-                    data_handler = partial(self.set_input,name)
-                    btn_widget.clicked.connect( partial(self.fetch_data,name,data_handler) )
-                if self.op.input_locator[name]:
-                    if self.op.input_locator[name].src == src and self.op.input_locator[name].tp == tp:
-                        val_widget.setText(str(self.op.input_locator[name].val))
-            #elif self.op.inputs[name] is not None:
-            #    val_widget.setText(str(self.op.inputs[name]))
-            val_widget.setReadOnly(True)
-        elif (src == optools.text_input):
-            if tp == optools.none_type:
-                btn_widget.setText('no input')
-                btn_widget.setEnabled(False)
-                val_widget.setText('None')
-                val_widget.setReadOnly(True)
-            else:
-                if self.op.input_locator[name]:
-                    if self.op.input_locator[name].src == src and self.op.input_locator[name].tp == tp:
-                        val_widget.setText(str(self.op.input_locator[name].val))
-                #elif self.op.inputs[name]:
-                #    # this clause is for displaying default values- 
-                #    # only executes when no input locator has been loaded yet
-                #    val_widget.setText(str(self.op.inputs[name]))
-                if tp == optools.list_type:
-                    val_widget.setReadOnly(True)
-                    btn_widget.setText("Build list...")
-                    btn_widget.clicked.connect( partial(self.build_list,name) )
-                else:
-                    btn_widget = QtGui.QPushButton('auto')
-                    #btn_widget.clicked.connect( partial(self.set_input,name) )
-                    #btn_widget.clicked.connect( partial(self.set_input,name) )
-                    btn_widget.setEnabled(False)
+        elif src in [optools.wf_input,optools.fs_input,optools.plugin_input,optools.text_input]:
+            btn_widget.setText('edit...')
+            btn_widget.clicked.connect( partial(self.fetch_data,name) )
+            if self.op.input_locator[name]:
+                if self.op.input_locator[name].src == src:# and self.op.input_locator[name].tp == tp:
+                    val_widget.setText(str(self.op.input_locator[name].val))
+        val_widget.setReadOnly(True)
         self.ui.input_layout.addWidget(val_widget,row,self.val_col,1,1)
         self.ui.input_layout.addWidget(btn_widget,row,self.btn_col,1,1)
         self.val_widgets[name] = val_widget
         self.btn_widgets[name] = btn_widget
 
-    def build_list(self,name):
-        """Use a popup to build a list of input data"""
-        #ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/list_builder.ui")
-        #ui_file.open(QtCore.QFile.ReadOnly)
-        #list_ui = QtUiTools.QUiLoader().load(ui_file)
-        #ui_file.close()
-        #print 'build_list: list view model is {}'.format(list_ui.list_view.model())
-        src = self.src_widgets[name].currentIndex()
-        list_ui = uitools.start_list_builder(src,ListModel(),self.ui)
-        lm = ListModel()
-        if self.op.input_locator[name]:
-            if self.op.input_locator[name].src == src and self.op.input_locator[name].tp == optools.list_type:
-                lm = ListModel(self.op.input_locator[name].val,list_ui)
-        list_ui = uitools.start_list_builder(src,lm,self.ui)
-        data_handler = partial(self.load_path_to_list,src,list_ui)
-        list_ui.browse_button.clicked.connect( partial(self.fetch_data,name,data_handler,list_ui) )
-        list_ui.finish_button.clicked.connect( partial(self.set_input,name,list_ui) )
-        list_ui.show()
-
-    def load_path_to_list(self,src,list_ui,src_ui,idx=None):
-        if not idx:
-            idx = src_ui.tree.currentIndex()
-        if idx.isValid():
-            if src == optools.wf_input:
-                val = self.wfman.build_uri(idx) 
-            if src == optools.plugin_input:
-                val = self.plugman.build_uri(idx) 
-            elif src == optools.fs_input:
-                val = src_ui.tree.model().filePath(idx) 
-            list_ui.value_entry.setText( val )
-            uitools.load_value_to_list(list_ui)
-        src_ui.close()
-        src_ui.deleteLater()
-
-    def fetch_data(self,name,data_handler,parent_ui=None):
-        """
-        Use a popup to select the input data for named input.
-        """
-        if not parent_ui:
-            parent_ui = self.ui
-        src = self.src_widgets[name].currentIndex()
-        src_ui = uitools.data_fetch_ui(parent_ui)
-        src_ui.setWindowTitle('data browser')
-        src_ui.tree_box.setTitle(name+' - from '+optools.input_sources[src])
-        if src == optools.wf_input:
-            trmod = self.wfman
-        elif src == optools.plugin_input:
-            trmod = self.wfman.plugman
-        elif src == optools.fs_input:
-            trmod = QtGui.QFileSystemModel()
-            #trmod.setRootPath('.')
-            trmod.setRootPath(QtCore.QDir.currentPath())
-        src_ui.tree.setModel(trmod)
-        src_ui.tree.clicked.connect( partial(uitools.toggle_expand,src_ui.tree) )
-        #src_ui.tree.expandAll()
-        # add src_ui to the arguments of data_handler
-        h = partial(data_handler,src_ui)
-        # when the load button is clicked or tree is doubleclicked, call this augmented handler 
-        src_ui.load_button.clicked.connect(h)
-        src_ui.tree.doubleClicked.connect(h)
-        if src == optools.fs_input:
-            src_ui.tree.hideColumn(1)
-            src_ui.tree.hideColumn(3)
-            src_ui.tree.setColumnWidth(0,400)
-        elif src == optools.wf_input or src == optools.plugin_input:
-            src_ui.tree.hideColumn(1)
-        src_ui.show()
-
     def setup_ui(self):
+        # TODO: constrain the height of the FINISH/LOAD box
         self.ui.setWindowTitle("workflow setup")
         self.ui.input_box.setTitle("INPUTS")
         self.ui.output_box.setTitle("OUTPUTS")
@@ -463,13 +357,138 @@ class WfUiManager(object):
         self.ui.uri_prompt.setAlignment(QtCore.Qt.AlignRight)
         self.ui.uri_prompt.setStyleSheet( "QLineEdit { background-color: transparent }" 
         + self.ui.uri_prompt.styleSheet() )
-        #self.ui.test_button.setText("&Test")
-        #self.ui.test_button.setEnabled(False)
-        #self.ui.test_button.clicked.connect(self.test_op)
         self.ui.load_button.setText("&Finish")
         self.ui.load_button.clicked.connect(self.load_op)
         self.ui.load_button.setDefault(True)
         self.ui.load_button.setMinimumWidth(100)
         self.ui.splitter.setStretchFactor(0,1000)    
         self.ui.setStyleSheet( "QLineEdit { border: none }" + self.ui.styleSheet() )
+
+
+    #def build_list(self,name):
+    #    """Use a popup to build a list of input data"""
+    #    #ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/list_builder.ui")
+    #    #ui_file.open(QtCore.QFile.ReadOnly)
+    #    #list_ui = QtUiTools.QUiLoader().load(ui_file)
+    #    #ui_file.close()
+    #    #print 'build_list: list view model is {}'.format(list_ui.list_view.model())
+    #    src = self.src_widgets[name].currentIndex()
+    #    list_ui = uitools.start_list_builder(src,ListModel(),self.ui)
+    #    lm = ListModel()
+    #    if self.op.input_locator[name]:
+    #        if self.op.input_locator[name].src == src and self.op.input_locator[name].tp == optools.list_type:
+    #            lm = ListModel(self.op.input_locator[name].val,list_ui)
+    #    list_ui = uitools.start_list_builder(src,lm,self.ui)
+    #    data_handler = partial(self.load_path_to_list,src,list_ui)
+    #    list_ui.browse_button.clicked.connect( partial(self.fetch_data,name,data_handler,list_ui) )
+    #    list_ui.finish_button.clicked.connect( partial(self.set_input,name,list_ui) )
+    #    list_ui.show()
+
+    #def load_path_to_list(self,src,list_ui,src_ui,idx=None):
+    #    if not idx:
+    #        idx = src_ui.tree.currentIndex()
+    #    if idx.isValid():
+    #        if src == optools.wf_input:
+    #            val = self.wfman.build_uri(idx) 
+    #        if src == optools.plugin_input:
+    #            val = self.plugman.build_uri(idx) 
+    #        elif src == optools.fs_input:
+    #            val = src_ui.tree.model().filePath(idx) 
+    #        list_ui.value_entry.setText( val )
+    #        uitools.load_value_to_list(list_ui)
+    #    src_ui.close()
+    #    src_ui.deleteLater()
+
+    #def fetch_data(self,name,data_handler,parent_ui=None):
+    #    """
+    #    Use a popup to select the input data for named input.
+    #    """
+    #    if not parent_ui:
+    #        parent_ui = self.ui
+    #    src = self.src_widgets[name].currentIndex()
+    #    src_ui = uitools.data_fetch_ui(parent_ui)
+    #    src_ui.setWindowTitle('data browser')
+    #    src_ui.tree_box.setTitle(name+' - from '+optools.input_sources[src])
+    #    if src == optools.wf_input:
+    #        trmod = self.wfman
+    #    elif src == optools.plugin_input:
+    #        trmod = self.wfman.plugman
+    #    elif src == optools.fs_input:
+    #        trmod = QtGui.QFileSystemModel()
+    #        #trmod.setRootPath('.')
+    #        trmod.setRootPath(QtCore.QDir.currentPath())
+    #    src_ui.tree.setModel(trmod)
+    #    src_ui.tree.clicked.connect( partial(uitools.toggle_expand,src_ui.tree) )
+    #    #src_ui.tree.expandAll()
+    #    # add src_ui to the arguments of data_handler
+    #    h = partial(data_handler,src_ui)
+    #    # when the load button is clicked or tree is doubleclicked, call this augmented handler 
+    #    src_ui.load_button.clicked.connect(h)
+    #    src_ui.tree.doubleClicked.connect(h)
+    #    if src == optools.fs_input:
+    #        src_ui.tree.hideColumn(1)
+    #        src_ui.tree.hideColumn(3)
+    #        src_ui.tree.setColumnWidth(0,400)
+    #    elif src == optools.wf_input or src == optools.plugin_input:
+    #        src_ui.tree.hideColumn(1)
+    #    src_ui.show()
+
+
+        #elif src == optools.text_input:
+        #    if tp == optools.list_type:
+        #        if not ui:
+        #            if self.op.input_locator[name] is not None:
+        #                il = self.op.input_locator[name]
+        #        else:
+        #            val = ui.list_view.model().list_data()
+        #            il = optools.InputLocator(src,tp,val)
+        #    else:
+        #        val = self.val_widgets[name].text()
+        #        il = optools.InputLocator(src,tp,val)
+        #elif (src == optools.wf_input or src == optools.fs_input or src == optools.plugin_input):
+        #    if not ui:
+        #        # Assume it has already been loaded 
+        #        if self.op.input_locator[name] is not None:
+        #            il = self.op.input_locator[name]
+        #    elif tp == optools.list_type:
+        #        # ui is assumed to be list_builder.ui
+        #        val = ui.list_view.model().list_data() 
+        #        il = optools.InputLocator(src,tp,val)
+        #    else:
+        #        # ui should be the load_browser.ui 
+        #        il = self.load_from_ui(ui,src,tp,itm_idx)
+        #if ui:
+        #    ui.close()
+        #    ui.deleteLater()
+        #if not il: 
+        #    if self.op.input_locator[name] is not None:
+        #        il = self.op.input_locator[name]
+        #    else: 
+        #        val = None
+        #        il = optools.InputLocator(src,tp,val)
+        #self.val_widgets[name].setText(str(il.val))
+        #return il
+
+    #def load_from_ui(self,src_ui,src,tp,itm_idx=None):
+    #    """
+    #    Construct a unique resource identifier (uri) for the selected item.
+    #    return an optools.InputLocator(src,tp,uri).
+    #    By design this should only be called when the corresponding input source window
+    #    (containing a TreeView widget) is open.
+    #    """
+    #    trview = src_ui.tree
+    #    if not itm_idx or not itm_idx.isValid():
+    #        itm_idx = trview.currentIndex()
+    #    if itm_idx.isValid():
+    #        if tp == optools.none_type:
+    #            item_uri = None
+    #        elif src == optools.fs_input:
+    #            item_uri = trview.model().filePath(itm_idx)
+    #        elif src == optools.wf_input or src == optools.plugin_input:
+    #            item_uri = trview.model().build_uri(itm_idx)
+    #        il = optools.InputLocator(src,tp,item_uri)
+    #    else:
+    #        il = None
+    #    return il
+
 

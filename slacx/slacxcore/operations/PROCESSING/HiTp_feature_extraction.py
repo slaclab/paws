@@ -88,7 +88,7 @@ class PeakFeatures(Operation):
             + 'that is more than delta-I larger than the next-lowest point')
         self.input_src['q'] = optools.wf_input
         self.input_src['I'] = optools.wf_input
-        self.input_src['delta_I'] = optools.user_input
+        self.input_src['delta_I'] = optools.text_input
         self.input_type['delta_I'] = optools.float_type
         self.inputs['delta_I'] = 0.0
         self.output_doc['q_pk'] = 'q values of found peaks'
@@ -151,8 +151,8 @@ class FindPeaksByWindow(Operation):
         self.input_doc['threshold'] = 'threshold on Ipk/I(window) for being counted as a peak: set to zero to deactivate'
         self.input_src['x'] = optools.wf_input
         self.input_src['y'] = optools.wf_input
-        self.input_src['windowsize'] = optools.user_input
-        self.input_src['threshold'] = optools.user_input
+        self.input_src['windowsize'] = optools.text_input
+        self.input_src['threshold'] = optools.text_input
         self.input_type['x'] = optools.auto_type
         self.input_type['y'] = optools.auto_type
         self.input_type['windowsize'] = optools.int_type

@@ -21,8 +21,8 @@ class WindowZip(Operation):
         super(WindowZip,self).__init__(input_names,output_names)        
         self.input_src['x'] = optools.wf_input
         self.input_src['y'] = optools.wf_input
-        self.input_src['x_min'] = optools.user_input
-        self.input_src['x_max'] = optools.user_input
+        self.input_src['x_min'] = optools.text_input
+        self.input_src['x_max'] = optools.text_input
         self.input_type['x_min'] = optools.float_type
         self.input_type['x_max'] = optools.float_type
         self.inputs['x_min'] = 0.02 
@@ -60,8 +60,8 @@ class TimeTempFromHeader(Operation):
         output_names = ['time_str','time','temp']
         super(TimeTempFromHeader,self).__init__(input_names,output_names)        
         self.input_src['header_dict'] = optools.wf_input
-        self.input_src['time_key'] = optools.user_input
-        self.input_src['temp_key'] = optools.user_input
+        self.input_src['time_key'] = optools.text_input
+        self.input_src['temp_key'] = optools.text_input
         self.input_type['time_key'] = optools.str_type
         self.input_type['temp_key'] = optools.str_type
         self.inputs['time_key'] = 'time'
@@ -104,7 +104,7 @@ class XYDataFromBatch(Operation):
         self.input_src['batch_output'] = optools.wf_input
         self.input_src['x_key'] = optools.wf_input
         self.input_src['y_key'] = optools.wf_input
-        self.input_src['x_shift_flag'] = optools.user_input
+        self.input_src['x_shift_flag'] = optools.text_input
         self.input_type['batch_output'] = optools.auto_type
         self.input_type['x_key'] = optools.str_type
         self.input_type['y_key'] = optools.str_type
@@ -163,8 +163,8 @@ class Window_q_I_2(Operation):
         # source & type
         self.input_src['q_list_in'] = optools.wf_input
         self.input_src['I_list_in'] = optools.wf_input
-        self.input_src['q_min'] = optools.user_input
-        self.input_src['q_max'] = optools.user_input
+        self.input_src['q_min'] = optools.text_input
+        self.input_src['q_max'] = optools.text_input
         self.input_type['q_min'] = optools.float_type
         self.input_type['q_max'] = optools.float_type
         self.inputs['q_min'] = 0.02

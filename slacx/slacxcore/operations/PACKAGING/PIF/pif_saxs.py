@@ -20,7 +20,7 @@ class PifNPSynth(Operation):
         self.input_doc['t_utc'] = 'time in seconds utc'
         self.input_doc['T'] = 'temperature in degrees celsius from measurement header file'
         self.output_doc['pif'] = 'pif object containing the relevant data for this experiment'
-        self.input_src['name'] = optools.user_input
+        self.input_src['name'] = optools.text_input
         self.input_src['q'] = optools.wf_input
         self.input_src['I'] = optools.wf_input
         self.input_src['date_time'] = optools.wf_input

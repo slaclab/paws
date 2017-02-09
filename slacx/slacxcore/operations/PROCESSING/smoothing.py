@@ -24,8 +24,8 @@ class SavitzkyGolay(Operation):
         self.input_src['x'] = optools.wf_input
         self.input_src['y'] = optools.wf_input
         self.input_src['dy'] = optools.wf_input
-        self.input_src['order'] = optools.user_input
-        self.input_src['base'] = optools.user_input
+        self.input_src['order'] = optools.text_input
+        self.input_src['base'] = optools.text_input
         self.input_type['order'] = optools.int_type
         self.input_type['base'] = optools.int_type
         # defaults
@@ -53,7 +53,7 @@ class RectangularSmooth(Operation):
         # source & type
         self.input_src['data'] = optools.wf_input
         self.input_src['error'] = optools.wf_input
-        self.input_src['m'] = optools.user_input
+        self.input_src['m'] = optools.text_input
         self.input_type['m'] = optools.int_type
         self.categories = ['1D DATA PROCESSING.SMOOTHING']
 
@@ -78,7 +78,7 @@ class TriangularSmooth(Operation):
         # source & type
         self.input_src['data'] = optools.wf_input
         self.input_src['error'] = optools.wf_input
-        self.input_src['m'] = optools.user_input
+        self.input_src['m'] = optools.text_input
         self.input_type['m'] = optools.int_type
         self.categories = ['1D DATA PROCESSING.SMOOTHING']
 

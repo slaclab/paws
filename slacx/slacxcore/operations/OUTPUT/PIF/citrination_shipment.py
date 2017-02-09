@@ -25,7 +25,7 @@ class CheckDataSet(Operation):
         self.output_doc['ok_flag'] = 'Indicator of whether or not the data set passes the test.'
         self.output_doc['status'] = 'Message describing the state of the data set.'
         self.input_src['client'] = optools.plugin_input
-        self.input_src['dsid'] = optools.user_input
+        self.input_src['dsid'] = optools.text_input
         self.input_type['dsid'] = optools.int_type
 
     def run(self):
@@ -63,7 +63,7 @@ class ShipToDataSet(Operation):
         self.output_doc['response'] = 'The Citrination server response to the shipment'
         self.input_src['pif'] = optools.wf_input
         self.input_src['client'] = optools.plugin_input
-        self.input_src['dsid'] = optools.user_input
+        self.input_src['dsid'] = optools.text_input
         self.input_src['ship_flag'] = optools.wf_input
         self.input_type['pif'] = optools.auto_type
         self.input_type['client'] = optools.auto_type

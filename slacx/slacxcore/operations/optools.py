@@ -24,6 +24,7 @@ bool_type = 4
 ref_type = 5
 path_type = 6
 auto_type = 7
+valid_types = [none_type,str_type,int_type,float_type,bool_type,ref_type,path_type,auto_type]
 input_types = ['none','string','integer','float','boolean','reference','path','auto']
 
 # unsupported types for each source, keyed by source

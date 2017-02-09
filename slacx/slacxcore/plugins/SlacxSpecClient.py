@@ -11,8 +11,8 @@ class SlacxSpecClient(SlacxPlugin):
     def __init__(self):
         input_names = ['host','port']
         super(SlacxSpecClient,self).__init__(input_names)
-        self.input_src['host'] = optools.user_input
-        self.input_src['port'] = optools.user_input
+        self.input_src['host'] = optools.text_input
+        self.input_src['port'] = optools.text_input
         self.input_type['host'] = optools.str_type
         self.input_type['port'] = optools.int_type
         self.input_doc['host'] = 'string representing host name or IP address'

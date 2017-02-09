@@ -42,11 +42,11 @@ class GenerateSphericalDiffraction(Operation):
         self.input_src['r0'] = optools.wf_input
         self.input_src['sigma_r_over_r0'] = optools.wf_input
         self.input_src['intensity_at_zero'] = optools.wf_input
-        self.input_src['use_q_space'] = optools.user_input
+        self.input_src['use_q_space'] = optools.text_input
         self.input_src['input_vector'] = optools.wf_input
-        self.input_src['min'] = optools.user_input
-        self.input_src['max'] = optools.user_input
-        self.input_src['step'] = optools.user_input
+        self.input_src['min'] = optools.text_input
+        self.input_src['max'] = optools.text_input
+        self.input_src['step'] = optools.text_input
         self.input_type['use_q_space'] = optools.bool_type
         self.input_type['min'] = optools.float_type
         self.input_type['max'] = optools.float_type
@@ -90,12 +90,12 @@ class GenerateReferences(Operation):
         self.input_doc['factorstep'] = 'step size in factor'
         self.output_doc['references'] = 'dictionary of useful values'
         # Source and type
-        self.input_src['xmin'] = optools.user_input
-        self.input_src['xmax'] = optools.user_input
-        self.input_src['xstep'] = optools.user_input
-        self.input_src['factormin'] = optools.user_input
-        self.input_src['factormax'] = optools.user_input
-        self.input_src['factorstep'] = optools.user_input
+        self.input_src['xmin'] = optools.text_input
+        self.input_src['xmax'] = optools.text_input
+        self.input_src['xstep'] = optools.text_input
+        self.input_src['factormin'] = optools.text_input
+        self.input_src['factormax'] = optools.text_input
+        self.input_src['factorstep'] = optools.text_input
         self.input_type['xmin'] = optools.float_type
         self.input_type['xmax'] = optools.float_type
         self.input_type['xstep'] = optools.float_type
@@ -224,11 +224,11 @@ class OptimizeSphericalDiffractionFit(Operation):
         # Source and type
         self.input_src['q'] = optools.wf_input
         self.input_src['I'] = optools.wf_input
-        self.input_src['dI'] = optools.user_input
+        self.input_src['dI'] = optools.text_input
         self.input_src['amplitude_at_zero'] = optools.wf_input
         self.input_src['mean_size'] = optools.wf_input
         self.input_src['fractional_variation'] = optools.wf_input
-        self.input_src['noise_term_allowed'] = optools.user_input
+        self.input_src['noise_term_allowed'] = optools.text_input
         self.input_type['noise_term_allowed'] = optools.bool_type
         # defaults
         self.inputs['noise_term_allowed'] = False

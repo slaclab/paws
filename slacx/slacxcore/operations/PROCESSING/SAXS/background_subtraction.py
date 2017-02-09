@@ -81,8 +81,8 @@ class SubtractMaximumBackground(Operation):
         self.input_src['I_background'] = optools.wf_input
         self.input_src['dI_foreground'] = optools.wf_input
         self.input_src['dI_background'] = optools.wf_input
-        self.input_src['q_min'] = optools.user_input
-        self.input_src['q_max'] = optools.user_input
+        self.input_src['q_min'] = optools.text_input
+        self.input_src['q_max'] = optools.text_input
         self.input_type['q_min'] = optools.float_type
         self.input_type['q_max'] = optools.float_type
         # defaults

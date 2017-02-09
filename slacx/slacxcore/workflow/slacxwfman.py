@@ -66,7 +66,7 @@ class WfManager(TreeModel):
                 self.write_log('Did not find Operation {} - skipping.'.format(opname))
             else:
                 op = op()
-                ilspec = op_spec[inputs_tag]
+                ilspec = op_spec[self.inputs_tag]
                 for name, srctypeval in ilspec.items():
                     src = srctypeval['src']
                     tp = srctypeval['type']
@@ -205,8 +205,8 @@ class WfManager(TreeModel):
                     inp_dict[nm] = x.inputs[nm]
                 else:
                     inp_dict[nm] = x.input_locator[nm]
-            d[inputs_tag] = inp_dict 
-            d[outputs_tag] = x.outputs
+            d[self.inputs_tag] = inp_dict 
+            d[self.outputs_tag] = x.outputs
         else:
             d = super(WfManager,self).build_dict(x)
         return d
@@ -228,7 +228,7 @@ class WfManager(TreeModel):
                         #for v in vals:
                         #    if not self.is_good_uri(v):
                         self.write_log('--- clearing InputLocator for {}.{}.{} ---'.format(
-                        itm.tag(),inputs_tag,name))
+                        itm.tag(),self.inputs_tag,name))
                         op.input_locator[name] = optools.InputLocator(il.src,il.tp,None)
                         self.tree_dataChanged(op_idx)
 
@@ -253,9 +253,9 @@ class WfManager(TreeModel):
         which can be used as downstream inputs in the workflow.
         """
         # valid_wf_inputs gains the operation, its input and output dicts, and their respective entries
-        valid_wf_inputs = [itm.tag(),itm.tag()+'.'+inputs_tag,itm.tag()+'.'+outputs_tag]
-        valid_wf_inputs += [itm.tag()+'.'+outputs_tag+'.'+k for k in itm.data.outputs.keys()]
-        valid_wf_inputs += [itm.tag()+'.'+inputs_tag+'.'+k for k in itm.data.inputs.keys()]
+        valid_wf_inputs = [itm.tag(),itm.tag()+'.'+self.inputs_tag,itm.tag()+'.'+self.outputs_tag]
+        valid_wf_inputs += [itm.tag()+'.'+self.outputs_tag+'.'+k for k in itm.data.outputs.keys()]
+        valid_wf_inputs += [itm.tag()+'.'+self.inputs_tag+'.'+k for k in itm.data.inputs.keys()]
         return valid_wf_inputs
     
     def execution_stack(self):
@@ -309,7 +309,7 @@ class WfManager(TreeModel):
                 # TODO: Come up with a more airtight set of conditions here.
                 if il.src == optools.wf_input and il.tp == optools.ref_type and not il.val in valid_wf_inputs:
                     inp_rdy = False
-                elif il.src == optools.batch_input and not itm.tag()+'.'+inputs_tag+'.'+name in batch_routes:
+                elif il.src == optools.batch_input and not itm.tag()+'.'+self.inputs_tag+'.'+name in batch_routes:
                     inp_rdy = False
                 else:
                     inp_rdy = True
