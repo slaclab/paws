@@ -6,6 +6,7 @@ from PySide import QtGui, QtCore, QtUiTools
 
 from . import uitools
 from .wfuiman import WfUiManager
+from .opuiman import OpUiManager
 from .pluguiman import PluginUiManager
 from ..slacxcore.operations.slacxop import Operation
 from ..slacxcore import slacxtools
@@ -85,9 +86,12 @@ class UiManager(object):
 
     def edit_ops(self,item_indx=None):
         """
-        interact with user to edit and develop new Operations 
+        interact with user to enable existing Operations
+        and edit or develop new Operations 
         """
-        print 'Operation editing is not yet implemented'
+        uiman = OpUiManager(self.opman)
+        uiman.ui.setParent(self.ui,QtCore.Qt.Window)
+        uiman.ui.show()
 
     def start_wf_editor(self,trmod=None,indx=QtCore.QModelIndex()):
         """
