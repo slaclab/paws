@@ -1,4 +1,5 @@
 import glob
+import os.path
 from collections import Iterator
 from datetime import datetime as dt
 
@@ -14,8 +15,12 @@ qdir.cdUp()
 qdir.cdUp()
 rootdir = qdir.path() 
 qdir.cdUp()
+if not os.path.exists(qdir.path()+'/scratch/'):
+    os.mkdir(qdir.path()+'/scratch/')
 qdir.cd('scratch')
 scratchdir = qdir.path()
+print '[slacxtools] scratch directory: {}'.format(scratchdir)
+print '[slacxtools] root directory: {}'.format(rootdir)
 
 class LazyCodeError(Exception):
     def __init__(self,msg):
