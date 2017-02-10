@@ -169,6 +169,9 @@ class WfManager(TreeModel):
         self.tree_update(idx,new_op)
         self.update_io_deps()
 
+    # TODO: fix uri_to_dict and update_uri_dict. 
+    # Currently e.g. saving op.outputs.pif fails to save the pif,
+    # while saving op.outputs does save the pif.
     def uri_to_dict(self,uri,data):
         itm,idx = self.get_from_uri(uri)
         od = OrderedDict()

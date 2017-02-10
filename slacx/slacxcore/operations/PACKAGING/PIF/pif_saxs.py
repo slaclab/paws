@@ -27,11 +27,11 @@ class PifNPSynth(Operation):
         self.input_src['t_utc'] = optools.wf_input
         self.input_src['T'] = optools.wf_input
         self.input_type['name'] = optools.str_type
-        self.input_type['q'] = optools.auto_type
-        self.input_type['I'] = optools.auto_type
-        self.input_type['date_time'] = optools.auto_type
-        self.input_type['t_utc'] = optools.auto_type
-        self.input_type['T'] = optools.auto_type
+        self.input_type['q'] = optools.ref_type
+        self.input_type['I'] = optools.ref_type
+        self.input_type['date_time'] = optools.ref_type
+        self.input_type['t_utc'] = optools.ref_type
+        self.input_type['T'] = optools.ref_type
 
     def run(self):
         uid_pre = self.inputs['name']

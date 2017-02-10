@@ -65,10 +65,10 @@ class ShipToDataSet(Operation):
         self.input_src['client'] = optools.plugin_input
         self.input_src['dsid'] = optools.text_input
         self.input_src['ship_flag'] = optools.wf_input
-        self.input_type['pif'] = optools.auto_type
-        self.input_type['client'] = optools.auto_type
+        self.input_type['pif'] = optools.ref_type
+        self.input_type['client'] = optools.ref_type
         self.input_type['dsid'] = optools.int_type
-        self.input_type['ship_flag'] = optools.auto_type
+        self.input_type['ship_flag'] = optools.ref_type
 
     def run(self):
         cl = self.inputs['client'] 

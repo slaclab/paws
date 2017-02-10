@@ -17,13 +17,14 @@ from . import uitools
 
 class WfUiManager(object):
 
-    def __init__(self,wfman,opman):
+    def __init__(self,wfman,opman,plugman):
         ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/qtui/wf_editor.ui")
         ui_file.open(QtCore.QFile.ReadOnly)
         self.ui = QtUiTools.QUiLoader().load(ui_file)
         ui_file.close()
         self.wfman = wfman 
         self.opman = opman 
+        self.plugman = plugman 
         self.op = None
         # Dicts to keep track of input widgets, keyed by input variable names
         self.src_widgets = {} 

@@ -97,7 +97,7 @@ class UiManager(object):
         """
         Create a WfUiManager (QMainWindow), return it 
         """
-        uiman = WfUiManager(self.wfman,self.opman)
+        uiman = WfUiManager(self.wfman,self.opman,self.plugman)
         if trmod and indx.isValid():
             uiman.get_op(trmod,indx)
         uiman.ui.setParent(self.ui,QtCore.Qt.Window)
