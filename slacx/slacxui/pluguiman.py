@@ -45,6 +45,7 @@ class PluginUiManager(object):
         self.type_col = 3
         self.val_col = 4
         self.btn_col = 5
+        self.invalid_sources = [optools.batch_input,optools.plugin_input,optools.wf_input]
 
     def setup_ui(self):
         self.ui.setWindowTitle("plugin setup")
@@ -89,7 +90,6 @@ class PluginUiManager(object):
         self.ui.plugin_info.setPlainText(self.pgin.description())
         self.build_input()
         self.ui.uri_entry.setText(self.plugman.auto_tag(type(self.pgin).__name__))
-        self.ui.uri_entry.setReadOnly(False)
         
     def clear_input(self):
         self.ui.plugin_name.setText('')
@@ -118,34 +118,47 @@ class PluginUiManager(object):
             self.ui.input_layout.addWidget(eq_widget,i,self.eq_col,1,1)
             # source 
             src_widget = uitools.src_selection_widget()
+            for s in self.invalid_sources:
+                src_widget.set_disabled(s)
             src = self.pgin.input_src[name]
+            if src in self.invalid_sources:
+                src = optools.no_input
             src_widget.setCurrentIndex(src)
             self.ui.input_layout.addWidget( src_widget,i,self.src_col,1,1 )
             self.src_widgets[name] = src_widget 
             self.src_widgets[name].currentIndexChanged.connect( partial(self.reset_type_widget,name,i) )
             # type 
             self.reset_type_widget(name,i,src)
-            tp = self.type_widgets[name].currentIndex()
+            #tp = self.type_widgets[name].currentIndex()
             # val 
-            self.reset_val_widget(name,i,src,tp)
+            #self.reset_val_widget(name,i,src,tp)
 
-    def reset_type_widget(self,name,row,src):
+    def reset_type_widget(self,name,row,src=None):
         if name in self.type_widgets.keys():
             if self.type_widgets[name]:
                 self.type_widgets[name].close()
+        if not src:
+            src = self.src_widgets[name].currentIndex()
         type_widget = uitools.type_selection_widget(src)
-        if type_widget.currentIndex() in optools.invalid_types[src]:
-            type_widget.setCurrentIndex(optools.none_type)
         if self.pgin.input_type[name]:
             if self.pgin.input_type[name] not in optools.invalid_types[src]:
                 type_widget.setCurrentIndex(self.pgin.input_type[name])
-        if src in [optools.wf_input,optools.plugin_input]:
-            type_widget.setCurrentIndex(optools.ref_type)
-        if src == optools.fs_input:
-            type_widget.setCurrentIndex(optools.path_type)
+            else:
+                # set sensible defaults
+                if src == optools.fs_input:
+                    new_type_widget.setCurrentIndex(optools.path_type)
+                elif src == optools.text_input:
+                    new_type_widget.setCurrentIndex(optools.str_type)
+        #if type_widget.currentIndex() in optools.invalid_types[src]:
+        #    type_widget.setCurrentIndex(optools.none_type)
+        #if src in [optools.wf_input,optools.plugin_input]:
+        #    type_widget.setCurrentIndex(optools.ref_type)
+        #if src == optools.fs_input:
+        #    type_widget.setCurrentIndex(optools.path_type)
         type_widget.currentIndexChanged.connect( partial(self.reset_val_widget,name,row,src) )            
         self.type_widgets[name] = type_widget  
         self.ui.input_layout.addWidget(type_widget,row,self.type_col,1,1)
+        self.reset_val_widget(name,row,src,tp)
 
     def reset_val_widget(self,name,row,src=None,tp=None):
         # TODO: Make val widgets expand height according to their content 
@@ -165,16 +178,12 @@ class PluginUiManager(object):
             tp = self.type_widgets[name].currentIndex()
         btn_widget = QtGui.QPushButton()
         val_widget = QtGui.QLineEdit()
-        #val_widget = QtGui.QTextEdit()
         if src == optools.no_input or tp == optools.none_type: 
             btn_widget.setText('no input')
             btn_widget.setEnabled(False)
             val_widget.setText('None')
-        #elif src == optools.batch_input:
-        #    btn_widget.setText('auto')
-        #    btn_widget.setEnabled(False)
-        #    val_widget.setText('auto (batch)')
-        elif src in [optools.wf_input,optools.fs_input,optools.plugin_input,optools.text_input]:
+        #elif src in [optools.wf_input,optools.fs_input,optools.plugin_input,optools.text_input]:
+        elif src in [optools.fs_input,optools.text_input]:
             btn_widget.setText('edit...')
             btn_widget.clicked.connect( partial(self.fetch_data,name) )
             if self.pgin.inputs[name] is not None:
@@ -191,28 +200,21 @@ class PluginUiManager(object):
                 self.input_loaders[name].ui.close()
                 self.input_loaders[name] = None
         src = self.src_widgets[name].currentIndex()
-        if src == optools.wf_input:
-            inp_loader = InputLoader(name,src,self.wfman,self.ui)
-        elif src == optools.fs_input:
+        if src == optools.fs_input:
             trmod = QtGui.QFileSystemModel()
-            #trmod.setRootPath(QtCore.QDir.currentPath())
-            #trmod.setRootPath('.')
+            trmod.setRootPath(QtCore.QDir.currentPath())
             inp_loader = InputLoader(name,src,trmod,self.ui)
-        elif src == optools.plugin_input:
-            inp_loader = InputLoader(name,src,self.plugman,self.ui)
         elif src == optools.text_input:
             inp_loader = InputLoader(name,src,None,self.ui)
-        # TODO: load defaults
-        #if self.op.input_locator[name].src == src and self.op.input_locator[name].val is not None:
-        #    if isinstance(self.op.input_locator[name].val,list):
-        #        inp_loader.set_list_toggle()
-        #        for v in self.op.input_locator[name].val:
-        #            inp_loader.add_value(str(v))
-        #    else:
-        #        inp_loader.add_value(self.op.input_locator[name].val)
+        if self.pgin.input_src == src and self.pgin.inputs[name] is not None:
+            if isinstance(self.pgin.inputs[name],list):
+                inp_loader.set_list_toggle()
+                for v in self.pgin.inputs[name]:
+                    inp_loader.add_value(str(v))
+            else:
+                inp_loader.add_value(str(self.pgin.inputs[name]))
         inp_loader.ui.finish_button.clicked.connect( partial(self.set_input,name,inp_loader.ui) )
         self.input_loaders[name] = inp_loader
-
 
     def fetch_from_input_ui(self,ui):
         # no matter the input source, ui.values_list.model().list_data() should be a list of strings.
@@ -230,11 +232,6 @@ class PluginUiManager(object):
         tp = self.type_widgets[name].currentIndex()
         if src_ui:
             val = self.fetch_from_input_ui(src_ui) 
-            #if itm_idx.isValid():
-            #    if src == optools.fs_input:
-            #        val = trview.model().filePath(itm_idx)
-            #    elif src == optools.wf_input or src == optools.plugin_input:
-            #        val = trview.model().build_uri(itm_idx)
             self.pgin.inputs[name] = val 
             self.val_widgets[name].setText(val)
             src_ui.close()
@@ -275,112 +272,5 @@ class PluginUiManager(object):
             while idx.internalPointer().parent.isValid():
                 idx = idx.internalPointer().parent
             self.plugman.remove_plugin(idx)
-
-
-    #def load_input(self,name,ui=None,itm_idx=None):
-    #    src = self.src_widgets[name].currentIndex()
-    #    tp = self.type_widgets[name].currentIndex()
-    #    #if src == optools.no_input:
-    #    #    il = optools.InputLocator() 
-    #    #elif src == optools.batch_input:
-    #    #    val = 'auto' 
-    #    #    il = optools.InputLocator(src,tp,val) 
-    #    if src == optools.text_input:
-    #        val = self.val_widgets[name].text()
-    #    elif src in [optools.wf_input,optools.fs_input,optools.plugin_input]:
-    #        if ui:
-    #            val = self.load_from_ui(ui,src,itm_idx)
-    #        else:
-    #            val = self.pgin.inputs[name]
-    #    self.val_widgets[name].setText(str(val))
-    #    if ui:
-    #        ui.close()
-    #        #ui.deleteLater()
-
-    #def load_from_ui(self,src_ui,src,itm_idx=None):
-    #    """
-    #    Construct a unique resource identifier (uri) for the selected item.
-    #    return an optools.InputLocator(src,tp,uri).
-    #    By design this should only be called when the corresponding input source window
-    #    (containing a TreeView widget) is open.
-    #    """
-    #    trview = src_ui.tree
-    #    if not itm_idx or not itm_idx.isValid():
-    #        itm_idx = trview.currentIndex()
-    #    if itm_idx.isValid():
-    #        if src == optools.fs_input:
-    #            item_uri = trview.model().filePath(item_indx)
-    #        elif src == optools.wf_input or src == optools.plugin_input:
-    #            item_uri = trview.model().build_uri(itm_idx)
-
-
-
-    #def fetch_data(self,name,data_handler):
-    #    """
-    #    Use a popup to select the input data for named input.
-    #    """
-    #    src = self.src_widgets[name].currentIndex()
-    #    src_ui = uitools.data_fetch_ui(self.ui)
-    #    src_ui.setWindowTitle('data browser')
-    #    src_ui.tree_box.setTitle(name+' - from '+optools.input_sources[src])
-    #    if src == optools.wf_input:
-    #        trmod = self.wfman
-    #    elif src == optools.plugin_input:
-    #        trmod = self.plugman
-    #    elif src == optools.fs_input:
-    #        trmod = QtGui.QFileSystemModel()
-    #        trmod.setRootPath('.')
-    #    src_ui.tree.setModel(trmod)
-    #    src_ui.tree.expandAll()
-    #    src_ui.tree.clicked.connect( partial(uitools.toggle_expand,src_ui.tree) )
-    #    # add src_ui to the arguments of data_handler
-    #    h = partial(data_handler,src_ui)
-    #    # when the load button is clicked or tree is doubleclicked, call data_handler
-    #    src_ui.load_button.clicked.connect(h)
-    #    src_ui.tree.doubleClicked.connect(h)
-    #    if src == optools.fs_input:
-    #        src_ui.tree.hideColumn(1)
-    #        src_ui.tree.hideColumn(3)
-    #        src_ui.tree.setColumnWidth(0,400)
-    #    elif src == optools.wf_input or src == optools.plugin_input:
-    #        src_ui.tree.hideColumn(1)
-    #    src_ui.show()
-
-
-
-    #def reset_val_widget(self,name,row,src,tp):
-    #    if name in self.val_widgets.keys():
-    #        if self.val_widgets[name]:
-    #            self.val_widgets[name].close()
-    #    if name in self.btn_widgets.keys():
-    #        if self.btn_widgets[name]:
-    #            self.btn_widgets[name].close()
-    #    btn_widget = QtGui.QPushButton()
-    #    val_widget = QtGui.QLineEdit()
-    #    if src == optools.no_input or tp == optools.none_type: 
-    #        btn_widget.setText('no input')
-    #        btn_widget.setEnabled(False)
-    #        val_widget.setText('None')
-    #        val_widget.setReadOnly(True)
-    #    elif src in [optools.plugin_input,optools.wf_input,optools.fs_input]:
-    #        btn_widget.setText('edit...')
-    #        data_handler = partial(self.set_input,name)
-    #        btn_widget.clicked.connect( partial(self.fetch_data,name,data_handler) )
-    #        if self.pgin.inputs[name] is not None:
-    #            val_widget.setText(str(self.pgin.inputs[name]))
-    #        val_widget.setReadOnly(True)
-    #    elif (src == optools.text_input):
-    #        if self.pgin.inputs[name]:
-    #            val_widget.setText(str(self.pgin.inputs[name]))
-    #        btn_widget = QtGui.QPushButton('auto')
-    #        #btn_widget.clicked.connect( partial(self.load_input,name) )
-    #        btn_widget.setEnabled(False)
-    #    self.ui.input_layout.addWidget(val_widget,row,self.val_col,1,1)
-    #    self.ui.input_layout.addWidget(btn_widget,row,self.btn_col,1,1)
-    #    self.val_widgets[name] = val_widget
-    #    self.btn_widgets[name] = btn_widget
-
-
-
 
 

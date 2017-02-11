@@ -136,7 +136,7 @@ class WfUiManager(object):
         if src == optools.no_input:
             il = optools.InputLocator() 
         elif src == optools.batch_input:
-            if tp == optools.auto_type:
+            if tp == optools.ref_type:
                 # TODO: set val to indicate which batch (if any) will set this input 
                 val = 'auto' 
             else:
@@ -191,7 +191,7 @@ class WfUiManager(object):
                 for v in self.op.input_locator[name].val:
                     inp_loader.add_value(str(v))
             else:
-                inp_loader.add_value(self.op.input_locator[name].val)
+                inp_loader.add_value(str(self.op.input_locator[name].val))
         inp_loader.ui.finish_button.clicked.connect( partial(self.set_input,name,inp_loader.ui) )
         self.input_loaders[name] = inp_loader
 
@@ -283,13 +283,7 @@ class WfUiManager(object):
                 elif src in [optools.wf_input,optools.plugin_input]:
                     new_type_widget.setCurrentIndex(optools.ref_type)
                 elif src == optools.batch_input:
-                    new_type_widget.setCurrentIndex(optools.auto_type)
-        #if new_type_widget.currentIndex() in optools.invalid_types[src]:
-        #    new_type_widget.setCurrentIndex(optools.none_type)
-        #elif self.op.input_type[name]:
-        #    if self.op.input_type[name] not in optools.invalid_types[src]:
-        #        new_type_widget.setCurrentIndex(self.op.input_type[name])
-        #new_type_widget.activated.connect( partial(reset_val_widget,name,row) )            
+                    new_type_widget.setCurrentIndex(optools.ref_type)
         new_type_widget.currentIndexChanged.connect( partial(self.reset_val_widget,name,row,src) )            
         self.type_widgets[name] = new_type_widget  
         self.ui.input_layout.addWidget(new_type_widget,row,self.type_col,1,1)

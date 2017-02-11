@@ -4,8 +4,8 @@ from PySide import QtCore
 
 import slacxop
 
+# Declarations of valid sources and types for workflow and plugin inputs
 ##### TODO: the following but gracefully
-# definitions for operation input sources
 no_input = 0
 text_input = 1
 fs_input = 2
@@ -15,7 +15,6 @@ batch_input = 5
 valid_sources = [no_input,text_input,fs_input,wf_input,plugin_input,batch_input]
 input_sources = ['None','Text Input','Filesystem','Workflow','Plugins','Batch'] 
 
-# supported types for user input
 none_type = 0
 str_type = 1
 int_type = 2
@@ -27,7 +26,6 @@ auto_type = 7
 valid_types = [none_type,str_type,int_type,float_type,bool_type,ref_type,path_type,auto_type]
 input_types = ['none','string','integer','float','boolean','reference','path','auto']
 
-# unsupported types for each source, keyed by source
 invalid_types = {}                
 invalid_types[no_input] = [str_type,int_type,float_type,bool_type,ref_type,path_type,auto_type]
 invalid_types[text_input] = [ref_type,path_type,auto_type]
