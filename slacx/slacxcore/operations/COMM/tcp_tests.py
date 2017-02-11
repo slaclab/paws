@@ -28,8 +28,12 @@ class FilePingTCP(Operation):
         fname = self.inputs['file']
         tz = tzlocal.get_localzone()
         t = datetime.datetime.now(tz)
-        msg = str('hello hello! \n\nthe current time is {}. \n\n'.format(t)
-        + 'I hear there is a file at {}.'.format(fname))
-        tcpcl.send_text(msg)
+        #msg = str('hello hello! \n\nthe current time is {}. \n\n'.format(t)
+        #+ 'I hear there is a file at {}.'.format(fname))
+        msg = ['!rqc', "!cmd slacx_mar_data_path = 'my_mar_data'", "!cmd slacx_pd_filename = 'my_pd_filename'"]
+        msg.extend(["!cmd slacx_loopscan_npoints = 2", "!cmd slacx_loopscan_counting_time = 2"])
+        msg.extend(["!cmd runme", "?sta"])
+        #tcpcl.send_text(msg)
+        tcpcl.send_commands(msg)
         self.outputs['response'] = 'response handling is not implemented.'
 
