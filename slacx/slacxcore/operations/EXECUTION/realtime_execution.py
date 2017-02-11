@@ -31,11 +31,11 @@ class RealtimeFromFiles(Realtime):
         self.input_src['input_route'] = optools.wf_input 
         self.input_src['realtime_ops'] = optools.wf_input 
         self.input_src['saved_items'] = optools.wf_input 
-        self.input_type['dir_path'] = optools.str_type
+        self.input_type['dir_path'] = optools.path_type
         self.input_type['regex'] = optools.str_type
-        self.input_type['input_route'] = optools.str_type
-        self.input_type['realtime_ops'] = optools.list_type 
-        self.input_type['saved_items'] = optools.list_type 
+        self.input_type['input_route'] = optools.path_type
+        self.input_type['realtime_ops'] = optools.path_type 
+        self.input_type['saved_items'] = optools.path_type 
         self.inputs['regex'] = '*.tif' 
         self.inputs['realtime_ops'] = []
         self.inputs['saved_items'] = []
