@@ -2,7 +2,7 @@ from collections import OrderedDict
 
 from PySide import QtCore
 
-import slacxop
+import operation 
 
 # Declarations of valid sources and types for workflow and plugin inputs
 ##### TODO: the following but gracefully
@@ -123,7 +123,7 @@ def parameter_doc(name,value,doc):
 def stack_size(stk):
     sz = 0
     for lst in stk:
-        if isinstance(lst[0].data,slacxop.Batch) or isinstance(lst[0].data,slacxop.Realtime):
+        if isinstance(lst[0].data,operation.Batch) or isinstance(lst[0].data,operation.Realtime):
             sz += stack_size(lst[1])+1
         else:
             sz += len(lst)
@@ -131,7 +131,7 @@ def stack_size(stk):
 
 def stack_contains(itm,stk):
     for lst in stk:
-        if isinstance(lst[0].data,slacxop.Batch) or isinstance(lst[0].data,slacxop.Realtime):
+        if isinstance(lst[0].data,operation.Batch) or isinstance(lst[0].data,operation.Realtime):
             if itm == lst[0] or stack_contains(itm,lst[1]):
                 return True
         else:
@@ -142,7 +142,7 @@ def stack_contains(itm,stk):
 def print_stack(stk):
     stktxt = ''
     for lst in stk:
-        if isinstance(lst[0].data,slacxop.Batch) or isinstance(lst[0].data,slacxop.Realtime):
+        if isinstance(lst[0].data,operation.Batch) or isinstance(lst[0].data,operation.Realtime):
             substk = lst[1]
             stktxt += '[{}:\n{}]\n'.format(lst[0].tag(),print_stack(lst[1]))
             #[[itm.tag() for itm in sublst] for sublst in substk])

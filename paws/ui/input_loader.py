@@ -1,13 +1,8 @@
-#from functools import partial
-
 from PySide import QtCore, QtGui, QtUiTools
 
-from ..slacxcore.operations import optools
-from ..slacxcore import slacxtools
-from ..slacxcore.listmodel import ListModel
-#from ..slacxcore import plugins 
-#from ..slacxcore.plugins.slacxplug import SlacxPlugin
-#from . import uitools
+from ..core.operations import optools
+from ..core import pawstools
+from ..core.listmodel import ListModel
 
 class InputLoader(object):
     """This class controls the input_loader.ui to select inputs from various sources."""
@@ -23,9 +18,9 @@ class InputLoader(object):
 
     def setup_ui(self):
         if self.src == optools.text_input:
-            ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/qtui/text_input_loader.ui")
+            ui_file = QtCore.QFile(pawstools.rootdir+"/ui/qtui/text_input_loader.ui")
         elif self.src in [optools.wf_input,optools.plugin_input,optools.fs_input]:
-            ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/qtui/tree_input_loader.ui")
+            ui_file = QtCore.QFile(pawstools.rootdir+"/ui/qtui/tree_input_loader.ui")
         ui_file.open(QtCore.QFile.ReadOnly)
         self.ui = QtUiTools.QUiLoader().load(ui_file)
         ui_file.close()

@@ -1,6 +1,6 @@
-from ...slacxcore.operations import optools 
-from ...slacxcore.operations.slacxop import Operation
-from ...slacxcore.slacxtools import FileSystemIterator
+from ...core.operations import optools 
+from ...core.operations.operation import Operation
+from ...core.pawstools import FileSystemIterator
 
 unit_indent='&nbsp;&nbsp;&nbsp;&nbsp;'
 

@@ -8,8 +8,8 @@ from . import uitools
 from .wfuiman import WfUiManager
 from .opuiman import OpUiManager
 from .pluguiman import PluginUiManager
-from ..slacxcore.operations.slacxop import Operation
-from ..slacxcore import slacxtools
+from ..core.operations.operation import Operation
+from ..core import pawstools
 from . import data_viewer
 
 # TODO: Make a metaclass that generates Operation subclasses.
@@ -30,7 +30,7 @@ class UiManager(object):
         """Make a UI from ui_file, save a reference to it"""
         super(UiManager,self).__init__()
         # Pick a UI definition, load it up
-        ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/qtui/basic.ui")
+        ui_file = QtCore.QFile(pawstools.rootdir+"/ui/qtui/basic.ui")
         ui_file.open(QtCore.QFile.ReadOnly)
         # load() produces a QMainWindow(QWidget).
         self.ui = QtUiTools.QUiLoader().load(ui_file)
@@ -115,7 +115,7 @@ class UiManager(object):
     def final_setup(self):
         self.ui.message_board.setReadOnly(True)
         self.ui.message_board.insertPlainText('--- MESSAGE BOARD ---\n') 
-        self.msg_board_log('slacx is ready',timestamp=slacxtools.dtstr) 
+        self.msg_board_log('paws is ready',timestamp=pawstools.dtstr) 
         self.ui.wf_tree.hideColumn(1)
         self.ui.hsplitter.setStretchFactor(1,2)    
         self.ui.vsplitter.setStretchFactor(0,1)    
@@ -171,28 +171,28 @@ class UiManager(object):
         #self.ui.wf_tree.selectionModel().selectionChanged.connect( self.ui.wf_tree.selectionChanged )
 
     def make_title(self):
-        """Display the slacx logo in the image viewer"""
-        # Load the slacx graphic  
-        slacx_img_file = os.path.join(slacxtools.rootdir, "slacxui/graphics/slacx_icon_white.png")
+        """Display the paws logo in the image viewer"""
+        # Load the graphic  
+        img_file = os.path.join(pawstools.rootdir, "ui/graphics/paws_icon_white.png")
         # Make a QtGui.QPixmap from this file
-        slacx_pixmap = QtGui.QPixmap(slacx_img_file)
+        pixmap = QtGui.QPixmap(img_file)
         # Make a QtGui.QGraphicsPixmapItem from this QPixmap
-        slacx_pixmap_item = QtGui.QGraphicsPixmapItem(slacx_pixmap)
+        pixmap_item = QtGui.QGraphicsPixmapItem(pixmap)
         # Add this QtGui.QGraphicsPixmapItem to a QtGui.QGraphicsScene 
-        slacx_scene = QtGui.QGraphicsScene()
-        slacx_scene.addItem(slacx_pixmap_item)
+        scene = QtGui.QGraphicsScene()
+        scene.addItem(pixmap_item)
         qwhite = QtGui.QColor(255,255,255,255)
-        textitem = slacx_scene.addText("v{}".format(slacxtools.version))
+        textitem = scene.addText("v{}".format(pawstools.version))
         textitem.setPos(100,35)
         textitem.setDefaultTextColor(qwhite)
         # Add the QGraphicsScene to self.ui.image_viewer layout 
         logo_view = QtGui.QGraphicsView()
-        logo_view.setScene(slacx_scene)
+        logo_view.setScene(scene)
         self.ui.image_viewer.addWidget(logo_view,0,0,1,1)
-        self.ui.setWindowTitle("slacx v{}".format(slacxtools.version))
-        self.ui.setWindowIcon(slacx_pixmap)
+        self.ui.setWindowTitle("paws v{}".format(pawstools.version))
+        self.ui.setWindowIcon(pixmap)
 
-    def msg_board_log(self,msg,timestamp=slacxtools.timestr):
+    def msg_board_log(self,msg,timestamp=pawstools.timestr):
         """Print timestamped message to msg board"""
         self.ui.message_board.insertPlainText(
         '- ' + timestamp() + ': ' + msg + '\n') 

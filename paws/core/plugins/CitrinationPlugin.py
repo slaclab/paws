@@ -2,23 +2,19 @@ from pypif import pif
 from citrination_client import CitrinationClient 
 
 from ..operations import optools
-from .. import slacxtools
-from slacxplug import SlacxPlugin
+from .. import pawstools
+from plugin import PawsPlugin
 
-#import os
-#from ...slacxop import Operation
-#from ... import optools
-#from .... import slacxtools
 
-class SlacxCitrinationClient(SlacxPlugin):
+class CitrinationPlugin(PawsPlugin):
     """
     Wrapper contains a Citrination client and
-    implements the SlacxPlugin abc interface.
+    implements the PawsPlugin abc interface.
     """
 
     def __init__(self):
         input_names = ['address','api_key_file']
-        super(SlacxCitrinationClient,self).__init__(input_names)
+        super(CitrinationPlugin,self).__init__(input_names)
         self.input_src['address'] = optools.text_input
         self.input_type['address'] = optools.str_type
         self.inputs['address'] = 'https://slac.citrination.com' 
@@ -41,7 +37,7 @@ class SlacxCitrinationClient(SlacxPlugin):
         return {'client':self.ctn_client,'inputs':self.inputs}
 
     def description(self):
-        desc = str('Citrination API Client Plugin for Slacx: '
+        desc = str('Citrination API Client Plugin for Paws: '
             + 'This is a container for the Citrination Client module. '
             + 'The Citrination Client connects to a Citrination instance '
             + 'and exposes some parts of the Citrination API. '
@@ -57,7 +53,7 @@ class SlacxCitrinationClient(SlacxPlugin):
         # of an array of pif records, and this will lead to a faster upload.
         for p in pifs:
             try:
-                json_file = slacxtools.scratchdir+'/'+p.uid+'.json'
+                json_file = pawstools.scratchdir+'/'+p.uid+'.json'
                 pif.dump(p, open(json_file,'w'))
                 #print 'add DATA SET {} to tags'.format(dsid)
                 #p.tags.append('DATA SET {}'.format(dsid))

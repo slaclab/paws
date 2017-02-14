@@ -1,4 +1,4 @@
-from ...slacxop import Operation
+from ...operation import Operation
 from ... import optools
 
 class WXDCalibToDict(Operation):

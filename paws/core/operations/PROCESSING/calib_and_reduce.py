@@ -8,7 +8,7 @@ import os
 import numpy as np
 import pyFAI
 
-from ..slacxop import Operation
+from ..operation import Operation
 from .. import optools
 
 class ReduceByWXDDict(Operation):

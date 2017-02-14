@@ -24,9 +24,9 @@ from functools import partial
 from PySide import QtGui, QtCore, QtUiTools
 import yaml
 
-from ..slacxcore.operations import optools
-from ..slacxcore.listmodel import ListModel
-from ..slacxcore import slacxtools
+from ..core.operations import optools
+from ..core.listmodel import ListModel
+from ..core import pawstools
 
 ## Test whether we have Qt >= 4.7 
 have_qt47 = True
@@ -200,7 +200,7 @@ def start_save_ui(uiman):
     """
     Start a modal window dialog to choose a save destination for the current workflow  
     """
-    ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/qtui/save_browser.ui")
+    ui_file = QtCore.QFile(pawstools.rootdir+"/ui/qtui/save_browser.ui")
     ui_file.open(QtCore.QFile.ReadOnly)
     save_ui = QtUiTools.QUiLoader().load(ui_file)
     ui_file.close()
@@ -208,7 +208,7 @@ def start_save_ui(uiman):
     trmod = QtGui.QFileSystemModel()
     trmod.setRootPath(QtCore.QDir.currentPath())
     #trmod.setRootPath('.')
-    #trmod.setRootPath(slacxtools.rootdir)
+    #trmod.setRootPath(pawstools.rootdir)
     trmod.setNameFilters(['*.wfl'])
     save_ui.tree_box.setTitle('Select a file to save the current workflow')
     save_ui.tree.setModel(trmod)
@@ -235,7 +235,7 @@ def start_load_ui(uiman):
     """
     Start a modal window dialog to load a previously saved workflow
     """
-    ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/qtui/load_browser.ui")
+    ui_file = QtCore.QFile(pawstools.rootdir+"/ui/qtui/load_browser.ui")
     ui_file.open(QtCore.QFile.ReadOnly)
     load_ui = QtUiTools.QUiLoader().load(ui_file)
     ui_file.close()
@@ -259,7 +259,7 @@ def start_load_ui(uiman):
     load_ui.activateWindow()
 
 def message_ui(parent=None):
-    ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/qtui/message.ui")
+    ui_file = QtCore.QFile(pawstools.rootdir+"/ui/qtui/message.ui")
     ui_file.open(QtCore.QFile.ReadOnly)
     msg_ui = QtUiTools.QUiLoader().load(ui_file)
     ui_file.close()

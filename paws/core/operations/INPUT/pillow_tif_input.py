@@ -4,7 +4,7 @@ import re
 import numpy as np
 from PIL import Image
 
-from ..slacxop import Operation
+from ..operation import Operation
 from .. import optools
 
 class LoadTif(Operation):

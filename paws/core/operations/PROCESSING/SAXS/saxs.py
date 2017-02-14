@@ -10,7 +10,7 @@ try:
 except ImportError:
     import pickle
 
-from ...slacxop import Operation
+from ...operation import Operation
 from ... import optools
 
 reference_loc = join('slacx','slacxcore','operations','DMZ','references','polydispersity_guess_references.pickle')

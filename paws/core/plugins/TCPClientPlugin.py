@@ -3,14 +3,14 @@ from twisted.internet.protocol import ClientFactory
 from twisted.protocols.basic import LineReceiver
 from twisted.protocols.policies import TimeoutMixin
 
-from slacxplug import SlacxPlugin
+from plugin import PawsPlugin
 from ..operations import optools
 
-class SlacxTCPClient(SlacxPlugin):
+class TCPClientPlugin(PawsPlugin):
 
     def __init__(self):
         input_names = ['host','port']
-        super(SlacxTCPClient,self).__init__(input_names)
+        super(PawsTCPClient,self).__init__(input_names)
         self.input_src['host'] = optools.text_input
         self.input_src['port'] = optools.text_input
         self.input_type['host'] = optools.str_type
@@ -30,7 +30,7 @@ class SlacxTCPClient(SlacxPlugin):
         # TODO: Anything else for cleaning up the connections.
 
     def description(self):
-        desc = str('TCP Client Plugin for Slacx: '
+        desc = str('TCP Client Plugin for Paws: '
             + 'This is a TCP Client for general purpose and testing.')
         return desc
 
@@ -121,26 +121,3 @@ class TCPClientFactory(ClientFactory):
         reactor.stop()
 
 
-#--------------------------------------------------------------------------------------------------------------------------#
-#
-#def main(argv = None):
-#
-#    print "running..."
-#
-#    p = SpecInfoServerProtocol()
-#    p.addCommand("!rqc")
-#    p.addCommand("!cmd slacx_mar_data_path = 'my_mar_data'")
-#    p.addCommand("!cmd slacx_pd_filename = 'my_pd_filename'")
-#    p.addCommand("!cmd slacx_loopscan_npoints = 2")
-#    p.addCommand("!cmd slacx_loopscan_counting_time = 2")
-#    p.addCommand("!cmd runme")
-#    p.addCommand("?sta")
-#    reactor.connectTCP('bl14lx', 2034, SpecClientFactory(p))
-#    reactor.run()
-#
-#    print "the end"
-#
-#	#sys.exit(1)
-#
-#if __name__ == '__main__':
-#	main()

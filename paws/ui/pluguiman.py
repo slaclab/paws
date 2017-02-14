@@ -3,11 +3,11 @@ from functools import partial
 
 from PySide import QtCore, QtGui, QtUiTools
 
-from ..slacxcore.listmodel import ListModel
-from ..slacxcore import plugins 
-from ..slacxcore import slacxtools
-from ..slacxcore.plugins.slacxplug import SlacxPlugin
-from ..slacxcore.operations import optools
+from ..core.listmodel import ListModel
+from ..core import plugins 
+from ..core import pawstools
+from ..core.plugins.plugin import PawsPlugin
+from ..core.operations import optools
 from .input_loader import InputLoader
 from . import uitools
 
@@ -26,7 +26,7 @@ class PluginListModel(ListModel):
 class PluginUiManager(object):
 
     def __init__(self,plugman):
-        ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/qtui/plugin_control.ui")
+        ui_file = QtCore.QFile(pawstools.rootdir+"/ui/qtui/plugin_control.ui")
         ui_file.open(QtCore.QFile.ReadOnly)
         self.ui = QtUiTools.QUiLoader().load(ui_file)
         ui_file.close()
@@ -80,7 +80,7 @@ class PluginUiManager(object):
         mod = importlib.import_module('.'+pgin_name,pkg)
         for nm, itm in mod.__dict__.items():
             if isinstance(itm,type):
-                if issubclass(itm,SlacxPlugin) and not nm == 'SlacxPlugin':
+                if issubclass(itm,PawsPlugin) and not nm == 'PawsPlugin':
                     pgin = getattr(mod,nm)
                     self.set_plugin(pgin())
                     return
@@ -249,7 +249,7 @@ class PluginUiManager(object):
         for name in self.pgin.inputs.keys():
             self.set_input(name)
         uri = self.ui.uri_entry.text()
-        # Plugin setup occurs here via SlacxPlugin.start()
+        # Plugin setup occurs here via PawsPlugin.start()
         self.pgin.start()
         result = self.plugman.is_good_tag(uri)
         if result[0]:

@@ -3,13 +3,13 @@ from functools import partial
 from PySide import QtCore, QtGui, QtUiTools
 
 from . import uitools
-from ..slacxcore import slacxtools
-from ..slacxcore.operations.slacxop import Operation
+from ..core import pawstools
+from ..core.operations.operation import Operation
 
 class OpUiManager(object):
 
     def __init__(self,opman):
-        ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/qtui/op_editor.ui")
+        ui_file = QtCore.QFile(pawstools.rootdir+"/ui/qtui/op_editor.ui")
         ui_file.open(QtCore.QFile.ReadOnly)
         self.ui = QtUiTools.QUiLoader().load(ui_file)
         ui_file.close()

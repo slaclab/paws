@@ -6,11 +6,11 @@ from ..operations import optools
 from ..treemodel import TreeModel
 from ..treeitem import TreeItem
 from .. import plugins as pgns
-from ..plugins.slacxplug import SlacxPlugin
+from ..plugins.plugin import PawsPlugin
 
 class PluginManager(TreeModel):
     """
-    Tree structure for managing slacx plugins.
+    Tree structure for managing paws plugins.
     """
 
     # TODO: Make WfManager.update_io_deps() handle the workflow updates when PluginManager deletes a plugin
@@ -29,7 +29,7 @@ class PluginManager(TreeModel):
         for uri, pgin_spec in pgin_dict.items():
             pgin_name = pgin_spec['type']
             pgin = self.get_plugin_byname(pgin_name)
-            if not issubclass(pgin,SlacxPlugin):
+            if not issubclass(pgin,PawsPlugin):
                 self.write_log('Did not find Plugin {} - skipping.'.format(pgin_name))
             else:
                 pgin = pgin()
@@ -69,7 +69,7 @@ class PluginManager(TreeModel):
 
     def build_dict(self,x):
         """Overloaded build_dict to handle Plugins"""
-        if isinstance(x,SlacxPlugin):
+        if isinstance(x,PawsPlugin):
             d = x.content() 
         else:
             d = super(PluginManager,self).build_dict(x)

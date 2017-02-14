@@ -5,7 +5,7 @@ import time
 import pytz
 import tzlocal
 
-from ..slacxop import Operation
+from ..operation import Operation
 from .. import optools
 
 class WindowZip(Operation):

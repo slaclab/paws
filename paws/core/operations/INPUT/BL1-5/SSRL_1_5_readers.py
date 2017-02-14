@@ -4,7 +4,7 @@ from os import rename, mkdir, listdir
 from os.path import splitext, split, join
 from collections import OrderedDict
 
-from ...slacxop import Operation
+from ...operation import Operation
 from ... import optools
 
 class ImageAndHeaderSSRL15(Operation):

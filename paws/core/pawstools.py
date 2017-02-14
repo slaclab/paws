@@ -1,26 +1,31 @@
 import glob
-import os.path
+import os
 from collections import Iterator
 from datetime import datetime as dt
 
 from PySide import QtCore
-from operations.slacxop import Operation
+from operations.operation import Operation
 
 # TODO: Make scratch directory and other cfg'ables into a cfg file
-
-version='0.4.0'
 
 qdir = QtCore.QDir(__file__)
 qdir.cdUp()
 qdir.cdUp()
 rootdir = qdir.path() 
 qdir.cdUp()
-if not os.path.exists(qdir.path()+'/scratch/'):
-    os.mkdir(qdir.path()+'/scratch/')
+sourcedir = qdir.path()
+if not os.path.exists(os.path.join(qdir.path(),'scratch')):
+    os.mkdir(os.path.join(qdir.path(),'scratch'))
 qdir.cd('scratch')
 scratchdir = qdir.path()
-print '[slacxtools] scratch directory: {}'.format(scratchdir)
-print '[slacxtools] root directory: {}'.format(rootdir)
+print '[{}]: source directory sourcedir = {}'.format(__name__,sourcedir)
+print '[{}]: root directory rootdir = {}'.format(__name__,rootdir)
+print '[{}]: scratch directory scratchdir = {}'.format(__name__,scratchdir)
+
+# Get the code version from the version.py file, store as __version__
+with open(os.path.join(sourcedir,'version.py')) as f: 
+    exec(f.read())
+version=__version__
 
 class LazyCodeError(Exception):
     def __init__(self,msg):

@@ -1,13 +1,13 @@
 import socket 
 
-from slacxplug import SlacxPlugin
+from plugin import PawsPlugin
 from ..operations import optools
 
-class SlacxSpecClient(SlacxPlugin):
+class SpecClientPlugin(PawsPlugin):
 
     def __init__(self):
         input_names = ['host','port']
-        super(SlacxSpecClient,self).__init__(input_names)
+        super(SpecClientPlugin,self).__init__(input_names)
         self.input_src['host'] = optools.text_input
         self.input_src['port'] = optools.text_input
         self.input_type['host'] = optools.str_type
@@ -28,12 +28,12 @@ class SlacxSpecClient(SlacxPlugin):
             pass
 
     def stop(self):
-        print "SlacxSpecClient stop"
+        print "PawsSpecClient stop"
         self.sock.close()
         # TODO: Anything else for cleaning up the connections.
 
     def description(self):
-        desc = str('SpecInfoServer Client Plugin for Slacx: '
+        desc = str('SpecInfoServer Client Plugin: '
             + 'This is a TCP Client used to communicate with SpecInfoServer. '
             + 'Startup requires a host name and a port number, '
             + 'where it is expected that SpecInfoServer will be listening.')

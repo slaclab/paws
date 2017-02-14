@@ -3,7 +3,7 @@ import os
 from pypif import pif
 from citrination_client import CitrinationClient 
 
-from ...slacxop import Operation
+from ...operation import Operation
 from ... import optools
         
 # TODO: Note that the entire data set can be one json,

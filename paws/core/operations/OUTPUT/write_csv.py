@@ -2,7 +2,7 @@ from os.path import splitext
 from os import linesep
 import numpy as np
 
-from ..slacxop import Operation
+from ..operation import Operation
 from ..import optools
 
 class WriteArrayCSV(Operation):

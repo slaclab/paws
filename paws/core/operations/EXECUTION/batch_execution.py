@@ -2,7 +2,7 @@ import re
 from collections import OrderedDict
 import glob
 
-from ..slacxop import Batch
+from ..operation import Batch
 from .. import optools
 
 class BatchFromFiles(Batch):

@@ -4,7 +4,7 @@ import re
 import numpy as np
 import fabio
 
-from ..slacxop import Operation
+from ..operation import Operation
 
 class LoadFabIO(Operation):
     """

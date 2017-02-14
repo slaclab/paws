@@ -1,28 +1,27 @@
+"""
+This is the main module for paws.
+"""
+
 import os
 import sys
 
 from PySide import QtCore
+# TODO: Only import QtGui and qdarkstyle if we are using a gui
+from PySide import QtGui
 import qdarkstyle
 
-from slacx.slacxcore.operations import slacxopman
-from slacx.slacxcore.workflow import slacxwfman
-from slacx.slacxcore.plugins import slacxplugman
-from slacx.slacxcore import slacxtools
-
-# TODO: Only do the following imports if we are using a gui
-from slacx.slacxui import slacxuiman, uitools
-from PySide import QtGui
-
-"""
-slacx main module.
-"""
+from paws.core.operations.op_manager import OpManager 
+from paws.core.workflow.wf_manager import WfManager 
+from paws.core.plugins.plugin_manager import PluginManager 
+# TODO: Only import UiManager if we are using a gui
+from paws.ui.ui_manager import UiManager
 
 def main():
     """
-    slacx main execution method.
+    paws entry point main method.
     """
 
-    # TODO: parse sys.argv for whatever inputs 
+    # TODO: parse sys.argv?
     
     # Instantiate QApplication, pass in cmd line args sys.argv.
     try:
@@ -31,19 +30,18 @@ def main():
         # An application already exists, probably. Get a reference to it.
         app = QtCore.QCoreApplication.instance()
 
-    # If running with gui, load dark style:
+    # load dark style on top of application stylesheet:
     app.setStyleSheet(qdarkstyle.load_stylesheet() + app.styleSheet())
 
-    # TODO: give kwargs to these init routines to rebuild saved jobs?
-    opman = slacxopman.OpManager()
-    plugman = slacxplugman.PluginManager()
-    wfman = slacxwfman.WfManager(app,plugman)
-    uiman = slacxuiman.UiManager(opman,wfman,plugman)
+    opman = OpManager()
+    plugman = PluginManager()
+    wfman = WfManager(app,plugman)
+    uiman = UiManager(opman,wfman,plugman)
     plugman.logmethod = uiman.msg_board_log
     wfman.logmethod = uiman.msg_board_log
     opman.logmethod = uiman.msg_board_log
 
-    # Make the slacx title box
+    # Make the paws title box
     uiman.make_title()    
 
     # Connect the menu actions to UiManager functions

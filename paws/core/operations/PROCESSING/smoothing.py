@@ -1,8 +1,7 @@
 import numpy as np
 
-from ..slacxop import Operation
+from ..operation import Operation
 from .. import optools
-
 
 
 class SavitzkyGolay(Operation):
@@ -36,7 +35,6 @@ class SavitzkyGolay(Operation):
         self.outputs['smoothdata'] = savitzky_golay(self.inputs['x'], self.inputs['y'], self.inputs['order'], self.inputs['base'], self.inputs['dy'])
 
 
-
 class RectangularSmooth(Operation):
     """Applies rectangular (moving average) smoothing filter to 1d data.
 
@@ -60,7 +58,6 @@ class RectangularSmooth(Operation):
     def run(self):
         self.outputs['smoothdata'] = moving_average(self.inputs['data'], self.inputs['m'], 'square',
                                                     self.inputs['error'])
-
 
 class TriangularSmooth(Operation):
     """Applies triangular-weighted (moving average) smoothing filter to 1d data.
@@ -260,174 +257,4 @@ def make_poly_matrices(x, y, error, order):
 
 
 
-
-'''
-Time testing code here
-
-import time
-n = 11
-x = np.random.rand(n)
-y = np.random.rand(n)
-error = np.random.rand(n)
-order = 5
-matrix, vector = make_poly_matrices(x, y, error, order)
-
-
-
-
-t0 = time.time()
-
-t1 = time.time()
-dt = t1 - t0
-print "Elapsed time: %f seconds." % dt
-
-
-
-#rectangular_unweighted_smooth_1(data, m) # data.size = 1024.  m = 3: 0.008655 s / 0.000416 s.  m = 5: 0.000369 s.  m = 7: 0.000319 s.
-#rectangular_unweighted_smooth_2(data, m) # m = 3: 0.008419 s / 0.000274 s.  m = 5: 0.000292 s.  m = 7: 0.000324 s.
-
-#solve_poly_1(matrix, vector) # (n, o) = (11, 5) 0.022688 s
-#solve_poly_2(matrix, vector) # (n, o) = (11, 5) 0.010989 s
-#solve_poly_3(matrix, vector) # (n, o) = (11, 5) 0.008370 s
-
-'''
-
-# Below this point: rejected & unused functions
-
-
-def solve_poly_1(matrix, vector):
-    '''
-    Solve a set of linear equations MC = V for C.
-
-    :param matrix: 2d array of dimensions (n, n), n some integer, M in equation
-    :param vector: 2d array of dimensions (1, n), V in equation
-    :return coefficients: 2d array of dimensions (1, n), C in equation
-    '''
-    matrix_inv = np.linalg.pinv(matrix)
-    coefficients = np.matmul(matrix_inv, vector)
-    return coefficients
-
-
-def solve_poly_2(matrix, vector):
-    '''
-    Solve a set of linear equations MC = V for C.
-
-    :param matrix: 2d array of dimensions (n, n), n some integer, M in equation
-    :param vector: 2d array of dimensions (1, n), V in equation
-    :return coefficients: 2d array of dimensions (1, n), C in equation
-    '''
-    matrix_inv = np.linalg.inv(matrix)
-    coefficients = np.matmul(matrix_inv, vector)
-    return coefficients
-
-
-def solve_poly_3(matrix, vector):
-    '''
-    Solve a set of linear equations MC = V for C.
-
-    :param matrix: 2d array of dimensions (n, n), n some integer, M in equation
-    :param vector: 2d array of dimensions (1, n), V in equation
-    :return coefficients: 2d array of dimensions (1, n), C in equation
-    '''
-    coefficients = np.linalg.solve(matrix, vector)
-    return coefficients
-
-
-def rectangular_unweighted_smooth_1(data, m):
-    n = int(m)/2
-    if (m != (2*n+1)):
-        raise ValueError('Argument *m* should be an odd integer.')
-    stacked_data, stacked_mask = shift_stack(data, n, n)
-    smoothed = masked_mean_2d_axis_0(stacked_data, stacked_mask)
-    return smoothed
-
-
-def masked_mean_2d_axis_0(y2d, mask2d):
-    '''
-    Takes the mean of masked data along axis 0.
-
-    :param y2d: 2d numpy float array
-    :param mask2d: 2d numpy bool array
-    :return mean: 1d numpy float array
-
-    *y2d* is data; *mask2d* is its corresponding mask
-    with values *True* for legitimate data, *False* otherwise.
-    Assumes that each column of *y2d* has at least one valid element;
-    otherwise the mean along axis 0 is not defined.
-    Returns *mean*, the mean of *y2d* along axis 0.
-    '''
-    sum = (y2d * mask2d).sum(axis=0)
-    num_elements = mask2d.sum(axis=0)
-    mean = sum / num_elements
-    return mean
-
-
-def masked_variance_2d_axis_0(y2d, mask2d):
-    '''
-    Takes the variance of masked data along axis 0.
-
-    :param y2d: 2d numpy float array
-    :param mask2d: 2d numpy bool array
-    :return variance: 1d numpy float array
-
-    *y2d* is data; *mask2d* is its corresponding mask
-    with values *True* for legitimate data, *False* otherwise.
-    Assumes that each column of *y2d* has at least two valid elements;
-    otherwise the variance along axis 0 is not defined.
-    Returns *variance*, the variance of *y2d* along axis 0.
-    '''
-    mean = masked_mean_2d_axis_0(y2d, mask2d)
-    difference = (y2d - mean) * mask2d
-    num_elements = mask2d.sum(axis=0)
-    variance = (difference ** 2).sum(axis=0) / (num_elements - 1)
-    return variance
-
-
-def shift_stack(y, n1, n2):
-    '''
-    Creates a stack of index-shifted versions of y.
-
-    :param y: 1d numpy float array
-    :param n1: int
-    :param n2: int
-    :return local_neighborhood: 2d numpy float array
-    :return element_exists: 2d numpy bool array
-
-    Creates shifted versions of the input *y*,
-    with shifts up to and including *n1* spaces downward in index
-    and up to and including *n2* spaces upwards.
-    The shifted versions are stacked together as *local_neighborhood*, like this
-    (shown for a *y* of length 16 and *n1 = 4*, *n2 = 2*)
-    [4 5 6 7 ... 15 __ __ __ __]
-    [3 4 5 6 ... 14 15 __ __ __]
-    [2 3 4 5 ... 13 14 15 __ __]
-    [1 2 3 4 ... 12 13 14 15 __]
-    [0 1 2 3 ... 11 12 13 14 15]
-    [_ 0 1 2 ... 10 11 12 13 14]
-    [_ _ 0 1 ...  9 10 11 12 13]
-    with a corresponding mask array, *element_exists*,
-    indicating whether an element holds information or not, like this
-    [1 1 1 1 ...  1  0  0  0  0]
-    [1 1 1 1 ...  1  1  0  0  0]
-    [1 1 1 1 ...  1  1  1  0  0]
-    [1 1 1 1 ...  1  1  1  1  0]
-    [1 1 1 1 ...  1  1  1  1  1]
-    [0 1 1 1 ...  1  1  1  1  1]
-    [0 0 1 1 ...  1  1  1  1  1]
-    '''
-    local_neighborhood = np.zeros(((n1 + n2 + 1), y.size), dtype=float)
-    element_exists = np.zeros(((n1 + n2 + 1), y.size), dtype=bool)
-    for ii in range(n1 + n2 + 1):
-        # ii ranges from 0 to n1 + n2; jj ranges from -n1 to n2
-        jj = ii - n1
-        if jj < 0:
-            local_neighborhood[ii, :jj] = y[-jj:]
-            element_exists[ii, :jj] = True
-        elif jj == 0:
-            local_neighborhood[ii, :] = y[:]
-            element_exists[ii, :] = True
-        else:
-            local_neighborhood[ii, jj:] = y[:-jj]
-            element_exists[ii, jj:] = True
-    return local_neighborhood, element_exists
 

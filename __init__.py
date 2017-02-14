@@ -4,11 +4,11 @@ import sys
 from xicam.plugins import base
 from PySide import QtGui, QtCore, QtUiTools
 
-from slacx.slacxui import slacxuiman
-from slacx.slacxcore.operations import slacxopman
-from slacx.slacxcore.workflow import slacxwfman
+from paws.ui import ui_manager
+from paws.core.operations import op_manager
+from paws.core.workflow import wf_manager
 
-class SlacxPlugin(base.plugin):
+class PawsXicamPlugin(base.plugin):
     # The display name in the xi-cam plugin bar
     name = 'Workflow'
 
@@ -20,13 +20,13 @@ class SlacxPlugin(base.plugin):
         except RuntimeError:
             app = QtCore.QCoreApplication.instance()
 
-        # start slacx core objects    
-        opman = slacxopman.OpManager()
-        wfman = slacxwfman.WfManager(app=app)
-        # start slacx ui objects
-        uiman = slacxuiman.UiManager(opman,wfman)
+        # start core objects    
+        opman = op_manager.OpManager()
+        wfman = wf_manager.WfManager(app=app)
+        # start ui objects
+        uiman = ui_manager.UiManager(opman,wfman)
         wfman.logmethod = uiman.msg_board_log
-        # Make the slacx title box
+        # Make the title box
         uiman.make_title()    
         # Connect the menu actions to UiManager functions
         uiman.connect_actions()
@@ -44,13 +44,13 @@ class SlacxPlugin(base.plugin):
         # mysteriously fail to bring their children with them.
         # Adding these calls to findChildren() 
         # seems to force the frames to find their children.
-        # Curious. TODO: Sort this out. -LAP
+        # Curious. -LAP
+        #import pdb
+        #pdb.set_trace()
         uiman.ui.left_frame.findChildren(object)
         uiman.ui.right_frame.findChildren(object)
         uiman.ui.center_frame.findChildren(object)
-        #import pdb
-        #pdb.set_trace()
 
-        super(SlacxPlugin, self).__init__(*args, **kwargs)
+        super(PawsXicamPlugin, self).__init__(*args, **kwargs)
 
 

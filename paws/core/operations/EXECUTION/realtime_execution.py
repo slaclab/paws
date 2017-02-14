@@ -2,9 +2,9 @@ import re
 from collections import OrderedDict
 import glob
 
-from ..slacxop import Realtime 
+from ..operation import Realtime 
 from .. import optools
-from ...slacxtools import FileSystemIterator 
+from ...pawstools import FileSystemIterator 
 
 class RealtimeFromFiles(Realtime):
     """

@@ -3,7 +3,7 @@ from PySide import QtCore, QtGui
 from matplotlib.figure import Figure
 from pypif.obj import System
 
-from ..slacxcore.operations.slacxop import Operation 
+from ..core.operations.operation import Operation 
 from . import uitools
 from .widgets.op_widget import OpWidget
 from .widgets.pif_widget import PifWidget

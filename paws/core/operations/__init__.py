@@ -4,9 +4,8 @@ import importlib
 
 import yaml
 
-from slacxop import Operation
-from slacxop import Batch
-from .. import slacxtools
+from operation import Operation
+from .. import pawstools
 
 def save_cfg(cfg_data,cfg_file):
     cfg = open(cfg_file,'w')
@@ -22,7 +21,7 @@ def load_cfg(cfg_file):
     return cfg_data
 
 # check for an ops.cfg file
-cfg_file = slacxtools.rootdir+'/slacxcore/operations/ops.cfg'
+cfg_file = pawstools.rootdir+'/core/operations/ops.cfg'
 if os.path.exists(cfg_file):
     op_load_flags = load_cfg(cfg_file)
 else:
@@ -37,7 +36,7 @@ def load_ops_from_path(path_,pkg,cat_root='MISC'):
     cats = []
     # pkgutil.iter_modules returns module_loader, module_name, ispkg forall modules in path
     mods = pkgutil.iter_modules(path_)
-    mods = [mod for mod in mods if mod[1] not in ['__init__','slacxop','slacxopman','optools','DMZ','TRASH']]
+    mods = [mod for mod in mods if mod[1] not in ['__init__','operation','op_manager','optools','DMZ']]
     for modloader, modname, ispkg in mods:
         if modname in op_load_flags.keys():
             if op_load_flags[modname]:

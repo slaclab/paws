@@ -4,7 +4,7 @@ def load_plugins(path_,pkg):
     p_names = []
     # pkgutil.iter_modules returns module_loader, module_name, ispkg forall modules in path
     mods = pkgutil.iter_modules(path_)
-    mods = [mod for mod in mods if mod[1] not in ['__init__','slacx','slacxplug','slacxplugman']]
+    mods = [mod for mod in mods if mod[1] not in ['__init__','plugin','plugin_manager']]
     for modloader, modname, ispkg in mods:
         p_names.append(modname)
     return p_names 

@@ -9,13 +9,16 @@
    xmlns="http://www.w3.org/2000/svg"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="43.618385mm"
-   height="10.90953mm"
-   viewBox="0 0 154.55333 38.655813"
+   width="34.353966mm"
+   height="9.6735525mm"
+   viewBox="0 0 121.72665 34.276367"
    id="svg2"
    version="1.1"
    inkscape:version="0.91 r13725"
-   sodipodi:docname="slacx_icon_white.svg">
+   sodipodi:docname="paws_icon_white.svg"
+   inkscape:export-filename="/home/lenson/WORK/paws/paws/ui/graphics/paws_icon_white.png"
+   inkscape:export-xdpi="92.589401"
+   inkscape:export-ydpi="92.589401">
   <defs
      id="defs4" />
   <sodipodi:namedview
@@ -26,8 +29,8 @@
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
      inkscape:zoom="2.8284271"
-     inkscape:cx="-36.006168"
-     inkscape:cy="-0.32435426"
+     inkscape:cx="-18.454912"
+     inkscape:cy="-3.8659043"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
@@ -56,7 +59,7 @@
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
      id="layer1"
-     transform="translate(-208.09143,-430.28839)">
+     transform="translate(-216.70312,-431.12628)">
     <text
        xml:space="preserve"
        style="font-style:normal;font-weight:normal;font-size:40px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
@@ -71,15 +74,15 @@
     <text
        xml:space="preserve"
        style="font-style:normal;font-weight:normal;font-size:40px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:#ffffff;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-       x="205.61816"
-       y="462.45343"
+       x="217.61816"
+       y="454.45343"
        id="text3352"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
          id="tspan3354"
-         x="205.61816"
-         y="462.45343"
-         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:50px;line-height:125%;font-family:'Courier New';-inkscape-font-specification:'Courier New, Bold';text-align:start;writing-mode:lr-tb;text-anchor:start;fill:#ffffff;fill-opacity:1;stroke:#ffffff;stroke-opacity:1">slacx</tspan></text>
+         x="217.61816"
+         y="454.45343"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:50px;line-height:125%;font-family:'Courier New';-inkscape-font-specification:'Courier New, Bold';text-align:start;writing-mode:lr-tb;text-anchor:start;fill:#ffffff;fill-opacity:1;stroke:#ffffff;stroke-opacity:1">paws</tspan></text>
     <text
        xml:space="preserve"
        style="font-style:normal;font-weight:normal;font-size:40px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
@@ -92,8 +95,8 @@
          x="360.62445"
          y="610.92554" /></text>
     <path
-       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:#ffffff;stroke-width:0.85972697px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-       d="m 208.09143,468.51434 154.55333,0"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:#ffffff;stroke-width:0.68577683px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 240.09143,460.51434 98.33834,0"
        id="path3370"
        inkscape:connector-curvature="0" />
   </g>

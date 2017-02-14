@@ -6,19 +6,19 @@ from PySide import QtCore, QtGui, QtUiTools
 import qdarkstyle
 import numpy as np
 
-from ..slacxcore.listmodel import ListModel
-from ..slacxcore.operations import optools
-from ..slacxcore.operations.slacxop import Operation 
-from ..slacxcore.workflow.slacxwfman import WfManager
-from ..slacxcore import slacxtools
-from ..slacxcore.operations.optools import InputLocator
+from ..core.listmodel import ListModel
+from ..core.operations import optools
+from ..core.operations.operation import Operation 
+from ..core.workflow.wf_manager import WfManager
+from ..core import pawstools
+from ..core.operations.optools import InputLocator
 from .input_loader import InputLoader
 from . import uitools
 
 class WfUiManager(object):
 
     def __init__(self,wfman,opman,plugman):
-        ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/qtui/wf_editor.ui")
+        ui_file = QtCore.QFile(pawstools.rootdir+"/ui/qtui/wf_editor.ui")
         ui_file.open(QtCore.QFile.ReadOnly)
         self.ui = QtUiTools.QUiLoader().load(ui_file)
         ui_file.close()

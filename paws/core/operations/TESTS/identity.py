@@ -1,4 +1,4 @@
-from ..slacxop import Operation
+from ..operation import Operation
 
 class Identity(Operation):
     """An Operation testing class, loads its input into its output"""

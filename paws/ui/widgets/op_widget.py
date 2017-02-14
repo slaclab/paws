@@ -1,6 +1,6 @@
 from PySide import QtGui, QtCore
 
-from ...slacxcore.operations import optools 
+from ...core.operations import optools 
 
 class OpWidget(QtGui.QWidget):
     

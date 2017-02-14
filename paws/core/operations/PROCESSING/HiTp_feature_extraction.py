@@ -7,7 +7,7 @@ Created on Mon Jun 06 18:02:32 2016
 
 import numpy as np
 
-from ..slacxop import Operation
+from ..operation import Operation
 from .. import optools
 
 class IntensityFeatures(Operation):

@@ -7,13 +7,13 @@ from PySide import QtCore
 from ..treemodel import TreeModel
 from ..treeitem import TreeItem
 from ..operations import optools
-from ..operations.slacxop import Operation, Batch, Realtime
-from .. import slacxtools
-from .slacxwfworker import WfWorker
+from ..operations.operation import Operation, Batch, Realtime
+from .. import pawstools
+from .wf_worker import WfWorker
 
 class WfManager(TreeModel):
     """
-    Tree structure for managing a Workflow built from slacx Operations.
+    Tree structure for managing a Workflow built from paws Operations.
     """
 
     wfdone = QtCore.Signal()

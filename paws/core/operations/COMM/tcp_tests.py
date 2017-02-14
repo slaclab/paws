@@ -1,39 +1,31 @@
 import datetime
 import tzlocal
 
-from ..slacxop import Operation
+from ..operation import Operation
 from .. import optools
 
-class FilePingTCP(Operation):
+class TestTCP(Operation):
     """
     Given a filename and a TCP client,
-    this operation asks the client to write a message to its server
-    reporting the time and filename.
+    this operation sends some stuff to the TCP client. 
     """
 
     def __init__(self):
-        input_names = ['client','file']
+        input_names = ['client']
         output_names = ['response']
-        super(FilePingTCP, self).__init__(input_names, output_names)
+        super(TestTCP, self).__init__(input_names, output_names)
         self.input_doc['client'] = 'reference to a running tcp client.'
-        self.input_doc['file'] = 'input file name, probably handed down from a RealtimeFromFiles controller.'
-        self.output_doc['response'] = 'if the client receives a response to its ping, it will be stored here.'
+        self.output_doc['response'] = 'if the client receives a response, it will be stored here.'
         self.input_src['client'] = optools.plugin_input
-        self.input_src['file'] = optools.fs_input
-        self.input_type['client'] = optools.auto_type
-        self.input_type['file'] = optools.str_type
+        self.input_type['client'] = optools.ref_type
 
     def run(self):
         tcpcl = self.inputs['client']
-        fname = self.inputs['file']
         tz = tzlocal.get_localzone()
         t = datetime.datetime.now(tz)
-        #msg = str('hello hello! \n\nthe current time is {}. \n\n'.format(t)
-        #+ 'I hear there is a file at {}.'.format(fname))
         msg = ['!rqc', "!cmd slacx_mar_data_path = 'my_mar_data'", "!cmd slacx_pd_filename = 'my_pd_filename'"]
         msg.extend(["!cmd slacx_loopscan_npoints = 2", "!cmd slacx_loopscan_counting_time = 2"])
         msg.extend(["!cmd runme", "?sta"])
-        #tcpcl.send_text(msg)
         tcpcl.send_commands(msg)
-        self.outputs['response'] = 'response handling is not implemented.'
+        self.outputs['response'] = 'response handling is not yet implemented.'
 

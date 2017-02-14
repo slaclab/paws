@@ -1,10 +1,10 @@
 import numpy as np
 
-from ..slacxop import Operation
+from ..operation import Operation
 from .. import optools
 
 class Zip(Operation):
-    """Zips two 1d ndarrays together for display in slacx."""
+    """Zips two 1d ndarrays together."""
 
     def __init__(self):
         input_names = ['ndarray_x', 'ndarray_y']
@@ -12,11 +12,10 @@ class Zip(Operation):
         super(Zip, self).__init__(input_names, output_names)
         self.input_doc['ndarray_x'] = '1d ndarray, x axis'
         self.input_doc['ndarray_y'] = '1d ndarray, y axis; same size as ndarray_x'
-        self.output_doc['ndarray_xy'] = 'n x 2 ndarray for slacx autodisplay fun'
+        self.output_doc['ndarray_xy'] = 'n x 2 ndarray for automatic display plotting'
         # source & type
         self.input_src['ndarray_x'] = optools.wf_input
         self.input_src['ndarray_y'] = optools.wf_input
-        self.categories = ['MISC.NDARRAY MANIPULATION','DISPLAY']
 
     def run(self):
         x = self.inputs['ndarray_x']
@@ -26,7 +25,7 @@ class Zip(Operation):
         self.outputs['ndarray_xy'] = xy
 
 class LogLogZip(Operation):
-    """Takes the logarithm of two 1d ndarrays, then zips them together for display in slacx.
+    """Takes the logarithm of two 1d ndarrays, then zips them together.
 
     Logarithm is taken in base ten.
 
@@ -40,7 +39,7 @@ class LogLogZip(Operation):
         super(LogLogZip, self).__init__(input_names, output_names)
         self.input_doc['ndarray_x'] = '1d ndarray, x axis'
         self.input_doc['ndarray_y'] = '1d ndarray, y axis; same size as ndarray_x'
-        self.output_doc['ndarray_logxlogy'] = 'n x 2 ndarray for slacx autodisplay fun'
+        self.output_doc['ndarray_logxlogy'] = 'n x 2 ndarray for automatic display plotting'
         # source & type
         self.input_src['ndarray_x'] = optools.wf_input
         self.input_src['ndarray_y'] = optools.wf_input
