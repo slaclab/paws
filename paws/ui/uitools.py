@@ -1,3 +1,21 @@
+"""
+Configuration flags, widgets, and functions for paws gui control.
+
+Attributes
+----------
+have_qt47 : bool
+    Flag indicates PySide.QtCore.__version__ >= 4.7.
+    Some of the GUI functionality of paws can use this flag 
+    for backward compatibility with pre-4.7 Qt installations.
+
+have_windows : bool
+    Flag indicates whether host OS is Windows.
+
+Todo
+----
+Module is currently up to date.
+"""
+
 import os
 import re
 import platform
@@ -25,6 +43,19 @@ else:
     have_windows = False
 
 def text_widget(text):
+    """
+    Produce a Read-only Center-aligned QtGui.QLineEdit from input text.
+
+    Parameters
+    ----------
+    text : str
+        text to be displayed in returned QLineEdit widget
+
+    Returns
+    -------
+    PySide.QtGui.QLineEdit
+        QLineEdit widget displaying input text
+    """
     widg = QtGui.QLineEdit(text)
     widg.setReadOnly(True)
     widg.setAlignment(QtCore.Qt.AlignHCenter)
@@ -243,69 +274,5 @@ def message_ui(parent=None):
     msg_ui.ok_button.setFocus()
     msg_ui.ok_button.setDefault(True)
     return msg_ui
-
-#def start_list_builder(src,lm,parent=None):
-#    """Start list builder for data source src and ListModel lm"""
-#    ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/qtui/list_builder.ui")
-#    ui_file.open(QtCore.QFile.ReadOnly)
-#    list_ui = QtUiTools.QUiLoader().load(ui_file)
-#    ui_file.close()
-#    list_ui.setParent(parent,QtCore.Qt.Window)
-#    #list_ui.setAttribute(QtCore.Qt.WA_OpaquePaintEvent)
-#    #list_ui.setWindowModality(QtCore.Qt.WindowModal)
-#    list_ui.setWindowTitle("build list from {}".format(optools.input_sources[src]))
-#    list_ui.value_header.setText('value')
-#    list_ui.value_header.setStyleSheet( "QLineEdit { background-color: transparent }" + list_ui.value_header.styleSheet() )
-#    list_ui.type_header.setText('type')
-#    list_ui.type_header.setStyleSheet( "QLineEdit { background-color: transparent }" + list_ui.type_header.styleSheet() )
-#    list_ui.list_view.setModel(lm)
-#    list_ui.browse_button.setText('browse...')
-#    list_ui.type_selector = type_selection_widget(src,list_ui.type_selector)
-#    list_ui.type_selector.model().set_disabled(optools.list_type)
-#    if src == optools.text_input:
-#        list_ui.browse_button.setEnabled(False)
-#        if have_qt47:
-#            list_ui.value_entry.setPlaceholderText('(enter value)')
-#        else:
-#            list_ui.value_entry.setText('')
-#    else:
-#        list_ui.load_button.setEnabled(False)
-#        list_ui.value_entry.setReadOnly(True)
-#        list_ui.type_selector.model().set_disabled(optools.none_type)
-#        list_ui.type_selector.model().set_disabled(optools.auto_type)
-#    list_ui.type_selector.setCurrentIndex(optools.str_type)
-#    list_ui.load_button.setText('Load')
-#    list_ui.finish_button.setText('Finish')
-#    list_ui.remove_button.setText('Remove')
-#    list_ui.load_button.clicked.connect( partial(load_value_to_list,list_ui) )
-#    list_ui.remove_button.clicked.connect( partial(rm_from_list,list_ui) )
-#    return list_ui
-
-#def load_value_to_list(list_ui):
-#    # typecast and load the value_entry.text()
-#    # only typecast if tp is not auto_type
-#    tp = list_ui.type_selector.currentIndex()
-#    if tp == optools.auto_type:
-#        val = list_ui.value_entry.text()
-#    else:
-#        val = optools.cast_type_val(tp,list_ui.value_entry.text())
-#    list_ui.list_view.model().append_item(val)
-
-#def rm_from_list(list_ui):
-#    idx = list_ui.list_view.currentIndex()
-#    if idx.isValid():
-#        row = idx.row()
-#        list_ui.list_view.model().remove_item(row)
-
-#def data_fetch_ui(parent=None):
-#    ui_file = QtCore.QFile(slacxtools.rootdir+"/slacxui/qtui/load_browser.ui")
-#    ui_file.open(QtCore.QFile.ReadOnly)
-#    src_ui = QtUiTools.QUiLoader().load(ui_file)
-#    ui_file.close()
-#    src_ui.setParent(parent,QtCore.Qt.Window)
-#    #src_ui.setAttribute(QtCore.Qt.WA_OpaquePaintEvent)
-#    #src_ui.setWindowModality(QtCore.Qt.WindowModal)
-#    src_ui.load_button.setText('&Load')
-#    return src_ui
 
 
