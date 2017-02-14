@@ -1,5 +1,6 @@
 """
-paws setup module.
+paws setup module
+---- ----- ------
 See https://packaging.python.org/distributing/
 """
 

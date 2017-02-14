@@ -1,64 +1,64 @@
-## Synopsis
+paws: the Platform for Automated Worfklows by SSRL 
+==================================================
 
-`slacx` is designed to be a fast, lean, and modular 
+
+Description
+-----------
+`paws` is the Platform for Automated Workflows by SSRL.
+It was conceived to serve as a fast, lean, and modular 
 workflow manager for image-like data.
 
-Many operations are pre-loaded into `slacx` 
-for performing routine analysis,
-and additional operations can be written 
-by following the templates included in the manual.  
-`slacx` also provides a plugin module
-so that it can be used as a component 
-of the `xi-cam` software package.
-The complete documentation of `slacx`
-can be found in the `doc` directory 
-of this repository.
+At the most basic level, `paws` provides an interface to scripting and executing workflows in Python,
+including an ever-growing library of pre-loaded operations and an interface for developing new ones.
+Where a researcher might normally build their data processing workflow as a set of scripts, 
+the goal of `paws` is to provide intuitive i/o and data management 
+to make the scripts run faster, consume less resources, require less human intervention,
+and ultimately port into other workflows that use a similar processing step.
+Additionally, `paws` provides a GUI for building and configuring workflows, 
+networking plugins for data management and control of experimental equipment, 
+threaded execution for fast batch processing, 
+and a Python api for employing `paws` with minimal overhead (not yet implemented).
 
-## Code Example
+`paws` provides a plugin for the `xi-cam` software package,
+where the `paws` development team aims to provide a flexible backend
+to be called upon by `xi-cam` application plugins.
 
-Instructions for using `slacx` 
-through the GUI and through the API (not yet implemented)
+`paws` is written on the `Qt` platform via the `PySide` bindings.
+
+For complete documentation, please see the `doc` directory of this repository.
+
+
+Example
+-------
+An API example will be posted here when the API is released.
+
+Complete instructions for using `paws` through the GUI and through the API (not yet implemented) 
 are included in the user manual. 
 See the `doc` directory of this repository.
-A low-overhead usage example will eventually be posted here.
 
-## Motivation
 
-The main goal of `slacx` is to make processing of image-like data 
-fast, intuitive, and customizable, all at the same time.
-Processing includes input, basic operations, visualization, 
-and storage of raw and processed data.
-An eventual goal is to leverage 
-processing capabilities and access to data stores
-to provide feedback to control parameters of an experiment. 
+Installation
+------------
+TODO: put instructions here on how to install paws from PPI.
 
-## Installation
+The installation instructions from source, for a variety of platforms, 
+will be continually added to the main documentation.
+Willing users are encouraged to contribute platform-specific documentation at will.
 
-`slacx` will soon be packaged as a Python wheel.
-TODO: put instructions here on how to install the wheel.
 
-The installation instructions for a variety of platforms from source,
-included in the user manual, will be continually updated.
+Contribution
+------------
+Contribution to `paws` is encouraged and appreciated.
+Whether you are a researcher looking to contribute a processing routine to the `paws` library,
+or a software developer looking to contribute to the platform itself,
+the `paws` development team would love to hear from you.
 
-## API Reference
+See the manual in the `doc` directory for basic instructions on contributing,
+and/or get in touch with the `paws` development team
+at `paws-developers@slac.stanford.edu`.
 
-The API is not yet implemented. It will be described here.
-
-## Tests
-
-TODO: Write a test suite for `slacx`.
-Put instructions here on how to run and interpret the test suite.
-
-## Contributors
-
-Contribution to `slacx` is encouraged!
-Please fork the repository and submit a pull request.
-See the manual in the `doc` directory for detailed instructions. 
-Get in touch with the `slacx` development team
-at `slacx-developers@slac.stanford.edu`.
-
-## License
-
-Currently this code is free and open-source. 
-It will be distributed with some kind of license in the near future.
+License
+-------
+The BSD-like license attached to this software 
+can be found in the LICENSE file in the source code root directory.
 
