@@ -1,5 +1,13 @@
 """
 Operations for remeshing and and reducing an image
+
+author: Fang Ren, Apurva Mehta, Ron Pandolfi
+For details, please refer to the recent paper submitted to ACS Combinatorial Science
+F. Ren implemented the remeshing on scripting level, contributed by R. Pandolfi from LBL. F. Ren originally contributed
+it to slacx
+
+Please add yours too, Amanda, Lenson.
+
 contributors: fangren, apf, lensonp
 """
 

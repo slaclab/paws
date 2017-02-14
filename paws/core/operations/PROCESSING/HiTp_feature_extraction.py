@@ -1,9 +1,13 @@
-# -*- coding: utf-8 -*-
 """
 Created on Mon Jun 06 18:02:32 2016
 
-@author: fangren
+author: Fang Ren, Apurva Mehta
+For details, refer to the recent paper submitted to ACS Combinatorial Science
+Fang Ren implemented all the methods on scripting level, and originally contributed to slacx
+
+Contributor: fangren (please add if there is more)
 """
+
 
 import numpy as np
 
