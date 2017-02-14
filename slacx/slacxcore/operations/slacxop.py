@@ -96,11 +96,11 @@ class Operation(object):
     def input_description(self):
         a = ""
         inp_indx = 0
-        for name,val in self.inputs.items(): 
+        for name in self.inputs.keys(): 
             if self.input_locator[name]:
-                display_val = self.input_locator[name].val
+                display_val = self.input_locator[name]
             else:
-                display_val = val 
+                display_val = self.inputs[name] 
             a = a + str("\n\nInput {}:\n".format(inp_indx) 
             + optools.parameter_doc(name,display_val,self.input_doc[name]))
             inp_indx += 1

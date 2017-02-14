@@ -98,13 +98,6 @@ def plugin_dict(pgin):
     dct[inputs_tag] = pgin.inputs 
     return dct
 
-#def outputs_dict(self,op):
-#    #dct = {}
-#    dct = OrderedDict() 
-#    for name in op.outputs.keys():
-#        dct[name] = str(op.outputs[name])
-#    return dct
-
 class InputLocator(object):
     """
     Objects of this class are used as containers for inputs to an Operation,
@@ -112,24 +105,20 @@ class InputLocator(object):
     After the data is loaded, it should be stored in InputLocator.data.
     """
     def __init__(self,src=no_input,tp=none_type,val=None):
-        #if src not in valid_sources: 
-        #    msg = 'found input source {}, should be one of {}'.format(src, valid_sources)
         self.src = src
         self.tp = tp
         self.val = val 
         self.data = None 
 
 def parameter_doc(name,value,doc):
-    #if type(value).__name__ == 'InputLocator':
     if isinstance(value, InputLocator):
         src_str = input_sources[value.src]
         tp_str = input_types[value.tp]
-        d = value.data
-        return "- name: {} \n- source: {} \n- type: {} \n- value: {} \n- doc: {}".format(name,src_str,tp_str,d,doc) 
+        v_str = str(value.val)
+        return "- name: {} \n- source: {} \n- type: {} \n- value: {} \n- doc: {}".format(name,src_str,tp_str,v_str,doc) 
     else:
-        val_str = str(value)
         tp_str = type(value).__name__
-        return "- name: {} \n- type: {} \n- value: {} \n- doc: {}".format(name,tp_str,val_str,doc) 
+        return "- name: {} \n- type: {} \n- doc: {}".format(name,tp_str,doc) 
 
 def stack_size(stk):
     sz = 0
