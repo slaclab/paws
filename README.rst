@@ -1,4 +1,4 @@
-paws: the Platform for Automated Worfklows by SSRL 
+paws: the Platform for Automated Workflows by SSRL 
 ==================================================
 
 
@@ -39,7 +39,7 @@ See the `doc` directory of this repository.
 
 Installation
 ------------
-TODO: put instructions here on how to install paws from PPI.
+TODO: put instructions here on how to install paws from PyPI.
 
 The installation instructions from source, for a variety of platforms, 
 will be continually added to the main documentation.
