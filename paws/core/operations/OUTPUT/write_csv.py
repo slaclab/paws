@@ -21,7 +21,7 @@ class WriteArrayCSV(Operation):
         self.input_src['headers'] = optools.text_input
         self.input_src['filepath'] = optools.fs_input
         self.input_src['filename'] = optools.text_input
-        self.input_type['array'] = optools.auto_type
+        self.input_type['array'] = optools.ref_type
         self.input_type['headers'] = optools.str_type
         self.input_type['filepath'] = optools.str_type
         self.input_type['filename'] = optools.str_type

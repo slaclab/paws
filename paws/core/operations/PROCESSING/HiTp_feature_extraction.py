@@ -48,9 +48,9 @@ class TextureFeatures(Operation):
         self.input_src['q'] = optools.wf_input
         self.input_src['chi'] = optools.wf_input
         self.input_src['I'] = optools.wf_input 
-        self.input_type['q'] = optools.auto_type
-        self.input_type['chi'] = optools.auto_type
-        self.input_type['I'] = optools.auto_type 
+        self.input_type['q'] = optools.ref_type
+        self.input_type['chi'] = optools.ref_type
+        self.input_type['I'] = optools.ref_type 
         self.output_doc['q_texture'] = 'q values at which the texture is analyzed'
         self.output_doc['texture'] = 'quantification of texture for each q'
         self.output_doc['int_sqr_texture'] = 'integral over q of the texture squared'
@@ -153,8 +153,8 @@ class FindPeaksByWindow(Operation):
         self.input_src['y'] = optools.wf_input
         self.input_src['windowsize'] = optools.text_input
         self.input_src['threshold'] = optools.text_input
-        self.input_type['x'] = optools.auto_type
-        self.input_type['y'] = optools.auto_type
+        self.input_type['x'] = optools.ref_type
+        self.input_type['y'] = optools.ref_type
         self.input_type['windowsize'] = optools.int_type
         self.input_type['threshold'] = optools.float_type
         self.inputs['windowsize'] = 10

@@ -29,8 +29,8 @@ class VoigtPeakFit(Operation):
         self.input_src['y'] = optools.wf_input
         self.input_src['xguess'] = optools.wf_input
         self.input_src['hwhm'] = optools.wf_input
-        self.input_type['x'] = optools.auto_type
-        self.input_type['y'] = optools.auto_type
+        self.input_type['x'] = optools.ref_type
+        self.input_type['y'] = optools.ref_type
         self.input_type['xguess'] = optools.int_type
         self.input_type['hwhm'] = optools.float_type
         self.output_doc['y_voigt'] = 'the optimized voigt profile'

@@ -28,12 +28,12 @@ class PifTernary(Operation):
         self.input_src['date_time'] = optools.wf_input
         self.input_src['t_utc'] = optools.wf_input
         self.input_type['name'] = optools.str_type
-        self.input_type['q_I'] = optools.auto_type
-        self.input_type['q_texture'] = optools.auto_type
-        self.input_type['I_features'] = optools.auto_type
-        self.input_type['pk_idx'] = optools.auto_type
-        self.input_type['date_time'] = optools.auto_type
-        self.input_type['t_utc'] = optools.auto_type
+        self.input_type['q_I'] = optools.ref_type
+        self.input_type['q_texture'] = optools.ref_type
+        self.input_type['I_features'] = optools.ref_type
+        self.input_type['pk_idx'] = optools.ref_type
+        self.input_type['date_time'] = optools.ref_type
+        self.input_type['t_utc'] = optools.ref_type
         self.output_doc['pif'] = 'pif object containing the relevant data for this experiment'
 
     def run(self):

@@ -34,7 +34,7 @@ class <OperationName>(Operation):
         #   optools.int_type (integer), optools.float_type (float), 
         #   optools.bool_type (boolean), optools.ref_type (direct reference),
         #   optools.path_type (a path to something in the filesystem or workflow), 
-        #   optools.auto_type (input provided by batch execution controller)
+        #   optools.auto_type (default for chosen source, or input set by batch)
         self.input_type['<input_name_1>'] = <optools.some_type>
         self.input_type['<input_name_2>'] = <etc>
         
