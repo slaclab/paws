@@ -768,6 +768,8 @@ def chi_squared(y1, y2, sigma=None):
     bads = (np.isnan(y1)) | (np.isnan(y2))
     if sigma is not None:
         bads = bads | (sigma == 0)
+    else:
+        sigma = np.ones(y1.shape)
     n = (~bads).sum()
     chi_2 = np.sum((y1[~bads] - y2[~bads])**2 * sigma[~bads]**-2) / (n - 1)
     return chi_2
