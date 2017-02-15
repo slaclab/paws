@@ -89,7 +89,7 @@ def op_inputs_dict(op):
     dct = OrderedDict() 
     for name in op.inputs.keys():
         il = op.input_locator[name]
-        dct[name] = {'src':il.src,'type':il.tp,'val':il.val}
+        dct[name] = {'src':il.src,'tp':il.tp,'val':il.val}
     return dct
 
 def plugin_dict(pgin):

@@ -61,18 +61,32 @@ class WfManager(TreeSelectionModel):
         for uri, op_spec in opdict.items():
             opname = op_spec['type']
             op = opman.get_op_byname(opname)
-            if not issubclass(op,Operation):
-                self.write_log('Did not find Operation {} - skipping.'.format(opname))
+            if op is not None:
+                if not issubclass(op,Operation):
+                    self.write_log('Did not find Operation {} - skipping.'.format(opname))
+                else:
+                    op = op()
+                    op.load_defaults()
+                    ilspec = op_spec[self.inputs_tag]
+                    for name in op.inputs.keys():
+                        if name in ilspec.keys():
+                            src = ilspec[name]['src']
+                            # TODO: deprecate 'type' tag in favor of 'tp'
+                            if 'tp' in ilspec[name].keys():
+                                tp = ilspec[name]['tp']
+                            else:
+                                tp = ilspec[name]['type']
+                            val = ilspec[name]['val']
+                            if tp in optools.invalid_types[src]:
+                                il = optools.InputLocator(src,optools.none_type,None)
+                            else:
+                                il = optools.InputLocator(src,tp,val)
+                            op.input_locator[name] = il
+                        else:
+                            self.write_log('Did not find input {} for {} - skipping.'.format(name,opname))
+                    self.add_op(uri,op)
             else:
-                op = op()
-                ilspec = op_spec[self.inputs_tag]
-                for name, srctypeval in ilspec.items():
-                    src = srctypeval['src']
-                    tp = srctypeval['type']
-                    val = srctypeval['val'] 
-                    il = optools.InputLocator(src,tp,val)
-                    op.input_locator[name] = il
-                self.add_op(uri,op)
+                self.write_log('Did not find Operation {} - skipping.'.format(opname))
         
     def load_inputs(self,op):
         """
@@ -571,23 +585,20 @@ class WfManager(TreeSelectionModel):
         op.input_locator[p[2]].data = val
 
     # Overloaded data() for WfManager
-    def data(self,itm_idx,data_role):
-        if (not itm_idx.isValid()):
-            return None
-        else:
-            return super(WfManager,self).data(itm_idx,data_role)
-        #itm = itm_indx.internalPointer()
-        #if item_indx.column() == 1:
-        #    if item.data is not None:
-        #        if ( isinstance(item.data,Operation)
-        #            or isinstance(item.data,list)
-        #            or isinstance(item.data,dict) ):
-        #            return type(item.data).__name__ 
-        #        else:
-        #            return ' '
-        #    else:
-        #        return ' '
-        #else:
+    #def data(self,itm_idx,data_role):
+    #    return super(WfManager,self).data(itm_idx,data_role)
+    #    #itm = itm_indx.internalPointer()
+    #    #if item_indx.column() == 1:
+    #    #    if item.data is not None:
+    #    #        if ( isinstance(item.data,Operation)
+    #    #            or isinstance(item.data,list)
+    #    #            or isinstance(item.data,dict) ):
+    #    #            return type(item.data).__name__ 
+    #    #        else:
+    #    #            return ' '
+    #    #    else:
+    #    #        return ' '
+    #    #else:
 
     # Overloaded headerData() for WfManager 
     def headerData(self,section,orientation,data_role):

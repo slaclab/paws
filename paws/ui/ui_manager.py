@@ -117,6 +117,8 @@ class UiManager(object):
         self.ui.message_board.insertPlainText('--- MESSAGE BOARD ---\n') 
         self.msg_board_log('paws is ready',timestamp=pawstools.dtstr) 
         self.ui.wf_tree.hideColumn(1)
+        self.ui.op_tree.hideColumn(1)
+        self.ui.plugin_tree.hideColumn(1)
         self.ui.hsplitter.setStretchFactor(1,2)    
         self.ui.vsplitter.setStretchFactor(0,1)    
 

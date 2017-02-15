@@ -3,17 +3,15 @@ import importlib
 from PySide import QtCore
 
 from ..operations import optools
-from ..treemodel import TreeModel
+from ..treemodel import TreeModel,TreeSelectionModel
 from ..treeitem import TreeItem
 from .. import plugins as pgns
 from ..plugins.plugin import PawsPlugin
 
-class PluginManager(TreeModel):
+class PluginManager(TreeSelectionModel):
     """
     Tree structure for managing paws plugins.
     """
-
-    # TODO: Make WfManager.update_io_deps() handle the workflow updates when PluginManager deletes a plugin
 
     def __init__(self,**kwargs):
         super(PluginManager,self).__init__()
@@ -29,13 +27,17 @@ class PluginManager(TreeModel):
         for uri, pgin_spec in pgin_dict.items():
             pgin_name = pgin_spec['type']
             pgin = self.get_plugin_byname(pgin_name)
-            if not issubclass(pgin,PawsPlugin):
-                self.write_log('Did not find Plugin {} - skipping.'.format(pgin_name))
+            if pgin is not None:
+                if not issubclass(pgin,PawsPlugin):
+                    self.write_log('Did not find Plugin {} - skipping.'.format(pgin_name))
+                else:
+                    pgin = pgin()
+                    pgin.inputs = pgin_spec[optools.inputs_tag]
+                    pgin.start()
+                    self.add_plugin(uri,pgin)
             else:
-                pgin = pgin()
-                pgin.inputs = pgin_spec[optools.inputs_tag]
-                pgin.start()
-                self.add_plugin(uri,pgin)
+                self.write_log('Did not find Plugin {} - skipping.'.format(pgin_name))
+                
 
     def get_plugin_byname(self,pgin_name):    
         try:
@@ -84,19 +86,22 @@ class PluginManager(TreeModel):
         self.tree_dataChanged(rm_idx)
 
     # Overloaded data() for PluginManager
-    def data(self,itm_idx,data_role):
-        if (not itm_idx.isValid()):
-            return None
-        itm = itm_idx.internalPointer()
-        if data_role == QtCore.Qt.DisplayRole:
-            return itm.tag()
-        else:
-            return None
+    #def data(self,itm_idx,data_role):
+    #    return super(PluginManager,self).data(itm_idx,data_role)
+    #    #if (not itm_idx.isValid()):
+    #    #    return None
+    #    #itm = itm_idx.internalPointer()
+    #    #if data_role == QtCore.Qt.DisplayRole:
+    #    #    return itm.tag()
+    #    #else:
+    #    #    return None
 
     # Overloaded headerData() for PluginManager 
     def headerData(self,section,orientation,data_role):
         if (data_role == QtCore.Qt.DisplayRole and section == 0):
             return "Plugins: {} active".format(len(self.root_items))
+        elif (data_role == QtCore.Qt.DisplayRole and section == 1):
+            return super(PluginManager,self).headerData(section,orientation,data_role)    
         else:
             return None
 

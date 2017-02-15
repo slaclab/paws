@@ -111,7 +111,7 @@ class WfUiManager(object):
         Call build_input_locator to package an InputLocator for named input. 
         Store it in self.op.input_locator[name].
         This is called on all inputs when an Operation is loaded,
-        so it MUST not alter an already-loaded input.
+        so it should not alter an identical already-loaded input.
         """
         il = self.build_input_locator(name,src_ui)
         self.op.input_locator[name] = il
@@ -147,8 +147,15 @@ class WfUiManager(object):
                 # dereference the ui now that it is closed...
                 self.input_loaders[name] = None
             else:
-                # else, the input has already been loaded, so do nothing.
-                il = self.op.input_locator[name]
+                # else, the input has already been loaded.
+                # if src, tp, and val match, do nothing.
+                val = self.val_widgets[name].text()
+                if (self.op.input_locator[name].src == src 
+                and self.op.input_locator[name].tp == tp 
+                and str(self.op.input_locator[name].val) == val):
+                    il = self.op.input_locator[name]
+                else:
+                    il = optools.InputLocator(src,tp,val)
         return il
 
     def fetch_from_input_ui(self,ui):
@@ -277,7 +284,7 @@ class WfUiManager(object):
                 elif src in [optools.wf_input,optools.plugin_input]:
                     new_type_widget.setCurrentIndex(optools.ref_type)
                 elif src == optools.batch_input:
-                    new_type_widget.setCurrentIndex(optools.ref_type)
+                    new_type_widget.setCurrentIndex(optools.auto_type)
         new_type_widget.currentIndexChanged.connect( partial(self.reset_val_widget,name,row,src) )            
         self.type_widgets[name] = new_type_widget  
         self.ui.input_layout.addWidget(new_type_widget,row,self.type_col,1,1)
