@@ -70,6 +70,7 @@ class PluginUiManager(object):
         self.ui.load_button.setText("&Finish")
         self.ui.load_button.setMinimumWidth(100)
         self.ui.load_button.clicked.connect(self.load_plugin)
+        self.ui.load_button.setEnabled(False)
         #self.ui.splitter.setStretchFactor(0,1000)    
         self.ui.setStyleSheet( "QLineEdit { border: none }" + self.ui.styleSheet() )
 
@@ -93,10 +94,17 @@ class PluginUiManager(object):
         
     def clear_input(self):
         self.ui.plugin_name.setText('')
+        self.ui.uri_entry.setText('')
+        self.ui.load_button.setEnabled(False)
         n_inp_widgets = self.ui.input_layout.count()
         for i in range(n_inp_widgets-1,-1,-1):
             item = self.ui.input_layout.takeAt(i)
             item.widget().close()
+        self.src_widgets = {}
+        self.type_widgets = {}
+        self.val_widgets = {}
+        self.btn_widgets = {}
+        self.input_loaders = {}
 
     def reset_input_headers(self):
         if len(self.pgin.inputs) > 0:
@@ -109,6 +117,7 @@ class PluginUiManager(object):
         self.clear_input()
         self.reset_input_headers()
         self.ui.plugin_name.setText(type(self.pgin).__name__)
+        self.ui.load_button.setEnabled(True)
         for i,name in zip(range(1,len(self.pgin.inputs)+1),self.pgin.inputs.keys()):
             # name 
             name_widget = uitools.name_widget(name)
@@ -207,7 +216,7 @@ class PluginUiManager(object):
             inp_loader = InputLoader(name,src,trmod,self.ui)
         elif src == optools.text_input:
             inp_loader = InputLoader(name,src,None,self.ui)
-        if self.pgin.input_src == src and self.pgin.inputs[name] is not None:
+        if self.pgin.input_src[name] == src and self.pgin.inputs[name] is not None:
             if isinstance(self.pgin.inputs[name],list):
                 inp_loader.set_list_toggle()
                 for v in self.pgin.inputs[name]:
@@ -255,7 +264,8 @@ class PluginUiManager(object):
         result = self.plugman.is_good_tag(uri)
         if result[0]:
             self.plugman.add_plugin(uri,self.pgin) 
-            self.ui.close()
+            self.clear_input()
+            #self.ui.close()
             #self.ui.deleteLater()
         else:
             # Request a different uri 
