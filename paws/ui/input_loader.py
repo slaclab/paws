@@ -33,25 +33,37 @@ class InputLoader(object):
             self.ui.source_treeview.hideColumn(3)
             self.ui.source_treeview.setColumnWidth(0,400)
         elif self.src in [optools.wf_input,optools.plugin_input]:
-            self.ui.source_treeview.setColumnWidth(0,400)
+            self.ui.source_treeview.setColumnWidth(0,300)
+            # Reset all selections
+            self.trmod.set_all_unselected()
+        if self.src == optools.text_input:
+            self.ui.add_button.setText("&Add entries")
+        elif self.src in [optools.wf_input,optools.plugin_input]:
+            self.ui.add_button.setText("&Add selections")
+        elif self.src == optools.fs_input:
+            self.ui.add_button.setText("&Add selection")
         self.values_model = ListModel()
         self.ui.values_list.setModel(self.values_model)
-        self.ui.add_button.setText("&Add selection")
         self.ui.finish_button.setText("&Finish")
-        self.ui.remove_button.setText("&Remove selection")
+        self.ui.remove_button.setText("&Remove selections")
         self.ui.list_toggle.setText("Package as &list")
-        self.ui.add_button.clicked.connect(self.add_selection)
+        self.ui.add_button.clicked.connect(self.add_items)
         self.ui.remove_button.clicked.connect(self.rm_selection)
 
-    def add_selection(self):
+    def add_items(self):
         if self.src == optools.text_input:
             lines = self.ui.source_textedit.toPlainText().split()
             for l in lines:
                 self.add_value(str(l).strip())
         elif self.src in [optools.wf_input,optools.plugin_input]:
-            idx = self.ui.source_treeview.currentIndex()
-            val = str(self.trmod.build_uri(idx)).strip()
-            self.add_value(val)
+            #idx = self.ui.source_treeview.currentIndex()
+            # Get all items currently selected
+            idxs = self.trmod.get_all_selected()
+            for idx in idxs:
+                val = str(self.trmod.build_uri(idx)).strip()
+                self.add_value(val)
+            # Reset all selections
+            self.trmod.set_all_unselected()
         elif self.src == optools.fs_input:
             idx = self.ui.source_treeview.currentIndex()
             val = str(self.ui.source_treeview.model().filePath(idx)).strip()

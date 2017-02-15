@@ -4,14 +4,13 @@ from functools import partial
 
 from PySide import QtCore
 
-from ..treemodel import TreeModel
+from ..treemodel import TreeModel, TreeSelectionModel
 from ..treeitem import TreeItem
 from ..operations import optools
 from ..operations.operation import Operation, Batch, Realtime
-from .. import pawstools
 from .wf_worker import WfWorker
 
-class WfManager(TreeModel):
+class WfManager(TreeSelectionModel):
     """
     Tree structure for managing a Workflow built from paws Operations.
     """
@@ -572,29 +571,31 @@ class WfManager(TreeModel):
         op.input_locator[p[2]].data = val
 
     # Overloaded data() for WfManager
-    def data(self,item_indx,data_role):
-        if (not item_indx.isValid()):
+    def data(self,itm_idx,data_role):
+        if (not itm_idx.isValid()):
             return None
-        item = item_indx.internalPointer()
-        if item_indx.column() == 1:
-            if item.data is not None:
-                if ( isinstance(item.data,Operation)
-                    or isinstance(item.data,list)
-                    or isinstance(item.data,dict) ):
-                    return type(item.data).__name__ 
-                else:
-                    return ' '
-            else:
-                return ' '
         else:
-            return super(WfManager,self).data(item_indx,data_role)
+            return super(WfManager,self).data(itm_idx,data_role)
+        #itm = itm_indx.internalPointer()
+        #if item_indx.column() == 1:
+        #    if item.data is not None:
+        #        if ( isinstance(item.data,Operation)
+        #            or isinstance(item.data,list)
+        #            or isinstance(item.data,dict) ):
+        #            return type(item.data).__name__ 
+        #        else:
+        #            return ' '
+        #    else:
+        #        return ' '
+        #else:
 
     # Overloaded headerData() for WfManager 
     def headerData(self,section,orientation,data_role):
         if (data_role == QtCore.Qt.DisplayRole and section == 0):
             return "Workflow: {} operation(s)".format(self.rowCount(QtCore.QModelIndex()))
         elif (data_role == QtCore.Qt.DisplayRole and section == 1):
-            return "type"
+            #return "type"
+            return super(WfManager,self).headerData(section,orientation,data_role)    
         else:
             return None
 

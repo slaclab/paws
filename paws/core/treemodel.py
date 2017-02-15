@@ -164,7 +164,7 @@ class TreeModel(QtCore.QAbstractItemModel):
             return itm.parent
         
     # Subclass of QAbstractItemModel must implement rowCount()
-    def rowCount(self,parent):
+    def rowCount(self,parent=QtCore.QModelIndex()):
         """
         Either give the number of top-level items,
         or count the children of parent
@@ -179,7 +179,7 @@ class TreeModel(QtCore.QAbstractItemModel):
             return parent_item.n_children()
     
     # Subclass of QAbstractItemModel must implement columnCount()
-    def columnCount(self,parent):
+    def columnCount(self,parent=QtCore.QModelIndex()):
         """
         Let TreeModels by default have one column,
         to display the local TreeItem's tag.
@@ -188,14 +188,15 @@ class TreeModel(QtCore.QAbstractItemModel):
 
     # QAbstractItemModel subclass must implement 
     # data(QModelIndex[,role=Qt.DisplayRole])
-    def data(self,item_indx,data_role):
-        if (not item_indx.isValid()):
+    def data(self,itm_idx,data_role):
+        if (not itm_idx.isValid()):
             return None
-        item = item_indx.internalPointer()
-        if (data_role == QtCore.Qt.DisplayRole
+        item = itm_idx.internalPointer()
+        if ((data_role == QtCore.Qt.DisplayRole
         or data_role == QtCore.Qt.ToolTipRole 
         or data_role == QtCore.Qt.StatusTipRole
-        or data_role == QtCore.Qt.WhatsThisRole):
+        or data_role == QtCore.Qt.WhatsThisRole)
+        and itm_idx.column() == 0):
             return item.tag()
         else:
             return None
@@ -340,7 +341,6 @@ class TreeSelectionModel(TreeModel):
     def __init__(self):
         super(TreeSelectionModel,self).__init__()
 
-    # Subclass of QAbstractItemModel must implement columnCount()
     def columnCount(self,parent):
         """
         Let TreeSelectionModel have two columns:
@@ -357,22 +357,23 @@ class TreeSelectionModel(TreeModel):
 
     # QAbstractItemModel subclass must implement 
     # data(QModelIndex[,role=Qt.DisplayRole])
-    def data(self,item_idx,data_role):
-        if (not item_idx.isValid()):
+    def data(self,itm_idx,data_role):
+        if (not itm_idx.isValid()):
             return None
-        itm = item_idx.internalPointer()
-        if (data_role == QtCore.Qt.DisplayRole
+        itm = itm_idx.internalPointer()
+        if ((data_role == QtCore.Qt.DisplayRole
         or data_role == QtCore.Qt.ToolTipRole 
         or data_role == QtCore.Qt.StatusTipRole
-        or data_role == QtCore.Qt.WhatsThisRole):
+        or data_role == QtCore.Qt.WhatsThisRole)
+        and itm_idx.column() == 0):
             return itm.tag()
-        elif data_role == Qt.CheckStateRole and item_idx.column() == 1:
+        elif data_role == QtCore.Qt.CheckStateRole and itm_idx.column() == 1:
             if itm.is_checked():
-                return Qt.Checked
+                return QtCore.Qt.Checked
             elif itm.children_checked():
-                return Qt.PartiallyChecked
+                return QtCore.Qt.PartiallyChecked
             else:
-                return Qt.Unchecked
+                return QtCore.Qt.Unchecked
         else:
             return None
 
@@ -381,16 +382,16 @@ class TreeSelectionModel(TreeModel):
         if not idx.isValid():
             return None
         elif idx.column() == 1:
-            return super(TreeSelectionModel,self).flags(idx) | Qt.ItemIsUserCheckable
+            return super(TreeSelectionModel,self).flags(idx) | QtCore.Qt.ItemIsUserCheckable
         else:
-            return super(TreeModel, self).flags(index)
+            return super(TreeModel, self).flags(idx)
 
     # Ui-editable QAbstractItemModel subclasses must implement setData(index,value[,role])
     def setData(self,idx,value,data_role):
         if idx.column() == 1:
             #if role == Qt.EditRole:
             #    return False
-            if data_role == Qt.CheckStateRole:
+            if data_role == QtCore.Qt.CheckStateRole:
                 itm = self.get_item(idx)
                 itm.set_checked(value)
                 self.dataChanged.emit(idx, idx)
@@ -399,3 +400,33 @@ class TreeSelectionModel(TreeModel):
                 return super(TreeModel, self).setData(index, value, data_role)
         else:
             return super(TreeModel, self).setData(index, value, data_role)
+
+    def set_all_unselected(self,idx=QtCore.QModelIndex()):
+        if idx.isValid():
+            itm = self.get_item(idx)
+            itm.set_checked(False)
+            for c_row in range(itm.n_children()):
+                c_idx = self.index(c_row,0,idx)
+                self.set_all_unselected(c_idx)
+        else:
+            for r_row in range(self.rowCount()):
+                r_idx = self.index(r_row,0,idx)
+                self.set_all_unselected(r_idx)
+            
+    def get_all_selected(self,idx=QtCore.QModelIndex()):
+        sel_idxs = []
+        if idx.isValid():
+            itm = self.get_item(idx)
+            if itm.is_checked():
+                sel_idxs.append(idx)
+            for c_row in range(itm.n_children()):
+                c_idx = self.index(c_row,0,idx)
+                sel_idxs = sel_idxs + self.get_all_selected(c_idx)
+        else:
+            for r_row in range(self.rowCount()):
+                r_idx = self.index(r_row,0,idx)
+                sel_idxs = sel_idxs + self.get_all_selected(r_idx)
+        return sel_idxs
+
+
+

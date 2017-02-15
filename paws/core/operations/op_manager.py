@@ -1,10 +1,10 @@
 from PySide import QtCore
 
 from .. import operations as ops
-from ..treemodel import TreeModel
+from ..treemodel import TreeModel, TreeSelectionModel
 from ..treeitem import TreeItem
 
-class OpManager(TreeModel):
+class OpManager(TreeSelectionModel):
     """
     Tree structure for categorized storage and retrieval of Operations.
     """

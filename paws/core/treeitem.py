@@ -1,11 +1,12 @@
 class TreeItem(object):
     """
-    This is a container for objects in a QAbstractItemModel
-    to facilitate data manipulation in a tree.
-    It keeps references to a parent QModelIndex,
+    Container for packing objects into a TreeModel.
+
+    This is a container to facilitate data storage in a TreeModel. 
+    A TreeItem keeps references to a parent QModelIndex,
     and to its row and column within the QAbstractItemModel structure.
-    A TreeItem contains one free-form data object.
-    Every TreeItem must have a tag() for display in the tree view.
+    The objective content of the TreeItem is stored at TreeItem.data. 
+    Every TreeItem must have a tag() for display and uri creation.
     """
 
     def __init__(self,row,column,parent):
@@ -54,7 +55,7 @@ class TreeItem(object):
         if self.n_children > 0:
             return any([c_itm.children_checked() for c_itm in self.children])
         else:
-            return self.is_checked
+            return self._checked
 
     def set_checked(self,val):
         self._checked = bool(val)

@@ -1,15 +1,9 @@
-import time
-import os
 from functools import partial
 
 from PySide import QtCore, QtGui, QtUiTools
-import qdarkstyle
-import numpy as np
 
-from ..core.listmodel import ListModel
 from ..core.operations import optools
 from ..core.operations.operation import Operation 
-from ..core.workflow.wf_manager import WfManager
 from ..core import pawstools
 from ..core.operations.optools import InputLocator
 from .input_loader import InputLoader
