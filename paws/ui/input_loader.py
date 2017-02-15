@@ -56,10 +56,15 @@ class InputLoader(object):
             for l in lines:
                 self.add_value(str(l).strip())
         elif self.src in [optools.wf_input,optools.plugin_input]:
-            #idx = self.ui.source_treeview.currentIndex()
             # Get all items currently selected
             idxs = self.trmod.get_all_selected()
-            for idx in idxs:
+            if all([_idx.isValid() for _idx in idxs]):
+                for idx in idxs:
+                    val = str(self.trmod.build_uri(idx)).strip()
+                    self.add_value(val)
+            else:
+                # if user did not use selection model, take current index
+                idx = self.ui.source_treeview.currentIndex()
                 val = str(self.trmod.build_uri(idx)).strip()
                 self.add_value(val)
             # Reset all selections
