@@ -119,7 +119,7 @@ class PluginUiManager(object):
             # source 
             src_widget = uitools.src_selection_widget()
             for s in self.invalid_sources:
-                src_widget.set_disabled(s)
+                src_widget.model().set_disabled(s)
             src = self.pgin.input_src[name]
             if src in self.invalid_sources:
                 src = optools.no_input
@@ -158,6 +158,7 @@ class PluginUiManager(object):
         type_widget.currentIndexChanged.connect( partial(self.reset_val_widget,name,row,src) )            
         self.type_widgets[name] = type_widget  
         self.ui.input_layout.addWidget(type_widget,row,self.type_col,1,1)
+        tp = self.type_widgets[name].currentIndex()
         self.reset_val_widget(name,row,src,tp)
 
     def reset_val_widget(self,name,row,src=None,tp=None):
