@@ -146,7 +146,6 @@ class WfManager(TreeSelectionModel):
                 return [str(v) for v in il.val]
             else:
                 return str(il.val)
-            return str(il.val)
         else: 
             msg = 'found input source {}, should be one of {}'.format(
             il.src, optools.valid_sources)

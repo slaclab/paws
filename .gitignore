@@ -5,6 +5,12 @@ local
 include
 share
 scratch
+build
+dist
+doc/build
+doc/source
+doc/Makefile
+paws.egg-info
 *.pyc
 *.swp
 *.swo

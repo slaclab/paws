@@ -18,7 +18,7 @@ from paws.ui.ui_manager import UiManager
 
 def main():
     """
-    paws entry point main method.
+    paws main method.
     """
 
     # TODO: parse sys.argv?

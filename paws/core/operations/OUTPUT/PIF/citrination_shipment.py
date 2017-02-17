@@ -129,6 +129,7 @@ class ShipToDataSet(Operation):
         ship_flag = self.inputs['ship_flag']
         try:
             json_file = json_path+'/'+p.uid+'.json'
+            # make p an array of pifs to get a big json that has all records
             pif.dump(p, open(json_file,'w'))
             if ship_flag:
                 r = cl.upload_file(json_file,data_set_id = dsid)
