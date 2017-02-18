@@ -7,11 +7,10 @@ share
 scratch
 build
 dist
-doc/build
-doc/texbuild
 doc/build_scripts
 doc/source
-doc/Makefile
+doc/html
+doc/tex
 paws.egg-info
 *.pyc
 *.swp
