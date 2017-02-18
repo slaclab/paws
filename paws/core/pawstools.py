@@ -4,7 +4,6 @@ from collections import Iterator
 from datetime import datetime as dt
 
 from PySide import QtCore
-from operations.operation import Operation
 
 # TODO: Make scratch directory and other cfg'ables into a cfg file
 
@@ -22,8 +21,8 @@ print '[{}]: source directory sourcedir = {}'.format(__name__,sourcedir)
 print '[{}]: root directory rootdir = {}'.format(__name__,rootdir)
 print '[{}]: scratch directory scratchdir = {}'.format(__name__,scratchdir)
 
-# Get the code version from the version.py file, store as __version__
-with open(os.path.join(sourcedir,'version.py')) as f: 
+# Get the code version from the paws_config.py file, store as __version__
+with open(os.path.join(sourcedir,'paws_config.py')) as f: 
     exec(f.read())
 version=__version__
 

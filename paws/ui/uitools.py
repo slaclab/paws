@@ -1,19 +1,5 @@
 """
 Configuration flags, widgets, and functions for paws gui control.
-
-Attributes
-----------
-have_qt47 : bool
-    Flag indicates PySide.QtCore.__version__ >= 4.7.
-    Some of the GUI functionality of paws can use this flag 
-    for backward compatibility with pre-4.7 Qt installations.
-
-have_windows : bool
-    Flag indicates whether host OS is Windows.
-
-Todo
-----
-Module is currently up to date.
 """
 
 import os
@@ -45,16 +31,6 @@ else:
 def text_widget(text):
     """
     Produce a Read-only Center-aligned QtGui.QLineEdit from input text.
-
-    Parameters
-    ----------
-    text : str
-        text to be displayed in returned QLineEdit widget
-
-    Returns
-    -------
-    PySide.QtGui.QLineEdit
-        QLineEdit widget displaying input text
     """
     widg = QtGui.QLineEdit(text)
     widg.setReadOnly(True)

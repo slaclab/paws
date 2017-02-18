@@ -44,8 +44,10 @@ def load_ops_from_path(path_,pkg,cat_root='MISC'):
             else:
                 load_mod = False 
         else:
-            mod = importlib.import_module('.'+modname,pkg)
             load_mod = True
+        # if load_mod, load it
+        if load_mod:
+            mod = importlib.import_module('.'+modname,pkg)
         # if it is a package, recurse
         if load_mod and ispkg:
             pkg_path = [path_[0]+'/'+modname]
@@ -58,7 +60,7 @@ def load_ops_from_path(path_,pkg,cat_root='MISC'):
             pkg_cats = [cat for cat in pkg_cats if not cat in cats]
             ops = ops + pkg_ops
             cats = cats + pkg_cats
-        else:
+        elif load_mod:
             new_ops, new_cats = load_ops_from_module(mod,cat_root)
             new_ops = [op for op in new_ops if not op in ops]
             new_cats = [cat for cat in new_cats if not cat in cats]
@@ -70,6 +72,7 @@ def load_ops_from_module(mod,cat_root):
     # iterate through the module's __dict__, find Operations 
     ops = []
     cats = []
+    #print '\n\nattempt load_ops_from_module on {}, root {}\n\n'.format(mod,cat_root)
     for nm, itm in mod.__dict__.items():
         try:
             # is it a class?

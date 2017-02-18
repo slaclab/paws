@@ -1,3 +1,7 @@
+"""
+Operations config and processing routines
+"""
+
 from collections import OrderedDict
 
 from PySide import QtCore

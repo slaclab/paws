@@ -1,3 +1,5 @@
+"""Widgets for displaying text"""
+
 from ...core.operations import optools 
 from ...core.operations.operation import Operation
 from ...core.pawstools import FileSystemIterator

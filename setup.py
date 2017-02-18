@@ -17,8 +17,8 @@ here = path.abspath(path.dirname(__file__))
 with open(path.join(here,'README.rst')) as f:
     long_description = f.read()
 
-# Get the code version from the version.py file, store as __version__
-with open(path.join(here,'version.py')) as f: 
+# Get the code version from the paws_config.py file, store as __version__
+with open(path.join(here,'paws_config.py')) as f: 
     exec(f.read())
 
 setup(

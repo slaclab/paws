@@ -1,3 +1,7 @@
+"""
+Operation for testing a TCP client
+"""
+
 import datetime
 import tzlocal
 

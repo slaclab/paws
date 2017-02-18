@@ -8,6 +8,8 @@ scratch
 build
 dist
 doc/build
+doc/texbuild
+doc/build_scripts
 doc/source
 doc/Makefile
 paws.egg-info
