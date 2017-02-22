@@ -1,5 +1,4 @@
 import os
-import time
 from functools import partial
 
 from PySide import QtGui, QtCore, QtUiTools
@@ -37,9 +36,15 @@ class UiManager(object):
         ui_file.close()
         # Set up the self.ui widget to delete itself when closed
         self.ui.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+        opman.logmethod = self.msg_board_log
+        wfman.logmethod = self.msg_board_log
+        plugman.logmethod = self.msg_board_log
         self.opman = opman 
         self.wfman = wfman 
         self.plugman = plugman
+        self.make_title()
+        self.connect_actions()
+        self.final_setup()
 
     def edit_wf(self,trmod,itm_idx=QtCore.QModelIndex()):
         """

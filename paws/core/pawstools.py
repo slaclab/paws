@@ -10,13 +10,13 @@ from PySide import QtCore
 qdir = QtCore.QDir(__file__)
 qdir.cdUp()
 qdir.cdUp()
-rootdir = qdir.path() 
+rootdir = qdir.absolutePath() 
 qdir.cdUp()
-sourcedir = qdir.path()
-if not os.path.exists(os.path.join(qdir.path(),'scratch')):
-    os.mkdir(os.path.join(qdir.path(),'scratch'))
+sourcedir = qdir.absolutePath()
+if not os.path.exists(os.path.join(qdir.absolutePath(),'scratch')):
+    os.mkdir(os.path.join(qdir.absolutePath(),'scratch'))
 qdir.cd('scratch')
-scratchdir = qdir.path()
+scratchdir = qdir.absolutePath()
 print '[{}]: source directory sourcedir = {}'.format(__name__,sourcedir)
 print '[{}]: root directory rootdir = {}'.format(__name__,rootdir)
 print '[{}]: scratch directory scratchdir = {}'.format(__name__,scratchdir)
