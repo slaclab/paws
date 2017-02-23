@@ -34,11 +34,11 @@ class ReduceByWXDDict(Operation):
         self.input_doc['pixel_size'] = 'pixel size in microns'
         self.input_doc['fpolz'] = 'polarization factor'
         self.input_src['image_data'] = optools.wf_input
-        self.input_src['wxd_dict'] = optools.wf_input
+        self.input_src['cal_params'] = optools.wf_input
         self.input_src['pixel_size'] = optools.text_input 
         self.input_src['fpolz'] = optools.text_input
         self.input_type['image_data'] = optools.ref_type
-        self.input_type['wxd_dict'] = optools.ref_type
+        self.input_type['cal_params'] = optools.ref_type
         self.input_type['pixel_size'] = optools.float_type
         self.input_type['fpolz'] = optools.float_type
         self.inputs['pixel_size'] = 79 
@@ -50,13 +50,13 @@ class ReduceByWXDDict(Operation):
         img = self.inputs['image_data']
         pxsz = self.inputs['pixel_size']
         fpolz = self.inputs['fpolz']
-        l = self.inputs['wxd_dict']['lambda']
-        d = self.inputs['wxd_dict']['d_pixel']*pxsz*0.001
-        rot = (2*np.pi-self.inputs['wxd_dict']['rotation_rad'])/(2*np.pi)*360
-        tilt = self.inputs['wxd_dict']['tilt_rad']/(2*np.pi)*360
+        l = self.inputs['cal_params']['lambda']
+        d = self.inputs['cal_params']['d_pixel']*pxsz*0.001
+        rot = (2*np.pi-self.inputs['cal_params']['rotation_rad'])/(2*np.pi)*360
+        tilt = self.inputs['cal_params']['tilt_rad']/(2*np.pi)*360
         # initialization parameters, change into Fit2D format
-        x0 = self.inputs['wxd_dict']['x0_pixel']
-        y0 = self.inputs['wxd_dict']['y0_pixel']
+        x0 = self.inputs['cal_params']['x0_pixel']
+        y0 = self.inputs['cal_params']['y0_pixel']
         s = int(img.shape[0])
         p = pyFAI.AzimuthalIntegrator(wavelength=l)
         p.setFit2D(d,x0,y0,tilt,rot,pxsz,pxsz)

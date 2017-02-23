@@ -145,13 +145,16 @@ def stack_contains(itm,stk):
 
 def print_stack(stk):
     stktxt = ''
-    for lst in stk:
+    opt_newline = '\n'
+    for i,lst in zip(range(len(stk)),stk):
+        if i == len(stk)-1:
+            opt_newline = ''
         if isinstance(lst[0].data,operation.Batch) or isinstance(lst[0].data,operation.Realtime):
             substk = lst[1]
-            stktxt += '[{}:\n{}]\n'.format(lst[0].tag(),print_stack(lst[1]))
+            stktxt += ('[\'{}\':\n{}\n]'+opt_newline).format(lst[0].tag(),print_stack(lst[1]))
             #[[itm.tag() for itm in sublst] for sublst in substk])
         else:
-            stktxt += '{}\n'.format([itm.tag() for itm in lst])
+            stktxt += ('{}'+opt_newline).format([itm.tag() for itm in lst])
     return stktxt
 
 #def loader_extensions():

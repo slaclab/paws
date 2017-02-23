@@ -38,16 +38,16 @@ class CalReduce(Operation):
         d = self.inputs['cal_params']['d_pixel']*pxsz*0.001
         rot = (2*np.pi-self.inputs['cal_params']['rotation_rad'])/(2*np.pi)*360
         tilt = self.inputs['cal_params']['tilt_rad']/(2*np.pi)*360
-        # initialization parameters, change into Fit2D format
         x0 = self.inputs['cal_params']['x0_pixel']
         y0 = self.inputs['cal_params']['y0_pixel']
-        s = int(img.shape[0])
+        import pdb; pdb.set_trace()
         p = pyFAI.AzimuthalIntegrator(wavelength=wl)
         p.setFit2D(d,x0,y0,tilt,rot,pxsz,pxsz)
         # define detector mask, to screen bad pixels
         # should eventually be read in from dezinger output or something
         # for now just screen negative pixels
         # 1 for masked pixels, and 0 for valid pixels
+        s = int(img.shape[0])
         detector_mask = np.ones((s,s))*(img <= 0)
         q, I_of_q = p.integrate1d(img, 1000, mask=detector_mask, polarization_factor=fpolz)
         q = q * 1E9

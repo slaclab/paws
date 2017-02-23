@@ -57,8 +57,9 @@ class InputLoader(object):
                 self.add_value(str(l).strip())
         elif self.src in [optools.wf_input,optools.plugin_input]:
             # Get all items currently selected
+            #import pdb; pdb.set_trace()
             idxs = self.trmod.get_all_selected()
-            if all([_idx.isValid() for _idx in idxs]):
+            if any(idxs) and all([idx.isValid() for idx in idxs]):
                 for idx in idxs:
                     val = str(self.trmod.build_uri(idx)).strip()
                     self.add_value(val)

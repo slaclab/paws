@@ -10,6 +10,7 @@ from ..operations import optools
 from ..operations.operation import Operation, Batch, Realtime
 from .wf_worker import WfWorker
 
+
 class WfManager(TreeSelectionModel):
     """
     Tree structure for managing a Workflow built from paws Operations.
@@ -395,15 +396,15 @@ class WfManager(TreeSelectionModel):
                 if not self._wf_threads[th_idx].isFinished():
                     done = False
                 if not done:
-                    if wait_iter == 10:
-                        interval *= 10
+                    #if wait_iter == 10:
+                    #    interval *= 10
                     #if wait_iter == 100:
                     #    interval *= 10
                     self.loopwait(interval)
                     self.appref.processEvents()
                     wait_iter += 1
                     total_wait += interval
-                    if interval > float(total_wait)*0.1 and interval < 100:
+                    if interval < float(total_wait)*0.1 and interval < 100:
                         interval = interval * 10
 
     def wait_for_threads(self):

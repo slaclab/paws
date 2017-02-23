@@ -1,6 +1,6 @@
-from ..operation import Realtime 
-from .. import optools
-from ...pawstools import FileSystemIterator 
+from ...operation import Realtime 
+from ... import optools
+from ....pawstools import FileSystemIterator 
 
 class RealtimeFromFiles(Realtime):
     """

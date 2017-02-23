@@ -1,8 +1,8 @@
 from collections import OrderedDict
 import glob
 
-from ..operation import Batch
-from .. import optools
+from ...operation import Batch
+from ... import optools
 
 class BatchFromFiles(Batch):
     """
