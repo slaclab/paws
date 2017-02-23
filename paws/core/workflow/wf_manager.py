@@ -397,8 +397,8 @@ class WfManager(TreeSelectionModel):
                 if not done:
                     if wait_iter == 10:
                         interval *= 10
-                    if wait_iter == 100:
-                        interval *= 10
+                    #if wait_iter == 100:
+                    #    interval *= 10
                     self.loopwait(interval)
                     self.appref.processEvents()
                     wait_iter += 1

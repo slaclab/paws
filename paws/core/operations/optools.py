@@ -17,7 +17,7 @@ wf_input = 3
 plugin_input = 4
 batch_input = 5 
 valid_sources = [no_input,text_input,fs_input,wf_input,plugin_input,batch_input]
-input_sources = ['None','Text Input','Filesystem','Workflow','Plugins','Batch'] 
+input_sources = ['none','text','filesystem','workflow','plugins','batch'] 
 
 none_type = 0
 str_type = 1

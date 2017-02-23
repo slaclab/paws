@@ -1,7 +1,7 @@
 import numpy as np
 
-from ..operation import Operation
-from .. import optools
+from ...operation import Operation
+from ... import optools
 
 class Rotation(Operation):
     """Rotate an array by 90, 180, or 270 degrees."""

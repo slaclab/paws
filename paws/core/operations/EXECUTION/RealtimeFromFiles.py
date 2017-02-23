@@ -1,7 +1,3 @@
-import re
-from collections import OrderedDict
-import glob
-
 from ..operation import Realtime 
 from .. import optools
 from ...pawstools import FileSystemIterator 
