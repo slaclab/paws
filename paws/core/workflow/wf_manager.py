@@ -28,7 +28,7 @@ class WfManager(TreeSelectionModel):
     #inputs_idx = 0
     #outputs_idx = 1
 
-    def __init__(self,qapp_reference,plugin_manager,**kwargs):
+    def __init__(self,plugin_manager,qapp_reference=None,**kwargs):
         super(WfManager,self).__init__()
         # reference to app for helping thread control
         self.appref = qapp_reference 
@@ -48,8 +48,8 @@ class WfManager(TreeSelectionModel):
             self.logmethod(msg)
         else:
             print(msg)
-        if self.appref:
-            self.appref.processEvents()
+        #if self.appref:
+        #    self.appref.processEvents()
 
     def load_from_dict(self,opman,opdict):
         """
@@ -401,7 +401,6 @@ class WfManager(TreeSelectionModel):
                     #if wait_iter == 100:
                     #    interval *= 10
                     self.loopwait(interval)
-                    self.appref.processEvents()
                     wait_iter += 1
                     total_wait += interval
                     if interval < float(total_wait)*0.1 and interval < 100:
@@ -432,7 +431,8 @@ class WfManager(TreeSelectionModel):
         t.start(interval)
         l.exec_()
         # processEvents() to continue the main event loop while waiting.
-        self.appref.processEvents()
+        if self.appref:
+            self.appref.processEvents()
 
     def run_wf(self):
         self._running = True
@@ -464,6 +464,7 @@ class WfManager(TreeSelectionModel):
                 layers_done += len(substk)
         # if not yet interrupted, signal done
         if self.is_running():
+            self.write_log('EXECUTION FINISHED')
             self.wfdone.emit()
 
     def run_wf_serial(self,stk,thd_idx=None):
@@ -502,7 +503,7 @@ class WfManager(TreeSelectionModel):
         self.load_inputs(rt)
         rt.run()
         self.update_op(rt_itm.tag(),rt)
-        self.appref.processEvents()
+        #self.appref.processEvents()
         nx = 0
         while self._running:
             # TODO: Ensure rt execution runs smoothly on an initially empty input_iter().
@@ -546,7 +547,7 @@ class WfManager(TreeSelectionModel):
         self.load_inputs(b)
         b.run()
         self.update_op(b_itm.tag(),b)
-        self.appref.processEvents()
+        #self.appref.processEvents()
         # After b.run(), it is expected that b.input_list() will refer to a list of dicts,
         # where each dict has the form [workflow tree uri:input value]. 
         for i in range(len(b.input_list())):

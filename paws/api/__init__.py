@@ -14,7 +14,7 @@ class PawsAPI(object):
         self._app = core_app(app_args)
         self._op_manager = OpManager()
         self._plugin_manager = PluginManager()
-        self._wf_manager = WfManager(self._app,self._plugin_manager)
+        self._wf_manager = WfManager(self._plugin_manager,self._app)
     
     def enable_ops(self,*args):
         for opname in args:
@@ -110,11 +110,11 @@ def core_app(app_args=[]):
     :return type: PySide.QtCore.QCoreApplication or None
     """
     try:
-        _app = QtCore.QCoreApplication(app_args)
+        app = QtCore.QCoreApplication(app_args)
     except RuntimeError:
         try:
-            _app = QtCore.QCoreApplication.instance()
+            app = QtCore.QCoreApplication.instance()
         except:
-            _app = None
-    return _app
+            app = None
+    return app
 
