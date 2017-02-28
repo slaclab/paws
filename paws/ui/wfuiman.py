@@ -11,12 +11,12 @@ from . import uitools
 
 class WfUiManager(object):
 
-    def __init__(self,wfman,opman,plugman):
+    def __init__(self,wf,opman,plugman):
         ui_file = QtCore.QFile(pawstools.rootdir+"/ui/qtui/wf_editor.ui")
         ui_file.open(QtCore.QFile.ReadOnly)
         self.ui = QtUiTools.QUiLoader().load(ui_file)
         ui_file.close()
-        self.wfman = wfman 
+        self.wf = wf 
         self.opman = opman 
         self.plugman = plugman 
         self.op = None
@@ -69,7 +69,7 @@ class WfUiManager(object):
     def create_op(self,op):
         """Instantiate op, call self.set_op()"""
         new_op = op()
-        new_op_tag = self.wfman.auto_tag(type(new_op).__name__)
+        new_op_tag = self.wf.auto_tag(type(new_op).__name__)
         new_op.load_defaults()
         self.set_op(new_op,new_op_tag)
 
@@ -81,29 +81,29 @@ class WfUiManager(object):
         if idx.isValid(): 
             while idx.internalPointer().parent.isValid():
                 idx = idx.internalPointer().parent
-            self.wfman.remove_op(idx)
+            self.wf.remove_op(idx)
         self.clear_io()
 
     def load_op(self):
         """
-        Package the finished Operation, ship to self.wfman
+        Package the finished Operation, put it in self.wf
         """ 
         # Make sure all inputs are loaded
         for name in self.op.inputs.keys():
             self.set_input(name)
         uri = self.ui.uri_entry.text()
-        result = self.wfman.is_good_tag(uri)
+        result = self.wf.is_good_tag(uri)
         if result[0]:
-            self.wfman.add_op(uri,self.op) 
+            self.wf.add_op(uri,self.op) 
             self.clear_io()
         elif result[1] == 'Tag not unique':
-            self.wfman.update_op(uri,self.op)
+            self.wf.update_op(uri,self.op)
             self.clear_io()
         else:
             # Request a different uri 
             msg_ui = uitools.message_ui(self.ui)
             msg_ui.setWindowTitle("Tag Error")
-            msg_ui.message_box.setPlainText(self.wfman.tag_error(uri,result[1]))
+            msg_ui.message_box.setPlainText(self.wf.tag_error(uri,result[1]))
             msg_ui.show()
 
     def set_input(self,name,src_ui=None):
@@ -176,7 +176,7 @@ class WfUiManager(object):
                 self.input_loaders[name] = None
         src = self.src_widgets[name].currentIndex()
         if src == optools.wf_input:
-            inp_loader = InputLoader(name,src,self.wfman,self.ui)
+            inp_loader = InputLoader(name,src,self.wf,self.ui)
         elif src == optools.fs_input:
             trmod = QtGui.QFileSystemModel()
             #trmod.setRootPath(QtCore.QDir.currentPath())
@@ -340,9 +340,9 @@ class WfUiManager(object):
         self.ui.op_frame.sizeHint = lambda: QtCore.QSize(400,ht)
         self.ui.op_frame.setSizePolicy(
         QtGui.QSizePolicy.Minimum,self.ui.op_frame.sizePolicy().verticalPolicy())
-        self.ui.wf_selector.setModel(self.wfman)
+        self.ui.wf_selector.setModel(self.wf)
         self.ui.wf_selector.hideColumn(1)
-        self.ui.wf_selector.clicked.connect( partial(self.get_op,self.wfman) )
+        self.ui.wf_selector.clicked.connect( partial(self.get_op,self.wf) )
         self.ui.rm_op_button.setText("&Remove selected operation")
         self.ui.rm_op_button.clicked.connect(self.rm_op)
         self.ui.op_selector.setModel(self.opman)

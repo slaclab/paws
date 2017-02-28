@@ -4,7 +4,7 @@ from functools import partial
 
 from PySide import QtCore
 
-from ..treemodel import TreeModel, TreeSelectionModel
+from ..treemodel import TreeSelectionModel
 from ..treeitem import TreeItem
 from ..operations import optools
 from ..operations.operation import Operation, Batch, Realtime
@@ -16,31 +16,17 @@ class Workflow(TreeSelectionModel):
     Tree structure for managing a workflow built from paws Operations.
     """
 
-    wfdone = QtCore.Signal()
+    exec_finished = QtCore.Signal()
 
     @QtCore.Slot(str,Operation)
     def updateOperation(self,tag,op):
         self.update_op(tag,op)
         
-    # tags and indices for rendering TreeModel portions from Operations
-    inputs_tag = optools.inputs_tag 
-    outputs_tag = optools.outputs_tag 
-    #inputs_idx = 0
-    #outputs_idx = 1
-
-    def __init__(self):
-        super(WfManager,self).__init__()
-        self._wf_dict = {}       
+    def __init__(self,wfman):
+        super(Workflow,self).__init__()
         self._running = False
-        self.logmethod = None
-
-    def write_log(self,msg):
-        if self.logmethod:
-            self.logmethod(msg)
-        else:
-            print(msg)
-        #if self.appref:
-        #    self.appref.processEvents()
+        self.wfman = wfman
+        self.logmethod = wfman.write_log
 
     def load_from_dict(self,opman,opdict):
         """
@@ -55,19 +41,19 @@ class Workflow(TreeSelectionModel):
             op = opman.get_op_byname(opname)
             if op is not None:
                 if not issubclass(op,Operation):
-                    self.write_log('Did not find Operation {} - skipping.'.format(opname))
+                    self.logmethod('Did not find Operation {} - skipping.'.format(opname))
                 else:
                     op = op()
                     op.load_defaults()
-                    ilspec = op_spec[self.inputs_tag]
+                    ilspec = op_spec[optools.inputs_tag]
                     for name in op.inputs.keys():
                         if name in ilspec.keys():
                             src = ilspec[name]['src']
-                            # TODO: deprecate 'type' tag in favor of 'tp'
+                            # DONE...: deprecate 'type' tag in favor of 'tp'
                             if 'tp' in ilspec[name].keys():
                                 tp = ilspec[name]['tp']
-                            else:
-                                tp = ilspec[name]['type']
+                            #else:
+                            #    tp = ilspec[name]['type']
                             val = ilspec[name]['val']
                             if tp in optools.invalid_types[src]:
                                 il = optools.InputLocator(src,optools.none_type,None)
@@ -75,10 +61,10 @@ class Workflow(TreeSelectionModel):
                                 il = optools.InputLocator(src,tp,val)
                             op.input_locator[name] = il
                         else:
-                            self.write_log('Did not find input {} for {} - skipping.'.format(name,opname))
+                            self.logmethod('Did not find input {} for {} - skipping.'.format(name,opname))
                     self.add_op(uri,op)
             else:
-                self.write_log('Did not find Operation {} - skipping.'.format(opname))
+                self.logmethod('Did not find Operation {} - skipping.'.format(opname))
         
     def load_inputs(self,op):
         """
@@ -174,8 +160,8 @@ class Workflow(TreeSelectionModel):
         self.update_io_deps()
 
     # TODO: fix uri_to_dict and update_uri_dict. 
-    # Currently e.g. saving op.outputs.pif fails to save the pif,
-    # while saving op.outputs does save the pif.
+    # Currently e.g. saving op.outputs.itm fails to save itm,
+    # while saving op.outputs does save itm.
     def uri_to_dict(self,uri,data):
         itm,idx = self.get_from_uri(uri)
         od = OrderedDict()
@@ -218,10 +204,10 @@ class Workflow(TreeSelectionModel):
                     inp_dict[nm] = x.inputs[nm]
                 else:
                     inp_dict[nm] = x.input_locator[nm]
-            d[self.inputs_tag] = inp_dict 
-            d[self.outputs_tag] = x.outputs
+            d[optools.inputs_tag] = inp_dict 
+            d[optools.outputs_tag] = x.outputs
         else:
-            d = super(WfManager,self).build_dict(x)
+            d = super(Workflow,self).build_dict(x)
         return d
 
     # TODO: Add checking of plugins (il.src == optools.plugin_input)
@@ -240,8 +226,8 @@ class Workflow(TreeSelectionModel):
                         #vals = optools.val_list(il)
                         #for v in vals:
                         #    if not self.is_good_uri(v):
-                        self.write_log('--- clearing InputLocator for {}.{}.{} ---'.format(
-                        itm.tag(),self.inputs_tag,name))
+                        self.logmethod('--- clearing InputLocator for {}.{}.{} ---'.format(
+                        itm.tag(),optools.inputs_tag,name))
                         op.input_locator[name] = optools.InputLocator(il.src,il.tp,None)
                         self.tree_dataChanged(op_idx)
 
@@ -266,9 +252,9 @@ class Workflow(TreeSelectionModel):
         which can be used as downstream inputs in the workflow.
         """
         # valid_wf_inputs gains the operation, its input and output dicts, and their respective entries
-        valid_wf_inputs = [itm.tag(),itm.tag()+'.'+self.inputs_tag,itm.tag()+'.'+self.outputs_tag]
-        valid_wf_inputs += [itm.tag()+'.'+self.outputs_tag+'.'+k for k in itm.data.outputs.keys()]
-        valid_wf_inputs += [itm.tag()+'.'+self.inputs_tag+'.'+k for k in itm.data.inputs.keys()]
+        valid_wf_inputs = [itm.tag(),itm.tag()+'.'+optools.inputs_tag,itm.tag()+'.'+optools.outputs_tag]
+        valid_wf_inputs += [itm.tag()+'.'+optools.outputs_tag+'.'+k for k in itm.data.outputs.keys()]
+        valid_wf_inputs += [itm.tag()+'.'+optools.inputs_tag+'.'+k for k in itm.data.inputs.keys()]
         return valid_wf_inputs
     
     def execution_stack(self):
@@ -320,9 +306,11 @@ class Workflow(TreeSelectionModel):
             inputs_rdy = []
             for name,il in op.input_locator.items():
                 # TODO: Come up with a more airtight set of conditions here.
+                # Should check for valid plugin inputs.
+                # Possibly also check fs inputs.
                 if il.src == optools.wf_input and il.tp == optools.ref_type and not il.val in valid_wf_inputs:
                     inp_rdy = False
-                elif il.src == optools.batch_input and not itm.tag()+'.'+self.inputs_tag+'.'+name in batch_routes:
+                elif il.src == optools.batch_input and not itm.tag()+'.'+optools.inputs_tag+'.'+name in batch_routes:
                     inp_rdy = False
                 else:
                     inp_rdy = True
@@ -366,16 +354,15 @@ class Workflow(TreeSelectionModel):
         return b_stk,b_rdy 
 
     def next_available_thread(self):
-        for idx,th in self._wf_threads.items():
+        for idx,th in self.wfman.wf_threads().items():
             if not th:
                 return idx
-        # if none found, wait for first thread in self._wf_threads 
-        # TODO: migrate threading to a ThreadPool 
+        # if none found, wait for first thread in self.wfman.wf_threads 
         self.wait_for_thread(0)
         return 0
 
     def wait_for_thread(self,th_idx):
-        """Wait for the thread at self._wf_threads[th_idx] to be finished"""
+        """Wait for the thread at self.wfman.wf_threads()[th_idx] to be finished"""
         # TODO: migrate threading to a ThreadPool 
         done = False
         interval = 1
@@ -383,8 +370,8 @@ class Workflow(TreeSelectionModel):
         total_wait = 0
         while not done:
             done = True
-            if self._wf_threads[th_idx]:
-                if not self._wf_threads[th_idx].isFinished():
+            if self.wfman.wf_threads()[th_idx]:
+                if not self.wfman.wf_threads()[th_idx].isFinished():
                     done = False
                 if not done:
                     #if wait_iter == 10:
@@ -403,12 +390,12 @@ class Workflow(TreeSelectionModel):
         done = False
         interval = 10
         wait_iter = 0
-        for idx,th in self._wf_threads.items():
+        for idx,th in self.wfman.wf_threads().items():
             self.wait_for_thread(idx)
 
     def finish_thread(self,th_idx):
         # TODO: migrate threading to a ThreadPool 
-        self._wf_threads[th_idx] = None
+        self.wfman.wf_threads()[th_idx] = None
 
     def loopwait(self,interval):
         """
@@ -422,8 +409,8 @@ class Workflow(TreeSelectionModel):
         t.start(interval)
         l.exec_()
         # processEvents() to continue the main event loop while waiting.
-        if self.appref:
-            self.appref.processEvents()
+        if self.wfman.appref:
+            self.wfman.appref.processEvents()
 
     def run_wf(self):
         self._running = True
@@ -431,7 +418,7 @@ class Workflow(TreeSelectionModel):
         msg = 'STARTING EXECUTION\n----\nexecution stack: \n'
         msg += optools.print_stack(stk)
         msg += '\n----'
-        self.write_log(msg)
+        self.logmethod(msg)
         batch_flags = [isinstance(itm_lst[0].data,Batch) for itm_lst in stk]
         rt_flags = [isinstance(itm_lst[0].data,Realtime) for itm_lst in stk]
         layers_done = 0
@@ -455,8 +442,8 @@ class Workflow(TreeSelectionModel):
                 layers_done += len(substk)
         # if not yet interrupted, signal done
         if self.is_running():
-            self.write_log('EXECUTION FINISHED')
-            self.wfdone.emit()
+            self.logmethod('EXECUTION FINISHED')
+            self.exec_finished.emit()
 
     def run_wf_serial(self,stk,thd_idx=None):
         """
@@ -464,7 +451,6 @@ class Workflow(TreeSelectionModel):
         """
         if not thd_idx:
             thd_idx = self.next_available_thread()
-        #self.write_log('SERIAL EXECUTION STARTING in thread {}'.format(thd_idx))
         for lst in stk:
             self.wait_for_thread(thd_idx)
             for itm in lst: 
@@ -478,23 +464,20 @@ class Workflow(TreeSelectionModel):
             wf_thread.started.connect(wf_wkr.work)
             wf_thread.finished.connect( partial(self.finish_thread,thd_idx) )
             msg = 'running {} in thread {}'.format([itm.tag() for itm in lst],thd_idx)
-            self.write_log(msg)
-            self._wf_threads[thd_idx] = wf_thread
+            self.logmethod(msg)
+            self.wfman.wf_threads()[thd_idx] = wf_thread
             wf_thread.start()
         self.wait_for_thread(thd_idx)
-        #self.write_log('SERIAL EXECUTION FINISHED in thread {}'.format(thd_idx))
 
     def run_wf_realtime(self,rt_itm,stk):
         """
         Executes the workflow under the control of one Realtime controller Operation,
         where the realtime controller Operation is found at rt_itm.data.
         """
-        #self.write_log( 'Preparing Realtime controller... ' )
         rt = rt_itm.data
         self.load_inputs(rt)
         rt.run()
         self.update_op(rt_itm.tag(),rt)
-        #self.appref.processEvents()
         nx = 0
         while self._running:
             # TODO: Ensure rt execution runs smoothly on an initially empty input_iter().
@@ -511,7 +494,7 @@ class Workflow(TreeSelectionModel):
                 for uri,val in inp_dict.items():
                     self.set_op_input_at_uri(uri,val)
                 thd = self.next_available_thread()
-                self.write_log( 'REALTIME EXECUTION {} in thread {}'.format(nx,thd))
+                self.logmethod( 'REALTIME EXECUTION {} in thread {}'.format(nx,thd))
                 self.run_wf_serial(stk,thd)
                 opdict = OrderedDict()
                 for uri in rt.saved_items():
@@ -523,22 +506,20 @@ class Workflow(TreeSelectionModel):
                 self.update_op(rt_itm.tag(),rt)
             else:
                 if not waiting_flag:
-                    self.write_log( 'Waiting for new inputs...' )
+                    self.logmethod( 'Waiting for new inputs...' )
                 waiting_flag = True
                 self.loopwait(rt.delay())
-        self.write_log( 'REALTIME EXECUTION TERMINATED' )
+        self.logmethod( 'REALTIME EXECUTION TERMINATED' )
         return
 
     def run_wf_batch(self,b_itm,stk):
         """
         Executes the items in the stack stk under the control of one Batch controller Operation
         """
-        #self.write_log( 'Preparing Batch controller... ' )
         b = b_itm.data
         self.load_inputs(b)
         b.run()
         self.update_op(b_itm.tag(),b)
-        #self.appref.processEvents()
         # After b.run(), it is expected that b.input_list() will refer to a list of dicts,
         # where each dict has the form [workflow tree uri:input value]. 
         for i in range(len(b.input_list())):
@@ -548,7 +529,7 @@ class Workflow(TreeSelectionModel):
                     self.set_op_input_at_uri(uri,val)
                 # inputs are set, run in serial 
                 thd = self.next_available_thread()
-                self.write_log( 'BATCH EXECUTION {} / {} in thread {}'.format(i+1,len(b.input_list()),thd) )
+                self.logmethod( 'BATCH EXECUTION {} / {} in thread {}'.format(i+1,len(b.input_list()),thd) )
                 self.run_wf_serial(stk,thd)
                 opdict = OrderedDict()
                 for uri in b.saved_items():
@@ -558,9 +539,9 @@ class Workflow(TreeSelectionModel):
                 b.output_list()[i] = opdict
                 self.update_op(b_itm.tag(),b)
             else:
-                self.write_log( 'BATCH EXECUTION TERMINATED' )
+                self.logmethod( 'BATCH EXECUTION TERMINATED' )
                 return
-        self.write_log( 'BATCH EXECUTION FINISHED' )
+        self.logmethod( 'BATCH EXECUTION FINISHED' )
 
     def set_op_input_at_uri(self,uri,val):
         """
@@ -576,35 +557,21 @@ class Workflow(TreeSelectionModel):
         op.inputs[p[2]] = val
         op.input_locator[p[2]].data = val
 
-    # Overloaded data() for WfManager
     #def data(self,itm_idx,data_role):
-    #    return super(WfManager,self).data(itm_idx,data_role)
-    #    #itm = itm_indx.internalPointer()
-    #    #if item_indx.column() == 1:
-    #    #    if item.data is not None:
-    #    #        if ( isinstance(item.data,Operation)
-    #    #            or isinstance(item.data,list)
-    #    #            or isinstance(item.data,dict) ):
-    #    #            return type(item.data).__name__ 
-    #    #        else:
-    #    #            return ' '
-    #    #    else:
-    #    #        return ' '
-    #    #else:
+    #    currently using super().data() 
 
-    # Overloaded headerData() for WfManager 
+    # Overloaded headerData() for Workflow 
     def headerData(self,section,orientation,data_role):
         if (data_role == QtCore.Qt.DisplayRole and section == 0):
-            return "Workflow: {} operation(s)".format(self.rowCount(QtCore.QModelIndex()))
+            return "Current workflow: {} operation(s)".format(self.rowCount(QtCore.QModelIndex()))
         elif (data_role == QtCore.Qt.DisplayRole and section == 1):
             #return "type"
-            return super(WfManager,self).headerData(section,orientation,data_role)    
+            return super(Workflow,self).headerData(section,orientation,data_role)    
         else:
             return None
 
     # Overload columnCount()
     def columnCount(self,parent):
-        """Let WfManager have two columns, one for item tag, one for item type"""
         return 2
 
 

@@ -4,6 +4,7 @@ from PySide import QtCore
 
 from paws.core.operations.op_manager import OpManager 
 from paws.core.workflow.wf_manager import WfManager 
+from paws.core.workflow.workflow import Workflow 
 from paws.core.plugins.plugin_manager import PluginManager 
 from paws.core.operations import optools
 
@@ -15,8 +16,25 @@ class PawsAPI(object):
         self._op_manager = OpManager()
         self._plugin_manager = PluginManager()
         self._wf_manager = WfManager(self._plugin_manager,self._app)
-    
+        self._current_wf_name = None 
+
+    def add_wf(self,wfname):
+        self._wf_manager.add_wf(wfname)
+
+    def select_wf(self,wfname):
+        if wfname in self._wf_manager.workflows.keys():
+            self._current_wf_name = wfname
+        #else:
+        # TODO: nothing, but print a warning or error?
+
+    def current_wf(self):
+        if self._current_wf_name:
+            return self._wf_manager.workflows[self._current_wf_name]    
+        else:
+            return None
+
     def enable_ops(self,*args):
+        # TODO: operation enable/disable functionality
         for opname in args:
             print 'enable {}'.format(opname)
 
@@ -28,10 +46,10 @@ class PawsAPI(object):
         op = op()
         op.load_defaults()
         # add it to the workflow manager, tagged with op_tag
-        self._wf_manager.add_op(op_tag,op)
+        self.current_wf().add_op(op_tag,op)
 
     def set_input(self,op_name,input_name,**kwargs):
-        itm,idx = self._wf_manager.get_from_uri(op_name)
+        itm,idx = self.current_wf().get_from_uri(op_name)
         op = itm.data
         src = op.input_locator[input_name].src
         tp = op.input_locator[input_name].tp
@@ -57,7 +75,7 @@ class PawsAPI(object):
         
     def execute(self):
         print 'execute...'
-        self._wf_manager.run_wf()
+        self.current_wf().run_wf()
         # set the application start signal to execute the workflow
         # set the workflow finished signal to quit the app
         #self._app.exec_()
@@ -68,7 +86,7 @@ class PawsAPI(object):
     def save_config(self):
         self._op_manager.save_config()
 
-    # For low-level control, provide access to core objects
+    # Provide access to core objects for ui manager and interfaces
     def op_manager(self):
         return self._op_manager
     

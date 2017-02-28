@@ -58,6 +58,7 @@ class PluginUiManager(object):
         self.ui.plugins_available.clicked.connect( partial(self.start_plugin) )
         self.ui.plugins_available.setModel(self.plugin_list_model)
         self.ui.plugins_loaded.setModel(self.plugman)
+        self.ui.plugins_loaded.hideColumn(1)
         self.ui.stop_plugin_button.clicked.connect(self.stop_plugin)
         self.ui.stop_plugin_button.setText("&Stop selected plugin")
         self.ui.uri_prompt.setMaximumWidth(150)

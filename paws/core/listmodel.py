@@ -30,6 +30,11 @@ class ListModel(QtCore.QAbstractListModel):
         self.endRemoveRows()
         self._enabled.pop(row) 
 
+    #def list_data_changed(self):
+    #    for r in range(len(self._list_data)):
+    #        idx = self.index(r,0,QtCore.QModelIndex())
+    #        self.dataChanged.emit(idx,idx)
+
     def set_enabled(self,row):
         self._enabled[row] = True
 

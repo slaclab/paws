@@ -4,9 +4,11 @@ from matplotlib.figure import Figure
 from pypif.obj import System
 
 from ..core.operations.operation import Operation 
+from ..core.plugins.plugin import PawsPlugin
 from . import uitools
 from .widgets.op_widget import OpWidget
 from .widgets.pif_widget import PifWidget
+from .widgets.plugin_widgets import plugin_widget 
 from .widgets.text_widgets import display_text, display_text_fast
 
 if uitools.have_qt47:
@@ -14,7 +16,7 @@ if uitools.have_qt47:
 else:
     from . import plotmaker_mpl as plotmaker
 
-def display_item(itm,uri,qlayout,logmethod=None):
+def display_item(itm,qlayout,logmethod=None):
     if logmethod: 
         logmethod('Log messages for data viewer not yet implemented')
 
@@ -30,6 +32,11 @@ def display_item(itm,uri,qlayout,logmethod=None):
         pif_widget = PifWidget(itm)
     else:
         pif_widget = None
+
+    if isinstance(itm,PawsPlugin):
+        pgin_widget = plugin_widget(itm)
+    else:
+        pgin_widget = None
 
     if isinstance(itm,Operation):
         op_widget = OpWidget(itm)
@@ -58,6 +65,8 @@ def display_item(itm,uri,qlayout,logmethod=None):
         qlayout.addWidget(op_widget,0,0,1,1) 
     elif pif_widget:
         qlayout.addWidget(pif_widget,0,0,1,1) 
+    elif pgin_widget:
+        qlayout.addWidget(pgin_widget,0,0,1,1) 
     elif plot_widget:
         qlayout.addWidget(plot_widget,0,0,1,1) 
     elif text_widget:

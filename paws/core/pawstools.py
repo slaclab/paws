@@ -17,9 +17,9 @@ if not os.path.exists(os.path.join(qdir.absolutePath(),'scratch')):
     os.mkdir(os.path.join(qdir.absolutePath(),'scratch'))
 qdir.cd('scratch')
 scratchdir = qdir.absolutePath()
-print '[{}]: source directory sourcedir = {}'.format(__name__,sourcedir)
-print '[{}]: root directory rootdir = {}'.format(__name__,rootdir)
-print '[{}]: scratch directory scratchdir = {}'.format(__name__,scratchdir)
+#print '[{}]: source directory sourcedir = {}'.format(__name__,sourcedir)
+#print '[{}]: root directory rootdir = {}'.format(__name__,rootdir)
+#print '[{}]: scratch directory scratchdir = {}'.format(__name__,scratchdir)
 
 # Get the code version from the paws_config.py file, store as __version__
 with open(os.path.join(sourcedir,'paws_config.py')) as f: 
