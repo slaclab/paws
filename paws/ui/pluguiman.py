@@ -213,7 +213,6 @@ class PluginUiManager(object):
         src = self.src_widgets[name].currentIndex()
         if src == optools.fs_input:
             trmod = QtGui.QFileSystemModel()
-            trmod.setRootPath(QtCore.QDir.currentPath())
             inp_loader = InputLoader(name,src,trmod,self.ui)
         elif src == optools.text_input:
             inp_loader = InputLoader(name,src,None,self.ui)

@@ -4,7 +4,6 @@ from PySide import QtCore
 
 from paws.core.operations.op_manager import OpManager 
 from paws.core.workflow.wf_manager import WfManager 
-from paws.core.workflow.workflow import Workflow 
 from paws.core.plugins.plugin_manager import PluginManager 
 from paws.core.operations import optools
 

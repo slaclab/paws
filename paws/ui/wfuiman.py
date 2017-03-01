@@ -179,8 +179,6 @@ class WfUiManager(object):
             inp_loader = InputLoader(name,src,self.wf,self.ui)
         elif src == optools.fs_input:
             trmod = QtGui.QFileSystemModel()
-            #trmod.setRootPath(QtCore.QDir.currentPath())
-            #trmod.setRootPath('.')
             inp_loader = InputLoader(name,src,trmod,self.ui)
         elif src == optools.plugin_input:
             inp_loader = InputLoader(name,src,self.plugman,self.ui)

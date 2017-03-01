@@ -28,7 +28,8 @@ class InputLoader(object):
         if self.src in [optools.wf_input,optools.plugin_input,optools.fs_input]:
             self.ui.source_treeview.setModel(self.trmod)
         if self.src == optools.fs_input:
-            self.trmod.setRootPath(QtCore.QDir.currentPath())
+            #self.ui.source_treeview.setRootIndex(pawstools.sourcedir)
+            self.ui.source_treeview.setRootIndex(trmod.index(QtCore.QDir.currentPath()))
             self.ui.source_treeview.hideColumn(1)
             self.ui.source_treeview.hideColumn(3)
             self.ui.source_treeview.setColumnWidth(0,400)
