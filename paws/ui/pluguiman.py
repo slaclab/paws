@@ -3,7 +3,7 @@ from functools import partial
 
 from PySide import QtCore, QtGui, QtUiTools
 
-from ..core.listmodel import ListModel
+from ..core.listmodel import PluginListModel
 from ..core import plugins 
 from ..core import pawstools
 from ..core.plugins.plugin import PawsPlugin
@@ -11,19 +11,7 @@ from ..core.operations import optools
 from .input_loader import InputLoader
 from . import uitools
 
-class PluginListModel(ListModel):
-    """Just a ListModel with overloaded headerData"""
-
-    def __init__(self,input_list=[],parent=None):
-        super(PluginListModel,self).__init__(input_list,parent)
-
-    def headerData(self,section,orientation,data_role):
-        if (data_role == QtCore.Qt.DisplayRole and section == 0):
-            return "{} plugin(s) available".format(self.rowCount(QtCore.QModelIndex()))
-        else:
-            return None
-
-class PluginUiManager(object):
+class PluginUiManager(QtCore.QObject):
 
     def __init__(self,plugman):
         ui_file = QtCore.QFile(pawstools.rootdir+"/ui/qtui/plugin_control.ui")
@@ -59,6 +47,7 @@ class PluginUiManager(object):
         self.ui.plugins_available.setModel(self.plugin_list_model)
         self.ui.plugins_loaded.setModel(self.plugman)
         self.ui.plugins_loaded.hideColumn(1)
+        self.ui.plugins_loaded.hideColumn(2)
         self.ui.stop_plugin_button.clicked.connect(self.stop_plugin)
         self.ui.stop_plugin_button.setText("&Stop selected plugin")
         self.ui.uri_prompt.setMaximumWidth(150)

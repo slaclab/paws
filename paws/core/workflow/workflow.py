@@ -571,8 +571,8 @@ class Workflow(TreeSelectionModel):
             return None
 
     # Overload columnCount()
-    def columnCount(self,parent):
-        return 2
+    #def columnCount(self,parent):
+    #    return 2
 
 
 

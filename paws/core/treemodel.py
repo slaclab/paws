@@ -343,17 +343,21 @@ class TreeSelectionModel(TreeModel):
 
     def columnCount(self,parent):
         """
-        Let TreeSelectionModel have two columns:
-        one for the TreeItem tag, one for selection status.
+        Let TreeSelectionModel have three columns:
+        one for the TreeItem tag, 
+        one for enabled/disabled switch,
+        one for selection use.
         """
-        return 2
+        return 3
 
     def headerData(self,section,orientation,data_role):
         # note: section indicates row or column number, depending on orientation
         if (data_role == QtCore.Qt.DisplayRole and section == 0):
             return super(TreeSelectionModel,self).data(section,orientation,data_role) 
         elif (data_role == QtCore.Qt.DisplayRole and section == 1):
-            return "selection"
+            return "selected"
+        elif (data_role == QtCore.Qt.DisplayRole and section == 2):
+            return "enabled"
 
     # QAbstractItemModel subclass must implement 
     # data(QModelIndex[,role=Qt.DisplayRole])
@@ -374,6 +378,11 @@ class TreeSelectionModel(TreeModel):
                 return QtCore.Qt.PartiallyChecked
             else:
                 return QtCore.Qt.Unchecked
+        elif data_role == QtCore.Qt.CheckStateRole and itm_idx.column() == 2:
+            if itm.is_checked():
+                return QtCore.Qt.Checked
+            else:
+                return QtCore.Qt.Unchecked
         else:
             return None
 
@@ -382,7 +391,7 @@ class TreeSelectionModel(TreeModel):
         if not idx.isValid():
             return None
         elif idx.column() == 1:
-            return super(TreeSelectionModel,self).flags(idx) | QtCore.Qt.ItemIsUserCheckable
+            return super(TreeSelectionModel,self).flags(idx) | QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsTristate
         else:
             return super(TreeModel, self).flags(idx)
 

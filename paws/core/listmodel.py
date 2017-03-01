@@ -90,3 +90,17 @@ class ListModel(QtCore.QAbstractListModel):
         else:
             return None
 
+class PluginListModel(ListModel):
+    """Just a ListModel with overloaded headerData"""
+
+    def __init__(self,input_list=[],parent=None):
+        super(PluginListModel,self).__init__(input_list,parent)
+
+    def headerData(self,section,orientation,data_role):
+        if (data_role == QtCore.Qt.DisplayRole and section == 0):
+            return "{} plugin(s) available".format(self.rowCount(QtCore.QModelIndex()))
+        else:
+            return None
+
+
+

@@ -15,6 +15,8 @@ class OpUiManager(object):
         ui_file.close()
         self.opman = opman 
         self.setup_ui()
+        self.op = None
+        self.filepath = ''
 
     def get_op(self,idx):
         itm = self.opman.get_item(idx)
@@ -25,6 +27,11 @@ class OpUiManager(object):
         except:
             op_flag = False
         if op_flag:
+            op_uri = self.opman.build_uri(idx)
+            self.filepath = pawstools.sourcedir + '/' + 'paws/core/operations'
+            for uri_piece in op_uri.split('.'):
+                self.filepath = self.filepath + '/' + uri_piece
+            self.filepath = self.filepath + '.py'
             self.clear_op()
             self.set_op(x())
         else:
@@ -46,6 +53,11 @@ class OpUiManager(object):
 
     def build_source(self):
         self.ui.op_name.setText(type(self.op).__name__)
+        # if op is not enabled, display a message
+        # else, inspect the op
+        path_display = QtGui.QTextEdit()
+        path_display.setText('file path: ' + self.filepath)
+        self.ui.op_source_layout.addWidget( path_display,0,0,1,1 )
 
     def edit_op(self):
         print 'edit op'
@@ -57,6 +69,7 @@ class OpUiManager(object):
         self.ui.setWindowTitle("operation setup")
         self.ui.op_selector.setModel(self.opman)
         self.ui.op_selector.hideColumn(1)
+        self.ui.op_selector.hideColumn(2)
         self.ui.op_selector.clicked.connect( partial(self.get_op) )
         self.ui.edit_op_button.setText("&Edit operation")
         self.ui.enable_op_button.setText("&Enable operations")

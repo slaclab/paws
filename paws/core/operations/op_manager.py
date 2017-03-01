@@ -134,41 +134,41 @@ class OpManager(TreeSelectionModel):
             return None
 
     # Overloaded data() for OpManager
-    def data(self,item_indx,data_role):
-        if (not item_indx.isValid()):
-            return None
-        item = item_indx.internalPointer()
-        if item_indx.column() == 1:
-            if item.data:
-                if item.data in ops.cat_list:
-                    # Should be a category
-                    return ' ' 
-                else:
-                    # Should be an operation
-                    if item.data.__doc__:
-                        # Note: commas are used as delimiters when loading strings to Qt views,
-                        # so they should be removed to avoid warning messages.
-                        # This will munge the description a bit.
-                        # TODO: A more elegant solution would be welcome.
-                        return item.data.__doc__.replace(',',' ')
-                    else:
-                        return 'no description'
-            else:
-                return ' '
-        else:
-            if data_role == QtCore.Qt.DisplayRole:
-                return item.tag()
-            elif (data_role == QtCore.Qt.ToolTipRole 
-                or data_role == QtCore.Qt.StatusTipRole
-                or data_role == QtCore.Qt.WhatsThisRole):
-                if item.data in ops.cat_list:
-                    # Should be a category
-                    return 'Operation category {}'.format(item.data)
-                else:
-                    # Should be an operation
-                    return item.long_tag 
-            else:
-                return None
+    #def data(self,itm_idx,data_role):
+    #    if (not itm_idx.isValid()):
+    #        return None
+    #    itm = itm_idx.internalPointer()
+    #    if itm_idx.column() == 1:
+    #        if itm.data:
+    #            if itm.data in ops.cat_list:
+    #                # Should be a category
+    #                return ' ' 
+    #            else:
+    #                # Should be an operation
+    #                if itm.data.__doc__:
+    #                    # Note: commas are used as delimiters when loading strings to Qt views,
+    #                    # so they should be removed to avoid warning messages.
+    #                    # This will munge the description a bit.
+    #                    # TODO: A more elegant solution would be welcome.
+    #                    return itm.data.__doc__.replace(',',' ')
+    #                else:
+    #                    return 'no description'
+    #        else:
+    #            return ' '
+    #    else:
+    #        if data_role == QtCore.Qt.DisplayRole:
+    #            return itm.tag()
+    #        elif (data_role == QtCore.Qt.ToolTipRole 
+    #            or data_role == QtCore.Qt.StatusTipRole
+    #            or data_role == QtCore.Qt.WhatsThisRole):
+    #            if itm.data in ops.cat_list:
+    #                # Should be a category
+    #                return 'Operation category {}'.format(itm.data)
+    #            else:
+    #                # Should be an operation
+    #                return itm.long_tag 
+    #        else:
+    #            return None
     
 
 

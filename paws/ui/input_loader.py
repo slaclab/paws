@@ -39,6 +39,7 @@ class InputLoader(object):
             self.ui.source_treeview.setColumnWidth(0,400)
         elif self.src in [optools.wf_input,optools.plugin_input]:
             self.ui.source_treeview.setColumnWidth(0,300)
+            self.ui.source_treeview.hideColumn(2)
             # Reset all selections
             self.trmod.set_all_unselected()
         if self.src == optools.text_input:

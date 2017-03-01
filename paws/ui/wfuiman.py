@@ -9,7 +9,7 @@ from ..core.operations.optools import InputLocator
 from .input_loader import InputLoader
 from . import uitools
 
-class WfUiManager(object):
+class WfUiManager(QtCore.QObject):
 
     def __init__(self,wf,opman,plugman):
         ui_file = QtCore.QFile(pawstools.rootdir+"/ui/qtui/wf_editor.ui")
@@ -340,11 +340,13 @@ class WfUiManager(object):
         QtGui.QSizePolicy.Minimum,self.ui.op_frame.sizePolicy().verticalPolicy())
         self.ui.wf_selector.setModel(self.wf)
         self.ui.wf_selector.hideColumn(1)
+        self.ui.wf_selector.hideColumn(2)
         self.ui.wf_selector.clicked.connect( partial(self.get_op,self.wf) )
         self.ui.rm_op_button.setText("&Remove selected operation")
         self.ui.rm_op_button.clicked.connect(self.rm_op)
         self.ui.op_selector.setModel(self.opman)
         self.ui.op_selector.hideColumn(1)
+        self.ui.op_selector.hideColumn(2)
         self.ui.op_selector.clicked.connect( partial(self.get_op,self.opman) )
         self.ui.op_selector.clicked.connect( partial(uitools.toggle_expand,self.ui.op_selector) ) 
         self.ui.wf_selector.clicked.connect( partial(uitools.toggle_expand,self.ui.wf_selector) )
