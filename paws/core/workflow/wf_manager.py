@@ -36,9 +36,13 @@ class WfManager(QtCore.QObject):
         self.appref.processEvents()
         self._wf_threads[th_idx] = None
 
+    def register_thread(self,th_idx,th):
+        #print 'saving thread {}'.format(th_idx)
+        self._wf_threads[th_idx] = th
+
     def wait_for_thread(self,th_idx):
-        """Wait for the thread at self.-wf_threads()[th_idx] to be finished"""
-        #print 'waiting for thread {}'.format(th_idx)
+        """Wait for the thread at self._wf_threads[th_idx] to be finished"""
+        print 'waiting for thread {}'.format(th_idx)
         # when waiting for a thread to execute something,
         # best processEvents() to ensure that the application has a chance
         # to prepare the thing that will be executed
@@ -48,16 +52,28 @@ class WfManager(QtCore.QObject):
         wait_iter = 0
         total_wait = 0
         while not done:
+            #if wait_iter > 0:
+            #    print '{}... still waiting for thread {} for {}ms'.format(wait_iter,th_idx,total_wait)
             done = True
             if self._wf_threads[th_idx] is not None:
                 if not self._wf_threads[th_idx].isFinished():
                     done = False
                 if not done:
+                    if interval <= float(total_wait)*0.1 and interval <= 100:
+                        interval = interval * 10
                     self.loopwait(interval)
                     wait_iter += 1
                     total_wait += interval
-                    if interval < float(total_wait)*0.1 and interval < 100:
-                        interval = interval * 10
+
+    def next_available_thread(self):
+        for idx,th in self._wf_threads.items():
+            if not th:
+                print '[{}] found available thread {}'.format(__name__,idx)
+                return idx
+        # if none found, wait for first thread in self.wfman.wf_threads 
+        self.wait_for_thread(0)
+        print '[{}] falling back on thread 0'.format(__name__)
+        return 0
 
     def wait_for_threads(self):
         """Wait for all workflow execution threads to finish"""

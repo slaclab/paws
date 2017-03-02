@@ -9,7 +9,7 @@ class WfWorker(QtCore.QObject):
     to be pushed onto QtCore.QThread(s) as needed.
     """
     
-    finished = QtCore.Signal()
+    #finished = QtCore.Signal()
     opDone = QtCore.Signal(str,Operation)
 
     def __init__(self,to_run=None,parent=None):

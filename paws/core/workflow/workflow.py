@@ -356,14 +356,6 @@ class Workflow(TreeSelectionModel):
         b_rdy = len(exec_itms) == optools.stack_size(b_stk) 
         return b_stk,b_rdy 
 
-    #def next_available_thread(self):
-    #    for idx,th in self.wfman.wf_threads().items():
-    #        if not th:
-    #            return idx
-    #    # if none found, wait for first thread in self.wfman.wf_threads 
-    #    self.wait_for_thread(0)
-    #    return 0
-
     def run_wf(self):
         self._running = True
         stk = self.execution_stack()
@@ -398,28 +390,31 @@ class Workflow(TreeSelectionModel):
             self.wfman.write_log('EXECUTION FINISHED')
             self.exec_finished.emit()
 
-    def run_wf_serial(self,stk,thd_idx=0):
+    def run_wf_serial(self,stk,thd_idx=None):
         """
         Serially execute the operations contained in the stack stk.
         """
-        #if not thd_idx:
-        #    thd_idx = self.next_available_thread()
+        if not thd_idx:
+            thd_idx = self.wfman.next_available_thread()
         for lst in stk:
             self.wfman.wait_for_thread(thd_idx)
             for itm in lst: 
                 op = itm.data
                 self.load_inputs(op)
+            lst_copy = copy.deepcopy(lst)
             # Make a new Worker, give None parent so that it can be thread-mobile
-            wf_wkr = WfWorker(lst,None)
+            wf_wkr = WfWorker(lst_copy,None)
             wf_wkr.opDone.connect(self.updateOperation)
             wf_thread = QtCore.QThread(self)
             wf_wkr.moveToThread(wf_thread)
             wf_thread.started.connect(wf_wkr.work)
             wf_thread.finished.connect( partial(self.wfman.finish_thread,thd_idx) )
+            self.wfman.register_thread(thd_idx,wf_thread)
             wf_thread.start()
-            msg = 'running {} in thread {}'.format([itm.tag() for itm in lst],thd_idx)
+            msg = 'running {} in thread {}'.format([itm.tag() for itm in lst_copy],thd_idx)
             self.wfman.write_log(msg)
-            self.wfman.wf_threads()[thd_idx] = wf_thread
+            # TODO: Figure out how to remove this wait_for_thread() without freezing execution.
+            # This is the next step towards multi-threaded batch execution.
             self.wfman.wait_for_thread(thd_idx)
 
     def run_wf_realtime(self,rt_itm,stk):
@@ -482,8 +477,9 @@ class Workflow(TreeSelectionModel):
                 for uri,val in input_dict.items():
                     self.set_op_input_at_uri(uri,val)
                 # inputs are set, run in serial 
-                #thd = self.next_available_thread()
-                thd = 0
+                thd = self.wfman.next_available_thread()
+                #thd = 0
+                #self.wfman.wait_for_thread(thd)
                 self.wfman.write_log( 'BATCH EXECUTION {} / {} in thread {}'.format(i+1,len(b.input_list()),thd) )
                 self.run_wf_serial(stk,thd)
                 opdict = OrderedDict()

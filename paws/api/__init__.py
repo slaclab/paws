@@ -19,8 +19,8 @@ class PawsAPI(object):
 
     def add_wf(self,wfname):
         self._wf_manager.add_wf(wfname)
-        #if not self._current_wf_name:
-        #    self.select_wf(wfname)
+        if not self._current_wf_name:
+            self.select_wf(wfname)
 
     def select_wf(self,wfname):
         if wfname in self._wf_manager.workflows.keys():
@@ -36,8 +36,9 @@ class PawsAPI(object):
 
     def enable_ops(self,*args):
         # TODO: operation enable/disable functionality
-        for opname in args:
-            print 'enable {}'.format(opname)
+        pass
+        #for opname in args:
+        #    print 'enable {}'.format(opname)
 
     def add_op(self,op_tag,op_spec):
         # get the op referred to by op_spec
@@ -71,12 +72,13 @@ class PawsAPI(object):
             val = kwargs['val']
         il = optools.InputLocator(src,tp,val)
         op.input_locator[input_name] = il
-        print 'set input {} of {} to src: {}, tp: {}, val: {}'.format(
-        input_name,op_name,src,tp,val)
+        #print 'set input {} of {} to src: {}, tp: {}, val: {}'.format(
+        #input_name,op_name,src,tp,val)
         
     def execute(self):
-        print 'execute...'
-        self.current_wf().run_wf()
+        #print 'execute...'
+        self._wf_manager.run_wf(self._current_wf_name)
+        #self.current_wf().run_wf()
         # set the application start signal to execute the workflow
         # set the workflow finished signal to quit the app
         #self._app.exec_()
