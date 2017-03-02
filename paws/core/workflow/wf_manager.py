@@ -4,19 +4,14 @@ from PySide import QtCore
 
 from .wf_plugin import WorkflowPlugin
 from .workflow import Workflow
+        
+# TODO: migrate threading to a ThreadPool 
 
 class WfManager(QtCore.QObject):
     """
     Manager for paws Workflows. 
     Stores a list of Workflow objects, performs operations on them.
     """
-
-    # this signal should emit the name of the workflow that finished.
-    wfdone = QtCore.Signal(str)
-
-    @QtCore.Slot(str)
-    def finish_wf(self,wfname):
-        self.wfdone.emit(wfname)
 
     def __init__(self,plugin_manager,qapp_reference):
         self.workflows = {} 
@@ -28,6 +23,60 @@ class WfManager(QtCore.QObject):
         #self._wf_threads = dict.fromkeys(range(self._n_threads)) 
         self.logmethod = None
         super(WfManager,self).__init__()
+
+    # this signal should emit the name of the workflow that finished.
+    wfdone = QtCore.Signal(str)
+
+    @QtCore.Slot(str)
+    def finish_wf(self,wfname):
+        self.wfdone.emit(wfname)
+
+    def finish_thread(self,th_idx):
+        #print 'finishing thread {}'.format(th_idx)
+        self.appref.processEvents()
+        self._wf_threads[th_idx] = None
+
+    def wait_for_thread(self,th_idx):
+        """Wait for the thread at self.-wf_threads()[th_idx] to be finished"""
+        #print 'waiting for thread {}'.format(th_idx)
+        # when waiting for a thread to execute something,
+        # best processEvents() to ensure that the application has a chance
+        # to prepare the thing that will be executed
+        self.appref.processEvents()
+        done = False
+        interval = 1
+        wait_iter = 0
+        total_wait = 0
+        while not done:
+            done = True
+            if self._wf_threads[th_idx] is not None:
+                if not self._wf_threads[th_idx].isFinished():
+                    done = False
+                if not done:
+                    self.loopwait(interval)
+                    wait_iter += 1
+                    total_wait += interval
+                    if interval < float(total_wait)*0.1 and interval < 100:
+                        interval = interval * 10
+
+    def wait_for_threads(self):
+        """Wait for all workflow execution threads to finish"""
+        for idx,th in self._wf_threads.items():
+            self.wait_for_thread(idx)
+
+    def loopwait(self,interval):
+        """
+        Create an event loop to delay some time without busywaiting.
+        Time interval is specified in milliseconds.
+        """
+        l = QtCore.QEventLoop()
+        t = QtCore.QTimer()
+        t.setSingleShot(True)
+        t.timeout.connect(l.quit)
+        t.start(interval)
+        l.exec_()
+        # processEvents() to continue the main event loop while waiting.
+        self.appref.processEvents()
 
     def n_wf(self):
         return len(self.workflows)

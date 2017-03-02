@@ -13,20 +13,24 @@ from .wf_worker import WfWorker
 
 class Workflow(TreeSelectionModel):
     """
-    Tree structure for managing a workflow built from paws Operations.
+    Tree structure for a workflow built from paws Operations.
     """
+
+    def __init__(self,wfman):
+        super(Workflow,self).__init__()
+        self._running = False
+        self.wfman = wfman
 
     exec_finished = QtCore.Signal()
 
     @QtCore.Slot(str,Operation)
     def updateOperation(self,tag,op):
         self.update_op(tag,op)
+        # after updating an operation, best processEvents()
+        # so that the application can execute anything in the update
+        # that was queued in the main event loop.
+        self.wfman.appref.processEvents()
         
-    def __init__(self,wfman):
-        super(Workflow,self).__init__()
-        self._running = False
-        self.wfman = wfman
-
     def load_from_dict(self,opman,opdict):
         """
         Load things in to the Workflow from an OpManager
@@ -352,64 +356,13 @@ class Workflow(TreeSelectionModel):
         b_rdy = len(exec_itms) == optools.stack_size(b_stk) 
         return b_stk,b_rdy 
 
-    def next_available_thread(self):
-        for idx,th in self.wfman.wf_threads().items():
-            if not th:
-                return idx
-        # if none found, wait for first thread in self.wfman.wf_threads 
-        self.wait_for_thread(0)
-        return 0
-
-    def wait_for_thread(self,th_idx):
-        """Wait for the thread at self.wfman.wf_threads()[th_idx] to be finished"""
-        # TODO: migrate threading to a ThreadPool 
-        done = False
-        interval = 1
-        wait_iter = 0
-        total_wait = 0
-        while not done:
-            done = True
-            if self.wfman.wf_threads()[th_idx]:
-                if not self.wfman.wf_threads()[th_idx].isFinished():
-                    done = False
-                if not done:
-                    #if wait_iter == 10:
-                    #    interval *= 10
-                    #if wait_iter == 100:
-                    #    interval *= 10
-                    self.loopwait(interval)
-                    wait_iter += 1
-                    total_wait += interval
-                    if interval < float(total_wait)*0.1 and interval < 100:
-                        interval = interval * 10
-
-    def wait_for_threads(self):
-        """Wait for all workflow execution threads to finish"""
-        # TODO: migrate threading to a ThreadPool 
-        done = False
-        interval = 10
-        wait_iter = 0
-        for idx,th in self.wfman.wf_threads().items():
-            self.wait_for_thread(idx)
-
-    def finish_thread(self,th_idx):
-        # TODO: migrate threading to a ThreadPool 
-        self.wfman.wf_threads()[th_idx] = None
-
-    def loopwait(self,interval):
-        """
-        Create an event loop to delay some time without busywaiting.
-        Time interval is specified in milliseconds.
-        """
-        l = QtCore.QEventLoop()
-        t = QtCore.QTimer()
-        t.setSingleShot(True)
-        t.timeout.connect(l.quit)
-        t.start(interval)
-        l.exec_()
-        # processEvents() to continue the main event loop while waiting.
-        if self.wfman.appref:
-            self.wfman.appref.processEvents()
+    #def next_available_thread(self):
+    #    for idx,th in self.wfman.wf_threads().items():
+    #        if not th:
+    #            return idx
+    #    # if none found, wait for first thread in self.wfman.wf_threads 
+    #    self.wait_for_thread(0)
+    #    return 0
 
     def run_wf(self):
         self._running = True
@@ -439,19 +392,20 @@ class Workflow(TreeSelectionModel):
                     substk = stk[layers_done:]
                 self.run_wf_serial(substk)
                 layers_done += len(substk)
-        # if not yet interrupted, signal done
+        # if not yet interrupted, wait for all threads to finish, then signal done
         if self.is_running():
+            self.wfman.wait_for_threads()
             self.wfman.write_log('EXECUTION FINISHED')
             self.exec_finished.emit()
 
-    def run_wf_serial(self,stk,thd_idx=None):
+    def run_wf_serial(self,stk,thd_idx=0):
         """
         Serially execute the operations contained in the stack stk.
         """
-        if not thd_idx:
-            thd_idx = self.next_available_thread()
+        #if not thd_idx:
+        #    thd_idx = self.next_available_thread()
         for lst in stk:
-            self.wait_for_thread(thd_idx)
+            self.wfman.wait_for_thread(thd_idx)
             for itm in lst: 
                 op = itm.data
                 self.load_inputs(op)
@@ -461,12 +415,12 @@ class Workflow(TreeSelectionModel):
             wf_thread = QtCore.QThread(self)
             wf_wkr.moveToThread(wf_thread)
             wf_thread.started.connect(wf_wkr.work)
-            wf_thread.finished.connect( partial(self.finish_thread,thd_idx) )
+            wf_thread.finished.connect( partial(self.wfman.finish_thread,thd_idx) )
+            wf_thread.start()
             msg = 'running {} in thread {}'.format([itm.tag() for itm in lst],thd_idx)
             self.wfman.write_log(msg)
             self.wfman.wf_threads()[thd_idx] = wf_thread
-            wf_thread.start()
-        self.wait_for_thread(thd_idx)
+            self.wfman.wait_for_thread(thd_idx)
 
     def run_wf_realtime(self,rt_itm,stk):
         """
@@ -492,7 +446,8 @@ class Workflow(TreeSelectionModel):
                 nx += 1
                 for uri,val in inp_dict.items():
                     self.set_op_input_at_uri(uri,val)
-                thd = self.next_available_thread()
+                #thd = self.next_available_thread()
+                thd = 0
                 self.wfman.write_log( 'REALTIME EXECUTION {} in thread {}'.format(nx,thd))
                 self.run_wf_serial(stk,thd)
                 opdict = OrderedDict()
@@ -507,7 +462,7 @@ class Workflow(TreeSelectionModel):
                 if not waiting_flag:
                     self.wfman.write_log( 'Waiting for new inputs...' )
                 waiting_flag = True
-                self.loopwait(rt.delay())
+                self.wfman.loopwait(rt.delay())
         self.wfman.write_log( 'REALTIME EXECUTION TERMINATED' )
         return
 
@@ -527,7 +482,8 @@ class Workflow(TreeSelectionModel):
                 for uri,val in input_dict.items():
                     self.set_op_input_at_uri(uri,val)
                 # inputs are set, run in serial 
-                thd = self.next_available_thread()
+                #thd = self.next_available_thread()
+                thd = 0
                 self.wfman.write_log( 'BATCH EXECUTION {} / {} in thread {}'.format(i+1,len(b.input_list()),thd) )
                 self.run_wf_serial(stk,thd)
                 opdict = OrderedDict()
