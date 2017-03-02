@@ -38,8 +38,8 @@ class UiManager(QtCore.QObject):
         wfman.logmethod = self.msg_board_log
         plugman.logmethod = self.msg_board_log
         # put up one default empty Workflow to start with
-        wfname = plugman.auto_tag('workflow')
-        wfman.add_wf(wfname)
+        #wfname = plugman.auto_tag('workflow')
+        #wfman.add_wf(wfname)
         self.opman = opman 
         self.wfman = wfman 
         self.plugman = plugman

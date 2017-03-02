@@ -26,7 +26,6 @@ class Workflow(TreeSelectionModel):
         super(Workflow,self).__init__()
         self._running = False
         self.wfman = wfman
-        self.logmethod = wfman.write_log
 
     def load_from_dict(self,opman,opdict):
         """
@@ -41,7 +40,7 @@ class Workflow(TreeSelectionModel):
             op = opman.get_op_byname(opname)
             if op is not None:
                 if not issubclass(op,Operation):
-                    self.logmethod('Did not find Operation {} - skipping.'.format(opname))
+                    self.wfman.write_log('Did not find Operation {} - skipping.'.format(opname))
                 else:
                     op = op()
                     op.load_defaults()
@@ -61,10 +60,10 @@ class Workflow(TreeSelectionModel):
                                 il = optools.InputLocator(src,tp,val)
                             op.input_locator[name] = il
                         else:
-                            self.logmethod('Did not find input {} for {} - skipping.'.format(name,opname))
+                            self.wfman.write_log('Did not find input {} for {} - skipping.'.format(name,opname))
                     self.add_op(uri,op)
             else:
-                self.logmethod('Did not find Operation {} - skipping.'.format(opname))
+                self.wfman.write_log('Did not find Operation {} - skipping.'.format(opname))
         
     def load_inputs(self,op):
         """
@@ -226,7 +225,7 @@ class Workflow(TreeSelectionModel):
                         #vals = optools.val_list(il)
                         #for v in vals:
                         #    if not self.is_good_uri(v):
-                        self.logmethod('--- clearing InputLocator for {}.{}.{} ---'.format(
+                        self.wfman.write_log('--- clearing InputLocator for {}.{}.{} ---'.format(
                         itm.tag(),optools.inputs_tag,name))
                         op.input_locator[name] = optools.InputLocator(il.src,il.tp,None)
                         self.tree_dataChanged(op_idx)
@@ -418,7 +417,7 @@ class Workflow(TreeSelectionModel):
         msg = 'STARTING EXECUTION\n----\nexecution stack: \n'
         msg += optools.print_stack(stk)
         msg += '\n----'
-        self.logmethod(msg)
+        self.wfman.write_log(msg)
         batch_flags = [isinstance(itm_lst[0].data,Batch) for itm_lst in stk]
         rt_flags = [isinstance(itm_lst[0].data,Realtime) for itm_lst in stk]
         layers_done = 0
@@ -442,7 +441,7 @@ class Workflow(TreeSelectionModel):
                 layers_done += len(substk)
         # if not yet interrupted, signal done
         if self.is_running():
-            self.logmethod('EXECUTION FINISHED')
+            self.wfman.write_log('EXECUTION FINISHED')
             self.exec_finished.emit()
 
     def run_wf_serial(self,stk,thd_idx=None):
@@ -464,7 +463,7 @@ class Workflow(TreeSelectionModel):
             wf_thread.started.connect(wf_wkr.work)
             wf_thread.finished.connect( partial(self.finish_thread,thd_idx) )
             msg = 'running {} in thread {}'.format([itm.tag() for itm in lst],thd_idx)
-            self.logmethod(msg)
+            self.wfman.write_log(msg)
             self.wfman.wf_threads()[thd_idx] = wf_thread
             wf_thread.start()
         self.wait_for_thread(thd_idx)
@@ -494,7 +493,7 @@ class Workflow(TreeSelectionModel):
                 for uri,val in inp_dict.items():
                     self.set_op_input_at_uri(uri,val)
                 thd = self.next_available_thread()
-                self.logmethod( 'REALTIME EXECUTION {} in thread {}'.format(nx,thd))
+                self.wfman.write_log( 'REALTIME EXECUTION {} in thread {}'.format(nx,thd))
                 self.run_wf_serial(stk,thd)
                 opdict = OrderedDict()
                 for uri in rt.saved_items():
@@ -506,10 +505,10 @@ class Workflow(TreeSelectionModel):
                 self.update_op(rt_itm.tag(),rt)
             else:
                 if not waiting_flag:
-                    self.logmethod( 'Waiting for new inputs...' )
+                    self.wfman.write_log( 'Waiting for new inputs...' )
                 waiting_flag = True
                 self.loopwait(rt.delay())
-        self.logmethod( 'REALTIME EXECUTION TERMINATED' )
+        self.wfman.write_log( 'REALTIME EXECUTION TERMINATED' )
         return
 
     def run_wf_batch(self,b_itm,stk):
@@ -529,7 +528,7 @@ class Workflow(TreeSelectionModel):
                     self.set_op_input_at_uri(uri,val)
                 # inputs are set, run in serial 
                 thd = self.next_available_thread()
-                self.logmethod( 'BATCH EXECUTION {} / {} in thread {}'.format(i+1,len(b.input_list()),thd) )
+                self.wfman.write_log( 'BATCH EXECUTION {} / {} in thread {}'.format(i+1,len(b.input_list()),thd) )
                 self.run_wf_serial(stk,thd)
                 opdict = OrderedDict()
                 for uri in b.saved_items():
@@ -539,9 +538,9 @@ class Workflow(TreeSelectionModel):
                 b.output_list()[i] = opdict
                 self.update_op(b_itm.tag(),b)
             else:
-                self.logmethod( 'BATCH EXECUTION TERMINATED' )
+                self.wfman.write_log( 'BATCH EXECUTION TERMINATED' )
                 return
-        self.logmethod( 'BATCH EXECUTION FINISHED' )
+        self.wfman.write_log( 'BATCH EXECUTION FINISHED' )
 
     def set_op_input_at_uri(self,uri,val):
         """

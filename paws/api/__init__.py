@@ -19,6 +19,8 @@ class PawsAPI(object):
 
     def add_wf(self,wfname):
         self._wf_manager.add_wf(wfname)
+        #if not self._current_wf_name:
+        #    self.select_wf(wfname)
 
     def select_wf(self,wfname):
         if wfname in self._wf_manager.workflows.keys():
