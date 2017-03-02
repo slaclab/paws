@@ -21,9 +21,9 @@ class PluginManager(TreeSelectionModel):
         """
         Load plugins from a dict that specifies their setup parameters.
         """
-        while self.root_items:
-            idx = self.index(self.rowCount(QtCore.QModelIndex())-1,0,QtCore.QModelIndex())
-            self.remove_plugin(idx)
+        #while self.root_items:
+        #    idx = self.index(self.rowCount(QtCore.QModelIndex())-1,0,QtCore.QModelIndex())
+        #    self.remove_plugin(idx)
         for uri, pgin_spec in pgin_dict.items():
             pgin_name = pgin_spec['type']
             pgin = self.get_plugin_byname(pgin_name)
@@ -34,6 +34,8 @@ class PluginManager(TreeSelectionModel):
                     pgin = pgin()
                     pgin.inputs = pgin_spec[optools.inputs_tag]
                     pgin.start()
+                    if self.is_good_uri(uri):
+                        uri = self.auto_tag(uri)
                     self.add_plugin(uri,pgin)
             else:
                 self.write_log('Did not find Plugin {} - skipping.'.format(pgin_name))

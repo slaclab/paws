@@ -4,7 +4,8 @@ from PySide import QtCore
 
 from .wf_plugin import WorkflowPlugin
 from .workflow import Workflow
-        
+from ..operations.operation import Operation        
+from ..operations import optools        
 # TODO: migrate threading to a ThreadPool 
 
 class WfManager(QtCore.QObject):
@@ -109,7 +110,7 @@ class WfManager(QtCore.QObject):
     def add_wf(self,wfname):
         wf = Workflow(self)
         wf.exec_finished.connect( partial(self.finish_wf,wfname) )
-        wf.logmethod = self.logmethod
+        #wf.logmethod = self.logmethod
         self.workflows[wfname] = wf
         # for every new workflow, add a plugin 
         self.plugman.add_plugin(wfname,WorkflowPlugin(wf))
@@ -120,4 +121,42 @@ class WfManager(QtCore.QObject):
     def stop_wf(self,wfname):
         self.workflows[wfname].stop_wf()
 
+    def load_from_dict(self,wfname,opman,opdict):
+        """
+        Load things in to a Workflow from an OpManager
+        using a dict that specifies operation setup.
+        """
+        #while any(self.root_items):
+        #    idx = self.index(self.rowCount(QtCore.QModelIndex())-1,0,QtCore.QModelIndex())
+        #    self.remove_op(idx)
+        for uri, op_spec in opdict.items():
+            opname = op_spec['type']
+            op = opman.get_op_byname(opname)
+            if op is not None:
+                if not issubclass(op,Operation):
+                    self.write_log('Did not find Operation {} - skipping.'.format(opname))
+                else:
+                    op = op()
+                    op.load_defaults()
+                    ilspec = op_spec[optools.inputs_tag]
+                    for name in op.inputs.keys():
+                        if name in ilspec.keys():
+                            src = ilspec[name]['src']
+                            # DONE...: deprecate 'type' tag in favor of 'tp'
+                            if 'tp' in ilspec[name].keys():
+                                tp = ilspec[name]['tp']
+                            #else:
+                            #    tp = ilspec[name]['type']
+                            val = ilspec[name]['val']
+                            if tp in optools.invalid_types[src]:
+                                il = optools.InputLocator(src,optools.none_type,None)
+                            else:
+                                il = optools.InputLocator(src,tp,val)
+                            op.input_locator[name] = il
+                        else:
+                            self.write_log('Did not find input {} for {} - skipping.'.format(name,opname))
+                    self.workflows[wfname].add_op(uri,op)
+            else:
+                self.write_log('Did not find Operation {} - skipping.'.format(opname))
+        
 

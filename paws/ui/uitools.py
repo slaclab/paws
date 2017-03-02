@@ -166,8 +166,11 @@ def stop_load_ui(ui,uiman):
     f = open(fname,'r')
     d = yaml.load(f)
     f.close()
+    fname_nopath = os.path.split(fname)[1]
+    fname_noext = os.path.splitext(fname_nopath)[0]
     if 'WORKFLOW' in d.keys():
-        uiman.wfman.load_from_dict(uiman.opman,d['WORKFLOW'])
+        wfname = uiman.new_wf(fname_noext)
+        uiman.wfman.load_from_dict(wfname,uiman.opman,d['WORKFLOW'])
     if 'PLUGINS' in d.keys():
         uiman.plugman.load_from_dict(d['PLUGINS'])
     ui.close()

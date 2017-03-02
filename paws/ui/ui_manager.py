@@ -47,11 +47,16 @@ class UiManager(QtCore.QObject):
         self.connect_actions()
         self.final_setup()
 
-    def new_wf(self): 
-        wfname = self.plugman.auto_tag('workflow')
-        self.ui.wf_selector.model().append_item(wfname)
+    def new_wf(self,wfname): 
+        if self.plugman.is_good_uri(wfname):
+            wfname = self.plugman.auto_tag(wfname)
         self.wfman.add_wf(wfname)
+        self.ui.wf_selector.model().append_item(wfname)
         self.ui.wf_selector.setCurrentIndex(self.wfman.n_wf()-1)
+        # if this is the first workflow loaded, need to hide the treeview columns.
+        self.ui.wf_tree.hideColumn(1)
+        self.ui.wf_tree.hideColumn(2)
+        return wfname
 
     def set_wf(self,wf_selector_idx):
         wfname = self.ui.wf_selector.model().list_data()[wf_selector_idx]
@@ -132,8 +137,6 @@ class UiManager(QtCore.QObject):
         self.ui.message_board.setReadOnly(True)
         self.ui.message_board.insertPlainText('--- MESSAGE BOARD ---\n') 
         self.msg_board_log('paws is ready',timestamp=pawstools.dtstr) 
-        self.ui.wf_tree.hideColumn(1)
-        self.ui.wf_tree.hideColumn(2)
         self.ui.op_tree.hideColumn(1)
         self.ui.op_tree.hideColumn(2)
         self.ui.plugin_tree.hideColumn(1)
@@ -179,7 +182,7 @@ class UiManager(QtCore.QObject):
         self.ui.edit_ops_button.setText("Edit &operations")
         self.ui.edit_ops_button.clicked.connect(self.edit_ops)
         self.ui.add_wf_button.setText("&New...")
-        self.ui.add_wf_button.clicked.connect(self.new_wf)
+        self.ui.add_wf_button.clicked.connect( partial(self.new_wf,'workflow') )
         self.ui.load_wf_button.setText("&Load")
         self.ui.load_wf_button.clicked.connect(self.start_load_ui)
         self.ui.edit_wf_button.setText("Edit &workflow")
@@ -192,7 +195,7 @@ class UiManager(QtCore.QObject):
         self.ui.edit_plugins_button.setText("Edit &plugins")
         self.ui.edit_plugins_button.clicked.connect(self.start_plugins_ui)
         self.ui.plugin_tree.setModel(self.plugman)
-        self.ui.wf_tree.setModel(self.current_wf())
+        #self.ui.wf_tree.setModel(self.current_wf())
         self.ui.op_tree.setModel(self.opman)
         self.ui.op_tree.clicked.connect( partial(uitools.toggle_expand,self.ui.op_tree) ) 
         self.ui.wf_tree.clicked.connect( partial(uitools.toggle_expand,self.ui.wf_tree) )
