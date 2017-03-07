@@ -356,7 +356,7 @@ class Workflow(TreeSelectionModel):
         """
         Serially execute the operations contained in the stack stk.
         """
-        if not thd_idx:
+        if thd_idx is None:
             thd_idx = self.wfman.next_available_thread()
         for lst in stk:
             self.wfman.wait_for_thread(thd_idx)

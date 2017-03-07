@@ -58,6 +58,46 @@ class OpUiManager(object):
         path_display = QtGui.QTextEdit()
         path_display.setText('file path: ' + self.filepath)
         self.ui.op_source_layout.addWidget( path_display,0,0,1,1 )
+        inputs_box = QtGui.QGroupBox('INPUTS',self.ui)
+        inputs_lo = QtGui.QGridLayout(inputs_box)
+        if len(self.op.inputs) > 0:
+            inputs_lo.addWidget(uitools.r_hdr_widget('name'),0,0,1,1)
+            inputs_lo.addWidget(uitools.hdr_widget('default source'),0,2,1,1)
+            inputs_lo.addWidget(uitools.hdr_widget('default type'),0,3,1,1)
+            inputs_lo.addWidget(uitools.hdr_widget('default value'),0,4,1,1)
+        for ii in range(len(self.op.inputs)):
+            rowii = ii+1
+            # name
+            name = self.op.inputs.keys()[ii] 
+            name_widget = uitools.name_widget(name)
+            inputs_lo.addWidget( name_widget,rowii,0,1,1 )
+            # = 
+            eq_widget = uitools.smalltext_widget('=')
+            inputs_lo.addWidget(eq_widget,rowii,1,1,1)
+            # src
+            src_widget = uitools.src_selection_widget()
+            if self.op.input_src[name] is not None:
+                src = self.op.input_locator[name].src
+            else:
+                src = optools.no_input 
+            src_widget.setCurrentIndex(src)
+            inputs_lo.addWidget(src_widget,rowii,2,1,1)
+            # type
+            type_widget = uitools.type_selection_widget(src)
+            if self.op.input_type[name] is not None:
+                tp = self.op.input_locator[name].tp
+            else:
+                tp = optools.none_type
+            type_widget.setCurrentIndex(tp)
+            inputs_lo.addWidget(src_widget,rowii,3,1,1)
+            # value
+            val_widget = QtGui.QLineEdit()
+            if self.op.inputs[name] is not None:
+                valtext = str(self.op.inputs[name])
+            else:
+                valtext = 'None'
+            inputs_lo.addWidget(src_widget,rowii,4,1,1)
+        inputs_box.setLayout(inputs_lo)
 
     def edit_op(self):
         print 'edit op'

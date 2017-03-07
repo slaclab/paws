@@ -6,7 +6,7 @@ from .wf_plugin import WorkflowPlugin
 from .workflow import Workflow
 from ..operations.operation import Operation        
 from ..operations import optools        
-# TODO: migrate threading to a ThreadPool 
+# TODO: consider migrating threading to a ThreadPool 
 
 class WfManager(QtCore.QObject):
     """
@@ -19,6 +19,7 @@ class WfManager(QtCore.QObject):
         self.appref = qapp_reference 
         self.plugman = plugin_manager
         self._n_threads = QtCore.QThread.idealThreadCount()
+        # TODO: get more wf_threads working
         self._n_wf_threads = 1
         self._wf_threads = dict.fromkeys(range(self._n_threads)[:self._n_wf_threads]) 
         #self._wf_threads = dict.fromkeys(range(self._n_threads)) 
@@ -43,7 +44,7 @@ class WfManager(QtCore.QObject):
 
     def wait_for_thread(self,th_idx):
         """Wait for the thread at self._wf_threads[th_idx] to be finished"""
-        print 'waiting for thread {}'.format(th_idx)
+        #print 'waiting for thread {}'.format(th_idx)
         # when waiting for a thread to execute something,
         # best processEvents() to ensure that the application has a chance
         # to prepare the thing that will be executed

@@ -23,7 +23,7 @@ class Calibrate(Operation):
         super(Calibrate,self).__init__(input_names,output_names)
         self.input_doc['image_data'] = '2d array representing intensity for each pixel'
         self.input_doc['cal_params'] = str( 'dict of calibration parameters, '
-        + 'including keys x0_pixel, y0_pixel, d_pixel, pixel_size'
+        + 'including keys x0_pixel, y0_pixel, d_pixel, pixel_size, '
         + 'rotation_rad, tilt_rad, fpolz')
         self.input_src['image_data'] = optools.wf_input
         self.input_src['cal_params'] = optools.wf_input
