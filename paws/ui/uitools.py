@@ -156,14 +156,14 @@ def save_to_file(d,filename):
     yaml.dump(d, f)
     f.close()
 
-def stop_save_ui(ui,uiman,wf):
+def stop_save_ui(ui,uiman):
     fname = ui.filename.text()
     if not os.path.splitext(fname)[1] == '.wfl':
         fname = fname + '.wfl'
     uiman.msg_board_log( 'dumping current state to {}'.format(fname) )
     d = {} 
     wf_dict = {} 
-    for itm in wf.root_items:
+    for itm in uiman.current_wf().root_items:
         wf_dict[str(itm.tag())] = optools.op_dict(itm.data)
     pgin_dict = {}
     for itm in uiman.plugman.root_items:
@@ -214,7 +214,7 @@ def start_save_ui(uiman):
     save_ui.setParent(uiman.ui,QtCore.Qt.Window)
     save_ui.setWindowModality(QtCore.Qt.ApplicationModal)
     save_ui.save_button.setText('&Save')
-    save_ui.save_button.clicked.connect(partial(stop_save_ui,save_ui,uiman,uiman.current_wf()))
+    save_ui.save_button.clicked.connect( partial(stop_save_ui,save_ui,uiman) )
     #save_ui.filename.returnPressed.connect(partial(stop_save_ui,save_ui,uiman))
     save_ui.filename.textChanged.connect( partial(toggle_save_button,save_ui) )
     save_ui.filename.setText(trmod.rootPath())
