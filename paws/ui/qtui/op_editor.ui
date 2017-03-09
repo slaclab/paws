@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>725</width>
-    <height>657</height>
+    <width>851</width>
+    <height>653</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -57,25 +57,29 @@
       </property>
       <layout class="QVBoxLayout" name="verticalLayout">
        <item>
-        <widget class="QLineEdit" name="op_name"/>
-       </item>
-       <item>
-        <widget class="QFrame" name="op_source_frame">
-         <property name="frameShape">
-          <enum>QFrame::StyledPanel</enum>
+        <widget class="QScrollArea" name="source_scrollarea">
+         <property name="widgetResizable">
+          <bool>true</bool>
          </property>
-         <property name="frameShadow">
-          <enum>QFrame::Raised</enum>
-         </property>
-         <layout class="QGridLayout" name="gridLayout_2">
-          <item row="0" column="0">
-           <layout class="QGridLayout" name="op_source_layout"/>
-          </item>
-         </layout>
+         <widget class="QWidget" name="scrollAreaWidgetContents">
+          <property name="geometry">
+           <rect>
+            <x>0</x>
+            <y>0</y>
+            <width>288</width>
+            <height>578</height>
+           </rect>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_4">
+           <item row="0" column="0">
+            <layout class="QGridLayout" name="op_source_layout"/>
+           </item>
+          </layout>
+         </widget>
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="edit_op_button">
+        <widget class="QPushButton" name="edit_save_button">
          <property name="text">
           <string>PushButton</string>
          </property>

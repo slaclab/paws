@@ -20,8 +20,10 @@ class WorkflowPlugin(PawsPlugin):
         pass
 
     def content(self):
-        # TODO: Is this a good place to reference input and output 'routes'? 
-        return {str(i):self.wf.build_dict(itm) for i,itm in zip(range(len(self.wf.root_items)),self.wf.root_items)}
+        #wf_dict = {'workflow':self.wf}
+        #return wf_dict
+        op_dict = {str(i):self.wf.build_dict(itm) for i,itm in zip(range(len(self.wf.root_items)),self.wf.root_items)}
+        return op_dict
 
     def description(self):
         desc = str('Workflow Plugin for paws: '
