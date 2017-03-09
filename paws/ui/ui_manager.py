@@ -65,10 +65,10 @@ class UiManager(QtCore.QObject):
 
     def current_wf(self):
         idx = self.ui.wf_selector.currentIndex()
-        if not idx == -1:
-            wfname = self.ui.wf_selector.model().list_data()[idx]
-        else:
+        if idx == -1:
             wfname = self.new_wf('workflow')
+        else:
+            wfname = self.ui.wf_selector.model().list_data()[idx]
         return self.wfman.workflows[wfname]
 
     def edit_wf(self,itm_idx=QtCore.QModelIndex()):
