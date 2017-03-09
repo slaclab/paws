@@ -150,7 +150,7 @@ def stop_save_ui(ui,uiman):
     uiman.msg_board_log( 'dumping current state to {}'.format(fname) )
     d = {} 
     wf_dict = {} 
-    for itm in uiman.wfman.root_items:
+    for itm in uiman.current_wf().root_items:
         wf_dict[str(itm.tag())] = optools.op_dict(itm.data)
     pgin_dict = {}
     for itm in uiman.plugman.root_items:
