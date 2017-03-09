@@ -182,7 +182,7 @@ class OptimizeSphericalDiffractionFit(Operation):
     def __init__(self):
         input_names = ['q', 'I', 'dI', 'amplitude_at_zero', 'mean_size', 'fractional_variation','noise_floor',
                        'log_log_fit','exclude_high_q','error_weighting','q_upper_limit']
-        output_names = ['amplitude_at_zero', 'mean_size', 'fractional_variation','noise_floor','I','q_I','log_q_log_I','chi_absolute','chi_relative']
+        output_names = ['amplitude_at_zero', 'mean_size', 'fractional_variation','noise_floor']
         super(OptimizeSphericalDiffractionFit, self).__init__(input_names, output_names)
         # Documentation
         self.input_doc['q'] = '1d ndarray; wave vector values'
@@ -206,7 +206,6 @@ class OptimizeSphericalDiffractionFit(Operation):
         self.input_src['noise_floor'] = optools.text_input
         self.input_type['noise_floor'] = optools.bool_type
         # defaults
-        self.inputs['dI'] = None
         self.inputs['noise_floor'] = False
         self.inputs['log_log_fit'] = False
         self.inputs['exclude_high_q'] = False
@@ -225,7 +224,7 @@ class OptimizeSphericalDiffractionFit(Operation):
         log, clip, errors, baseline = self.inputs['log_log_fit'], self.inputs['exclude_high_q'], \
                                       self.inputs['error_weighting'], self.inputs['noise_floor']
         qlim = self.inputs['q_upper_limit']
-        I_fit, chi_abs, chi_rel, finalparams = arb_cond_fit(q, I, dI, qlim, guesses, log, clip, errors, baseline)
+        I_fit, chi_fit, finalparams = arb_cond_fit(q, I, dI, qlim, guesses, log, clip, errors, baseline)
         self.outputs['amplitude_at_zero'] = finalparams[0]
         self.outputs['mean_size'] = finalparams[1]
         self.outputs['fractional_variation'] = finalparams[2]
@@ -242,8 +241,8 @@ class OptimizeSphericalDiffractionFit(Operation):
         log_q_log_I[:, 0] = np.log(q[~bads])
         log_q_log_I[:, 1] = np.log(I_fit[~bads])
         self.outputs['log_q_log_I'] = log_q_log_I
-        self.outputs['chi_absolute'] = chi_abs
-        self.outputs['chi_relative'] = chi_rel
+
+
 
 def arb_cond_fit(q, I, dI, qlim, guesses, log=False, clip=False, errors=False, baseline=False):
     amplitude_at_zero, mean_size, fractional_variation, noise_floor = guesses
@@ -295,9 +294,8 @@ def arb_cond_fit(q, I, dI, qlim, guesses, log=False, clip=False, errors=False, b
     else:
         noise_floor = 0
     I_fit = amplitude_at_zero * blur(q * mean_size, fractional_variation) * 9. + noise_floor
-    chi_abs = chi_squared(I, I_fit)
-    chi_rel = chi_squared(I, I_fit, dI)
-    return I_fit, chi_abs, chi_rel, popt
+    chi_fit = chi_squared(I, I_fit, dI)
+    return I_fit, chi_fit, popt
 
 def safe_log(y):
     bads = (y <= 0) | (np.isnan(y))
