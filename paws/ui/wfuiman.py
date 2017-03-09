@@ -175,15 +175,16 @@ class WfUiManager(QtCore.QObject):
                 self.input_loaders[name].ui.close()
                 self.input_loaders[name] = None
         src = self.src_widgets[name].currentIndex()
+        input_loader_title = self.ui.uri_entry.text() + '.inputs.' + name
         if src == optools.wf_input:
-            inp_loader = InputLoader(name,src,self.wf,self.ui)
+            inp_loader = InputLoader(input_loader_title,src,self.wf,self.ui)
         elif src == optools.fs_input:
             trmod = QtGui.QFileSystemModel()
-            inp_loader = InputLoader(name,src,trmod,self.ui)
+            inp_loader = InputLoader(input_loader_title,src,trmod,self.ui)
         elif src == optools.plugin_input:
-            inp_loader = InputLoader(name,src,self.plugman,self.ui)
+            inp_loader = InputLoader(input_loader_title,src,self.plugman,self.ui)
         elif src == optools.text_input:
-            inp_loader = InputLoader(name,src,None,self.ui)
+            inp_loader = InputLoader(input_loader_title,src,None,self.ui)
         if self.op.input_locator[name].src == src and self.op.input_locator[name].val is not None:
             if isinstance(self.op.input_locator[name].val,list):
                 inp_loader.set_list_toggle()

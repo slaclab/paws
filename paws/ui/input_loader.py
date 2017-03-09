@@ -9,6 +9,7 @@ class InputLoader(object):
 
     def __init__(self,name,src,trmod=None,parent=None):
         super(InputLoader,self).__init__()
+        self.input_name = name
         self.src = src
         self.trmod = trmod
         self.setup_ui()
@@ -25,6 +26,7 @@ class InputLoader(object):
         self.ui = QtUiTools.QUiLoader().load(ui_file)
         ui_file.close()
         self.ui.setWindowTitle("input loader")
+        self.ui.input_box.setTitle(self.input_name)
         if self.src in [optools.wf_input,optools.plugin_input,optools.fs_input]:
             self.ui.source_treeview.setModel(self.trmod)
         if self.src == optools.fs_input:
