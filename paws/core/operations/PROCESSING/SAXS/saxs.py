@@ -322,6 +322,7 @@ def arb_cond_fit(q, I, dI, qlim, guesses, log=False, clip=False, errors=False, b
     chi_rel = chi_squared(I, I_fit, dI)
     return I_fit, chi_abs, chi_rel, popt
 
+
 def safe_log(y):
     bads = (y <= 0) | (np.isnan(y))
     logy = np.log(y)
