@@ -44,6 +44,10 @@ class GenerateSphericalDiffraction(Operation):
         self.input_type['min'] = optools.float_type
         self.input_type['max'] = optools.float_type
         self.input_type['step'] = optools.float_type
+        self.input_type['r0'] = optools.ref_type
+        self.input_type['sigma_r_over_r0'] = optools.ref_type
+        self.input_type['intensity_at_zero'] = optools.ref_type
+        self.input_type['input_vector'] = optools.ref_type
         # defaults
         self.inputs['use_q_space'] = True
 
@@ -157,6 +161,10 @@ class GuessProperties(Operation):
         self.input_src['q'] = optools.wf_input
         self.input_src['I'] = optools.wf_input
         self.input_src['dI'] = optools.wf_input
+        self.input_type['q'] = optools.ref_type
+        self.input_type['I'] = optools.ref_type
+        self.input_type['dI'] = optools.ref_type
+
 
     def run(self):
         q, I, dI = self.inputs['q'], self.inputs['I'], self.inputs['dI']
@@ -204,7 +212,22 @@ class OptimizeSphericalDiffractionFit(Operation):
         self.input_src['mean_size'] = optools.wf_input
         self.input_src['fractional_variation'] = optools.wf_input
         self.input_src['noise_floor'] = optools.text_input
+        self.input_src['log_log_fit'] = optools.text_input
+        self.input_src['exclude_high_q'] = optools.text_input
+        self.input_src['error_weighting'] = optools.text_input
+        self.input_src['q_upper_limit'] = optools.text_input
         self.input_type['noise_floor'] = optools.bool_type
+        self.input_type['log_log_fit'] = optools.bool_type
+        self.input_type['exclude_high_q'] = optools.bool_type
+        self.input_type['error_weighting'] = optools.bool_type
+        self.input_type['q_upper_limit'] = optools.float_type
+        self.input_type['q'] = optools.ref_type
+        self.input_type['I'] = optools.ref_type
+        self.input_type['dI'] = optools.ref_type
+        self.input_type['amplitude_at_zero'] = optools.ref_type
+        self.input_type['mean_size'] = optools.ref_type
+        self.input_type['fractional_variation'] = optools.ref_type
+#        self.input_type[''] = optools.ref_type
         # defaults
         self.inputs['dI'] = None
         self.inputs['noise_floor'] = False
@@ -822,5 +845,18 @@ an appropriate file; the file will be saved and need not be generated again.'''
 reference_loc = join('paws','core','operations','DMZ','references','polydispersity_guess_references.csv.gz')
 try:
     references = load_references(reference_loc)
+    print "Reference file loaded."
 except:
-    print "No reference file was found at the appropriate location."
+    print "Why would the error throw here, instead of in load_references?"
+
+'''
+import numpy as np
+import os.path
+reference_folder = join('paws','core','operations','DMZ','references')
+reference_loc = join('paws','core','operations','DMZ','references','polydispersity_guess_references.csv.gz')
+os.path.exists(reference_folder)
+os.path.exists(reference_loc)
+fake = reference_loc + 'lol'
+os.path.exists(fake)
+load_references(reference_loc)
+'''
