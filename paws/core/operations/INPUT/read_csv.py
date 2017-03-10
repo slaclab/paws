@@ -11,7 +11,7 @@ class ReadCSV_q_I_dI(Operation):
 
     def __init__(self):
         input_names = ['csv_location']
-        output_names = ['q','I', 'dI']
+        output_names = ['q','I', 'dI','q_I','q_dI']
         super(ReadCSV_q_I_dI, self).__init__(input_names, output_names)
         # docstrings
         self.output_doc['q'] = "1d ndarray; independent variable"
@@ -19,7 +19,7 @@ class ReadCSV_q_I_dI(Operation):
         self.output_doc['dI'] = "1d ndarray; error estimate of *I*; same shape as *I*"
         # source & type
         self.input_src['csv_location'] = optools.fs_input
-        self.input_type['csv_location'] = optools.str_type
+        self.input_type['csv_location'] = optools.path_type
         self.categories = ['INPUT.CSV']
 
     def run(self):
@@ -28,6 +28,9 @@ class ReadCSV_q_I_dI(Operation):
         self.outputs['q'] = q
         self.outputs['I'] = I
         self.outputs['dI'] = dI
+        self.outputs['q_I'] = logsafe_zip(q, I)
+        self.outputs['q_dI'] = logsafe_zip(q, dI)
+
 
 def read_csv_q_I_maybe_dI(nameloc):
     q = np.loadtxt(nameloc, dtype=float, delimiter=',', skiprows=1, usecols=(0,))
@@ -38,3 +41,12 @@ def read_csv_q_I_maybe_dI(nameloc):
         dI = None
     return q, I, dI
 
+def zip(x, y):
+    x_y = np.zeros((x.size, 2))
+    x_y[:, 0] = x
+    x_y[:, 1] = y
+    return x_y
+
+def logsafe_zip(x, y):
+    bad = (x <= 0) | (y <= 0) | np.isnan(y)
+    return zip(x[~bad], y[~bad])

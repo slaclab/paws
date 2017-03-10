@@ -37,11 +37,21 @@ class WindowZip(Operation):
         yvals = self.inputs['y']
         x_min = self.inputs['x_min']
         x_max = self.inputs['x_max']
-        idx_good = ((xvals >= x_min) & (xvals <= x_max))
-        x_y_window = np.zeros((idx_good.sum(),2))
-        x_y_window[:,0] = xvals[idx_good]
-        x_y_window[:,1] = yvals[idx_good]
+        x_y_window = window_zip(xvals, yvals, x_min, x_max)
         self.outputs['x_window'] = x_y_window[:,0]
         self.outputs['y_window'] = x_y_window[:,1]
         self.outputs['x_y_window'] = x_y_window
 
+def window_zip(x, y, x_min, x_max):
+    good = ((x >= x_min) & (x <= x_max))
+    return zip(x[good],y[good])
+
+def zip(x, y):
+    x_y = np.zeros((x.size, 2))
+    x_y[:, 0] = x
+    x_y[:, 1] = y
+    return x_y
+
+def logsafe_zip(x, y):
+    bad = (x <= 0) | (y <= 0) | np.isnan(y)
+    return zip(x[~bad], y[~bad])

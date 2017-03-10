@@ -142,7 +142,8 @@ class GuessProperties(Operation):
 
     def __init__(self):
         input_names = ['q', 'I', 'dI']
-        output_names = ['fractional_variation', 'mean_size', 'amplitude_at_zero', 'qFirstDip', 'heightFirstDip', 'sigmaScaledFirstDip', 'heightAtZero', 'dips', 'shoulders']
+        output_names = ['fractional_variation','mean_size','amplitude_at_zero','qFirstDip','heightFirstDip',
+                        'sigmaScaledFirstDip','heightAtZero','dips','shoulders','I_guess','q_I_guess']
         super(GuessProperties, self).__init__(input_names, output_names)
         # Documentation
         self.input_doc['q'] = '1d ndarray; wave vector values'
@@ -182,6 +183,8 @@ class GuessProperties(Operation):
         amplitude_at_zero, mean_size, fractional_variation = refine_guess(q, I, amplitude_at_zero, mean_size, fractional_variation, qFirstDip, heightFirstDip)
         self.outputs['fractional_variation'], self.outputs['mean_size'], self.outputs['amplitude_at_zero'] = \
             fractional_variation, mean_size, amplitude_at_zero
+        self.outputs['I_guess'] = generate_spherical_diffraction(q, amplitude_at_zero, mean_size, fractional_variation)
+        self.outputs['q_I_guess'] = logsafe_zip(q, self.outputs['I_guess'])
 
 class OptimizeSphericalDiffractionFit(Operation):
     """From an initial guess, optimize r0, I0, and fractional_variation."""
@@ -190,7 +193,8 @@ class OptimizeSphericalDiffractionFit(Operation):
     def __init__(self):
         input_names = ['q', 'I', 'dI', 'amplitude_at_zero', 'mean_size', 'fractional_variation','noise_floor',
                        'log_log_fit','exclude_high_q','error_weighting','q_upper_limit']
-        output_names = ['amplitude_at_zero', 'mean_size', 'fractional_variation','noise_floor','I','q_I','log_q_log_I','chi_absolute','chi_relative']
+        output_names = ['amplitude_at_zero', 'mean_size', 'fractional_variation','noise_floor','I_fit','q_I_fit',
+                        'chi_absolute','chi_relative']
         super(OptimizeSphericalDiffractionFit, self).__init__(input_names, output_names)
         # Documentation
         self.input_doc['q'] = '1d ndarray; wave vector values'
@@ -207,7 +211,7 @@ class OptimizeSphericalDiffractionFit(Operation):
         # Source and type
         self.input_src['q'] = optools.wf_input
         self.input_src['I'] = optools.wf_input
-        self.input_src['dI'] = optools.text_input
+        self.input_src['dI'] = optools.wf_input
         self.input_src['amplitude_at_zero'] = optools.wf_input
         self.input_src['mean_size'] = optools.wf_input
         self.input_src['fractional_variation'] = optools.wf_input
@@ -229,10 +233,9 @@ class OptimizeSphericalDiffractionFit(Operation):
         self.input_type['fractional_variation'] = optools.ref_type
 #        self.input_type[''] = optools.ref_type
         # defaults
-        self.inputs['dI'] = None
         self.inputs['noise_floor'] = False
-        self.inputs['log_log_fit'] = False
-        self.inputs['exclude_high_q'] = False
+        self.inputs['log_log_fit'] = True
+        self.inputs['exclude_high_q'] = True
         self.inputs['error_weighting'] = False
         self.inputs['q_upper_limit'] = 0.25
 #        self.inputs['defaults'] = None
@@ -255,16 +258,8 @@ class OptimizeSphericalDiffractionFit(Operation):
         self.outputs['noise_background'] = None
         if baseline:
             self.outputs['noise_background'] = finalparams[3]
-        self.outputs['I'] = I_fit
-        bads = (I_fit <= 0) | (np.isnan(I_fit)) | (q <= 0)
-        q_I = np.zeros(((~bads).sum(),2))
-        q_I[:, 0] = q[~bads]
-        q_I[:, 1] = I_fit[~bads]
-        self.outputs['q_I'] = q_I
-        log_q_log_I = np.zeros(((~bads).sum(), 2))
-        log_q_log_I[:, 0] = np.log(q[~bads])
-        log_q_log_I[:, 1] = np.log(I_fit[~bads])
-        self.outputs['log_q_log_I'] = log_q_log_I
+        self.outputs['I_fit'] = I_fit
+        self.outputs['q_I_fit'] = logsafe_zip(q, I_fit)
         self.outputs['chi_absolute'] = chi_abs
         self.outputs['chi_relative'] = chi_rel
 
@@ -322,12 +317,21 @@ def arb_cond_fit(q, I, dI, qlim, guesses, log=False, clip=False, errors=False, b
     chi_rel = chi_squared(I, I_fit, dI)
     return I_fit, chi_abs, chi_rel, popt
 
-
 def safe_log(y):
     bads = (y <= 0) | (np.isnan(y))
     logy = np.log(y)
     logy[bads] = np.min(logy[~bads])
     return logy
+
+def zip(x, y):
+    x_y = np.zeros((x.size, 2))
+    x_y[:, 0] = x
+    x_y[:, 1] = y
+    return x_y
+
+def logsafe_zip(x, y):
+    bad = (x <= 0) | (y <= 0) | np.isnan(y)
+    return zip(x[~bad], y[~bad])
 
 # I/O functions
 
@@ -846,9 +850,8 @@ an appropriate file; the file will be saved and need not be generated again.'''
 reference_loc = join('paws','core','operations','DMZ','references','polydispersity_guess_references.csv.gz')
 try:
     references = load_references(reference_loc)
-    print "Reference file loaded."
 except:
-    print "Why would the error throw here, instead of in load_references?"
+    print "Something other than an IOerror seems to have gone wrong."
 
 '''
 import numpy as np
