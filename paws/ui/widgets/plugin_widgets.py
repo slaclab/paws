@@ -2,6 +2,7 @@ from PySide import QtGui
 
 from ...core.plugins.plugin import PawsPlugin
 from ...core.workflow.wf_plugin import WorkflowPlugin 
+from ...core.operations.operation import Operation, Batch, Realtime
 
 def plugin_widget(pgin):
     """
@@ -28,24 +29,56 @@ class WorkflowGraphView(QtGui.QWidget):
 
     def __init__(self,wf):
         super(WorkflowGraphView,self).__init__()
+        self.hspace = 20
+        self.vspace = 20
         self.wf = wf
-        self.wf.dataChanged.connect(self.repaint_region_by_idx) 
+        #self.wf.dataChanged.connect(self.repaint_region_by_idx) 
         self.scale = float(1)
         self.op_coords = {}
         self.inp_coords = {}
         self.out_coords = {}
+        self.update_coords()
 
-    def repaint_region_by_idx(self,topleft_idx,bottomright_idx):
-        # assume topleft and bottomright are the same,
-        # i.e. assume the workflow calls dataChanged()
-        # on just one TreeItem at a time
-        if not topleft_idx == bottomright_idx:
-            msg = str('[{}] repaint event was called for a region. '.format(__name__)
-            + 'Currently only single-index regions can be repainted.')
-            raise ValueError(msg)
-        idx = topleft_idx
-        itm = self.get_item(idx)
-        # get the coords for this item, call self.update() on that region
+    def update_coords(self):
+        stk = self.wf.execution_stack()
+        hcoord = self.hspace 
+        for lst in stk:
+            vcoord = self.vspace 
+            layer_width = 0
+            if isinstance(lst[0].data,Batch) or isinstance(lst[0].data,Realtime):
+                b_itm = lst[0]
+                b_stk = lst[1]
+                b_width = 0 
+                b_hcoord = hcoord + self.hspace
+                b_height = 0
+                for lst in b_stk:
+                    b_vcoord = vcoord + self.vspace
+                    layer_height = self.vspace 
+                    for itm in lst:
+                        op = itm.data
+                        op_dims = self.op_dims(op)
+                        self.op_coords[itm.tag()] = ((b_hcoord,b_vcoord),(b_hcoord+op_dims[0],b_vcoord+op_dims[1]))
+                        b_width = max([b_width,op_dims[1]])
+                        b_vcoord += op_dims[1] + self.vspace
+                        layer_height += op_dims[1] + self.vspace
+                    b_height = max([b_height,layer_height])
+                self.op_coords[b_itm.tag()] = ((hcoord,vcoord),(hcoord+b_width,vcoord+b_height))
+                layer_width = b_width
+            else:
+                for itm in lst:
+                    op = itm.data
+                    op_dims = self.op_dims(op)
+                    self.op_coords[itm.tag()] = ((hcoord,vcoord),(hcoord+op_dims[0],vcoord+op_dims[1]))
+                    layer_width = max([layer_width,op_dims[1]])
+                    vcoord += op_dims[1] + self.vspace
+            hcoord += layer_width + self.hspace
+                
+    def op_dims(self,op):
+        # vertical extent determined by number of ins and outs
+        vdim = 3*self.vspace + len(op.inputs)*self.vspace
+        # horizontal extent determined by longest in/out names
+        hdim = max([ 10*max([len(name) for name in op.inputs.keys()])+10*max([len(name) for name in op.outputs.keys()]) , 100 ])
+        return (hdim,vdim)
 
     def paintEvent(self,evnt):
         # QPaintEvent.region() specifies the QtGui.QRegion to paint
@@ -57,24 +90,18 @@ class WorkflowGraphView(QtGui.QWidget):
         q_white = QtGui.QColor(255,255,255,255)
         pen_w.setColor(q_white)
         p.setPen(pen)
-        #p.setBrush()...
-        #p.translate(w/2, h/2)
-        #p.scale(widgdim/200,widgdim/200)
-        #rectvert = 80 
-        #recthorz = 50
-        #topleft = QtCore.QPoint(int(-1*recthorz),int(-1*rectvert))
-        #bottomright = QtCore.QPoint(int(recthorz),int(rectvert))
-        # Large rectangle representing the Operation
-        #mainrec = QtCore.QRectF(topleft,bottomright)
-        #p.drawRect(mainrec)
-        #title_hdr = QtCore.QRectF(QtCore.QPoint(-100,-1*(rectvert+10)),
-        #                        QtCore.QPoint(100,-1*rectvert))
-        #title_hdr = QtCore.QRectF(QtCore.QPoint(-30,-10),QtCore.QPoint(30,10))
+        for name,coords in self.op_coords.items():
+            topleft = QtCore.QPoint(int(coords[0][0]),int(coords[0][1]))
+            bottomright = QtCore.QPoint(int(coords[1][0]),int(coords[1][1]))
+            op_rec = QtCore.QRectF(topleft,bottomright)
+            p.drawRect(op_rec)
+            title_rec = QtCore.QRectF(  QtCore.QPoint(int(coords[0][0]),int(coords[0][1])-10),
+                                        QtCore.QPoint(int(coords[1][0]),int(coords[0][1])) )
+            f = QtGui.QFont()
+            f.setPointSize(5)
+            p.setFont(f)
+            p.drawText(title_rec,QtCore.Qt.AlignLeft,type(self.op).__name__)
         #f.setPixelSize(10)
-        #f = QtGui.QFont()
-        #f.setPointSize(5)
-        #p.setFont(f)
-        #p.drawText(title_hdr,QtCore.Qt.AlignCenter,type(self.op).__name__)
         #f.setPointSize(4)
         #p.setFont(f)
         # Headers for input and output sides
@@ -117,9 +144,18 @@ class WorkflowGraphView(QtGui.QWidget):
         #    #p.drawText(outrec,QtCore.Qt.AlignLeft|QtCore.Qt.AlignVCenter,str(val))
         #    #|QtCore.Qt.TextWordWrap,str(val))
         #    vcrd += 2*ispc
-
        
-    #def update(self):
+    def repaint_region_by_idx(self,topleft_idx,bottomright_idx):
+        # assume topleft and bottomright are the same,
+        # i.e. assume the workflow calls dataChanged()
+        # on just one TreeItem at a time
+        if not topleft_idx == bottomright_idx:
+            msg = str('[{}] repaint event was called for a region. '.format(__name__)
+            + 'Currently only single-index regions can be repainted.')
+            raise ValueError(msg)
+        idx = topleft_idx
+        itm = self.get_item(idx)
+        # get the coords for this item, call self.update() on that region
 
 
 
