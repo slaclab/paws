@@ -103,7 +103,7 @@ class WorkflowGraphView(QtGui.QWidget):
             vcrd += 2*ispc
 
        
-    def update(self):
+    #def update(self):
 
 
 
