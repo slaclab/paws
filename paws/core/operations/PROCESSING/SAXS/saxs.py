@@ -312,7 +312,7 @@ def arb_cond_fit(q, I, dI, qlim, guesses, log=False, clip=False, errors=False, b
         noise_floor = popt[3]
     else:
         noise_floor = 0
-    I_fit = amplitude_at_zero * blur(q * mean_size, fractional_variation) * 9. + noise_floor
+    I_fit = amplitude_at_zero * blur(q * mean_size, fractional_variation) + noise_floor
     chi_abs = chi_squared(I, I_fit)
     chi_rel = chi_squared(I, I_fit, dI)
     return I_fit, chi_abs, chi_rel, popt
