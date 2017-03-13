@@ -160,11 +160,15 @@ class UiManager(QtCore.QObject):
             current_wf_idx = self.ui.wf_selector.currentIndex()
             wfname = self.ui.wf_selector.model().list_data()[current_wf_idx]
             wf = self.current_wf()
+        # depending on whether wf is running or not,
+        # call a QtCore.Slot to get wfman to do the right thing
+        # and still continue to update_run_wf_button()
         if wf.is_running():
             self.wfman.stop_wf(wfname)
+            self.ui.run_wf_button.setText("&Run")
         else:
+            self.ui.run_wf_button.setText("S&top")
             self.wfman.run_wf(wfname)
-        self.update_run_wf_button()
 
     def update_run_wf_button(self):
         if self.current_wf().is_running():

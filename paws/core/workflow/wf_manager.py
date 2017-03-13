@@ -31,6 +31,14 @@ class WfManager(QtCore.QObject):
     wfdone = QtCore.Signal(str)
 
     @QtCore.Slot(str)
+    def run_wf(self,wfname):
+        self.workflows[wfname].run_wf()
+
+    @QtCore.Slot(str)
+    def stop_wf(self,wfname):
+        self.workflows[wfname].stop_wf()
+
+    @QtCore.Slot(str)
     def finish_wf(self,wfname):
         self.wfdone.emit(wfname)
 
@@ -132,12 +140,6 @@ class WfManager(QtCore.QObject):
         wf_pgin.inputs['workflow'] = self.workflows[wfname] 
         wf_pgin.start()
         self.plugman.add_plugin(wfname,wf_pgin)
-
-    def run_wf(self,wfname):
-        self.workflows[wfname].run_wf()
-
-    def stop_wf(self,wfname):
-        self.workflows[wfname].stop_wf()
 
     def load_from_dict(self,wfname,opman,opdict):
         """
