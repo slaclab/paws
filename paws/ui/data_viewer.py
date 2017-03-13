@@ -39,7 +39,7 @@ def display_item(itm,qlayout,logmethod=None):
         pgin_widget = None
 
     if isinstance(itm,Operation):
-        op_widget = OpWidget(itm,qlayout)
+        op_widget = OpWidget(itm)
     else:
         op_widget = None
 

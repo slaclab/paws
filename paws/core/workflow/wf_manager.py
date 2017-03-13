@@ -2,7 +2,7 @@ from functools import partial
 
 from PySide import QtCore
 
-from .wf_plugin import WorkflowPlugin
+from ..plugins.WorkflowPlugin import WorkflowPlugin
 from .workflow import Workflow
 from ..operations.operation import Operation        
 from ..operations import optools        
@@ -114,7 +114,10 @@ class WfManager(QtCore.QObject):
         #wf.logmethod = self.logmethod
         self.workflows[wfname] = wf
         # for every new workflow, add a plugin 
-        self.plugman.add_plugin(wfname,WorkflowPlugin(wf))
+        wf_pgin = WorkflowPlugin()
+        wf_pgin.inputs['workflow'] = wf
+        wf_pgin.start()
+        self.plugman.add_plugin(wfname,wf_pgin)
 
     def run_wf(self,wfname):
         self.workflows[wfname].run_wf()

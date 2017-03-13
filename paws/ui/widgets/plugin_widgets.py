@@ -145,6 +145,8 @@ class WorkflowGraphView(QtGui.QWidget):
         #    #|QtCore.Qt.TextWordWrap,str(val))
         #    vcrd += 2*ispc
        
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
     def repaint_region_by_idx(self,topleft_idx,bottomright_idx):
         # assume topleft and bottomright are the same,
         # i.e. assume the workflow calls dataChanged()
@@ -156,6 +158,12 @@ class WorkflowGraphView(QtGui.QWidget):
         idx = topleft_idx
         itm = self.get_item(idx)
         # get the coords for this item, call self.update() on that region
+=======
+    #def update(self):
+>>>>>>> Stashed changes
+=======
+    #def update(self):
+>>>>>>> Stashed changes
 
 
 
