@@ -118,80 +118,7 @@ def bigtext_widget(text):
     widg.setSizePolicy(QtGui.QSizePolicy.Maximum,QtGui.QSizePolicy.Fixed)
     return widg
 
-def toggle_load_button(ui,txt):
-    idx = ui.tree.model().index(txt)
-    if (idx.isValid() and ui.tree.model().isDir(idx) 
-    or not os.path.splitext(txt)[1] == '.wfl'):
-        ui.load_button.setEnabled(False)
-    else:
-        ui.load_button.setEnabled(True)
-
-def toggle_save_button(ui,txt):
-    idx = ui.tree.model().index(ui.filename.text())
-    if idx.isValid() and ui.tree.model().isDir(idx):
-        ui.save_button.setEnabled(False)
-    else:
-        ui.save_button.setEnabled(True)
-
-def save_path(ui,idx=QtCore.QModelIndex(),oldidx=QtCore.QModelIndex()):
-    if idx.isValid():
-        p = ui.tree.model().filePath(idx)
-        ui.filename.setText(p)
-
-def load_path(ui,idx=QtCore.QModelIndex()):
-    if idx.isValid():
-        p = ui.tree.model().filePath(idx)
-        if (ui.tree.model().isDir(idx) 
-        or not os.path.splitext(p)[1] == '.wfl'):
-            ui.load_button.setEnabled(False)
-        else:
-            ui.load_button.setEnabled(True)
-    
-def save_to_file(d,filename):
-    """
-    Save the items in dict d as YAML in filename
-    """
-    f = open(filename, 'w')
-    #yaml.dump(d, f, encoding='utf-8')
-    yaml.dump(d, f)
-    f.close()
-
-def stop_save_ui(ui,uiman):
-    fname = ui.filename.text()
-    if not os.path.splitext(fname)[1] == '.wfl':
-        fname = fname + '.wfl'
-    uiman.msg_board_log( 'dumping current state to {}'.format(fname) )
-    d = {} 
-    wf_dict = {} 
-    for itm in uiman.current_wf().root_items:
-        wf_dict[str(itm.tag())] = optools.op_dict(itm.data)
-    pgin_dict = {}
-    for itm in uiman.plugman.root_items:
-        pgin_dict[str(itm.tag())] = optools.plugin_dict(itm.data)
-    d['WORKFLOW'] = wf_dict
-    d['PLUGINS'] = pgin_dict
-    save_to_file(d,fname)
-    ui.close()
-
-def stop_load_ui(ui,uiman):
-    #fname = ui.filename.text()
-    fname = ui.tree.model().filePath(ui.tree.currentIndex())
-    f = open(fname,'r')
-    d = yaml.load(f)
-    f.close()
-    fname_nopath = os.path.split(fname)[1]
-    fname_noext = os.path.splitext(fname_nopath)[0]
-    if 'WORKFLOW' in d.keys():
-        wfname = uiman.new_wf(fname_noext)
-        uiman.wfman.load_from_dict(wfname,uiman.opman,d['WORKFLOW'])
-    if 'PLUGINS' in d.keys():
-        uiman.plugman.load_from_dict(d['PLUGINS'])
-    ui.close()
-
-def start_save_ui(uiman):
-    """
-    Start a modal window dialog to choose a save destination for the current workflow  
-    """
+def start_save_ui(parent,fspath=None):
     ui_file = QtCore.QFile(pawstools.rootdir+"/ui/qtui/save_browser.ui")
     ui_file.open(QtCore.QFile.ReadOnly)
     save_ui = QtUiTools.QUiLoader().load(ui_file)
@@ -208,23 +135,36 @@ def start_save_ui(uiman):
     save_ui.tree.expanded.connect( partial(save_path,save_ui) )
     trmod.setRootPath(QtCore.QDir.currentPath())
     idx = trmod.index(QtCore.QDir.currentPath())
+    if fspath is not None:
+        try:
+            trmod.setRootPath(fspath)
+            idx = trmod.index(fspath)
+        except:
+            pass
     while idx.isValid():
         save_ui.tree.setExpanded(idx,True)
         idx = idx.parent()
-    save_ui.setParent(uiman.ui,QtCore.Qt.Window)
+    save_ui.setParent(parent,QtCore.Qt.Window)
     save_ui.setWindowModality(QtCore.Qt.ApplicationModal)
     save_ui.save_button.setText('&Save')
-    save_ui.save_button.clicked.connect( partial(stop_save_ui,save_ui,uiman) )
-    #save_ui.filename.returnPressed.connect(partial(stop_save_ui,save_ui,uiman))
+    #save_ui.filename.returnPressed.connect(partial(stop_save_ui,save_ui))
     save_ui.filename.textChanged.connect( partial(toggle_save_button,save_ui) )
     save_ui.filename.setText(trmod.rootPath())
-    save_ui.show()
-    save_ui.activateWindow()
+    return save_ui
 
-def start_load_ui(uiman):
-    """
-    Start a modal window dialog to load a previously saved workflow
-    """
+def toggle_save_button(ui,txt):
+    idx = ui.tree.model().index(ui.filename.text())
+    if idx.isValid() and ui.tree.model().isDir(idx):
+        ui.save_button.setEnabled(False)
+    else:
+        ui.save_button.setEnabled(True)
+
+def save_path(ui,idx=QtCore.QModelIndex(),oldidx=QtCore.QModelIndex()):
+    if idx.isValid():
+        p = ui.tree.model().filePath(idx)
+        ui.filename.setText(p)
+
+def start_load_ui(parent,fspath=None):
     ui_file = QtCore.QFile(pawstools.rootdir+"/ui/qtui/load_browser.ui")
     ui_file.open(QtCore.QFile.ReadOnly)
     load_ui = QtUiTools.QUiLoader().load(ui_file)
@@ -241,18 +181,31 @@ def start_load_ui(uiman):
     load_ui.tree.clicked.connect( partial(load_path,load_ui) )
     trmod.setRootPath(QtCore.QDir.currentPath())
     idx = trmod.index(QtCore.QDir.currentPath())
+    if fspath is not None:
+        try:
+            trmod.setRootPath(fspath)
+            idx = trmod.index(fspath)
+        except:
+            pass
     while idx.isValid():
         load_ui.tree.setExpanded(idx,True)
         idx = idx.parent()
-    load_ui.setParent(uiman.ui,QtCore.Qt.Window)
+    load_ui.setParent(parent,QtCore.Qt.Window)
     #load_ui.setAttribute(QtCore.Qt.WA_OpaquePaintEvent)
     load_ui.setWindowModality(QtCore.Qt.ApplicationModal)
     load_ui.load_button.setText('&Load')
-    load_ui.load_button.clicked.connect(partial(stop_load_ui,load_ui,uiman))
-    load_ui.show()
-    load_ui.activateWindow()
+    return load_ui
 
-def message_ui(parent=None):
+def load_path(ui,idx=QtCore.QModelIndex()):
+    if idx.isValid():
+        p = ui.tree.model().filePath(idx)
+        if (ui.tree.model().isDir(idx) 
+        or not os.path.splitext(p)[1] == '.wfl'):
+            ui.load_button.setEnabled(False)
+        else:
+            ui.load_button.setEnabled(True)
+    
+def message_ui(parent):
     ui_file = QtCore.QFile(pawstools.rootdir+"/ui/qtui/message.ui")
     ui_file.open(QtCore.QFile.ReadOnly)
     msg_ui = QtUiTools.QUiLoader().load(ui_file)

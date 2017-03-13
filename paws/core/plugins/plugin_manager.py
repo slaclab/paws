@@ -32,14 +32,25 @@ class PluginManager(TreeSelectionModel):
                     self.write_log('Did not find Plugin {} - skipping.'.format(pgin_name))
                 else:
                     pgin = pgin()
-                    pgin.inputs = pgin_spec[optools.inputs_tag]
+                    for name in pgin.inputs.keys():
+                        if name in pgin_spec[optools.inputs_tag]:
+                            pgin.inputs = pgin_spec[optools.inputs_tag][name]
                     pgin.start()
                     if self.is_good_uri(uri):
                         uri = self.auto_tag(uri)
                     self.add_plugin(uri,pgin)
             else:
                 self.write_log('Did not find Plugin {} - skipping.'.format(pgin_name))
-                
+
+    def list_plugins(self):
+        return [itm.tag() for itm in self.root_items]
+
+    @staticmethod
+    def plugin_dict(pgin):
+        dct = OrderedDict()
+        dct['type'] = type(pgin).__name__
+        dct[inputs_tag] = pgin.inputs 
+        return dct
 
     def get_plugin_byname(self,pgin_name):    
         try:

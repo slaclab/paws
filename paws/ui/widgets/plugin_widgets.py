@@ -1,7 +1,7 @@
 from PySide import QtGui
 
 from ...core.plugins.plugin import PawsPlugin
-from ...core.workflow.wf_plugin import WorkflowPlugin 
+from ...core.plugins.WorkflowPlugin import WorkflowPlugin 
 from ...core.operations.operation import Operation, Batch, Realtime
 
 def plugin_widget(pgin):
@@ -42,6 +42,7 @@ class WorkflowGraphView(QtGui.QWidget):
     def update_coords(self):
         stk = self.wf.execution_stack()
         hcoord = self.hspace 
+        max_vcoord = 0
         for lst in stk:
             vcoord = self.vspace 
             layer_width = 0
@@ -71,7 +72,11 @@ class WorkflowGraphView(QtGui.QWidget):
                     self.op_coords[itm.tag()] = ((hcoord,vcoord),(hcoord+op_dims[0],vcoord+op_dims[1]))
                     layer_width = max([layer_width,op_dims[1]])
                     vcoord += op_dims[1] + self.vspace
+            if vcoord > max_vcoord:
+                max_vcoord = vcoord
             hcoord += layer_width + self.hspace
+        self.widget_width = hcoord
+        self.widget_height = max_vcoord
                 
     def op_dims(self,op):
         # vertical extent determined by number of ins and outs
@@ -81,8 +86,17 @@ class WorkflowGraphView(QtGui.QWidget):
         return (hdim,vdim)
 
     def paintEvent(self,evnt):
+
         # QPaintEvent.region() specifies the QtGui.QRegion to paint
+        # TODO: Use this to make paintEvent more efficient.
         paint_region = evnt.region()
+
+        # temporary code: trying to find origin orientation
+        w = self.width()
+        h = self.height()
+        p.translate(w/2, h/2)
+        p.scale(widgdim/200,widgdim/200)
+
         # Create a painter and give it a white pen 
         p = QtGui.QPainter(self)
         p.setRenderHint(QtGui.QPainter.Antialiasing)
@@ -145,25 +159,20 @@ class WorkflowGraphView(QtGui.QWidget):
         #    #|QtCore.Qt.TextWordWrap,str(val))
         #    vcrd += 2*ispc
        
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-    def repaint_region_by_idx(self,topleft_idx,bottomright_idx):
-        # assume topleft and bottomright are the same,
-        # i.e. assume the workflow calls dataChanged()
-        # on just one TreeItem at a time
-        if not topleft_idx == bottomright_idx:
-            msg = str('[{}] repaint event was called for a region. '.format(__name__)
-            + 'Currently only single-index regions can be repainted.')
-            raise ValueError(msg)
-        idx = topleft_idx
-        itm = self.get_item(idx)
-        # get the coords for this item, call self.update() on that region
-=======
+    #def repaint_region_by_idx(self,topleft_idx,bottomright_idx):
+    #    # assume topleft and bottomright are the same,
+    #    # i.e. assume the workflow calls dataChanged()
+    #    # on just one TreeItem at a time
+    #    if not topleft_idx == bottomright_idx:
+    #        msg = str('[{}] repaint event was called for a region. '.format(__name__)
+    #        + 'Currently only single-index regions can be repainted.')
+    #        raise ValueError(msg)
+    #    idx = topleft_idx
+    #    itm = self.get_item(idx)
+    #    # get the coords for this item, call self.update() on that region
+    
+
     #def update(self):
->>>>>>> Stashed changes
-=======
-    #def update(self):
->>>>>>> Stashed changes
 
 
 

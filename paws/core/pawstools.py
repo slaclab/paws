@@ -54,3 +54,19 @@ def timestr():
     """Return time as a string"""
     return dt.strftime(dt.now(),'%H:%M:%S')
 
+def update_file(filename,d):
+    """
+    Save the items in dict d into filename,
+    without removing members not included in d.
+    """
+    if os.path.exists(filename):
+        f_old = open(filename,'r')
+        d_old = yaml.load(f_old)
+        f_old.close()
+        d_old.update(d)
+        d = d_old
+    f = open(filename, 'w')
+    yaml.dump(d, f)
+    f.close()
+
+

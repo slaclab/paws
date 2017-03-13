@@ -6,7 +6,7 @@ from collections import OrderedDict
 
 from PySide import QtCore
 
-import operation 
+import operation
 
 # Declarations of valid sources and types for workflow and plugin inputs
 ##### TODO: the following but gracefully
@@ -41,6 +41,19 @@ invalid_types[batch_input] = [str_type,int_type,float_type,bool_type,ref_type,pa
 # tags for inputs and outputs TreeItems    
 inputs_tag = 'inputs'
 outputs_tag = 'outputs'
+
+class InputLocator(object):
+    """
+    Objects of this class are used as containers for inputs to an Operation,
+    and should by design contain the information needed to find the relevant input data.
+    After the data is loaded, it should be stored in InputLocator.data.
+    """
+    def __init__(self,src=no_input,tp=none_type,val=None):
+        self.src = src
+        self.tp = tp
+        self.val = val 
+        self.data = None 
+
 
 def cast_type_val(tp,val):
     """
@@ -83,37 +96,6 @@ def dict_contains_uri(uri,d):
             itm = itm[k]
     return True
 
-def op_dict(op):
-    dct = OrderedDict() 
-    dct['type'] = type(op).__name__ 
-    dct[inputs_tag] = op_inputs_dict(op)
-    return dct
-
-def op_inputs_dict(op):
-    dct = OrderedDict() 
-    for name in op.inputs.keys():
-        il = op.input_locator[name]
-        dct[name] = {'src':il.src,'tp':il.tp,'val':il.val}
-    return dct
-
-def plugin_dict(pgin):
-    dct = OrderedDict()
-    dct['type'] = type(pgin).__name__
-    dct[inputs_tag] = pgin.inputs 
-    return dct
-
-class InputLocator(object):
-    """
-    Objects of this class are used as containers for inputs to an Operation,
-    and should by design contain the information needed to find the relevant input data.
-    After the data is loaded, it should be stored in InputLocator.data.
-    """
-    def __init__(self,src=no_input,tp=none_type,val=None):
-        self.src = src
-        self.tp = tp
-        self.val = val 
-        self.data = None 
-
 def parameter_doc(name,value,doc):
     if isinstance(value, InputLocator):
         src_str = input_sources[value.src]
@@ -152,7 +134,6 @@ def print_stack(stk):
         if isinstance(lst[0].data,operation.Batch) or isinstance(lst[0].data,operation.Realtime):
             substk = lst[1]
             stktxt += ('[\'{}\':\n{}\n]'+opt_newline).format(lst[0].tag(),print_stack(lst[1]))
-            #[[itm.tag() for itm in sublst] for sublst in substk])
         else:
             stktxt += ('{}'+opt_newline).format([itm.tag() for itm in lst])
     return stktxt

@@ -70,11 +70,11 @@ class WfManager(QtCore.QObject):
     def next_available_thread(self):
         for idx,th in self._wf_threads.items():
             if not th:
-                print '[{}] found available thread {}'.format(__name__,idx)
+                #print '[{}] found available thread {}'.format(__name__,idx)
                 return idx
         # if none found, wait for first thread in self.wfman.wf_threads 
         self.wait_for_thread(0)
-        print '[{}] falling back on thread 0'.format(__name__)
+        #print '[{}] falling back on thread 0'.format(__name__)
         return 0
 
     def wait_for_threads(self):
@@ -113,9 +113,11 @@ class WfManager(QtCore.QObject):
         wf.exec_finished.connect( partial(self.finish_wf,wfname) )
         #wf.logmethod = self.logmethod
         self.workflows[wfname] = wf
+
+    def add_wf_plugin(self,wfname):
         # for every new workflow, add a plugin 
         wf_pgin = WorkflowPlugin()
-        wf_pgin.inputs['workflow'] = wf
+        wf_pgin.inputs['workflow'] = self.workflows[wfname] 
         wf_pgin.start()
         self.plugman.add_plugin(wfname,wf_pgin)
 

@@ -21,6 +21,21 @@ class OpManager(TreeSelectionModel):
         self.load_ops(ops.cat_op_list)
         self.logmethod = None
 
+    @staticmethod
+    def op_dict(op):
+        dct = OrderedDict() 
+        dct['type'] = type(op).__name__ 
+        dct[inputs_tag] = op_inputs_dict(op)
+        return dct
+
+    @staticmethod
+    def op_inputs_dict(op):
+        dct = OrderedDict() 
+        for name in op.inputs.keys():
+            il = op.input_locator[name]
+            dct[name] = {'src':il.src,'tp':il.tp,'val':il.val}
+        return dct
+
     def save_config(self):
         for k in self._cat_list + self.list_op_names():
             ops.op_load_flags[k] = True 

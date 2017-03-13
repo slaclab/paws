@@ -1,6 +1,7 @@
 from ..operations import optools
 from .. import pawstools
-from ..plugins.plugin import PawsPlugin
+from .plugin import PawsPlugin
+from ..workflow.workflow import Workflow
 
 class WorkflowPlugin(PawsPlugin):
     """
@@ -12,7 +13,7 @@ class WorkflowPlugin(PawsPlugin):
     # TODO: Make this work with .wfl input from the filesystem
 
     def __init__(self):
-        input_names = {'workflow'}
+        input_names = ['workflow']
         super(WorkflowPlugin,self).__init__(input_names)
         self.input_src['workflow'] = optools.fs_input
         self.input_type['workflow'] = optools.path_type
@@ -29,9 +30,12 @@ class WorkflowPlugin(PawsPlugin):
 
     def content(self):
         #wf_dict = {'workflow':self.wf}
+
         #return wf_dict
-        op_dict = {str(i):self.wf.build_dict(itm) for i,itm in zip(range(len(self.wf.root_items)),self.wf.root_items)}
-        return op_dict
+        if isinstance(self.wf,Workflow):
+            return {itm.tag():self.wf.build_dict(itm) for itm in self.wf.root_items}
+        else:
+            return {}
 
     def description(self):
         desc = str('Workflow Plugin for paws: '
