@@ -1,4 +1,5 @@
 import importlib
+from collections import OrderedDict
 
 from PySide import QtCore
 
@@ -6,7 +7,8 @@ from ..operations import optools
 from ..treemodel import TreeModel,TreeSelectionModel
 from ..treeitem import TreeItem
 from .. import plugins as pgns
-from ..plugins.plugin import PawsPlugin
+from .plugin import PawsPlugin
+from .WorkflowPlugin import WorkflowPlugin
 
 class PluginManager(TreeSelectionModel):
     """
@@ -34,8 +36,9 @@ class PluginManager(TreeSelectionModel):
                     pgin = pgin()
                     for name in pgin.inputs.keys():
                         if name in pgin_spec[optools.inputs_tag]:
-                            pgin.inputs = pgin_spec[optools.inputs_tag][name]
+                            pgin.inputs[name] = pgin_spec[optools.inputs_tag][name]
                     pgin.start()
+                    # if already have this uri, first generate auto_tag
                     if self.is_good_uri(uri):
                         uri = self.auto_tag(uri)
                     self.add_plugin(uri,pgin)
@@ -48,8 +51,10 @@ class PluginManager(TreeSelectionModel):
     @staticmethod
     def plugin_dict(pgin):
         dct = OrderedDict()
+        if isinstance(pgin,WorkflowPlugin):
+            return None
         dct['type'] = type(pgin).__name__
-        dct[inputs_tag] = pgin.inputs 
+        dct[optools.inputs_tag] = pgin.inputs 
         return dct
 
     def get_plugin_byname(self,pgin_name):    

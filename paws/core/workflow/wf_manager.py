@@ -1,4 +1,5 @@
 from functools import partial
+from collections import OrderedDict
 
 from PySide import QtCore
 
@@ -32,6 +33,17 @@ class WfManager(QtCore.QObject):
     @QtCore.Slot(str)
     def finish_wf(self,wfname):
         self.wfdone.emit(wfname)
+
+    @staticmethod
+    def op_dict(op):
+        dct = OrderedDict() 
+        dct['type'] = type(op).__name__ 
+        inp_dct = OrderedDict() 
+        for name in op.inputs.keys():
+            il = op.input_locator[name]
+            inp_dct[name] = {'src':il.src,'tp':il.tp,'val':il.val}
+        dct[optools.inputs_tag] = inp_dct 
+        return dct
 
     def finish_thread(self,th_idx):
         #print 'finishing thread {}'.format(th_idx)

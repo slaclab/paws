@@ -4,6 +4,7 @@ from collections import Iterator
 from datetime import datetime as dt
 
 from PySide import QtCore
+import yaml
 
 # TODO: Make scratch directory and other cfg'ables into a cfg file
 

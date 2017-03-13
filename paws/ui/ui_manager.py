@@ -206,51 +206,58 @@ class UiManager(QtCore.QObject):
         # TODO: Figure out how to get the message board to stay put if the scrollbar is under user control
         self.ui.message_board.verticalScrollBar().setValue(self.ui.message_board.verticalScrollBar().maximum())
 
-    def save_state(self,save_callback):
+    def save_state(self):
         """
         Start a modal window dialog to choose a .wfl to save something  
         """
         save_ui = uitools.start_save_ui(self.ui)
-        save_ui.save_button.clicked.connect( partial(save_callback,save_ui) )
+        save_ui.save_button.clicked.connect( partial(self.finish_save,save_ui) )
         save_ui.show()
         save_ui.activateWindow()
 
-    def load_state(self,load_callback):
+    def load_state(self):
         """
         Start a modal window dialog to choose a .wfl to load something 
         """
         load_ui = uitools.start_load_ui(self.ui)
-        load_ui.load_button.clicked.connect( partial(load_callback,load_ui) )
+        load_ui.load_button.clicked.connect( partial(self.finish_load,load_ui) )
         load_ui.show()
         load_ui.activateWindow()
       
-    def finish_save_plugins(self,ui):
+    #def finish_save_plugins(self,ui):
+    #    fname = ui.filename.text()
+    #    if not os.path.splitext(fname)[1] == '.wfl':
+    #        fname = fname + '.wfl'
+    #    self.msg_board_log( 'dumping current set of plugins to {}'.format(fname) )
+    #    d = {} 
+    #    pgin_dict = {} 
+    #    for itm in self.plugman.root_items:
+    #        pgin_dict[str(itm.tag())] = self.plugman.plugin_dict(itm.data)
+    #    d['PLUGINS'] = pgin_dict
+    #    pawstools.update_file(fname,d)
+    #    ui.close()
+
+    def finish_save(self,ui):
         fname = ui.filename.text()
         if not os.path.splitext(fname)[1] == '.wfl':
             fname = fname + '.wfl'
-        self.msg_board_log( 'dumping current set of plugins to {}'.format(fname) )
+        self.msg_board_log( 'dumping current state to {}'.format(fname) )
         d = {} 
+        wf_dict = {} 
+        for itm in self.current_wf().root_items:
+            wf_dict[str(itm.tag())] = self.wfman.op_dict(itm.data)
+        d['WORKFLOW'] = wf_dict
+        pawstools.update_file(fname,d)
         pgin_dict = {} 
         for itm in self.plugman.root_items:
-            pgin_dict[str(itm.tag())] = optools.plugin_dict(itm.data)
+            pd = self.plugman.plugin_dict(itm.data)
+            if pd:
+                pgin_dict[str(itm.tag())] = pd 
         d['PLUGINS'] = pgin_dict
         pawstools.update_file(fname,d)
         ui.close()
 
-    def finish_save_wf(self,ui):
-        fname = ui.filename.text()
-        if not os.path.splitext(fname)[1] == '.wfl':
-            fname = fname + '.wfl'
-        self.msg_board_log( 'dumping current workflow to {}'.format(fname) )
-        d = {} 
-        wf_dict = {} 
-        for itm in self.current_wf().root_items:
-            wf_dict[str(itm.tag())] = optools.op_dict(itm.data)
-        d['WORKFLOW'] = wf_dict
-        pawstools.update_file(fname,d)
-        ui.close()
-
-    def finish_load_wf(self,ui):
+    def finish_load(self,ui):
         #import pdb; pdb.set_trace()
         fname = ui.tree.model().filePath(ui.tree.currentIndex())
         f = open(fname,'r')
@@ -259,24 +266,25 @@ class UiManager(QtCore.QObject):
         fname_nopath = os.path.split(fname)[1]
         fname_noext = os.path.splitext(fname_nopath)[0]
         if 'WORKFLOW' in d.keys():
-            wfname = self.plugman.auto_tag(fname_noext)
-            #if not wfname in self.wfman.workflows.keys():
+            wfname = fname_noext+'_wf'
+            if wfname in self.plugman.list_plugins():
+                wfname = self.plugman.auto_tag(wfname)
             self.add_wf(wfname)
-            #if not wfname in self.plugman.list_plugins():
-            #    self.add_wf_plugin(wfname)
             self.wfman.load_from_dict(wfname,self.opman,d['WORKFLOW'])
-        ui.close()
-
-    def finish_load_plugins(self,ui):
-        fname = ui.tree.model().filePath(ui.tree.currentIndex())
-        f = open(fname,'r')
-        d = yaml.load(f)
-        f.close()
-        fname_nopath = os.path.split(fname)[1]
-        fname_noext = os.path.splitext(fname_nopath)[0]
         if 'PLUGINS' in d.keys():
             self.plugman.load_from_dict(d['PLUGINS'])
         ui.close()
+
+    #def finish_load_plugins(self,ui):
+    #    fname = ui.tree.model().filePath(ui.tree.currentIndex())
+    #    f = open(fname,'r')
+    #    d = yaml.load(f)
+    #    f.close()
+    #    fname_nopath = os.path.split(fname)[1]
+    #    fname_noext = os.path.splitext(fname_nopath)[0]
+    #    if 'PLUGINS' in d.keys():
+    #        self.plugman.load_from_dict(d['PLUGINS'])
+    #    ui.close()
 
     def connect_actions(self):
         """Set up the works for buttons and menu items"""
@@ -292,16 +300,16 @@ class UiManager(QtCore.QObject):
         self.ui.run_wf_button.clicked.connect(self.toggle_run_wf)
         self.ui.edit_wf_button.setText("&Edit workflow")
         self.ui.edit_wf_button.clicked.connect( partial(self.edit_wf) )
-        self.ui.save_wf_button.setText("&Save workflow")
-        self.ui.save_wf_button.clicked.connect( partial(self.save_state,self.finish_save_wf) )
-        self.ui.load_wf_button.setText("&Load workflow")
-        self.ui.load_wf_button.clicked.connect( partial(self.load_state,self.finish_load_wf) )
+        self.ui.save_button.setText("&Save")
+        self.ui.save_button.clicked.connect(self.save_state)
+        self.ui.load_button.setText("&Load")
+        self.ui.load_button.clicked.connect(self.load_state)
         self.ui.edit_plugins_button.setText("Edit plugins")
         self.ui.edit_plugins_button.clicked.connect(self.start_plugins_ui)
-        self.ui.save_plugins_button.setText("Save plugins")
-        self.ui.save_plugins_button.clicked.connect( partial(self.save_state,self.finish_save_plugins) )
-        self.ui.load_plugins_button.setText("Load plugins")
-        self.ui.load_plugins_button.clicked.connect( partial(self.load_state,self.finish_load_plugins) )
+        #self.ui.save_plugins_button.setText("Save plugins")
+        #self.ui.save_plugins_button.clicked.connect(self.save_state)
+        #self.ui.load_plugins_button.setText("Load plugins")
+        #self.ui.load_plugins_button.clicked.connect(self.load_state)
         self.ui.plugin_tree.setModel(self.plugman)
         self.ui.op_tree.setModel(self.opman)
         self.ui.op_tree.clicked.connect( partial(uitools.toggle_expand,self.ui.op_tree) ) 

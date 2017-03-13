@@ -8,6 +8,10 @@ from PySide import QtCore
 
 import operation
 
+# tags for inputs and outputs TreeItems    
+inputs_tag = 'inputs'
+outputs_tag = 'outputs'
+
 # Declarations of valid sources and types for workflow and plugin inputs
 ##### TODO: the following but gracefully
 no_input = 0
@@ -37,10 +41,6 @@ invalid_types[fs_input] = [str_type,int_type,float_type,bool_type,ref_type,auto_
 invalid_types[wf_input] = [str_type,int_type,float_type,bool_type,auto_type]
 invalid_types[plugin_input] = [str_type,int_type,float_type,bool_type,auto_type]
 invalid_types[batch_input] = [str_type,int_type,float_type,bool_type,ref_type,path_type]
-
-# tags for inputs and outputs TreeItems    
-inputs_tag = 'inputs'
-outputs_tag = 'outputs'
 
 class InputLocator(object):
     """
