@@ -18,7 +18,7 @@ class Calibrate(Operation):
     Return q, chi, I(q,chi) 
     """
     def __init__(self):
-        input_names = ['image_data','cal_params']
+        input_names = ['image_data','cal_params','pixel_size','fpolz']
         output_names = ['q','chi','I_q_chi','I_q']
         super(Calibrate,self).__init__(input_names,output_names)
         self.input_doc['image_data'] = '2d array representing intensity for each pixel'
@@ -27,8 +27,12 @@ class Calibrate(Operation):
         + 'rotation_rad, tilt_rad, fpolz')
         self.input_src['image_data'] = optools.wf_input
         self.input_src['cal_params'] = optools.wf_input
+        self.input_src['pixel_size'] = optools.text_input
+        self.input_src['fpolz'] = optools.text_input
         self.input_type['image_data'] = optools.ref_type
         self.input_type['cal_params'] = optools.ref_type
+        self.input_type['pixel_size'] = optools.float_type
+        self.input_type['fpolz'] = optools.float_type
         self.inputs['pixel_size'] = 79 
         self.inputs['fpolz'] = 0.95 
         self.output_doc['q'] = 'Scattering vector magnitude'
