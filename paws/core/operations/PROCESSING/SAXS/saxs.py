@@ -316,25 +316,26 @@ def arb_cond_fit(q, I, dI, qlim, guesses, log=False, clip=False, errors=False, b
     chi_abs = chi_squared(I, I_fit)
     chi_rel = chi_squared(I, I_fit, dI)
     return I_fit, chi_abs, chi_rel, popt
-            def func(q, i0, r0, poly):
-                return safe_log(generate_spherical_diffraction(q, i0, r0, poly))
-    else:
-        if baseline:
-            def func(q, i0, r0, poly, noise):
-                return (generate_spherical_diffraction(q, i0, r0, poly) + noise)
-        else:
-            def func(q, i0, r0, poly):
-                return generate_spherical_diffraction(q, i0, r0, poly)
-    popt, pcov = curve_fit(func, x, y, init, dy, bounds=bounds)
-    amplitude_at_zero, mean_size, fractional_variation = popt[0:3]
-    if baseline:
-        noise_floor = popt[3]
-    else:
-        noise_floor = 0
-    I_fit = amplitude_at_zero * blur(q * mean_size, fractional_variation) * 9. + noise_floor
-    chi_abs = chi_squared(I, I_fit)
-    chi_rel = chi_squared(I, I_fit, dI)
-    return I_fit, chi_abs, chi_rel, popt
+        # LAP: THIS SEEMS BROKEN.
+#            def func(q, i0, r0, poly):
+#                return safe_log(generate_spherical_diffraction(q, i0, r0, poly))
+#    else:
+#        if baseline:
+#            def func(q, i0, r0, poly, noise):
+#                return (generate_spherical_diffraction(q, i0, r0, poly) + noise)
+#        else:
+#            def func(q, i0, r0, poly):
+#                return generate_spherical_diffraction(q, i0, r0, poly)
+#    popt, pcov = curve_fit(func, x, y, init, dy, bounds=bounds)
+#    amplitude_at_zero, mean_size, fractional_variation = popt[0:3]
+#    if baseline:
+#        noise_floor = popt[3]
+#    else:
+#        noise_floor = 0
+#    I_fit = amplitude_at_zero * blur(q * mean_size, fractional_variation) * 9. + noise_floor
+#    chi_abs = chi_squared(I, I_fit)
+#    chi_rel = chi_squared(I, I_fit, dI)
+#    return I_fit, chi_abs, chi_rel, popt
 
 def safe_log(y):
     bads = (y <= 0) | (np.isnan(y))

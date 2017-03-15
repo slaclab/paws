@@ -21,7 +21,7 @@ class SubtractMaximumBackground(Operation):
         self.output_doc['I'] = 'output (background-subtracted) intensity = I-(bg_factor*I_bg)'
         self.output_doc['dI'] = 'error estimate of output intensity'
         self.output_doc['bg_factor'] = str('the factor the background was multiplied by '
-        + ' before subraction to ensure positive values for output intensity'
+        + ' before subraction to ensure positive values for output intensity')
         # source & type
         self.input_src['q'] = optools.wf_input
         self.input_src['I'] = optools.wf_input

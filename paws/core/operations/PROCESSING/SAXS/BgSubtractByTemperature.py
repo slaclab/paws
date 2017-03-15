@@ -22,12 +22,12 @@ class BgSubtractByTemperature(Operation):
         self.input_doc['bg_batch_output'] = str('the output (list of dicts) '
         + 'of a batch of background spectra at different temperatures')
         self.input_doc['bg_I_uri'] = str('the uri for the items saved in bg_batch_output '
-        + 'containing the background intensity spectrum' 
+        + 'containing the background intensity spectrum') 
         self.input_doc['bg_T_uri'] = str('the uri for the items saved in bg_batch_output '
         + 'containing the background spectrum temperatures')
         self.output_doc['I_bgsub'] = 'I_meas - bg_factor * (I_bg)'
         self.output_doc['bg_factor'] = str('correction factor applied to background '
-        + 'before subtraction, to ensure positive intensity values'
+        + 'before subtraction, to ensure positive intensity values')
         self.input_src['I_meas'] = optools.wf_input
         self.input_src['T_meas'] = optools.wf_input
         self.input_src['bg_batch_output'] = optools.wf_input
