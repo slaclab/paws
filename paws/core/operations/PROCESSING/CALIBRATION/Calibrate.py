@@ -33,7 +33,7 @@ class Calibrate(Operation):
         self.input_type['cal_params'] = optools.ref_type
         self.input_type['pixel_size'] = optools.float_type
         self.input_type['fpolz'] = optools.float_type
-        self.inputs['pixel_size'] = 79 
+        self.inputs['pixel_size'] = 79
         self.inputs['fpolz'] = 0.95 
         self.output_doc['q'] = 'Scattering vector magnitude'
         self.output_doc['chi'] = 'Azimuthal angle in degrees'     
