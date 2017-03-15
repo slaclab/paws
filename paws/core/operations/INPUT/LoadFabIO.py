@@ -1,10 +1,7 @@
-import os
-import re
-
-import numpy as np
 import fabio
 
 from ..operation import Operation
+from .. import optools
 
 class LoadFabIO(Operation):
     """
@@ -17,7 +14,8 @@ class LoadFabIO(Operation):
         super(LoadFabIO,self).__init__(input_names,output_names) 
         self.input_doc['path'] = 'string representing the path to a .tif image'
         self.output_doc['image_data'] = '2D array representing pixel values taken from the input file'
-        self.categories = ['INPUT'] 
+        self.input_src['path'] = optools.fs_input
+        self.input_type['path'] = optools.path_type
         
     def run(self):
         """

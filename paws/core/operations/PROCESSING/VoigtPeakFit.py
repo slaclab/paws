@@ -9,8 +9,8 @@ from .. import optools
 class VoigtPeakFit(Operation):
     """
     Fit a set of x and y values to a Voigt distribution.
-    Solves the distribution over the space of 
-    hwhm (half width at half max) of the gaussian and lorentzian distributions and distribution center.
+    Solves the best-fitting hwhm (half width at half max) 
+    of the gaussian and lorentzian distributions and shared distribution center.
     Takes as input a guess for the distribution center and hwhm.
     Range of fit is determined by weighting the objective 
     by a Hann window centered at the distribution center,
@@ -87,16 +87,26 @@ class VoigtPeakFit(Operation):
 
     @staticmethod
     def gaussian(x, hwhm_g):
-        """gaussian distribution at points x, center 0, hwhm hwhm_g"""
+        """
+        gaussian distribution at points x, 
+        center 0, half width at half max hwhm_g
+        """
         return np.sqrt(np.log(2)/np.pi) / hwhm_g * np.exp(-(x/hwhm_g)**2 * np.log(2))
 
     @staticmethod
     def lorentzian(x, hwhm_l):
-        """lorentzian distribution at points x, center 0, hwhm hwhm_l"""
+        """
+        lorentzian distribution at points x, 
+        center 0, half width at half max hwhm_l
+        """
         return hwhm_l / np.pi / (x**2+hwhm_l**2)
 
     @staticmethod
     def voigt(x, hwhm_g, hwhm_l):
-        """voigt distribution resulting from convolution of a gaussian with hwhm hwhm_g and a lorentzian with hwhm hwhm_l"""
+        """
+        voigt distribution resulting from convolution 
+        of a gaussian with hwhm hwhm_g 
+        and a lorentzian with hwhm hwhm_l
+        """
         sigma = hwhm_g / np.sqrt(2 * np.log(2))
         return np.real(wofz((x+1j*hwhm_l)/sigma/np.sqrt(2))) / sigma / np.sqrt(2*np.pi)
