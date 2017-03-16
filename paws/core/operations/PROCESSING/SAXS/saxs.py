@@ -311,6 +311,12 @@ def generate_spherical_diffraction(q, i0, r0, poly):
     i = i0 * blur(x, poly)
     return i
 
+def spherical_monodisperse_diffraction(x):
+    return (3. * (np.sin(x) - x * np.cos(x)) * x**-3)**2
+
+def gauss(x, x0, sigma):
+    return ((sigma * (2 * np.pi)**0.5)**-1 )*np.exp(-0.5 * ((x - x0)/sigma)**2)
+
 def generateRhoFactor(factor):
     '''
     Generate a guassian distribution of number densities (rho).
