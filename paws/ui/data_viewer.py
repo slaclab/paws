@@ -5,10 +5,11 @@ from pypif.obj import System
 
 from ..core.operations.operation import Operation 
 from ..core.plugins.plugin import PawsPlugin
+from ..core.plugins.WorkflowPlugin import WorkflowPlugin
 from . import uitools
 from .widgets.op_widget import OpWidget
 from .widgets.pif_widget import PifWidget
-from .widgets.plugin_widgets import plugin_widget 
+from .widgets.wf_widgets import WorkflowGraphView
 from .widgets.text_widgets import display_text, display_text_fast
 
 if uitools.have_qt47:
@@ -28,22 +29,36 @@ def display_item(itm,qlayout,logmethod=None):
         # get the QWidget of that LayoutItem and set it to deleteLater()
         widg.widget().deleteLater()
 
+    pif_widget = None
     if isinstance(itm,System):
         pif_widget = PifWidget(itm)
-    else:
-        pif_widget = None
 
+    pgin_widget = None
     if isinstance(itm,PawsPlugin):
-        pgin_widget = plugin_widget(itm)
-    else:
-        pgin_widget = None
+        if isinstance(itm,WorkflowPlugin):
+            scroll_area = QtGui.QScrollArea()
+            w = WorkflowGraphView(itm.wf,scroll_area)
+            #scroll_area.setFocusPolicy(QtCore.Qt.NoFocus)
+            #scroll_area.setWidgetResizable(True)
+            scroll_area.setWidget(w)
+            #scroll_area.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
+            #scroll_area.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
+            #textbox = QtGui.QTextEdit(scroll_area)
+            #textbox.setText('selected plugin is a WorkflowPlugin.')
+            pgin_widget = scroll_area 
+        else:
+            w = QtGui.QTextEdit()
+            msg = str('selected plugin is a {}. '.format(type(itm).__name__)
+                    + 'No display widgets exist for this plugin. '
+                    + 'Add a display method to {} to view this plugin.'.format(__name__))
+            w.setText(msg)
+            pgin_widget = w 
 
+    op_widget = None
     if isinstance(itm,Operation):
         op_widget = OpWidget(itm)
-    else:
-        op_widget = None
 
-    # Produce widgets for displaying arrays and MatPlotLib figures
+    plot_widget = None
     if isinstance(itm,np.ndarray):
         dims = np.shape(itm)
         if len(dims) == 2 and dims[0] > 2 and dims[1] > 2:
@@ -52,11 +67,7 @@ def display_item(itm,qlayout,logmethod=None):
             plot_widget = plotmaker.array_plot_1d(itm)
     elif isinstance(itm,Figure):
         plot_widget = plotmaker.plot_mpl_fig(itm)
-    else:
-        plot_widget = None
     
-    # Produce widgets for displaying strings, dicts, etc.
-    #t = display_text(itm)
     t = display_text_fast(itm)
     text_widget = QtGui.QTextEdit(t)
 
