@@ -2,127 +2,141 @@ from PySide import QtCore, QtGui
 
 from ...core.operations.operation import Operation, Batch, Realtime
 
-class WorkflowGraphView(QtGui.QWidget):
-
+class WorkflowGraphView(QtGui.QScrollArea):
+    
     def __init__(self,wf,parent=None):
         super(WorkflowGraphView,self).__init__(parent)
-        self.hspace = 20
-        self.vspace = 20
+        self.setWidget(WorkflowGraphWidget(wf,self))        
+        #self.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.setWidgetResizable(True)
+        #scroll_area.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
+        #scroll_area.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
+
+    def keyPressEvent(self,evnt):
+        if evnt.key() == QtCore.Qt.Key_Plus:
+            self.widget().zoom_in()
+        elif evnt.key() == QtCore.Qt.Key_Minus:
+            self.widget().zoom_out()
+        else:
+            super(WorkflowGraphView,self).keyPressEvent(evnt)
+
+class WorkflowGraphWidget(QtGui.QWidget):
+
+    def __init__(self,wf,parent=None):
+        super(WorkflowGraphWidget,self).__init__(parent)        
+        # rendering scale:
+        self._scale = float(1)
+        # geometrical factors responsive to self._scale:
+        # margins between adjacent objects
+        self.hspace = 80
+        self.vspace = 40
+        # letter width factor?
+        self.lwidth = 12 
+        # letter height factor?
+        self.lheight = 24 
+        # letter point size?
+        self.lptsize = 12 
         self.wf = wf
-        #self.wf.dataChanged.connect(self.repaint_region_by_idx) 
-        self.scale = float(1)
+        #self.wf.dataChanged.connect(self.update_region_by_idx) 
         self.op_coords = {}
         self.inp_coords = {}
         self.out_coords = {}
         self.update_coords()
+        #h_policy = QtGui.QSizePolicy.Minimum
+        #v_policy = QtGui.QSizePolicy.MinimumExpanding 
+        #v_policy = QtGui.QSizePolicy.Minimum 
+        #self.setSizePolicy(h_policy,v_policy)
 
-    def op_dims(self,op):
-        # letter width
-        lwidth = 4
-        # horizontal extent determined by longest in/out names
-        hdim = max([ lwidth*max([len(name) for name in op.inputs.keys()])+lwidth*max([len(name) for name in op.outputs.keys()]) , 100 ])
-        # vertical extent determined by number of ins and outs
-        vdim = 3*self.vspace + len(op.inputs)*self.vspace + len(op.outputs)*self.vspace
-        return (hdim,vdim)
+    #@QtCore.Slot(float)
+    def set_scale(self,scl):
+        self._scale = float(scl)
+        self.update_coords()
 
-    def stack_dims(self,stk):
-        # get the width and height of an execution stack
-        stk_width = self.hspace 
-        stk_height = 2*self.vspace 
-        for lst in stk:
-            if isinstance(lst[0].data,Batch) or isinstance(lst[0].data,Realtime):
-                layer_width, layer_height = self.stack_dims(lst[1])
-                #layer_width = layer_width + self.hspace
-                #layer_height = layer_height + self.vspace
-            else:
-                layer_width = max([self.op_dims(itm.data)[0] for itm in lst])
-                layer_height = self.vspace + sum([self.op_dims(itm.data)[1]+self.vspace for itm in lst])
-            stk_width = stk_width + layer_width + self.hspace
-            stk_height = max([stk_height,layer_height])
-        return stk_width, stk_height
+    #@QtCore.Slot()
+    def zoom_in(self):
+        self.set_scale(self._scale*1.2)
+
+    #@QtCore.Slot()
+    def zoom_out(self):
+        self.set_scale(self._scale/1.2)
 
     def update_coords(self):
-        stk = self.wf.execution_stack()
-        self.wf_width, self.wf_height = self.stack_dims(stk)
+        self.op_coords, self.inp_coords, self.out_coords = self.get_op_coords(self.wf.execution_stack())
+        stk_height = max([coords[1][1] for coords in self.op_coords.values()]) + self._scale*self.vspace
+        stk_width = max([coords[1][0] for coords in self.op_coords.values()]) + self._scale*self.hspace
+        self.wf_width = stk_width
+        self.wf_height = stk_height 
         self.setMinimumSize(QtCore.QSize(self.wf_width,self.wf_height))
+        self.repaint()
 
-        hcoord = self.hspace 
-        max_vcoord = 0
+    def get_op_coords(self,stk):
+        c = {}
+        inp_c = {}
+        out_c = {}
+        # these h,v coords will track the top left corner 
+        # of each operation while iterating through the stack.
+        h = self._scale*self.hspace 
+        v = self._scale*self.vspace 
         for lst in stk:
-            vcoord = self.vspace 
-            layer_width = 0
+            v = self._scale*self.vspace
             if isinstance(lst[0].data,Batch) or isinstance(lst[0].data,Realtime):
-                b_itm = lst[0]
-                b_stk = lst[1]
-                b_hcoord = hcoord + self.hspace
-                b_height = 0
-                b_width = 0 
-                for lst in b_stk:
-                    b_vcoord = vcoord + self.vspace
-                    b_layerheight = self.vspace 
-                    b_layerwidth = 0 
-                    for itm in lst:
-                        op = itm.data
-                        op_dims = self.op_dims(op)
-                        self.op_coords[itm.tag()] = ((b_hcoord,b_vcoord),(b_hcoord+op_dims[0],b_vcoord+op_dims[1]))
-                        b_layerwidth = max([b_layerwidth,op_dims[1]])
-                        b_vcoord += op_dims[1] + self.vspace
-                        b_layerheight = b_layerheight + op_dims[1] + self.hspace
-                    b_height = max([b_height,b_layerheight])
-                    b_hcoord = b_hcoord + b_layerwidth + self.hspace
-                self.op_coords[b_itm.tag()] = ((hcoord,vcoord),(hcoord+b_hcoord,vcoord+b_height))
-                layer_width = b_width
+                b_coords, b_inp_coords, b_out_coords = self.get_op_coords(lst[1])
+                for name,coords in b_coords.items():
+                    topleft = coords[0]
+                    bottomright = coords[1]
+                    c[name] = [(h+topleft[0],v+topleft[1]),(h+bottomright[0],v+bottomright[1])] 
+                b_width = max([coords[1][0] for coords in b_coords.values()]) + self._scale*self.hspace 
+                b_height = max([coords[1][1] for coords in b_coords.values()]) + self._scale*self.vspace
+                c[lst[0].tag()] = [(h,v),(h+b_width,v+b_height)]
+                h += b_width + self._scale*self.hspace
             else:
+                layer_width = 0
                 for itm in lst:
-                    op = itm.data
-                    op_dims = self.op_dims(op)
-                    self.op_coords[itm.tag()] = ((hcoord,vcoord),(hcoord+op_dims[0],vcoord+op_dims[1]))
-                    layer_width = max([layer_width,op_dims[1]])
-                    vcoord = vcoord + op_dims[1] + self.vspace
-            if vcoord > max_vcoord:
-                max_vcoord = vcoord
-            hcoord = hcoord + layer_width + self.hspace
-        self.widget_width = hcoord + self.hspace
-        self.widget_height = max_vcoord + self.vspace
-                
+                    d = self.op_dims(itm.data)
+                    c[itm.tag()] = [(h,v),(h+d[0],v+d[1])]
+                    v += d[1] + self._scale*self.vspace
+                    layer_width = max([layer_width,d[0]])
+                h += layer_width + self._scale*self.hspace
+        return c, inp_c, out_c
+
+    def op_dims(self,op):
+        # horizontal extent determined by longest in/out names
+        hdim = max([ self.lwidth*max([len(name) for name in op.inputs.keys()])+self.lwidth*max([len(name) for name in op.outputs.keys()]) , 100 ])
+        # vertical extent determined by number of ins and outs
+        vdim = 3*self.vspace + len(op.inputs)*self.vspace + len(op.outputs)*self.vspace
+        return (self._scale*hdim,self._scale*vdim)
+
     def paintEvent(self,evnt):
 
         #self.update_coords()
 
-        # Create a painter and give it a white pen 
+        # create a painter 
         p = QtGui.QPainter(self)
         p.setRenderHint(QtGui.QPainter.Antialiasing)
+        # give it a white pen 
         pen_w = QtGui.QPen()
         q_white = QtGui.QColor(255,255,255,255)
         pen_w.setColor(q_white)
         p.setPen(pen_w)
+        f = QtGui.QFont()
+        #print self.lptsize*self._scale
+        #f.setPixelSize(self.lpxsize*self._scale)
+        f.setPointSize(self.lptsize*self._scale)
+        p.setFont(f)
  
-        # temporary code: trying to find origin orientation
-        #w = self.width()
-        #h = self.height()
-        #p.translate(w/2, h/2)
-        #widgdim = min((w,h))
-        #p.scale(self.width(),self.height())
-
         # TODO: Use this to make paintEvent more efficient.
         # QPaintEvent.region() specifies the QtGui.QRegion to paint
         #paint_region = evnt.region()
 
         for name,coords in self.op_coords.items():
-            print 'coords of {} are topleft = {}, bottomright = {}'.format(name,coords[0],coords[1])
+            #print 'coords of {} are topleft = {}, bottomright = {}'.format(name,coords[0],coords[1])
             topleft = QtCore.QPoint(int(coords[0][0]),int(coords[0][1]))
             bottomright = QtCore.QPoint(int(coords[1][0]),int(coords[1][1]))
             op_rec = QtCore.QRectF(topleft,bottomright)
             p.drawRect(op_rec)
-            title_rec = QtCore.QRectF(  QtCore.QPoint(int(coords[0][0]),int(coords[0][1])-10),
+            title_rec = QtCore.QRectF(  QtCore.QPoint(int(coords[0][0]),int(coords[0][1])-self.lheight*self._scale),
                                         QtCore.QPoint(int(coords[1][0]),int(coords[0][1])) )
-            f = QtGui.QFont()
-            f.setPointSize(5)
-            p.setFont(f)
             p.drawText(title_rec,QtCore.Qt.AlignLeft,name)
-        #f.setPixelSize(10)
-        #f.setPointSize(4)
-        #p.setFont(f)
         # Headers for input and output sides
         #inphdr = QtCore.QRectF(QtCore.QPoint(-1*(recthorz+30),-1*(rectvert+10)),
         #                        QtCore.QPoint(-1*(recthorz+10),-1*rectvert))

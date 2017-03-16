@@ -36,16 +36,10 @@ def display_item(itm,qlayout,logmethod=None):
     pgin_widget = None
     if isinstance(itm,PawsPlugin):
         if isinstance(itm,WorkflowPlugin):
-            scroll_area = QtGui.QScrollArea()
-            w = WorkflowGraphView(itm.wf,scroll_area)
-            #scroll_area.setFocusPolicy(QtCore.Qt.NoFocus)
-            #scroll_area.setWidgetResizable(True)
-            scroll_area.setWidget(w)
-            #scroll_area.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
-            #scroll_area.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
+            w = WorkflowGraphView(itm.wf)
             #textbox = QtGui.QTextEdit(scroll_area)
             #textbox.setText('selected plugin is a WorkflowPlugin.')
-            pgin_widget = scroll_area 
+            pgin_widget = w 
         else:
             w = QtGui.QTextEdit()
             msg = str('selected plugin is a {}. '.format(type(itm).__name__)
