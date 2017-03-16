@@ -139,8 +139,7 @@ class Workflow(TreeSelectionModel):
         else:
             return self.uri_to_dict(self.build_uri(p_idx),od)
 
-    @staticmethod
-    def update_uri_dict(d,d_new):
+    def update_uri_dict(self,d,d_new):
         #print '\n-------------\nupdating \n{} \nwith \n{}'.format(d,d_new)
         for k,v in d_new.items():
             if k in d.keys():
@@ -476,7 +475,7 @@ class Workflow(TreeSelectionModel):
     # Overloaded headerData() for Workflow 
     def headerData(self,section,orientation,data_role):
         if (data_role == QtCore.Qt.DisplayRole and section == 0):
-            return "Current workflow: {} operation(s)".format(self.rowCount(QtCore.QModelIndex()))
+            return "{} operation(s) loaded".format(self.rowCount(QtCore.QModelIndex()))
         elif (data_role == QtCore.Qt.DisplayRole and section == 1):
             #return "type"
             return super(Workflow,self).headerData(section,orientation,data_role)    
