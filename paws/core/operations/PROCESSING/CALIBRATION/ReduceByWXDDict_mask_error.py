@@ -40,6 +40,8 @@ class ReduceByWXDDict_mask_error(Operation):
         self.input_src['inverse_gain'] = optools.text_input
         self.input_src['readnoise'] = optools.text_input
         self.input_src['mask'] = optools.text_input
+        self.input_type['image_data'] = optools.ref_type
+        self.input_type['cal_params'] = optools.ref_type
         self.input_type['pixel_size'] = optools.float_type
         self.input_type['fpolz'] = optools.float_type
         self.input_type['calculate_noise'] = optools.bool_type
@@ -48,9 +50,8 @@ class ReduceByWXDDict_mask_error(Operation):
         # defaults
         self.inputs['pixel_size'] = 79.
         self.inputs['fpolz'] = 0.95
-        self.inputs['calculate_noise'] = True
-        #self.inputs['inverse_gain'] = 21.97 # 1 for no gain, sort of
-        self.inputs['inverse_gain'] = 49.44 # 1 for no gain, sort of
+        self.inputs['calculate_noise'] = False
+        self.inputs['inverse_gain'] = 5.5 # 1 for no gain, sort of
         self.inputs['readnoise'] = 9.0 # 0 for no readnoise
         self.inputs['mask'] = None
 
