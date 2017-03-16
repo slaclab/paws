@@ -1,5 +1,5 @@
 import tifffile
-from os.path import splitext
+from os.path import splitext, split
 from collections import OrderedDict
 
 from ...operation import Operation
@@ -13,7 +13,7 @@ class ReadImageAndHeader_SSRL15(Operation):
 
     def __init__(self):
         input_names = ['tif_path']
-        output_names = ['image_data', 'image_header']
+        output_names = ['image_data', 'image_header', 'filename']
         super(ReadImageAndHeader_SSRL15, self).__init__(input_names, output_names)
         self.input_doc['tif_path'] = str('path to a tif file image produced by beamline 1-5 at SSRL. '
         + 'It is expected that a .txt header file will be in the same directory as this .tif file.')
@@ -21,13 +21,18 @@ class ReadImageAndHeader_SSRL15(Operation):
         self.input_type['tif_path'] = optools.path_type
         self.output_doc['image_data'] = 'the image pixel data as an ndarray'
         self.output_doc['image_header'] = 'the header file as a python dictionary'
+        self.output_doc['filename'] = 'filename with path and extension stripped'
 
     def run(self):
         tif_path = self.inputs['tif_path']
-        hdr_file_name = splitext(tif_path)[0] + '.txt'
+        filename = split(tif_path)[1]
+        filename_noext = splitext(filename)[0]
+        path_noext = splitext(tif_path)[0]
+        hdr_file_path = path_noext + '.txt'
+        self.outputs['filename'] = filename_noext 
         self.outputs['image_data'] = tifffile.imread(tif_path)
         d = OrderedDict()
-        for l in open(hdr_file_name,'r').readlines():
+        for l in open(hdr_file_path,'r').readlines():
             try:
                 if not l.strip() == '' and not l.strip()[0] == '#':
                     kvs = l.split(',')

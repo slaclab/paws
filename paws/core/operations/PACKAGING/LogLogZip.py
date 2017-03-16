@@ -29,6 +29,6 @@ class LogLogZip(Operation):
         # good_vals = elements for which both x and y have defined logarithm
         good_vals = ((x > 0) & (y > 0) & (~np.isnan(x)) & (~np.isnan(y)))
         xy = zip(np.log10(x[good_vals]), np.log10(y[good_vals]))
-        self.outputs['logx_logy'] = xy
+        self.outputs['logx_logy'] = np.array(xy)
 
 
