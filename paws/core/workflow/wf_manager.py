@@ -162,17 +162,16 @@ class WfManager(QtCore.QObject):
                     for name in op.inputs.keys():
                         if name in ilspec.keys():
                             src = ilspec[name]['src']
-                            # DONE...: deprecate 'type' tag in favor of 'tp'
                             if 'tp' in ilspec[name].keys():
                                 tp = ilspec[name]['tp']
-                            #else:
-                            #    tp = ilspec[name]['type']
                             val = ilspec[name]['val']
                             if tp in optools.invalid_types[src]:
                                 il = optools.InputLocator(src,optools.none_type,None)
                             else:
                                 il = optools.InputLocator(src,tp,val)
                             op.input_locator[name] = il
+                            # dereference any existing inputs
+                            op.inputs[name] = None
                         else:
                             self.write_log('Did not find input {} for {} - skipping.'.format(name,opname))
                     self.workflows[wfname].add_op(uri,op)

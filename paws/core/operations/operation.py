@@ -42,8 +42,6 @@ class Operation(object):
             #self.output_container[name] = optools.OutputContainer() 
             self.outputs[name] = None
             self.output_doc[name] = None
-        # Set default category to be 'MISC'
-        self.categories = ['MISC']
 
     def load_defaults(self):
         for name in self.inputs.keys():
@@ -64,6 +62,8 @@ class Operation(object):
                         else:
                             val = str(self.inputs[name])
             self.input_locator[name] = optools.InputLocator(src,tp,val)
+            # defaults are now packaged in InputLocators, so can be dereferenced from self.inputs. 
+            self.inputs[name] = None
 
     @abc.abstractmethod
     def run(self):
