@@ -101,9 +101,9 @@ class WorkflowGraphWidget(QtGui.QWidget):
 
     def op_dims(self,op):
         # horizontal extent determined by longest in/out names
-        hdim = max([ self.lwidth*max([len(name) for name in op.inputs.keys()])+self.lwidth*max([len(name) for name in op.outputs.keys()]) , 100 ])
+        hdim = max([ self.lwidth*max([len(name) for name in op.inputs.keys()] + [len(name) for name in op.outputs.keys()])+10,100])
         # vertical extent determined by number of ins and outs
-        vdim = 3*self.vspace + len(op.inputs)*self.vspace + len(op.outputs)*self.vspace
+        vdim = (len(op.inputs)+len(op.outputs))*self.lheight
         return (self._scale*hdim,self._scale*vdim)
 
     def paintEvent(self,evnt):
@@ -117,6 +117,7 @@ class WorkflowGraphWidget(QtGui.QWidget):
         pen_w = QtGui.QPen()
         q_white = QtGui.QColor(255,255,255,255)
         pen_w.setColor(q_white)
+        pen_w.setWidthF(self._scale)
         p.setPen(pen_w)
         f = QtGui.QFont()
         #print self.lptsize*self._scale
