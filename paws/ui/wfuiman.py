@@ -1,4 +1,5 @@
 from functools import partial
+import copy
 
 from PySide import QtCore, QtGui, QtUiTools
 
@@ -55,7 +56,8 @@ class WfUiManager(QtCore.QObject):
                 self.create_op(x)
             elif existing_op_flag:
                 # Load existing Operation
-                self.set_op(x,xitem.tag())
+                op_copy = copy.deepcopy(x)
+                self.set_op(op_copy,xitem.tag())
 
     def set_op(self,op,uri):
         """Set up ui elements around existing input op"""
