@@ -1,5 +1,5 @@
-from ...operation import Operation
-from ... import optools
+from ..operation import Operation
+from .. import optools
 
 class BuildFilePath(Operation):
     """
