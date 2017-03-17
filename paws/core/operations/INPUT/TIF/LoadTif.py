@@ -9,7 +9,7 @@ from ... import optools
 class LoadTif(Operation):
     """
     Takes a filesystem path that points to a .tif,
-    outputs image data and metadata from the file. 
+    outputs image data from the file. 
     """
 
     def __init__(self):
@@ -20,17 +20,19 @@ class LoadTif(Operation):
         self.input_src['path'] = optools.fs_input
         self.input_type['path'] = optools.path_type
         self.output_doc['image_data'] = '2D array representing pixel values'
-        self.output_doc['filename'] = 'Filename for image, directories excluded'
+        self.output_doc['filename'] = 'Filename for image, path and extension stripped'
         
     def run(self):
-        img_url = self.inputs['path']
-        self.outputs['filename'] = os.path.split(self.inputs['path'])[1]
+        p = self.inputs['path']
+        file_nopath = os.path.split(p)[1]
+        file_noext = os.path.split(file_nopath)[0]
+        self.outputs['filename'] = file_noext 
         try:
-            self.outputs['image_data'] = tifffile.imread(self.inputs['path'])
+            self.outputs['image_data'] = tifffile.imread(p)
         except IOError as ex:
-            ex.message = "[{}] IOError for file {}. \nError message:".format(__name__,img_url,ex.message)
+            ex.message = "[{}] IOError for file {}. \nError message:".format(__name__,p,ex.message)
             raise ex
         except ValueError as ex:
-            ex.message = "[{}] ValueError for file {}. \nError message:".format(__name__,img_url,ex.message)
+            ex.message = "[{}] ValueError for file {}. \nError message:".format(__name__,p,ex.message)
             raise ex
 

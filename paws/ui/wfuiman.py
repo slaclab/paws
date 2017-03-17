@@ -352,7 +352,7 @@ class WfUiManager(QtCore.QObject):
         self.ui.op_selector.hideColumn(2)
         self.ui.op_selector.clicked.connect( partial(self.get_op,self.opman) )
         self.ui.op_selector.clicked.connect( partial(uitools.toggle_expand,self.ui.op_selector) ) 
-        self.ui.wf_selector.clicked.connect( partial(uitools.toggle_expand,self.ui.wf_selector) )
+        #self.ui.wf_selector.clicked.connect( partial(uitools.toggle_expand,self.ui.wf_selector) )
         self.ui.uri_prompt.setMaximumWidth(150)
         self.ui.uri_prompt.setText('operation tag:')
         self.ui.uri_prompt.setReadOnly(True)
