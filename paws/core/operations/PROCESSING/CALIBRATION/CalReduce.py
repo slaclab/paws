@@ -14,7 +14,7 @@ from ... import optools
 
 class CalReduce(Operation):
     """
-    Input image data (ndarray) and a dict of .poni format calibration parameters  
+    Input image data (ndarray) and a dict of .poni format calibration parameters
     Output q, I(q) 
     """
     def __init__(self):
