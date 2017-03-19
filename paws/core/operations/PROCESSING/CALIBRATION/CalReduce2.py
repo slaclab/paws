@@ -25,8 +25,8 @@ class CalReduce2(Operation):
         self.input_doc['cal_params'] = str( 'dict of calibration parameters, '
         + 'including keys x0_pixel, y0_pixel, d_pixel, pixel_size'
         + 'rotation_rad, tilt_rad, fpolz')
-        self.input_doc['q_min'] = 'Lower limit of usable q values in nm**-1.  May be set to None.'
-        self.input_doc['q_max'] = 'Upper limit of usable q values in nm**-1.  May be set to None.'
+        self.input_doc['q_min'] = 'Lower limit of usable q values in ang**-1.  May be set to None.'
+        self.input_doc['q_max'] = 'Upper limit of usable q values in ang**-1.  May be set to None.'
         self.input_src['image_data'] = optools.wf_input
         self.input_src['cal_params'] = optools.wf_input
         self.input_src['q_min'] = optools.text_input
@@ -65,6 +65,8 @@ class CalReduce2(Operation):
         s = img.shape
         detector_mask = np.ones(s)*(img <= 0)
         q, I_of_q = p.integrate1d(img, 1000, mask=detector_mask, polarization_factor=fpolz)
+        # convert q from 1/nm to 1/Angstrom
+        q = q*0.1
         # window in q
         if (self.inputs['q_min'] is not None) or (self.inputs['q_min'] is not None):
             q_range = np.ones(q.shape,dtype=bool)
@@ -74,8 +76,6 @@ class CalReduce2(Operation):
                 q_range *= (q <= self.inputs['q_max'])
             q = q[q_range]
             I_of_q = I_of_q[q_range]
-        # convert q from 1/nm to 1/Angstrom
-        q = q*0.1
         # save results to self.outputs
         self.outputs['q'] = q
         self.outputs['I_of_q'] = I_of_q 

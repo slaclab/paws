@@ -23,12 +23,16 @@ class ReadCSV_q_I_dI(Operation):
 
     def run(self):
         path = self.inputs['path']
-        q = np.loadtxt(path, dtype=float, delimiter=',', skiprows=1, usecols=(0,))
-        I = np.loadtxt(path, dtype=float, delimiter=',', skiprows=1, usecols=(1,))
-        try:
-            dI = np.loadtxt(path, dtype=float, delimiter=',', skiprows=1, usecols=(2,))
-        except:
+        ncols = np.loadtxt(path, delimiter=',', skiprows=1).shape[1]
+        if ncols == 2:
+            q, I = np.loadtxt(path, dtype=float, delimiter=',', unpack=True)
             dI = None
+        elif ncols == 3:
+            q, I, dI = np.loadtxt(path, dtype=float, delimiter=',', unpack=True)
+        #elif ncols == 4:
+        #    col1, col2, col3, col4 = np.loadtxt(path, dtype=float, delimiter=',', unpack=True)
+        else:
+            raise ValueError("Input file has the wrong number of columns.  I don't know what to do with this.")
         self.outputs['q'] = q
         self.outputs['I'] = I
         self.outputs['dI'] = dI
