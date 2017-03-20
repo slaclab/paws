@@ -25,10 +25,10 @@ class ReadCSV_q_I_dI(Operation):
         path = self.inputs['path']
         ncols = np.loadtxt(path, delimiter=',', skiprows=1).shape[1]
         if ncols == 2:
-            q, I = np.loadtxt(path, dtype=float, delimiter=',', unpack=True)
+            q, I = np.loadtxt(path, dtype=float, delimiter=',', unpack=True, skiprows=1)
             dI = None
         elif ncols == 3:
-            q, I, dI = np.loadtxt(path, dtype=float, delimiter=',', unpack=True)
+            q, I, dI = np.loadtxt(path, dtype=float, delimiter=',', unpack=True, skiprows=1)
         #elif ncols == 4:
         #    col1, col2, col3, col4 = np.loadtxt(path, dtype=float, delimiter=',', unpack=True)
         else:
