@@ -9,132 +9,6 @@ from scipy.optimize import curve_fit
 from ...Operation import Operation
 from ... import optools
 
-
-
-class GenerateSphericalDiffraction(Operation):
-    """Generate a SAXS diffraction pattern for spherical nanoparticles.
-
-    Uses r0 in real units and, if asked to generate q, gives q in real units."""
-
-    def __init__(self):
-        input_names = ['r0', 'sigma_r_over_r0', 'intensity_at_zero', 'use_q_space', 'input_vector', 'min', 'max', 'step']
-        output_names = ['I', 'location_vector', 'space']
-        super(GenerateSphericalDiffraction, self).__init__(input_names, output_names)
-        self.input_doc['r0'] = 'mean particle radius; irrelevant if computing in x-space'
-        self.input_doc['sigma_r_over_r0'] = 'width of distribution in r divided by r0'
-        self.input_doc['intensity_at_zero'] = 'intensity at q = 0 / x = 0'
-        self.input_doc['use_q_space'] = '*True* if *input_vector* and/or *min*/*max*/*step* are values in q space; *False* if they are values in x space'
-        self.input_doc['input_vector'] = 'q or x values of interest, if known.  Use *None* to generate a vector from *min*/*max*/*step* instead.'
-        self.input_doc['min'] = 'minimum q or x value of interest'
-        self.input_doc['max'] = 'maximum q or x value of interest'
-        self.input_doc['step'] = 'step size in q or x values of interest'
-        self.output_doc['I'] = '1d ndarray; intensity values'
-        self.output_doc['location_vector'] = '1d ndarray; x or q values'
-        self.output_doc['space'] = '"x" or "q"'
-        # source & type
-        self.input_src['r0'] = optools.wf_input
-        self.input_src['sigma_r_over_r0'] = optools.wf_input
-        self.input_src['intensity_at_zero'] = optools.wf_input
-        self.input_src['use_q_space'] = optools.text_input
-        self.input_src['input_vector'] = optools.wf_input
-        self.input_src['min'] = optools.text_input
-        self.input_src['max'] = optools.text_input
-        self.input_src['step'] = optools.text_input
-        self.input_type['use_q_space'] = optools.bool_type
-        self.input_type['min'] = optools.float_type
-        self.input_type['max'] = optools.float_type
-        self.input_type['step'] = optools.float_type
-        self.input_type['r0'] = optools.ref_type
-        self.input_type['sigma_r_over_r0'] = optools.ref_type
-        self.input_type['intensity_at_zero'] = optools.ref_type
-        self.input_type['input_vector'] = optools.ref_type
-        # defaults
-        self.inputs['use_q_space'] = True
-
-
-    def run(self):
-        if self.inputs['input_vector'] is None:
-            input_vector = inclusive_arange(self.inputs['min'], self.inputs['max'], self.inputs['step'])
-        else:
-            input_vector = self.inputs['input_vector']
-        self.outputs['location_vector'] = input_vector
-        if self.inputs['use_q_space'] == True:
-            x_vector = input_vector * self.inputs['r0']
-            self.outputs['space'] = 'q'
-        else:
-            x_vector = input_vector
-            self.outputs['space'] = 'x'
-        I = self.inputs['intensity_at_zero'] * blur(x_vector, self.inputs['sigma_r_over_r0']) * 9.
-        self.outputs['I'] = I
-
-class GenerateReferences(Operation):
-    """Generate metrics used for guessing diffraction pattern properties.
-
-    DOES NOT STORE.  IS NOT AUTOMATICALLY AVAILABLE TO OTHER OPERATIONS.
-
-    Use OverwriteReferences to store the resulting dictionary, if desired."""
-
-    def __init__(self):
-        input_names = ['xmin', 'xmax', 'xstep', 'factormin', 'factormax', 'factorstep']
-        output_names = ['references']
-        super(GenerateReferences, self).__init__(input_names, output_names)
-        # Documentation
-        self.input_doc['xmin'] = 'lowest computed value of x; nuisance parameter'
-        self.input_doc['xmax'] = 'highest computed value of x; nuisance parameter'
-        self.input_doc['xstep'] = 'approximate step size in x; nuisance parameter'
-        self.input_doc['factormin'] = 'lowest computed value of factor'
-        self.input_doc['factormax'] = 'highest computed value of factor'
-        self.input_doc['factorstep'] = 'approximate step size in factor'
-        self.output_doc['references'] = 'dictionary of useful values'
-        # Source and type
-        self.input_src['xmin'] = optools.text_input
-        self.input_src['xmax'] = optools.text_input
-        self.input_src['xstep'] = optools.text_input
-        self.input_src['factormin'] = optools.text_input
-        self.input_src['factormax'] = optools.text_input
-        self.input_src['factorstep'] = optools.text_input
-        self.input_type['xmin'] = optools.float_type
-        self.input_type['xmax'] = optools.float_type
-        self.input_type['xstep'] = optools.float_type
-        self.input_type['factormin'] = optools.float_type
-        self.input_type['factormax'] = optools.float_type
-        self.input_type['factorstep'] = optools.float_type
-        # defaults
-        self.inputs['xmin'] = 0.02
-        self.inputs['xmax'] = 50
-        self.inputs['xstep'] = 0.02
-        self.inputs['factormin'] = 1.
-        self.inputs['factormax'] = 35.
-        self.inputs['factorstep'] = 0.2
-
-    def run(self):
-        x = inclusive_arange(self.inputs['xmin'], self.inputs['xmax'], self.inputs['xstep'])
-        factorVals = inclusive_arange(self.inputs['factormin'], self.inputs['factormax'], self.inputs['factorstep'])
-        references = generate_references(x, factorVals)
-        self.outputs['references'] = references
-
-class OverwriteReferences(Operation):
-    """Store previously generated metrics used for guessing diffraction pattern properties.
-
-    USE WITH CAUTION as it will OVERWRITE any existing reference file."""
-
-    def __init__(self):
-        input_names = ['references']
-        output_names = []
-        super(OverwriteReferences, self).__init__(input_names, output_names)
-        # Documentation
-        self.input_doc['references'] = 'dictionary of useful values generated by GenerateReferences'
-        # Source and type
-        self.input_src['references'] = optools.wf_input
-        self.categories = ['OUTPUT']
-
-    def run(self):
-        try:
-            remove(reference_loc)
-        except:
-            pass
-        save_references(self.inputs['references'])
-
 class GuessProperties(Operation):
     """Guess the polydispersity, mean size, and amplitude of spherical diffraction pattern.
 
@@ -142,22 +16,16 @@ class GuessProperties(Operation):
 
     def __init__(self):
         input_names = ['q', 'I', 'dI']
-        output_names = ['fractional_variation','mean_size','amplitude_at_zero','qFirstDip','heightFirstDip',
-                        'sigmaScaledFirstDip','heightAtZero','dips','shoulders','I_guess','q_I_guess']
+        output_names = ['parameter_guesses','good_flag','detailed_flags','I_guess','q_I_guess','additional_information']
         super(GuessProperties, self).__init__(input_names, output_names)
         # Documentation
         self.input_doc['q'] = '1d ndarray; wave vector values'
         self.input_doc['I'] = '1d ndarray; intensity values'
         self.input_doc['dI'] = '1d ndarray; error estimate of intensity values; input None if no dI exists'
-        self.output_doc['fractional_variation'] = 'normal distribution sigma divided by mean size'
-        self.output_doc['mean_size'] = 'mean size of particles'
-        self.output_doc['amplitude_at_zero'] = 'projected scattering amplitude at q=0'
-        self.output_doc['qFirstDip'] = 'estimated location in q of the first dip'
-        self.output_doc['heightFirstDip'] = 'estimated intensity at the minimum of the first dip'
-        #self.output_doc['sigmaScaledFirstDip'] = ''
-        self.output_doc['heightAtZero'] = 'estimated intensity at q = 0'
-        self.output_doc['dips'] = 'boolean vector, True where a candidate local minimum is'
-        self.output_doc['shoulders'] = 'boolean vector, True where a candidate local maximum is'
+        self.output_doc['parameter_guesses'] = 'dictionary containing guessed parameters mean_size, amplitude_at_zero, and fractional_variation'
+        self.output_doc['additional_information'] = 'dictionary of information primarily useful for debug purposes' #'qFirstDip','heightFirstDip','sigmaScaledFirstDip','heightAtZero',dips, shoulders
+        self.output_doc['good_flag'] = 'presently a placeholder boolean'
+        self.output_doc['detailed_flags'] = 'presently a placeholder dictionary'
         # Source and type
         self.input_src['q'] = optools.wf_input
         self.input_src['I'] = optools.wf_input
@@ -171,28 +39,24 @@ class GuessProperties(Operation):
         q, I, dI = self.inputs['q'], self.inputs['I'], self.inputs['dI']
         fractional_variation, qFirstDip, heightFirstDip, sigmaScaledFirstDip, heightAtZero, dips, shoulders = \
             guess_polydispersity(q, I, dI)
-        self.outputs['qFirstDip'] = qFirstDip
-        self.outputs['heightFirstDip'] = heightFirstDip
-        self.outputs['sigmaScaledFirstDip'] = sigmaScaledFirstDip
-        self.outputs['heightAtZero'] = heightAtZero
-        self.outputs['dips'] = dips
-        self.outputs['shoulders'] = shoulders
+        self.outputs['additional_information'] = {'qFirstDip':qFirstDip, 'sigmaScaledFirstDip':sigmaScaledFirstDip,
+                                  'heightFirstDip':heightFirstDip, 'dips':dips, 'shoulders':shoulders}
         mean_size = guess_size(fractional_variation, qFirstDip)
         amplitude_at_zero = polydispersity_metric_heightAtZero(qFirstDip, q, I, dI)
-        #dips, shoulders = choose_dips_and_shoulders1(q, I, dI)
         amplitude_at_zero, mean_size, fractional_variation = refine_guess(q, I, amplitude_at_zero, mean_size, fractional_variation, qFirstDip, heightFirstDip)
-        self.outputs['fractional_variation'], self.outputs['mean_size'], self.outputs['amplitude_at_zero'] = \
-            fractional_variation, mean_size, amplitude_at_zero
+        self.outputs['parameter_guesses'] = {'fractional_variation':fractional_variation, 'mean_size':mean_size, 'amplitude_at_zero':amplitude_at_zero}
         self.outputs['I_guess'] = generate_spherical_diffraction(q, amplitude_at_zero, mean_size, fractional_variation)
         self.outputs['q_I_guess'] = logsafe_zip(q, self.outputs['I_guess'])
+        self.outputs['good_flag'] = True ## PLACEHOLDER
+        self.outputs['detailed_flags'] = {} ## PLACEHOLDER
 
 class OptimizeSphericalDiffractionFit(Operation):
     """From an initial guess, optimize r0, I0, and fractional_variation."""
 
     # q, I, dI, qlim, guesses, log=False, clip=False, errors=False, baseline=False
     def __init__(self):
-        input_names = ['q', 'I', 'dI', 'amplitude_at_zero', 'mean_size', 'fractional_variation','noise_floor',
-                       'log_log_fit','exclude_high_q','error_weighting','q_upper_limit']
+        input_names = ['q', 'I', 'dI', 'parameter_guesses','noise_floor','log_log_fit','exclude_high_q',
+                       'error_weighting','q_upper_limit']
         output_names = ['amplitude_at_zero', 'mean_size', 'fractional_variation','noise_floor','I_fit','q_I_fit',
                         'chi_absolute','chi_relative']
         super(OptimizeSphericalDiffractionFit, self).__init__(input_names, output_names)
@@ -200,6 +64,7 @@ class OptimizeSphericalDiffractionFit(Operation):
         self.input_doc['q'] = '1d ndarray; wave vector values'
         self.input_doc['I'] = '1d ndarray; intensity values'
         self.input_doc['dI'] = '1d ndarray; intensity error estimate'
+        self.input_doc['parameter_guesses'] = 'dictionary with keywords amplitude_at_zero, mean_size, and fractional_variation'
         self.input_doc['amplitude_at_zero'] = 'estimate of intensity at q=0'
         self.input_doc['mean_size'] = 'estimate of mean particle size'
         self.input_doc['fractional_variation'] = 'estimate of normal distribution sigma divided by mean size'
@@ -212,9 +77,7 @@ class OptimizeSphericalDiffractionFit(Operation):
         self.input_src['q'] = optools.wf_input
         self.input_src['I'] = optools.wf_input
         self.input_src['dI'] = optools.wf_input
-        self.input_src['amplitude_at_zero'] = optools.wf_input
-        self.input_src['mean_size'] = optools.wf_input
-        self.input_src['fractional_variation'] = optools.wf_input
+        self.input_src['parameter_guesses'] = optools.wf_input
         self.input_src['noise_floor'] = optools.text_input
         self.input_src['log_log_fit'] = optools.text_input
         self.input_src['exclude_high_q'] = optools.text_input
@@ -228,9 +91,7 @@ class OptimizeSphericalDiffractionFit(Operation):
         self.input_type['q'] = optools.ref_type
         self.input_type['I'] = optools.ref_type
         self.input_type['dI'] = optools.ref_type
-        self.input_type['amplitude_at_zero'] = optools.ref_type
-        self.input_type['mean_size'] = optools.ref_type
-        self.input_type['fractional_variation'] = optools.ref_type
+        self.input_type['parameter_guesses'] = optools.ref_type
 #        self.input_type[''] = optools.ref_type
         # defaults
         self.inputs['noise_floor'] = False
@@ -246,8 +107,9 @@ class OptimizeSphericalDiffractionFit(Operation):
             dI = np.ones(I.shape, dtype=float)
         else:
             dI = self.inputs['dI']
-        guesses = [self.inputs['amplitude_at_zero'], self.inputs['mean_size'], self.inputs['fractional_variation'],
-                   guess_noise_floor(q, I, self.inputs['mean_size'])]
+        guess_dict = self.inputs['parameter_guesses']
+        guesses = [guess_dict['amplitude_at_zero'], guess_dict['mean_size'], guess_dict['fractional_variation'],
+                   guess_noise_floor(q, I, guess_dict['mean_size'])]
         log, clip, errors, baseline = self.inputs['log_log_fit'], self.inputs['exclude_high_q'], \
                                       self.inputs['error_weighting'], self.inputs['noise_floor']
         qlim = self.inputs['q_upper_limit']
@@ -671,11 +533,11 @@ def first_dip(q, I, dips, dI=None):
     # make sure selection is large enough to get a useful sampling
     if selection.sum() < 9:
         print "Your sampling in q seems to be sparse and will likely affect the quality of the estimate."
-    for ii in range(4):
-        selection[1:] = selection[1:] | selection[:-1]
-        selection[:-1] = selection[1:] | selection[:-1]
+    for ii in range(9):
         if selection.sum() >= 9:
             break
+        selection[1:] = selection[1:] | selection[:-1]
+        selection[:-1] = selection[1:] | selection[:-1]
     # fit local quadratic
     coefficients = arbitrary_order_solution(2, q[selection], I[selection], dI[selection])
     qbest = quadratic_extremum(coefficients)
@@ -837,18 +699,11 @@ def guess_nearest_point_on_nonmonotonic_trace_normalized(loclist, tracelist, coo
 
 def chi_squared(y1, y2, sigma=None):
     bads = (np.isnan(y1)) | (np.isnan(y2))
-#    print "848", bads.dtype
     if sigma is not None:
         bads = bads | (sigma == 0)
-#        print "851", bads.dtype
     else:
         sigma = np.ones(y1.shape)
-#        print "854", bads.dtype
-#    print "855", bads.dtype
     n = (~bads).sum()
-#    print "857", ~bads[:20], y1.shape, y2.shape
-    if sigma is not None:
-        print sigma.shape
     chi_2 = np.sum((y1[~bads] - y2[~bads])**2 * sigma[~bads]**-2) / (n - 1)
     return chi_2
 
