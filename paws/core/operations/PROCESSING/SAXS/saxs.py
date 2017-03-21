@@ -283,7 +283,6 @@ def arb_cond_fit(q, I, dI, qlim, guesses, log=False, clip=False, errors=False, b
             # An alternative follows, prone to issues if (dI > I).any()
             # dI_val = 0.5 * (np.log(I_val + dI_val) - np.log(I_val - dI_val))
         y = safe_log(I[valid])
-    # amplitude_at_zero, mean_size, fractional_variation, noise_floor = guesses
     if baseline:
         bounds = ([amplitude_at_zero * 0.5, mean_size * 0.5, fractional_variation * 0.1, 0],
                   [amplitude_at_zero / 0.5, mean_size / 0.5, fractional_variation / 0.1, np.median(I)])
@@ -672,9 +671,11 @@ def first_dip(q, I, dips, dI=None):
     # make sure selection is large enough to get a useful sampling
     if selection.sum() < 9:
         print "Your sampling in q seems to be sparse and will likely affect the quality of the estimate."
-    while selection.sum() < 9:
-        selection[1:] = selection[1:] & selection[:-1]
-        selection[:-1] = selection[1:] & selection[:-1]
+    for ii in range(4):
+        selection[1:] = selection[1:] | selection[:-1]
+        selection[:-1] = selection[1:] | selection[:-1]
+        if selection.sum() >= 9:
+            break
     # fit local quadratic
     coefficients = arbitrary_order_solution(2, q[selection], I[selection], dI[selection])
     qbest = quadratic_extremum(coefficients)
@@ -836,11 +837,18 @@ def guess_nearest_point_on_nonmonotonic_trace_normalized(loclist, tracelist, coo
 
 def chi_squared(y1, y2, sigma=None):
     bads = (np.isnan(y1)) | (np.isnan(y2))
+#    print "848", bads.dtype
     if sigma is not None:
         bads = bads | (sigma == 0)
+#        print "851", bads.dtype
     else:
         sigma = np.ones(y1.shape)
+#        print "854", bads.dtype
+#    print "855", bads.dtype
     n = (~bads).sum()
+#    print "857", ~bads[:20], y1.shape, y2.shape
+    if sigma is not None:
+        print sigma.shape
     chi_2 = np.sum((y1[~bads] - y2[~bads])**2 * sigma[~bads]**-2) / (n - 1)
     return chi_2
 
