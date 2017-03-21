@@ -57,7 +57,8 @@ class OptimizeSphericalDiffractionFit(Operation):
     def __init__(self):
         input_names = ['q', 'I', 'dI', 'parameter_guesses','noise_floor','log_log_fit','exclude_high_q',
                        'error_weighting','q_upper_limit']
-        output_names = ['fitted_parameters','I_fit','q_I_fit_logsafe','goodness_metrics']
+        output_names = ['amplitude_at_zero', 'mean_size', 'fractional_variation','noise_floor','I_fit','q_I_fit',
+                        'chi_absolute','chi_relative']
         super(OptimizeSphericalDiffractionFit, self).__init__(input_names, output_names)
         # Documentation
         self.input_doc['q'] = '1d ndarray; wave vector values'
@@ -68,12 +69,10 @@ class OptimizeSphericalDiffractionFit(Operation):
         self.input_doc['mean_size'] = 'estimate of mean particle size'
         self.input_doc['fractional_variation'] = 'estimate of normal distribution sigma divided by mean size'
         self.input_doc['noise_floor'] = 'allow a fitted noise floor?'
-        self.output_doc['fitted_parameters'] = 'dictionary with keywords amplitude_at_zero, mean_size, ' \
-                                               'fractional_variation, and noise_magnitude'
-        self.output_doc['I_fit'] = 'fitted intensity result'
-        self.output_doc['q_I_fit_logsafe'] = 'fitted intensity result, zipped with q, logsafe ' \
-                                             '(for display purposes; some points may be omitted)'
-        self.output_doc['goodness_metrics'] = 'dictionary of various goodness-of-fit metrics'
+        self.output_doc['fractional_variation'] = 'normal distribution sigma divided by mean size'
+        self.output_doc['mean_size'] = 'mean particle size'
+        self.output_doc['amplitude_at_zero'] = 'projected intensity at q=0'
+        self.output_doc['noise_floor'] = 'an arbitrary constant additive accounting for noise and undersubtraction'
         # Source and type
         self.input_src['q'] = optools.wf_input
         self.input_src['I'] = optools.wf_input
@@ -93,88 +92,91 @@ class OptimizeSphericalDiffractionFit(Operation):
         self.input_type['I'] = optools.ref_type
         self.input_type['dI'] = optools.ref_type
         self.input_type['parameter_guesses'] = optools.ref_type
+#        self.input_type[''] = optools.ref_type
         # defaults
         self.inputs['noise_floor'] = False
         self.inputs['log_log_fit'] = True
         self.inputs['exclude_high_q'] = True
         self.inputs['error_weighting'] = False
         self.inputs['q_upper_limit'] = 0.25
+#        self.inputs['defaults'] = None
 
     def run(self):
-        q, I, dI = self.inputs['q'], self.inputs['I'], self.inputs['dI']
+        q, I = self.inputs['q'], self.inputs['I']
+        if self.inputs['dI'] is None:
+            dI = np.ones(I.shape, dtype=float)
+        else:
+            dI = self.inputs['dI']
         guess_dict = self.inputs['parameter_guesses']
+        guesses = [guess_dict['amplitude_at_zero'], guess_dict['mean_size'], guess_dict['fractional_variation'],
+                   guess_noise_floor(q, I, guess_dict['mean_size'])]
         log, clip, errors, baseline = self.inputs['log_log_fit'], self.inputs['exclude_high_q'], \
                                       self.inputs['error_weighting'], self.inputs['noise_floor']
         qlim = self.inputs['q_upper_limit']
-        amplitude_at_zero, mean_size, fractional_variation = guess_dict['amplitude_at_zero'], guess_dict['mean_size'], \
-                                                             guess_dict['fractional_variation']
-        noise_magnitude = guess_noise_floor(q, I, mean_size)
-        # computational validity checks
-        valid = (~np.isnan(I)) & (~np.isinf(I)) & (I > 0)
-        if (dI is not None) and errors:
-            valid = valid & (~np.isnan(dI)) & (~np.isinf(dI)) & (dI > 0)
-        if clip:
-            valid = valid & (q <= qlim)
-        x = q[valid]
-        y = I[valid]
-        if (dI is not None) and errors:
-            dy = dI[valid]
-        else:
-            dy = None
-        if log:
-            y = safe_log(I[valid])
-            if (dI is not None) and errors:
-                # A reasonable proxy for log error
-                dy = safe_log(I[valid] + dI[valid]) - safe_log(I[valid])
-                # An alternative follows, prone to issues if (dI > I).any()
-                # dI_val = 0.5 * (np.log(I_val + dI_val) - np.log(I_val - dI_val))
-        # reasonable bounds; initial value list
+        I_fit, chi_abs, chi_rel, finalparams = arb_cond_fit(q, I, dI, qlim, guesses, log, clip, errors, baseline)
+        self.outputs['amplitude_at_zero'] = finalparams[0]
+        self.outputs['mean_size'] = finalparams[1]
+        self.outputs['fractional_variation'] = finalparams[2]
+        self.outputs['noise_background'] = None
         if baseline:
-            bounds = ([amplitude_at_zero * 0.5, mean_size * 0.5, fractional_variation * 0.1, 0],
-                      [amplitude_at_zero / 0.5, mean_size / 0.5, fractional_variation / 0.1, np.median(I)])
-            init = [amplitude_at_zero, mean_size, fractional_variation, noise_magnitude]
-        else:
-            bounds = ([amplitude_at_zero * 0.5, mean_size * 0.5, fractional_variation * 0.1],
-                      [amplitude_at_zero / 0.5, mean_size / 0.5, fractional_variation / 0.1])
-            init = [amplitude_at_zero, mean_size, fractional_variation]
-        # define function being fit to data
-        if log:
-            if baseline:
-                def func(q, i0, r0, poly, noise):
-                    return safe_log(generate_spherical_diffraction(q, i0, r0, poly) + noise)
-            else:
-                def func(q, i0, r0, poly):
-                    return safe_log(generate_spherical_diffraction(q, i0, r0, poly))
-        else:
-            if baseline:
-                def func(q, i0, r0, poly, noise):
-                    return (generate_spherical_diffraction(q, i0, r0, poly) + noise)
-            else:
-                def func(q, i0, r0, poly):
-                    return generate_spherical_diffraction(q, i0, r0, poly)
-        # fit
-        popt, pcov = curve_fit(func, x, y, init, dy, bounds=bounds)
-        # unpack
-        amplitude_at_zero, mean_size, fractional_variation = popt[0:3]
-        if baseline:
-            noise_magnitude = popt[3]
-        else:
-            noise_magnitude = None
-        # feedback
-        I_fit = amplitude_at_zero * blur(q * mean_size, fractional_variation)
-        if noise_magnitude is not None:
-            I_fit = I_fit + noise_magnitude
-        chi_abs = chi_squared(I, I_fit)
-        if dI is not None:
-            chi_rel = chi_squared(I, I_fit, dI)
-        else:
-            chi_rel = None
-        self.outputs['fitted_parameters'] = {'amplitude_at_zero':amplitude_at_zero, 'mean_size':mean_size,
-                                             'fractional_variation':fractional_variation,
-                                             'noise_magnitude':noise_magnitude}
+            self.outputs['noise_background'] = finalparams[3]
         self.outputs['I_fit'] = I_fit
-        self.outputs['q_I_fit_logsafe'] = logsafe_zip(q, I_fit)
-        self.outputs['goodness_metrics'] = {'chi_absolute':chi_abs, 'chi_relative':chi_rel}
+        self.outputs['q_I_fit'] = logsafe_zip(q, I_fit)
+        self.outputs['chi_absolute'] = chi_abs
+        self.outputs['chi_relative'] = chi_rel
+
+def arb_cond_fit(q, I, dI, qlim, guesses, log=False, clip=False, errors=False, baseline=False):
+    amplitude_at_zero, mean_size, fractional_variation, noise_floor = guesses
+    valid = (~np.isnan(I)) & (~np.isinf(I)) & (I > 0)
+    if (dI is not None) and errors:
+        valid = valid & (~np.isnan(dI)) & (~np.isinf(dI)) & (dI > 0)
+    if clip:
+        valid = valid & (q <= qlim)
+    x = q[valid]
+    y = I[valid]
+    if (dI is not None) and errors:
+        dy = dI[valid]
+    else:
+        dy = None
+    if log:
+        if errors:
+            # A reasonable proxy for log error
+            dy = safe_log(I[valid] + dI[valid]) - safe_log(I[valid])
+            # An alternative follows, prone to issues if (dI > I).any()
+            # dI_val = 0.5 * (np.log(I_val + dI_val) - np.log(I_val - dI_val))
+        y = safe_log(I[valid])
+    if baseline:
+        bounds = ([amplitude_at_zero * 0.5, mean_size * 0.5, fractional_variation * 0.1, 0],
+                  [amplitude_at_zero / 0.5, mean_size / 0.5, fractional_variation / 0.1, np.median(I)])
+        init = [amplitude_at_zero, mean_size, fractional_variation, noise_floor]
+    else:
+        bounds = ([amplitude_at_zero * 0.5, mean_size * 0.5, fractional_variation * 0.1],
+                  [amplitude_at_zero / 0.5, mean_size / 0.5, fractional_variation / 0.1])
+        init = [amplitude_at_zero, mean_size, fractional_variation]
+    if log:
+        if baseline:
+            def func(q, i0, r0, poly, noise):
+                return safe_log(generate_spherical_diffraction(q, i0, r0, poly) + noise)
+        else:
+            def func(q, i0, r0, poly):
+                return safe_log(generate_spherical_diffraction(q, i0, r0, poly))
+    else:
+        if baseline:
+            def func(q, i0, r0, poly, noise):
+                return (generate_spherical_diffraction(q, i0, r0, poly) + noise)
+        else:
+            def func(q, i0, r0, poly):
+                return generate_spherical_diffraction(q, i0, r0, poly)
+    popt, pcov = curve_fit(func, x, y, init, dy, bounds=bounds)
+    amplitude_at_zero, mean_size, fractional_variation = popt[0:3]
+    if baseline:
+        noise_floor = popt[3]
+    else:
+        noise_floor = 0
+    I_fit = amplitude_at_zero * blur(q * mean_size, fractional_variation) + noise_floor
+    chi_abs = chi_squared(I, I_fit)
+    chi_rel = chi_squared(I, I_fit, dI)
+    return I_fit, chi_abs, chi_rel, popt
 
 def safe_log(y):
     bads = (y <= 0) | (np.isnan(y))
@@ -246,20 +248,34 @@ def quadratic_extremum(coefficients):
 
 def polynomial_value(coefficients, x):
     '''Finds the value of a polynomial at a location.'''
-    csize = coefficients.size
-    powers = np.arange(csize)
+    powers = np.arange(coefficients.size)
     try:
-        xsize = x.size # distinguish sequence x from numeric x
-        # (1, m) a horizontal vector
-        powers = powers.reshape(1, csize)
-        coefficients = coefficients.reshape(1, csize)
-        x = x.reshape(xsize, 1)
+        x.size # distinguish sequence x from numeric x
+        powers = horizontal(powers)
+        coefficients = horizontal(coefficients)
+        x = vertical(x)
         y = ((x ** powers) * coefficients).sum(axis=1)
         y = y.flatten()
     except AttributeError:
         y = ((x ** powers) * coefficients).sum()
     return y
 
+def vertical(array1d):
+    '''Turn 1d array into 2d vertical vector.'''
+    array1d = array1d.reshape((array1d.size, 1))
+    return array1d
+
+def horizontal(array1d):
+    '''Turn 1d array into 2d horizontal vector.'''
+    array1d = array1d.reshape((1, array1d.size))
+    return array1d
+
+def dummy(array1d):
+    '''Turn 1d array into dummy-index vector for 2d matrix computation.
+
+    Sum over the dummy index by taking *object.sum(axis=0)*.'''
+    array1d = array1d.reshape((array1d.size, 1 , 1))
+    return array1d
 
 def make_poly_matrices(x, y, error, order):
     '''Make the matrices necessary to solve a polynomial fit of order *order*.
@@ -277,14 +293,10 @@ def make_poly_matrices(x, y, error, order):
         error = np.ones(y.shape, dtype=float)
     if ((x.shape != y.shape) or (y.shape != error.shape)):
         raise ValueError('Arguments *x*, *y*, and *error* must all have the same shape.')
-    size = x.size
     index = np.arange(order+1)
-    # (n, 1, 1) a dummy vector to be summed over index zero
-    # (m, 1) a vertical vector
-    # (1, m) a horizontal vector
-    vector = (y.reshape(size,1,1) * x.reshape(size,1,1) ** index.reshape(order+1,1) * error.reshape(size,1,1)).sum(axis=0)
-    index_block = index.reshape(1,order+1) + index.reshape(order+1,1)
-    matrix = (x.reshape(size,1,1) ** index_block * error.reshape(size,1,1)).sum(axis=0)
+    vector = (dummy(y) * dummy(x) ** vertical(index) * dummy(error)).sum(axis=0)
+    index_block = horizontal(index) + vertical(index)
+    matrix = (dummy(x) ** index_block * dummy(error)).sum(axis=0)
     return matrix, vector
 
 def power_law_solution(x, y, dy=None):
@@ -330,9 +342,7 @@ def generateRhoFactor(factor):
     factorMin = max(factorCenter-5*factor, 0.001)
     factorMax = factorCenter+5*factor
     factorVals = inclusive_arange(factorMin, factorMax, factor*0.02)
-    # normalized gaussian:
-    # ((sigma * (2 * np.pi)**0.5)**-1 )*np.exp(-0.5 * ((x - x0)/sigma)**2)
-    rhoVals = ((factor * (2 * np.pi)**0.5)**-1 )*np.exp(-0.5 * ((factorVals - 1.)/factor)**2)
+    rhoVals = gauss(factorVals, factorCenter, factor)
     return factorVals, rhoVals
 
 def blur(x, factor):
@@ -341,18 +351,22 @@ def blur(x, factor):
     ysum = np.zeros(x.shape)
     for ii in range(len(factorVals)):
         effective_x = x / factorVals[ii]
-        # spherical monodisperse diffraction:
-        # (3. * (np.sin(x) - x * np.cos(x)) * x**-3)**2
-        y = (3. * (np.sin(effective_x) - x * np.cos(effective_x)) * effective_x**-3)**2
+        y = spherical_monodisperse_diffraction(effective_x)
         ysum += rhoVals[ii]*y*deltaFactor
     return ysum
 
 def generate_references(x, factorVals):
+    #y0 = spherical_monodisperse_diffraction(x)
     num_tests = len(factorVals)
     xFirstDip = np.zeros(num_tests)
     sigmaScaledFirstDip = np.zeros(num_tests)
     heightFirstDip = np.zeros(num_tests)
     heightAtZero = np.zeros(num_tests)
+    #powerLawAll = np.zeros((num_tests, 2))
+    #powerLawInitial = np.zeros((num_tests, 2))
+    #depthFirstDip = np.zeros(num_tests)
+    #y_x4_inf = np.zeros(num_tests)
+    #lowQApprox = np.zeros((num_tests, 2))
     for ii in range(num_tests):
         factor = factorVals[ii]
         y = blur(x, factor)
@@ -526,7 +540,6 @@ def first_dip(q, I, dips, dI=None):
         selection[:-1] = selection[1:] | selection[:-1]
     # fit local quadratic
     coefficients = arbitrary_order_solution(2, q[selection], I[selection], dI[selection])
-    # extremum_location = -0.5*coefficients[1]/coefficients[2]
     qbest = quadratic_extremum(coefficients)
     Ibest = polynomial_value(coefficients, qbest)
     return qbest, Ibest, coefficients
