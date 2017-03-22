@@ -59,7 +59,7 @@ class ReduceByWXDDict_mask_error(Operation):
         # initialization parameters, change into Fit2D format
         pxsz = self.inputs['pixel_size'] # in microns
         fpolz = self.inputs['fpolz']
-        l = self.inputs['cal_params']['lambda'] # wavelength (in what units??? need to check)
+        l = self.inputs['cal_params']['lambda'] # wavelength (in Angstrom)
         d = self.inputs['cal_params']['d_pixel']*pxsz*0.001 # converting distance from pixel-widths to millimeters
         rot = (2*np.pi-self.inputs['cal_params']['rotation_rad'])/(2*np.pi)*360
         tilt = self.inputs['cal_params']['tilt_rad']/(2*np.pi)*360

@@ -3,8 +3,8 @@ from matplotlib.figure import Figure
 from scipy.special import wofz
 from scipy.optimize import minimize as scimin
 
-from ..operation import Operation
-from .. import optools
+from ...operation import Operation
+from ... import optools
 
 class VoigtPeakFit(Operation):
     """

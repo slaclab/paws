@@ -200,8 +200,8 @@ class Workflow(TreeSelectionModel):
                         #vals = optools.val_list(il)
                         #for v in vals:
                         #    if not self.is_good_uri(v):
-                        self.wfman.write_log('--- clearing InputLocator for {}.{}.{} ---'.format(
-                        itm.tag(),optools.inputs_tag,name))
+                        self.wfman.write_log('--- {}.{}.{} points to bad uri ({}): clearing InputLocator ---'.format(
+                        itm.tag(),optools.inputs_tag,name,il.val))
                         op.input_locator[name] = optools.InputLocator(il.src,il.tp,None)
                         self.tree_dataChanged(op_idx)
 
