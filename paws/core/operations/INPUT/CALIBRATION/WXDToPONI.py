@@ -20,9 +20,9 @@ Detector plane origin is the bottom left corner of the detector. TODO: verify
     versize=___                     (vertical extent in pixels)
     region_ulc_x=___                (???)
     region_ulc_y=___                (???)
-    bcenter_x=___                   (horizontal position of beam center, in 150um pixels)
-    bcenter_y=___                   (vertical position of beam center, in 150um pixels)
-    detect_dist=___                 (direct distance to detector plane intersection along beam axis, in 150um pixels)
+    bcenter_x=___                   (horizontal position of beam center, in pixels)
+    bcenter_y=___                   (vertical position of beam center, in pixels)
+    detect_dist=___                 (direct distance to detector plane intersection along beam axis, in pixels)
     detect_tilt_alpha=___           (rotation of detector tilt axis in radians)
     detect_tilt_delta=___           (detector tilt in radians)
     wavelenght=___                  (the typo 'wavelenght' is built into wxdiff, and it is reported in angstroms)
@@ -116,14 +116,13 @@ class WXDToPONI(Operation):
             kv = line.strip().split('=')
             if kv[0] == 'detect_dist':
                 d_px = float(kv[1])         # WXDIFF direct detector distance, 
-                                            # from sample to where beam axis intersects detector plane,
-                                            # in pixels w/ 150um pixel size.
+                                            # from sample to where beam axis intersects detector plane, in pixels.
                                             # Fit2D uses this input in mm to set its spatial scale,
                                             # so it has to be converted to distance units (mm for Fit2D). 
                                             # Because this scales the spatial representation for Fit2D,
                                             # the other inputs can still be given in pixel units,
                                             # without converting between pixel sizes.
-                d_m = d_px*150E-6 
+                d_m = d_px*pxsz_m 
                 d_mm = d_m*1E3 
             if kv[0] == 'bcenter_x':
                 bcx_px = float(kv[1])       # WXDIFF x coord relative to 'bottom left' corner of detector
@@ -148,9 +147,6 @@ class WXDToPONI(Operation):
         # use a pyFAI.AzimuthalIntegrator() to do the conversion
         p = pyFAI.AzimuthalIntegrator(wavelength = wl_m) 
         p.setFit2D(d_mm,bcx_px,bcy_px,tilt_deg,rot_fit2d,pxsz_um,pxsz_um)
-
-        print p
-
         poni_dict = p.getPyFAI()
         poni_dict['fpolz'] = fpolz
         self.outputs['poni_dict'] = poni_dict 

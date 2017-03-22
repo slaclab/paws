@@ -40,9 +40,6 @@ class CalReduce(Operation):
         p = pyFAI.AzimuthalIntegrator()
         p.setPyFAI(**pd)
         fpolz = pd['fpolz']
-
-        print p
-
         # use a mask to screen negative pixels
         # mask should be 1 for masked pixels, 0 for unmasked pixels
         s = int(img.shape[0])
