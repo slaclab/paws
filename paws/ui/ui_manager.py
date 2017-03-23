@@ -11,7 +11,7 @@ from .pluguiman import PluginUiManager
 from ..core.operations.operation import Operation
 from ..core import pawstools
 from . import data_viewer
-from ..core.listmodel import ListModel
+from ..core.ListModel import ListModel
 from ..core.plugins.WorkflowPlugin import WorkflowPlugin
 
 # TODO: Make a metaclass that generates Operation subclasses.

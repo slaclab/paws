@@ -4,8 +4,8 @@ from collections import OrderedDict
 from PySide import QtCore
 
 from ..operations import optools
-from ..treemodel import TreeModel,TreeSelectionModel
-from ..treeitem import TreeItem
+from ..TreeSelectionModel import TreeSelectionModel
+from ..TreeItem import TreeItem
 from .. import plugins as pgns
 from .plugin import PawsPlugin
 from .WorkflowPlugin import WorkflowPlugin

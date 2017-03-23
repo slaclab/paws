@@ -1,8 +1,9 @@
 from PySide import QtCore
 
 from .. import operations as ops
-from ..treemodel import TreeModel, TreeSelectionModel
-from ..treeitem import TreeItem
+from ..TreeModel import TreeModel
+from ..TreeSelectionModel import TreeSelectionModel
+from ..TreeItem import TreeItem
 
 class OpManager(TreeSelectionModel):
     """

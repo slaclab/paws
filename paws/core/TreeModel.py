@@ -3,7 +3,7 @@ from collections import OrderedDict
 
 from PySide import QtCore
 
-from .treeitem import TreeItem
+from .TreeItem import TreeItem
 
 class TreeModel(QtCore.QAbstractItemModel):
     """
