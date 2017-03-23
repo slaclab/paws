@@ -119,10 +119,14 @@ class Workflow(TreeSelectionModel):
         """
         Update Operation in treeitem indicated by uri.
         It is expected that new_op is a reference to the Operation stored at uri. 
+        This should be called to update an Operation while a workflow is executed,
+        so that the updated Operation data can be used downstream.
         """
         itm, idx = self.get_from_uri(uri)
         self.tree_update(idx,new_op)
-        self.update_io_deps()
+        # note- this should be called to update Operation data while the workflow is executed.
+
+        #self.update_io_deps()
 
     # TODO: fix uri_to_dict and update_uri_dict. 
     # Currently e.g. saving op.outputs.itm fails to save itm,
