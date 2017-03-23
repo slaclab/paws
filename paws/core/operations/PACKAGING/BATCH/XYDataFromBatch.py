@@ -1,7 +1,7 @@
 import numpy as np
 
-from ..operation import Operation
-from .. import optools
+from ...operation import Operation
+from ... import optools
 
 class XYDataFromBatch(Operation):
     """
@@ -35,8 +35,10 @@ class XYDataFromBatch(Operation):
         b_out = self.inputs['batch_output']
         x_uri = self.inputs['x_uri']
         y_uri = self.inputs['y_uri']
-        x_all = np.array([optools.get_uri_from_dict(x_uri,d) for d in b_out if optools.dict_contains_uri(x_uri,d)],dtype=float)
-        y_all = np.array([optools.get_uri_from_dict(y_uri,d) for d in b_out if optools.dict_contains_uri(y_uri,d)],dtype=float)
+        #x_all = np.array([optools.get_uri_from_dict(x_uri,d) for d in b_out if optools.dict_contains_uri(x_uri,d)],dtype=float)
+        #y_all = np.array([optools.get_uri_from_dict(y_uri,d) for d in b_out if optools.dict_contains_uri(y_uri,d)],dtype=float)
+        x_all = np.array([optools.get_uri_from_dict(x_uri,d) for d in b_out],dtype=float)
+        y_all = np.array([optools.get_uri_from_dict(y_uri,d) for d in b_out],dtype=float)
         if any(x_all):
             xmin = np.min(x_all)
         else:
