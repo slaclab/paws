@@ -248,34 +248,20 @@ def quadratic_extremum(coefficients):
 
 def polynomial_value(coefficients, x):
     '''Finds the value of a polynomial at a location.'''
-    powers = np.arange(coefficients.size)
+    csize = coefficients.size
+    powers = np.arange(csize)
     try:
-        x.size # distinguish sequence x from numeric x
-        powers = horizontal(powers)
-        coefficients = horizontal(coefficients)
-        x = vertical(x)
+        xsize = x.size # distinguish sequence x from numeric x
+        # (1, m) a horizontal vector
+        powers = powers.reshape(1, csize)
+        coefficients = coefficients.reshape(1, csize)
+        x = x.reshape(xsize, 1)
         y = ((x ** powers) * coefficients).sum(axis=1)
         y = y.flatten()
     except AttributeError:
         y = ((x ** powers) * coefficients).sum()
     return y
 
-def vertical(array1d):
-    '''Turn 1d array into 2d vertical vector.'''
-    array1d = array1d.reshape((array1d.size, 1))
-    return array1d
-
-def horizontal(array1d):
-    '''Turn 1d array into 2d horizontal vector.'''
-    array1d = array1d.reshape((1, array1d.size))
-    return array1d
-
-def dummy(array1d):
-    '''Turn 1d array into dummy-index vector for 2d matrix computation.
-
-    Sum over the dummy index by taking *object.sum(axis=0)*.'''
-    array1d = array1d.reshape((array1d.size, 1 , 1))
-    return array1d
 
 def make_poly_matrices(x, y, error, order):
     '''Make the matrices necessary to solve a polynomial fit of order *order*.
@@ -293,10 +279,14 @@ def make_poly_matrices(x, y, error, order):
         error = np.ones(y.shape, dtype=float)
     if ((x.shape != y.shape) or (y.shape != error.shape)):
         raise ValueError('Arguments *x*, *y*, and *error* must all have the same shape.')
+    size = x.size
     index = np.arange(order+1)
-    vector = (dummy(y) * dummy(x) ** vertical(index) * dummy(error)).sum(axis=0)
-    index_block = horizontal(index) + vertical(index)
-    matrix = (dummy(x) ** index_block * dummy(error)).sum(axis=0)
+    # (n, 1, 1) a dummy vector to be summed over index zero
+    # (m, 1) a vertical vector
+    # (1, m) a horizontal vector
+    vector = (y.reshape(size,1,1) * x.reshape(size,1,1) ** index.reshape(order+1,1) * error.reshape(size,1,1)).sum(axis=0)
+    index_block = index.reshape(1,order+1) + index.reshape(order+1,1)
+    matrix = (x.reshape(size,1,1) ** index_block * error.reshape(size,1,1)).sum(axis=0)
     return matrix, vector
 
 def power_law_solution(x, y, dy=None):
@@ -323,12 +313,6 @@ def generate_spherical_diffraction(q, i0, r0, poly):
     i = i0 * blur(x, poly)
     return i
 
-def spherical_monodisperse_diffraction(x):
-    return (3. * (np.sin(x) - x * np.cos(x)) * x**-3)**2
-
-def gauss(x, x0, sigma):
-    return ((sigma * (2 * np.pi)**0.5)**-1 )*np.exp(-0.5 * ((x - x0)/sigma)**2)
-
 def generateRhoFactor(factor):
     '''
     Generate a guassian distribution of number densities (rho).
@@ -342,7 +326,9 @@ def generateRhoFactor(factor):
     factorMin = max(factorCenter-5*factor, 0.001)
     factorMax = factorCenter+5*factor
     factorVals = inclusive_arange(factorMin, factorMax, factor*0.02)
-    rhoVals = gauss(factorVals, factorCenter, factor)
+    # normalized gaussian:
+    # ((sigma * (2 * np.pi)**0.5)**-1 )*np.exp(-0.5 * ((x - x0)/sigma)**2)
+    rhoVals = ((factor * (2 * np.pi)**0.5)**-1 )*np.exp(-0.5 * ((factorVals - 1.)/factor)**2)
     return factorVals, rhoVals
 
 def blur(x, factor):
@@ -351,22 +337,18 @@ def blur(x, factor):
     ysum = np.zeros(x.shape)
     for ii in range(len(factorVals)):
         effective_x = x / factorVals[ii]
-        y = spherical_monodisperse_diffraction(effective_x)
+        # spherical monodisperse diffraction:
+        # (3. * (np.sin(x) - x * np.cos(x)) * x**-3)**2
+        y = (3. * (np.sin(effective_x) - x * np.cos(effective_x)) * effective_x**-3)**2
         ysum += rhoVals[ii]*y*deltaFactor
     return ysum
 
 def generate_references(x, factorVals):
-    #y0 = spherical_monodisperse_diffraction(x)
     num_tests = len(factorVals)
     xFirstDip = np.zeros(num_tests)
     sigmaScaledFirstDip = np.zeros(num_tests)
     heightFirstDip = np.zeros(num_tests)
     heightAtZero = np.zeros(num_tests)
-    #powerLawAll = np.zeros((num_tests, 2))
-    #powerLawInitial = np.zeros((num_tests, 2))
-    #depthFirstDip = np.zeros(num_tests)
-    #y_x4_inf = np.zeros(num_tests)
-    #lowQApprox = np.zeros((num_tests, 2))
     for ii in range(num_tests):
         factor = factorVals[ii]
         y = blur(x, factor)
@@ -540,6 +522,7 @@ def first_dip(q, I, dips, dI=None):
         selection[:-1] = selection[1:] | selection[:-1]
     # fit local quadratic
     coefficients = arbitrary_order_solution(2, q[selection], I[selection], dI[selection])
+    # extremum_location = -0.5*coefficients[1]/coefficients[2]
     qbest = quadratic_extremum(coefficients)
     Ibest = polynomial_value(coefficients, qbest)
     return qbest, Ibest, coefficients
