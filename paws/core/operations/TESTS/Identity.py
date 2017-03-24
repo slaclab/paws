@@ -9,7 +9,6 @@ class Identity(Operation):
         super(Identity,self).__init__(input_names,output_names) 
         self.input_doc['data'] = 'this can actually be anything'
         self.output_doc['data'] = 'this ends up being whatever the input was'
-        self.categories = ['TESTS'] 
         
     def run(self):
         self.outputs['data'] = self.inputs['data']

@@ -61,9 +61,14 @@ class Workflow(TreeSelectionModel):
                 return optools.cast_type_val(il.tp,il.val)
         elif il.src == optools.wf_input:
             if il.tp == optools.ref_type:
+
                 # Note, this will return whatever data is stored in the TreeItem at uri.
                 # If il.val is the uri of an input that has not yet been loaded,
                 # this means it will get the InputLocator that currently inhabits that uri.
+
+                # Note, this problem has now been fixed by changing Workflow.build_dict()
+                # to not substitute InputLocators for inputs that had not been loaded.
+
                 if isinstance(il.val,list):
                     return [self.get_from_uri(v)[0].data for v in il.val]
                 else:
@@ -166,13 +171,14 @@ class Workflow(TreeSelectionModel):
         """
         if isinstance(x,Operation):
             d = OrderedDict()
-            inp_dict = {}
-            for nm in x.inputs.keys():
-                if x.inputs[nm] is not None:
-                    inp_dict[nm] = x.inputs[nm]
-                else:
-                    inp_dict[nm] = x.input_locator[nm]
-            d[optools.inputs_tag] = inp_dict 
+            #inp_dict = {}
+            #for nm in x.inputs.keys():
+            #    if x.inputs[nm] is not None:
+            #    inp_dict[nm] = x.inputs[nm]
+            #    else:
+            #        inp_dict[nm] = x.input_locator[nm]
+            #d[optools.inputs_tag] = inp_dict 
+            d[optools.inputs_tag] = x.inputs 
             d[optools.outputs_tag] = x.outputs
         else:
             d = super(Workflow,self).build_dict(x)
@@ -400,7 +406,7 @@ class Workflow(TreeSelectionModel):
             # unless there are no new inputs to run, in which case it will iterate None. 
             vals = rt.input_iter().next()
             if not None in vals:
-                inp_dict = dict( zip(rt.input_routes(), vals) )
+                inp_dict = OrderedDict( zip(rt.input_routes(), vals) )
                 #if inp_dict and not None in vals:
                 waiting_flag = False
                 nx += 1

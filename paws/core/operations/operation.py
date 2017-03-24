@@ -26,12 +26,11 @@ class Operation(object):
         self.inputs = OrderedDict()
         self.input_locator = OrderedDict() 
         self.outputs = OrderedDict() 
-        self.input_doc = {}
-        self.input_src = {}
-        self.input_type = {}
-        #self.output_container = {}
-        self.output_doc = {}
-        # For each of the var names, assign to None 
+        self.input_doc = OrderedDict() 
+        self.input_src = OrderedDict() 
+        self.input_type = OrderedDict() 
+        self.output_doc = OrderedDict() 
+        # For each of the i/o names, assign to None 
         for name in input_names: 
             self.input_src[name] = optools.no_input
             self.input_type[name] = optools.none_type
@@ -39,7 +38,6 @@ class Operation(object):
             self.inputs[name] = None
             self.input_doc[name] = None
         for name in output_names: 
-            #self.output_container[name] = optools.OutputContainer() 
             self.outputs[name] = None
             self.output_doc[name] = None
 
