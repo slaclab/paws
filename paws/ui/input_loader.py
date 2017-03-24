@@ -1,3 +1,5 @@
+import os
+
 from PySide import QtCore, QtGui, QtUiTools
 
 from ..core.operations import optools
@@ -60,7 +62,8 @@ class InputLoader(object):
 
     def add_items(self):
         if self.src == optools.text_input:
-            lines = self.ui.source_textedit.toPlainText().split()
+            #lines = self.ui.source_textedit.toPlainText().split('\n')
+            lines = self.ui.source_textedit.toPlainText().split(os.linesep)
             for l in lines:
                 self.add_value(str(l).strip())
         elif self.src in [optools.wf_input,optools.plugin_input]:
