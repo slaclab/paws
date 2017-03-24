@@ -1,10 +1,10 @@
 from os.path import join
-from os import remove
+#from os import remove
 
 import numpy as np
 from scipy import interp
 
-from scipy.optimize import curve_fit
+#from scipy.optimize import curve_fit
 
 from ...Operation import Operation
 from ... import optools
@@ -50,6 +50,7 @@ class GuessProperties(Operation):
         self.outputs['good_flag'] = True ## PLACEHOLDER
         self.outputs['detailed_flags'] = {} ## PLACEHOLDER
 
+'''
 class OptimizeSphericalDiffractionFit(Operation):
     """From an initial guess, optimize r0, I0, and fractional_variation."""
 
@@ -182,15 +183,47 @@ def safe_log(y):
     logy[bads] = np.min(logy[~bads])
     return logy
 
-def zip(x, y):
+def chi_squared(y1, y2, sigma=None):
+    bads = (np.isnan(y1)) | (np.isnan(y2))
+    if sigma is not None:
+        bads = bads | (sigma == 0)
+    else:
+        sigma = np.ones(y1.shape)
+    n = (~bads).sum()
+    chi_2 = np.sum((y1[~bads] - y2[~bads])**2 * sigma[~bads]**-2) / (n - 1)
+    return chi_2
+
+
+def guess_noise_floor(q, I, r0):
+    qmin = q[0]
+    qmax = q[-1]
+    # we want q >> q1, ideally
+    # the first dip is at 4.5 <~ x <~ 6, where x = q * r0.  We use pessimistic/strict option.
+    qscale1 = 6/r0
+    # and we know the worst signal to noise is at high q
+    # so check the last tenth
+    qscale2 = qmin + 0.9 * (qmax - qmin)
+    if qscale2 < (qscale1 * 2): # just a sanity check, no real function
+        print "Your data do not appear to be sampled to high q.  This is probably not a problem."
+    selection = (q > qscale2)
+    if selection.sum() < 10: # making sure there's a decent number of points in the sample
+        print "Your data do not appear to be particularly well sampled.  This might be a problem."
+        selection = np.zeros(q.size)
+        selection[-10:] = True
+    #noise = np.var(I[selection])
+    noise = np.mean(I[selection])
+    return noise
+
+'''
+
+def logsafe_zip(x, y):
+    bad = (x <= 0) | (y <= 0) | np.isnan(y)
+    x, y = x[~bad], y[~bad]
     x_y = np.zeros((x.size, 2))
     x_y[:, 0] = x
     x_y[:, 1] = y
     return x_y
 
-def logsafe_zip(x, y):
-    bad = (x <= 0) | (y <= 0) | np.isnan(y)
-    return zip(x[~bad], y[~bad])
 
 # I/O functions
 
@@ -341,6 +374,7 @@ def blur(x, factor):
         ysum += rhoVals[ii]*y*deltaFactor
     return ysum
 
+'''
 def generate_references(x, factorVals):
     num_tests = len(factorVals)
     xFirstDip = np.zeros(num_tests)
@@ -353,6 +387,7 @@ def generate_references(x, factorVals):
         xFirstDip[ii], heightFirstDip[ii], sigmaScaledFirstDip[ii], heightAtZero[ii] = take_polydispersity_metrics(x, y)
     references = consolidate_references(factorVals, xFirstDip, sigmaScaledFirstDip, heightFirstDip, heightAtZero)
     return references
+'''
 
 # Funtions specifically about detecting SAXS properties
 
@@ -560,26 +595,6 @@ def gauss_guess(signalMagnitude, signalCurvature):
     intensity = signalMagnitude * sigma * (2 * np.pi) ** 0.5
     return intensity, sigma
 
-def guess_noise_floor(q, I, r0):
-    qmin = q[0]
-    qmax = q[-1]
-    # we want q >> q1, ideally
-    # the first dip is at 4.5 <~ x <~ 6, where x = q * r0.  We use pessimistic/strict option.
-    qscale1 = 6/r0
-    # and we know the worst signal to noise is at high q
-    # so check the last tenth
-    qscale2 = qmin + 0.9 * (qmax - qmin)
-    if qscale2 < (qscale1 * 2): # just a sanity check, no real function
-        print "Your data do not appear to be sampled to high q.  This is probably not a problem."
-    selection = (q > qscale2)
-    if selection.sum() < 10: # making sure there's a decent number of points in the sample
-        print "Your data do not appear to be particularly well sampled.  This might be a problem."
-        selection = np.zeros(q.size)
-        selection[-10:] = True
-    #noise = np.var(I[selection])
-    noise = np.mean(I[selection])
-    return noise
-
 def local_maxima_detector(y):
     '''
     Finds local maxima in ordered data y.
@@ -677,16 +692,6 @@ def guess_nearest_point_on_nonmonotonic_trace_normalized(loclist, tracelist, coo
         best_xjj = polynomial_value(xjj_coefficients, best_coordinate)
         best_location[jj] = best_xjj
     return best_coordinate, best_distance, best_location #, distances
-
-def chi_squared(y1, y2, sigma=None):
-    bads = (np.isnan(y1)) | (np.isnan(y2))
-    if sigma is not None:
-        bads = bads | (sigma == 0)
-    else:
-        sigma = np.ones(y1.shape)
-    n = (~bads).sum()
-    chi_2 = np.sum((y1[~bads] - y2[~bads])**2 * sigma[~bads]**-2) / (n - 1)
-    return chi_2
 
 no_reference_message = '''No reference file exists.  Use the GenerateReferences operation once to generate
 an appropriate file; the file will be saved and need not be generated again.'''
