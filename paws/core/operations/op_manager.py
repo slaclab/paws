@@ -114,14 +114,6 @@ class OpManager(TreeSelectionModel):
                 return op
         return None
 
-    # get index of an operation by its name
-    #def get_index_byname(self,op_name):
-    #    for i in range(len(self._op_list)):
-    #        op = self._op_list[i]
-    #        if op.__name__ == op_name:
-    #            return i 
-    #    return None
-
     # get an Operation from the list by its TreeItem's QModelIndex
     def get_op(self,indx):
         treeitem = self.get_item(indx)
@@ -130,47 +122,7 @@ class OpManager(TreeSelectionModel):
     # Overloaded headerData() for OpManager 
     def headerData(self,section,orientation,data_role):
         if (data_role == QtCore.Qt.DisplayRole and section == 0):
-            return "Operations: {} available".format(len(self._op_list))
+            return "{} operations available".format(len(self._op_list))
         else:
             return None
-
-    # Overloaded data() for OpManager
-    #def data(self,itm_idx,data_role):
-    #    if (not itm_idx.isValid()):
-    #        return None
-    #    itm = itm_idx.internalPointer()
-    #    if itm_idx.column() == 1:
-    #        if itm.data:
-    #            if itm.data in ops.cat_list:
-    #                # Should be a category
-    #                return ' ' 
-    #            else:
-    #                # Should be an operation
-    #                if itm.data.__doc__:
-    #                    # Note: commas are used as delimiters when loading strings to Qt views,
-    #                    # so they should be removed to avoid warning messages.
-    #                    # This will munge the description a bit.
-    #                    # TODO: A more elegant solution would be welcome.
-    #                    return itm.data.__doc__.replace(',',' ')
-    #                else:
-    #                    return 'no description'
-    #        else:
-    #            return ' '
-    #    else:
-    #        if data_role == QtCore.Qt.DisplayRole:
-    #            return itm.tag()
-    #        elif (data_role == QtCore.Qt.ToolTipRole 
-    #            or data_role == QtCore.Qt.StatusTipRole
-    #            or data_role == QtCore.Qt.WhatsThisRole):
-    #            if itm.data in ops.cat_list:
-    #                # Should be a category
-    #                return 'Operation category {}'.format(itm.data)
-    #            else:
-    #                # Should be an operation
-    #                return itm.long_tag 
-    #        else:
-    #            return None
-    
-
-
 
