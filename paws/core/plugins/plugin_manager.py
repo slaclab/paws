@@ -51,8 +51,6 @@ class PluginManager(TreeSelectionModel):
     @staticmethod
     def plugin_dict(pgin):
         dct = OrderedDict()
-        if isinstance(pgin,WorkflowPlugin):
-            return None
         dct['type'] = type(pgin).__name__
         dct[optools.inputs_tag] = pgin.inputs 
         return dct

@@ -79,7 +79,7 @@ class WfUiManager(QtCore.QObject):
         """
         remove the selected operation from the workflow
         """
-        idx = self.ui.wf_selector.currentIndex()
+        idx = self.ui.wf_browser.currentIndex()
         if idx.isValid(): 
             while idx.internalPointer().parent.isValid():
                 idx = idx.internalPointer().parent
@@ -341,10 +341,10 @@ class WfUiManager(QtCore.QObject):
         self.ui.op_frame.sizeHint = lambda: QtCore.QSize(400,ht)
         self.ui.op_frame.setSizePolicy(
         QtGui.QSizePolicy.Minimum,self.ui.op_frame.sizePolicy().verticalPolicy())
-        self.ui.wf_selector.setModel(self.wf)
-        self.ui.wf_selector.hideColumn(1)
-        self.ui.wf_selector.hideColumn(2)
-        self.ui.wf_selector.clicked.connect( partial(self.get_op,self.wf) )
+        self.ui.wf_browser.setModel(self.wf)
+        self.ui.wf_browser.hideColumn(1)
+        self.ui.wf_browser.hideColumn(2)
+        self.ui.wf_browser.clicked.connect( partial(self.get_op,self.wf) )
         self.ui.rm_op_button.setText("&Remove selected operation")
         self.ui.rm_op_button.clicked.connect(self.rm_op)
         self.ui.op_selector.setModel(self.opman)
@@ -352,7 +352,7 @@ class WfUiManager(QtCore.QObject):
         self.ui.op_selector.hideColumn(2)
         self.ui.op_selector.clicked.connect( partial(self.get_op,self.opman) )
         self.ui.op_selector.clicked.connect( partial(uitools.toggle_expand,self.ui.op_selector) ) 
-        #self.ui.wf_selector.clicked.connect( partial(uitools.toggle_expand,self.ui.wf_selector) )
+        #self.ui.wf_browser.clicked.connect( partial(uitools.toggle_expand,self.ui.wf_selector) )
         self.ui.uri_prompt.setMaximumWidth(150)
         self.ui.uri_prompt.setText('operation tag:')
         self.ui.uri_prompt.setReadOnly(True)

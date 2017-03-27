@@ -46,17 +46,11 @@ class UiManager(QtCore.QObject):
         self.connect_actions()
         self.final_setup()
 
-    def new_wf(self,wfname): 
-        # if plugman already has this wfname, have to generate auto_tag.
-        if self.plugman.is_good_uri(wfname):
-            wfname = self.plugman.auto_tag(wfname)
-        self.add_wf(wfname)
-        return wfname
-
     def add_wf(self,wfname):
+        if wfname in self.wfman.workflows.keys():
+            # TODO: check wfname unique here, request a new wfname
+            wfname = self.wfman.auto_name(wfname)
         self.wfman.add_wf(wfname)
-        if not wfname in self.plugman.list_plugins():
-            self.wfman.add_wf_plugin(wfname)
         self.ui.wf_selector.model().append_item(wfname)
         # if this is the first workflow loaded, need to hide the treeview columns.
         if self.wfman.n_wf() == 1:
@@ -72,10 +66,10 @@ class UiManager(QtCore.QObject):
     def current_wf(self):
         idx = self.ui.wf_selector.currentIndex()
         if idx == -1:
-            wfname = self.new_wf('workflow')
+            return None
         else:
             wfname = self.ui.wf_selector.model().list_data()[idx]
-        return self.wfman.workflows[wfname]
+            return self.wfman.workflows[wfname]
 
     def edit_wf(self,itm_idx=QtCore.QModelIndex()):
         """
@@ -83,7 +77,10 @@ class UiManager(QtCore.QObject):
         Pass in QModelIndex to open the editor 
         with the item at that index loaded.
         """
-        trmod = self.current_wf()
+        wf = self.current_wf()
+        if wf is None:
+            wfname = self.add_wf('default_workflow')
+            wf = self.wfman.workflows[wfname]
         if itm_idx.isValid():
             # valid index in workflow tree: percolate up to root ancestor
             while itm_idx.parent().isValid():
@@ -94,13 +91,12 @@ class UiManager(QtCore.QObject):
             if itm_idx.isValid():
                 while itm_idx.parent().isValid():
                     itm_idx = itm_idx.parent()
-            else:
-                itm_idx = self.ui.op_tree.currentIndex()
-                trmod = self.opman
+            #else:
+            #    itm_idx = self.ui.op_tree.currentIndex()
+            #    trmod = self.opman
         if itm_idx.isValid():
-            uiman = self.start_wf_editor(trmod,itm_idx)
-            if trmod in self.wfman.workflows.values():
-                uiman.ui.wf_selector.setCurrentIndex(itm_idx)
+            uiman = self.start_wf_editor(wf,itm_idx)
+            uiman.ui.wf_browser.setCurrentIndex(itm_idx)
             else:
                 uiman.ui.op_selector.setCurrentIndex(itm_idx)
         else:
@@ -259,7 +255,10 @@ class UiManager(QtCore.QObject):
         d = {} 
         pgin_dict = {} 
         for itm in self.plugman.root_items:
-            pgin_dict[str(itm.tag())] = self.plugman.plugin_dict(itm.data)
+            if isinstance(itm.data,WorkflowPlugin):
+                self.msg_board_log('--- skipping WorkflowPlugin {} ---'.format(itm.tag()))
+            else:
+                pgin_dict[str(itm.tag())] = self.plugman.plugin_dict(itm.data)
         d['PLUGINS'] = pgin_dict
         pawstools.update_file(fname,d)
         ui.close()
@@ -296,13 +295,11 @@ class UiManager(QtCore.QObject):
         fname_nopath = os.path.split(fname)[1]
         fname_noext = os.path.splitext(fname_nopath)[0]
         if 'WORKFLOW' in d.keys():
-            wfname = fname_noext+'_wf'
-            if wfname in self.plugman.list_plugins():
-                wfname = self.plugman.auto_tag(wfname)
-            self.add_wf(wfname)
+            wfname = fname_noext
+            if wfname in self.wfman.workflows.keys():
+                wfname = self.wfman.auto_name(wfname)
             self.wfman.load_from_dict(wfname,self.opman,d['WORKFLOW'])
-        if 'PLUGINS' in d.keys():
-            self.plugman.load_from_dict(d['PLUGINS'])
+        self.ui.wf_selector.setCurrentIndex(self.wfman.workflows.keys().index(wfname))
         ui.close()
 
     def connect_actions(self):
@@ -314,7 +311,7 @@ class UiManager(QtCore.QObject):
         self.ui.edit_ops_button.setText("Edit operations")
         self.ui.edit_ops_button.clicked.connect(self.edit_ops)
         self.ui.add_wf_button.setText("&New workflow")
-        self.ui.add_wf_button.clicked.connect( partial(self.new_wf,'workflow') )
+        self.ui.add_wf_button.clicked.connect( partial(self.add_wf,'workflow') )
         self.ui.run_wf_button.setText("&Run")
         self.ui.run_wf_button.clicked.connect(self.toggle_run_wf)
         self.ui.edit_wf_button.setText("&Edit workflow")

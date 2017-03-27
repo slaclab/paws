@@ -27,7 +27,7 @@ class WfManager(QtCore.QObject):
         self.logmethod = None
         super(WfManager,self).__init__()
 
-    # this signal should emit the name of the workflow that finished.
+    # this signal should emit the name (self.workflows dict key) of the workflow that finished.
     wfdone = QtCore.Signal(str)
 
     @QtCore.Slot(str)
@@ -52,6 +52,25 @@ class WfManager(QtCore.QObject):
             inp_dct[name] = {'src':il.src,'tp':il.tp,'val':il.val}
         dct[optools.inputs_tag] = inp_dct 
         return dct
+
+    def auto_name(self,wfname):
+        """
+        Generate the next unique workflow name by appending '_x',
+        where x is a minimal nonnegative integer.
+        """
+        goodname = False
+        prefix = wfname
+        idx = 1
+        while not goodname:
+            if not wfname in self.workflows.keys():
+                goodname = True
+            else:
+                wfname = prefix+'_{}'.format(idx)
+                idx += 1
+        return wfname 
+    
+    # test uniqueness and good form of a tag
+
 
     def finish_thread(self,th_idx):
         #print 'finishing thread {}'.format(th_idx)
@@ -129,6 +148,11 @@ class WfManager(QtCore.QObject):
         return self._wf_threads
 
     def add_wf(self,wfname):
+        """
+        Add a workflow to self.workflows, with key specified by wfname.
+        If wfname is not unique (i.e. a workflow with that name already exists),
+        this method will overwrite the existing workflow with a new one.
+        """
         wf = Workflow(self)
         wf.exec_finished.connect( partial(self.finish_wf,wfname) )
         #wf.logmethod = self.logmethod
@@ -143,12 +167,16 @@ class WfManager(QtCore.QObject):
 
     def load_from_dict(self,wfname,opman,opdict):
         """
-        Load things in to a Workflow from an OpManager
-        using a dict that specifies operation setup.
+        Create a workflow with name (self.workflows dict key) wfname.
+        If wfname is not unique, self.workflows[wfname] is overwritten.
+        Input opdict specifies operation setup,
+        where each item in opdict provides enough information
+        to get and set inputs for an Operation from OpManager opman.
         """
         #while any(self.root_items):
         #    idx = self.index(self.rowCount(QtCore.QModelIndex())-1,0,QtCore.QModelIndex())
         #    self.remove_op(idx)
+        self.add_wf(wfname)
         for uri, op_spec in opdict.items():
             opname = op_spec['type']
             op = opman.get_op_byname(opname)
