@@ -141,7 +141,7 @@ class UiManager(QtCore.QObject):
     def final_setup(self):
         self.ui.message_board.setReadOnly(True)
         self.ui.message_board.insertPlainText('--- MESSAGE BOARD ---\n') 
-        self.msg_board_log('paws is ready',timestamp=pawstools.dtstr) 
+        self.msg_board_log('paws is ready') 
         self.ui.op_tree.hideColumn(1)
         self.ui.op_tree.hideColumn(2)
         self.ui.plugin_tree.hideColumn(1)
