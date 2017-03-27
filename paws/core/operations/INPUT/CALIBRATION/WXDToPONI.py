@@ -5,28 +5,30 @@ by first converting from WXDIFF to Fit2D,
 then using a pyFAI.AzimuthalIntegrator 
 to convert from Fit2D to PONI format.
 
+The conversion from WXDiff parameters to Fit2D parameters 
+was originally contributed to paws by Fang Ren.
     
 WXDIFF FORMAT
 -------------
 
 This format is buried somewhere deep in the knowledge of a few diffraction experts.
 I hope it can be cleanly documented here over time.
-Detector plane origin is the bottom left corner of the detector. TODO: verify
+Detector plane origin is the bottom left corner of the detector. 
 
 .calib file lines (and notes):                  
-    imagetype=uncorrected-q         (???)
-    dtype=uint16                    (img data type = unsigned 16-bit integers)
-    horsize=___                     (horizontal extent in pixels)
-    versize=___                     (vertical extent in pixels)
-    region_ulc_x=___                (???)
-    region_ulc_y=___                (???)
-    bcenter_x=___                   (horizontal position of beam center, in pixels)
-    bcenter_y=___                   (vertical position of beam center, in pixels)
-    detect_dist=___                 (direct distance to detector plane intersection along beam axis, in pixels)
-    detect_tilt_alpha=___           (rotation of detector tilt axis in radians)
-    detect_tilt_delta=___           (detector tilt in radians)
-    wavelenght=___                  (the typo 'wavelenght' is built into wxdiff, and it is reported in angstroms)
-    Qconv_const=0.000725200948528   (???)
+    imagetype=uncorrected-q         TODO: describe this field 
+    dtype=uint16                    img data type = unsigned 16-bit integers
+    horsize=___                     horizontal extent of image, in pixels
+    versize=___                     vertical extent of image, in pixels
+    region_ulc_x=___                TODO: describe this field  
+    region_ulc_y=___                TODO: describe this field  
+    bcenter_x=___                   horizontal coordinate where the beam axis intersects the detector plane 
+    bcenter_y=___                   vertical coordinate where the beam axis intersects the detector plane 
+    detect_dist=___                 direct distance from the sample to the detector plane intersection, along the beam axis, in pixels
+    detect_tilt_alpha=___           TODO: clarify this- rotation of detector tilt axis in radians
+    detect_tilt_delta=___           TODO: clarify this - detector tilt in radians 
+    wavelenght=___                  the typo 'wavelenght' is built into wxdiff, and it is reported in angstroms
+    Qconv_const=0.000725200948528   TODO: fill in this field  
 
 
 FIT2D FORMAT
@@ -150,22 +152,4 @@ class WXDToPONI(Operation):
         poni_dict = p.getPyFAI()
         poni_dict['fpolz'] = fpolz
         self.outputs['poni_dict'] = poni_dict 
-
-        # pixel_size is expected to be in microns
-        #pxsz = self.inputs['cal_params']['pixel_size']
-        #fpolz = self.inputs['cal_params']['fpolz']
-        # lambda is expected to be in Angstroms.
-        #wl = self.inputs['cal_params']['lambda']
-        # convert wl from Angstroms to meters
-        #wl = wl*1E-10
-        # detector distance: from pixels to mm
-        #d_px = self.inputs['cal_params']['d_pixel']
-        #d_mm = d_px*pxsz*0.001
-        #rot = (2*np.pi-self.inputs['cal_params']['rotation_rad'])*360/(2*np.pi)
-        #tilt = self.inputs['cal_params']['tilt_rad']*360/(2*np.pi)
-        #x0 = self.inputs['cal_params']['x0_pixel']
-        #y0 = self.inputs['cal_params']['y0_pixel']
-        #p = pyFAI.AzimuthalIntegrator(wavelength=wl)
-        #p.setFit2D(d_mm,x0,y0,tilt,rot,pxsz,pxsz)
-        #p.write('example.poni')
 
