@@ -62,12 +62,13 @@ class WorkflowGraphWidget(QtGui.QWidget):
 
     def update_coords(self):
         self.op_coords, self.inp_coords, self.out_coords = self.get_op_coords(self.wf.execution_stack())
-        stk_height = max([coords[1][1] for coords in self.op_coords.values()]) + self._scale*self.vspace
-        stk_width = max([coords[1][0] for coords in self.op_coords.values()]) + self._scale*self.hspace
-        self.wf_width = stk_width
-        self.wf_height = stk_height 
-        self.setMinimumSize(QtCore.QSize(self.wf_width,self.wf_height))
-        self.repaint()
+        if any(self.op_coords):
+            stk_height = max([coords[1][1] for coords in self.op_coords.values()]) + self._scale*self.vspace
+            stk_width = max([coords[1][0] for coords in self.op_coords.values()]) + self._scale*self.hspace
+            self.wf_width = stk_width
+            self.wf_height = stk_height 
+            self.setMinimumSize(QtCore.QSize(self.wf_width,self.wf_height))
+            self.repaint()
 
     def get_op_coords(self,stk):
         c = {}
