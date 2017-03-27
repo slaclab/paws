@@ -97,8 +97,8 @@ class UiManager(QtCore.QObject):
         if itm_idx.isValid():
             uiman = self.start_wf_editor(wf,itm_idx)
             uiman.ui.wf_browser.setCurrentIndex(itm_idx)
-            else:
-                uiman.ui.op_selector.setCurrentIndex(itm_idx)
+            #else:
+            #    uiman.ui.op_selector.setCurrentIndex(itm_idx)
         else:
             uiman = self.start_wf_editor()
         uiman.ui.show()
