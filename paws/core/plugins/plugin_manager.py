@@ -75,6 +75,7 @@ class PluginManager(TreeSelectionModel):
 
     def add_plugin(self,pgin_tag,pgin):
         """Add a Plugin to the tree as a new top-level TreeItem."""
+        # TODO: Ensure plugin names are unique
         ins_row = self.rowCount(QtCore.QModelIndex())
         itm = TreeItem(ins_row,0,QtCore.QModelIndex())
         itm.set_tag( pgin_tag )

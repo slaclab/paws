@@ -155,10 +155,7 @@ class WfManager(QtCore.QObject):
         """
         wf = Workflow(self)
         wf.exec_finished.connect( partial(self.finish_wf,wfname) )
-        #wf.logmethod = self.logmethod
         self.workflows[wfname] = wf
-
-    def add_wf_plugin(self,wfname):
         # for every new workflow, add a plugin 
         wf_pgin = WorkflowPlugin()
         wf_pgin.inputs['workflow'] = self.workflows[wfname] 
