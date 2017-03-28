@@ -2,10 +2,10 @@
 
 from PySide import QtCore
 
-from paws.core.operations.op_manager import OpManager 
-from paws.core.workflow.wf_manager import WfManager 
-from paws.core.plugins.plugin_manager import PluginManager 
-from paws.core.operations import optools
+from ..core.operations.op_manager import OpManager 
+from ..core.workflow.wf_manager import WfManager 
+from ..core.plugins.plugin_manager import PluginManager 
+from ..core.operations import optools
 
 class PawsAPI(object):
 
