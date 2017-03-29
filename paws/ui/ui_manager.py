@@ -213,18 +213,20 @@ class UiManager(QtCore.QObject):
 
     def save_plugins(self):
         """
-        Start a modal window dialog to choose a .wfl to save the current workflow  
+        Start a modal window dialog to choose a .wfl to save the current set of plugins  
         """
         save_ui = uitools.start_save_ui(self.ui)
+        save_ui.setWindowTitle('plugins saver')
         save_ui.save_button.clicked.connect( partial(self.finish_save_plugins,save_ui) )
         save_ui.show()
         save_ui.activateWindow()
 
     def load_plugins(self):
         """
-        Start a modal window dialog to choose a .wfl to load a workflow
+        Start a modal window dialog to choose a .wfl to load a set of plugins 
         """
         load_ui = uitools.start_load_ui(self.ui)
+        load_ui.setWindowTitle('plugins loader')
         load_ui.load_button.clicked.connect( partial(self.finish_load_plugins,load_ui) )
         load_ui.show()
         load_ui.activateWindow()
@@ -234,6 +236,7 @@ class UiManager(QtCore.QObject):
         Start a modal window dialog to choose a .wfl to save the current workflow  
         """
         save_ui = uitools.start_save_ui(self.ui)
+        save_ui.setWindowTitle('workflow saver')
         save_ui.save_button.clicked.connect( partial(self.finish_save_wf,save_ui) )
         save_ui.show()
         save_ui.activateWindow()
@@ -243,6 +246,7 @@ class UiManager(QtCore.QObject):
         Start a modal window dialog to choose a .wfl to load a workflow
         """
         load_ui = uitools.start_load_ui(self.ui)
+        load_ui.setWindowTitle('workflow loader')
         load_ui.load_button.clicked.connect( partial(self.finish_load_wf,load_ui) )
         load_ui.show()
         load_ui.activateWindow()
@@ -300,10 +304,12 @@ class UiManager(QtCore.QObject):
                 wfname = self.wfman.auto_name(wfname)
             self.wfman.load_from_dict(wfname,self.opman,d['WORKFLOW'])
             self.ui.wf_selector.model().append_item(wfname)
+            wf_selector_idx = self.ui.wf_selector.model().rowCount()-1
             if self.wfman.n_wf() == 1:
                 self.ui.wf_tree.hideColumn(1)
                 self.ui.wf_tree.hideColumn(2)
-        self.set_wf(self.wfman.workflows.keys().index(wfname))
+        self.ui.wf_selector.setCurrentIndex(wf_selector_idx)
+        self.set_wf(wf_selector_idx)
         ui.close()
 
     def connect_actions(self):
