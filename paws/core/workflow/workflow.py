@@ -20,8 +20,12 @@ class Workflow(TreeSelectionModel):
         super(Workflow,self).__init__()
         self._running = False
         self.wfman = wfman
-
+    
+    # signal to emit when this workflow finishes execution
     exec_finished = QtCore.Signal()
+
+    # signal to emit when the state of this workflow changes 
+    wf_updated = QtCore.Signal()
 
     @QtCore.Slot(str,Operation)
     def updateOperation(self,tag,op):
@@ -129,13 +133,10 @@ class Workflow(TreeSelectionModel):
         """
         itm, idx = self.get_from_uri(uri)
         self.tree_update(idx,new_op)
-        # note- this should be called to update Operation data while the workflow is executed.
+        # whenever an operation is updated,
+        # emit a signal to update this workflow's WorkflowPlugin 
+        self.wf_updated.emit() 
 
-        #self.update_io_deps()
-
-    # TODO: fix uri_to_dict and update_uri_dict. 
-    # Currently e.g. saving op.outputs.itm fails to save itm,
-    # while saving op.outputs does save itm.
     def uri_to_dict(self,uri,data):
         itm,idx = self.get_from_uri(uri)
         od = OrderedDict()

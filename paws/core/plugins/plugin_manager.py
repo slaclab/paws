@@ -19,6 +19,19 @@ class PluginManager(TreeSelectionModel):
         super(PluginManager,self).__init__()
         self.logmethod = None
 
+    @QtCore.Slot(str)
+    def update_plugin(self,pgin_name):
+        itm, idx = self.get_from_uri(pgin_name)
+        self.tree_update(idx,itm.data)
+
+    # overloaded tree_update:
+    #def tree_update(self,idx,x_new):
+        # if this is a workflow plugin, use the workflow to build the dict
+        #if isinstance(x_new,WorkflowPlugin):
+        #self.tree_update(idx,x_new.content())
+        #else:
+        #    super(PluginManager,self).tree_update(idx,x_new)
+
     def load_from_dict(self,pgin_dict):
         """
         Load plugins from a dict that specifies their setup parameters.
@@ -84,7 +97,6 @@ class PluginManager(TreeSelectionModel):
         self.endInsertRows()
         idx = self.index(ins_row,0,QtCore.QModelIndex()) 
         self.tree_update(idx,pgin)
-        #self.tree_dataChanged(idx)
 
     def build_dict(self,x):
         """Overloaded build_dict to handle Plugins"""

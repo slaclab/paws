@@ -1,3 +1,5 @@
+from PySide import QtCore
+
 from ..operations import optools
 from .. import pawstools
 from .plugin import PawsPlugin
@@ -10,7 +12,6 @@ class WorkflowPlugin(PawsPlugin):
     This Plugin is generated programmatically
     when the WfManager creates or loads a new Workflow.
     """
-    # TODO: Make this work with .wfl input from the filesystem
 
     def __init__(self):
         input_names = ['workflow']
@@ -30,10 +31,9 @@ class WorkflowPlugin(PawsPlugin):
 
     def content(self):
         #wf_dict = {'workflow':self.wf}
-
         #return wf_dict
         if isinstance(self.wf,Workflow):
-            return {itm.tag():self.wf.build_dict(itm) for itm in self.wf.root_items}
+            return {itm.tag():self.wf.build_dict(itm.data) for itm in self.wf.root_items}
         else:
             return {}
 

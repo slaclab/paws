@@ -295,7 +295,7 @@ class TreeModel(QtCore.QAbstractItemModel):
         """
         Call this function to store x_new in the TreeItem at idx 
         and then build/update/prune the subtree rooted at that item.
-        Take measures to change as little as possible of the tree,
+        TODO: Take measures to change as little as possible of the tree,
         since this can be a big operation and is called frequently.
         """
         itm = idx.internalPointer()

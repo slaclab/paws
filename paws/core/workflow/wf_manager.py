@@ -68,9 +68,6 @@ class WfManager(QtCore.QObject):
                 wfname = prefix+'_{}'.format(idx)
                 idx += 1
         return wfname 
-    
-    # test uniqueness and good form of a tag
-
 
     def finish_thread(self,th_idx):
         #print 'finishing thread {}'.format(th_idx)
@@ -160,6 +157,7 @@ class WfManager(QtCore.QObject):
         wf_pgin = WorkflowPlugin()
         wf_pgin.inputs['workflow'] = self.workflows[wfname] 
         wf_pgin.start()
+        wf.wf_updated.connect( partial(self.plugman.update_plugin,wfname) )
         self.plugman.add_plugin(wfname,wf_pgin)
 
     def load_from_dict(self,wfname,opman,opdict):
@@ -202,5 +200,7 @@ class WfManager(QtCore.QObject):
                     self.workflows[wfname].add_op(uri,op)
             else:
                 self.write_log('Did not find Operation {} - skipping.'.format(opname))
-        
+        # the wf_updated signal for this workflow is expected at this point
+        # to be connected to the plugin manager
+        self.workflows[wfname].wf_updated.emit()
 
