@@ -39,12 +39,15 @@ class GuessProperties(Operation):
         q, I, dI = self.inputs['q'], self.inputs['I'], self.inputs['dI']
 
         # find extrema
-        dips = local_minima_detector(I)
-        shoulders = local_maxima_detector(I)
+        dips = local_minima_detector(I*q**4)
+        shoulders = local_maxima_detector(I*q**4)
         # Clean out end points and weak maxima
-        dips, shoulders = clean_extrema(dips, shoulders, I)
+        dips, shoulders = clean_extrema(dips, shoulders, I*q**4)
 
-        qFirstDip, heightFirstDip, sigmaScaledFirstDip, heightAtZero = take_polydispersity_metrics(q, I, dI)
+        qFirstDip, heightFirstDip, scaledQuadCoefficients = first_dip(q, I, dips, dI)
+        sigmaScaledFirstDip = polydispersity_metric_sigmaScaledFirstDip(q, I, dips, shoulders, qFirstDip, heightFirstDip)
+        heightAtZero = polydispersity_metric_heightAtZero(qFirstDip, q, I, dI)
+
         x0 = qFirstDip / sigmaScaledFirstDip
         y0 = heightFirstDip / heightAtZero
         try:
@@ -103,9 +106,163 @@ def choose_dips_and_shoulders(q, I, dI=None):
     dips, shoulders = clean_extrema(dips, shoulders, I)
     return dips, shoulders
 
+def take_polydispersity_metrics(x, y, dy=None):
+    if dy is None:
+        dy = np.ones(y.shape)
+    dips, shoulders = choose_dips_and_shoulders(x, y, dy)
+    xFirstDip, heightFirstDip, scaledQuadCoefficients = first_dip(x, y, dips, dy)
+    sigmaScaledFirstDip = polydispersity_metric_sigmaScaledFirstDip(x, y, dips, shoulders, xFirstDip, heightFirstDip)
+    heightAtZero = polydispersity_metric_heightAtZero(xFirstDip, x, y, dy)
+    return xFirstDip, heightFirstDip[0], sigmaScaledFirstDip[0], heightAtZero
+
+
+def first_dip(q, I, dips, dI=None):
+    if dI is None:
+        dI = np.ones(I.shape, dtype=float)
+    # if the first two "dips" are very close together, they are both marking the first dip
+    # because I can't eliminate all spurious extrema with such a simple test
+    dip_locs = np.where(dips)[0]
+    # Catch the case of operation on noiseless data with few local minima
+    if dip_locs.size < 3:
+        case = 'smooth as butter'
+        q1 = q[dip_locs[0]]
+        scale = q1
+    # Real data cases
+    else:
+        q1, q2, q3 = q[dip_locs[:3]]
+        mult = 4
+        smult = 1.5
+        # q1, q2 close compared to q2, q3 and compared to 0, q1
+        if ((q2 - q1)*mult < (q3 - q2)) & ((q2 - q1)*mult < q1):
+            case = 'two'
+            scale = 0.5 * q3
+        # (q2 - q1)*1.5 approximately equal to q1
+        elif ((q2 - q1)*1.5*smult > q1) & ((q2 - q1)*1.5 < q1*smult):
+            case = 'one'
+            scale = 0.5 * q2
+        else:
+            case = 'mystery'
+            scale = q1
+#    print "Detected case: %s." % case
+    if case == 'two':
+        minq = q1 - scale*0.1
+        maxq = q2 + scale*0.1
+    else:
+        minq = q1 - scale*0.1
+        maxq = q1 + scale*0.1
+    selection = ((q < maxq) & (q > minq))
+    # make sure selection is large enough to get a useful sampling
+    if selection.sum() < 9:
+        print "Your sampling in q seems to be sparse and will likely affect the quality of the estimate."
+    for ii in range(9):
+        if selection.sum() >= 9:
+            break
+        selection[1:] = selection[1:] | selection[:-1]
+        selection[:-1] = selection[1:] | selection[:-1]
+    # fit local quadratic
+    coefficients = arbitrary_order_solution(2, q[selection], I[selection], dI[selection])
+    # extremum_location = -0.5*coefficients[1]/coefficients[2]
+    qbest = quadratic_extremum(coefficients)
+    Ibest = polynomial_value(coefficients, qbest)
+    return qbest, Ibest, coefficients
+
+def take_polydispersity_metrics(x, y, dy=None):  # IMPROVEMENTS MADE
+    if dy is None:
+        dy = np.ones(y.shape)
+    dips, shoulders = choose_dips_and_shoulders(x, y*x**4, dy)
+    xFirstDip, heightFirstDip, scaledQuadCoefficients = first_dip(x, y, dips, dy)
+    sigmaScaledFirstDip = polydispersity_metric_sigmaScaledFirstDip(x, y, dips, shoulders, xFirstDip, heightFirstDip)
+    heightAtZero = polydispersity_metric_heightAtZero(xFirstDip, x, y, dy)
+    return xFirstDip, heightFirstDip, sigmaScaledFirstDip[0], heightAtZero
+
+
 '''
 
 
+def first_dip(q, I, dips, dI=None):  # IMPROVEMENTS MADE
+    if dI is None:
+        dI = np.ones(I.shape, dtype=float)
+    # if the first two "dips" are very close together, they are both marking the first dip
+    # because I can't eliminate all spurious extrema with such a simple test
+    dip_locs = np.where(dips)[0]
+    # Catch the case of operation on noiseless data with few local minima
+    if dip_locs.size < 3:
+        case = 'smooth as butter'
+        q1 = q[dip_locs[0]]
+        scale = q1
+    # Real data cases
+    else:
+        q1, q2, q3 = q[dip_locs[:3]]
+        mult = 4
+        smult = 1.5
+        # q1, q2 close compared to q2, q3 and compared to 0, q1
+        if ((q2 - q1)*mult < (q3 - q2)) & ((q2 - q1)*mult < q1):
+            case = 'two'
+            scale = 0.5 * q3
+        # (q2 - q1)*1.5 approximately equal to q1
+        elif ((q2 - q1)*1.5*smult > q1) & ((q2 - q1)*1.5 < q1*smult):
+            case = 'one'
+            scale = 0.5 * q2
+        else:
+            case = 'mystery'
+            scale = q1
+#    print "Detected case: %s." % case
+    if case == 'two':
+        minq = q1 - scale*0.1
+        maxq = q2 + scale*0.1
+    else:
+        minq = q1 - scale*0.1
+        maxq = q1 + scale*0.1
+    selection = ((q < maxq) & (q > minq))
+    # make sure selection is large enough to get a useful sampling
+    if selection.sum() < 9:
+        print "Your sampling in q seems to be sparse and will likely affect the quality of the estimate."
+    for ii in range(9):
+        if selection.sum() >= 9:
+            break
+        selection[1:] = selection[1:] | selection[:-1]
+        selection[:-1] = selection[1:] | selection[:-1]
+    # fit local quadratic
+    coefficients = arbitrary_order_solution(2, q[selection], (I*q**4)[selection], dI[selection])
+    # extremum_location = -0.5*coefficients[1]/coefficients[2]
+    qbest = quadratic_extremum(coefficients)
+    Ibest = polynomial_value(coefficients, qbest)*qbest**-4
+    return qbest, Ibest, coefficients
+
+
+def polydispersity_metric_sigmaScaledFirstDip(q, I, dips, shoulders, qFirstDip, heightFirstDip, dI=None):
+    if dI is None:
+        dI = np.ones(I.shape, dtype=float)
+    scaled_I = I * q ** 4
+    scaled_dI = dI * q ** 4
+    powerCoefficients = power_law_solution(q[shoulders], I[shoulders], dI[shoulders])
+    powerLawAtDip = powerCoefficients[0] * (qFirstDip ** powerCoefficients[1])
+    scaledDipDepth = (powerLawAtDip - heightFirstDip) * (qFirstDip ** 4)
+    pad = 3
+    firstDipIndex = np.where(dips)[0][0]
+    lolim = firstDipIndex - pad
+    hilim = firstDipIndex + pad
+    quadCoefficients = arbitrary_order_solution(2, q[lolim:hilim], scaled_I[lolim:hilim], scaled_dI[lolim:hilim])
+    scaledDipCurvature = 2 * quadCoefficients[2]
+    _, sigma = gauss_guess(scaledDipDepth, scaledDipCurvature)
+    return sigma
+
+
+def gauss_guess(signalMagnitude, signalCurvature):
+    '''
+    Guesses a gaussian intensity and width from signal magnitude and curvature.
+
+    :param signalMagnitude: number-like with units of magnitude
+    :param signalCurvature: number-like with units of magnitude per distance squared
+    :return intensity, sigma:
+
+    The solution given is not fitted; it is a first estimate to be used in fitting.
+    '''
+    signalMagnitude = np.fabs(signalMagnitude)
+    signalCurvature = np.fabs(signalCurvature)
+    sigma = (signalMagnitude / signalCurvature) ** 0.5
+    intensity = signalMagnitude * sigma * (2 * np.pi) ** 0.5
+    return intensity, sigma
 
 
 def logsafe_zip(x, y):
@@ -166,8 +323,10 @@ def polynomial_value(coefficients, x):
         y = y.flatten()
     except AttributeError:
         y = ((x ** powers) * coefficients).sum()
+    if y.size != 1:
+        print "Whoa there cowpoke!  WTF?"
+    y = y[0]
     return y
-
 
 def make_poly_matrices(x, y, error, order):
     '''Make the matrices necessary to solve a polynomial fit of order *order*.
@@ -311,16 +470,6 @@ def refine_guess(q, I, I0, r0, frac, q1, I1):
     new_r0 = float(new_x0/q1)
     return new_I0, new_r0, new_frac
 
-def take_polydispersity_metrics(x, y, dy=None):
-    if dy is None:
-        dy = np.ones(y.shape)
-    dips, shoulders = choose_dips_and_shoulders(x, y, dy)
-    xFirstDip, heightFirstDip, scaledQuadCoefficients = first_dip(x, y, dips, dy)
-    sigmaScaledFirstDip = polydispersity_metric_sigmaScaledFirstDip(x, y, dips, shoulders, xFirstDip, heightFirstDip)
-    heightAtZero = polydispersity_metric_heightAtZero(xFirstDip, x, y, dy)
-    return xFirstDip, heightFirstDip[0], sigmaScaledFirstDip[0], heightAtZero
-
-
 def clean_extrema(dips, shoulders, y):
     # Mark endpoints False
     dips[0:10] = False
@@ -378,90 +527,7 @@ def polydispersity_metric_heightAtZero(qFirstDip, q, I, dI=None):
     heightAtZero = coefficients[0]
     return heightAtZero
 
-def first_dip(q, I, dips, dI=None):
-    if dI is None:
-        dI = np.ones(I.shape, dtype=float)
-    # if the first two "dips" are very close together, they are both marking the first dip
-    # because I can't eliminate all spurious extrema with such a simple test
-    dip_locs = np.where(dips)[0]
-    # Catch the case of operation on noiseless data with few local minima
-    if dip_locs.size < 3:
-        case = 'smooth as butter'
-        q1 = q[dip_locs[0]]
-        scale = q1
-    # Real data cases
-    else:
-        q1, q2, q3 = q[dip_locs[:3]]
-        mult = 4
-        smult = 1.5
-        # q1, q2 close compared to q2, q3 and compared to 0, q1
-        if ((q2 - q1)*mult < (q3 - q2)) & ((q2 - q1)*mult < q1):
-            case = 'two'
-            scale = 0.5 * q3
-        # (q2 - q1)*1.5 approximately equal to q1
-        elif ((q2 - q1)*1.5*smult > q1) & ((q2 - q1)*1.5 < q1*smult):
-            case = 'one'
-            scale = 0.5 * q2
-        else:
-            case = 'mystery'
-            scale = q1
-#    print "Detected case: %s." % case
-    if case == 'two':
-        minq = q1 - scale*0.1
-        maxq = q2 + scale*0.1
-    else:
-        minq = q1 - scale*0.1
-        maxq = q1 + scale*0.1
-    selection = ((q < maxq) & (q > minq))
-    # make sure selection is large enough to get a useful sampling
-    if selection.sum() < 9:
-        print "Your sampling in q seems to be sparse and will likely affect the quality of the estimate."
-    for ii in range(9):
-        if selection.sum() >= 9:
-            break
-        selection[1:] = selection[1:] | selection[:-1]
-        selection[:-1] = selection[1:] | selection[:-1]
-    # fit local quadratic
-    coefficients = arbitrary_order_solution(2, q[selection], I[selection], dI[selection])
-    # extremum_location = -0.5*coefficients[1]/coefficients[2]
-    qbest = quadratic_extremum(coefficients)
-    Ibest = polynomial_value(coefficients, qbest)
-    return qbest, Ibest, coefficients
-
-def polydispersity_metric_sigmaScaledFirstDip(q, I, dips, shoulders, qFirstDip, heightFirstDip, dI=None):
-    if dI is None:
-        dI = np.ones(I.shape, dtype=float)
-    scaled_I = I * q ** 4
-    scaled_dI = dI * q ** 4
-    powerCoefficients = power_law_solution(q[shoulders], I[shoulders], dI[shoulders])
-    powerLawAtDip = powerCoefficients[0] * (qFirstDip ** powerCoefficients[1])
-    scaledDipDepth = (powerLawAtDip - heightFirstDip) * (qFirstDip ** 4)
-    pad = 3
-    firstDipIndex = np.where(dips)[0][0]
-    lolim = firstDipIndex - pad
-    hilim = firstDipIndex + pad
-    quadCoefficients = arbitrary_order_solution(2, q[lolim:hilim], scaled_I[lolim:hilim], scaled_dI[lolim:hilim])
-    scaledDipCurvature = 2 * quadCoefficients[2]
-    _, sigma = gauss_guess(scaledDipDepth, scaledDipCurvature)
-    return sigma
-
 # Other functions
-
-def gauss_guess(signalMagnitude, signalCurvature):
-    '''
-    Guesses a gaussian intensity and width from signal magnitude and curvature.
-
-    :param signalMagnitude: number-like with units of magnitude
-    :param signalCurvature: number-like with units of magnitude per distance squared
-    :return intensity, sigma:
-
-    The solution given is not fitted; it is a first estimate to be used in fitting.
-    '''
-    signalMagnitude = np.fabs(signalMagnitude)
-    signalCurvature = np.fabs(signalCurvature)
-    sigma = (signalMagnitude / signalCurvature) ** 0.5
-    intensity = signalMagnitude * sigma * (2 * np.pi) ** 0.5
-    return intensity, sigma
 
 def local_maxima_detector(y):
     '''
