@@ -35,7 +35,7 @@ class MovingAverage(Operation):
         err = self.inputs['error']
         nx = len(x)
         if self.inputs['shape'] == 'triangle': 
-            shape_weights = (w+1-np.arange(w+1), dtype=float))/float(w+1)
+            shape_weights = (w+1-np.arange(w+1, dtype=float))/float(w+1)
         else:
             shape_weights = np.ones(w+1, dtype=float)
         shape_weights = np.concatenate( (shape_weights[::-1],shape_weights[1:]))

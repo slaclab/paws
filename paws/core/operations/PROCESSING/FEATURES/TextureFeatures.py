@@ -8,8 +8,8 @@ TODO: Get this citation
 """
 import numpy as np
 
-from ..operation import Operation
-from .. import optools
+from ...operation import Operation
+from ... import optools
 
 class TextureFeatures(Operation):
     """

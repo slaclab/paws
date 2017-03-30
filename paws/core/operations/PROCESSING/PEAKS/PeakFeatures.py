@@ -7,24 +7,25 @@ For details, refer to the recent paper submitted to ACS Combinatorial Science.
 TODO: get this citation 
 """
 
-
 import numpy as np
 
-from ..operation import Operation
-from .. import optools
+from ...operation import Operation
+from ... import optools
 
-class PeakFeatures(Operation):
+class FindLocalMaxima(Operation):
     """
-    Extract the locations and intensities of peaks from a 1D spectrum
+    Extract the locations and intensities of local maxima in a 1D spectrum.
+    TODO: Document the algorithm here.
     """
+
     def __init__(self):
         input_names = ['q', 'I', 'delta_I']
         output_names = ['q_pk', 'I_pk']
         super(PeakFeatures,self).__init__(input_names, output_names)
-        self.input_doc['q'] = '1d vector for x-axis of spectrum, named q for momentum transfer vector'
-        self.input_doc['I'] = '1d vector for spectral intensities at q values'
+        self.input_doc['q'] = '1d array for x-axis of spectrum, named q for momentum transfer vector'
+        self.input_doc['I'] = '1d array for spectral intensities at q values'
         self.input_doc['delta_I'] = str('Criterion for peak finding: point is a maximum '
-            + 'that is more than delta-I larger than the next-lowest point')
+            + 'if it is more than delta_I larger than the next point')
         self.input_src['q'] = optools.wf_input
         self.input_src['I'] = optools.wf_input
         self.input_src['delta_I'] = optools.text_input
@@ -42,7 +43,10 @@ class PeakFeatures(Operation):
         self.outputs['I_pk'] = I_pk 
 
     def get_extrema(x, y, delta):
-        """Given vectors x and y, return an n-by-2 array of x,y pairs for the minima and maxima of y(x)"""
+        """
+        Given vectors x and y, return an n-by-2 array of x,y pairs 
+        for the minima and maxima of y(x)
+        """
         maxtab = []
         mintab = []
         x = np.array(x)
