@@ -1,8 +1,4 @@
-#from os.path import join
-#from os import remove
-
 import numpy as np
-#from scipy import interp
 
 from scipy.optimize import curve_fit
 
@@ -191,6 +187,8 @@ def generateRhoFactor(factor):
     return factorVals, rhoVals
 
 def blur(x, factor):
+    if factor == 0:
+        return (3. * (np.sin(x) - x * np.cos(x)) * x**-3)**2
     factorVals, rhoVals = generateRhoFactor(factor)
     deltaFactor = factorVals[1] - factorVals[0]
     ysum = np.zeros(x.shape)
@@ -198,7 +196,7 @@ def blur(x, factor):
         effective_x = x / factorVals[ii]
         # spherical monodisperse diffraction:
         # (3. * (np.sin(x) - x * np.cos(x)) * x**-3)**2
-        y = (3. * (np.sin(effective_x) - x * np.cos(effective_x)) * effective_x**-3)**2
+        y = (3. * (np.sin(effective_x) - effective_x * np.cos(effective_x)) * effective_x**-3)**2
         ysum += rhoVals[ii]*y*deltaFactor
     return ysum
 

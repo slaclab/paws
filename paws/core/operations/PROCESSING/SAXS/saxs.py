@@ -37,8 +37,26 @@ class GuessProperties(Operation):
 
     def run(self):
         q, I, dI = self.inputs['q'], self.inputs['I'], self.inputs['dI']
-        fractional_variation, qFirstDip, heightFirstDip, sigmaScaledFirstDip, heightAtZero, dips, shoulders = \
-            guess_polydispersity(q, I, dI)
+
+        # find extrema
+        dips = local_minima_detector(I)
+        shoulders = local_maxima_detector(I)
+        # Clean out end points and weak maxima
+        dips, shoulders = clean_extrema(dips, shoulders, I)
+
+        qFirstDip, heightFirstDip, sigmaScaledFirstDip, heightAtZero = take_polydispersity_metrics(q, I, dI)
+        x0 = qFirstDip / sigmaScaledFirstDip
+        y0 = heightFirstDip / heightAtZero
+        try:
+            references = load_references(reference_loc)
+        except:
+            print no_reference_message
+        x = references['xFirstDip'] / references['sigmaScaledFirstDip']
+        y = references['heightFirstDip'] / references['heightAtZero']
+        factor = references['factorVals']
+        fractional_variation, _, best_xy = guess_nearest_point_on_nonmonotonic_trace_normalized([x0, y0], [x, y],
+                                                                                                    factor)
+
         self.outputs['additional_information'] = {'qFirstDip':qFirstDip, 'sigmaScaledFirstDip':sigmaScaledFirstDip,
                                   'heightFirstDip':heightFirstDip, 'dips':dips, 'shoulders':shoulders}
         mean_size = guess_size(fractional_variation, qFirstDip)
@@ -47,8 +65,48 @@ class GuessProperties(Operation):
         self.outputs['parameter_guesses'] = {'fractional_variation':fractional_variation, 'mean_size':mean_size, 'amplitude_at_zero':amplitude_at_zero}
         self.outputs['I_guess'] = generate_spherical_diffraction(q, amplitude_at_zero, mean_size, fractional_variation)
         self.outputs['q_I_guess'] = logsafe_zip(q, self.outputs['I_guess'])
-        self.outputs['good_flag'] = True ## PLACEHOLDER
         self.outputs['detailed_flags'] = {} ## PLACEHOLDER
+        # if any of the detailed flags are bad set good_flag to False
+        self.outputs['good_flag'] = True  ## PLACEHOLDER
+        for ii in self.outputs['detailed_flags']:
+            if self.outputs['detailed_flags'][ii] == False:
+                self.outputs['good_flag'] = False
+
+
+
+'''
+def guess_polydispersity(q, I, dI=None):
+#    global references
+    if dI is None:
+        dI = np.ones(I.shape, dtype=float)
+    dips, shoulders = choose_dips_and_shoulders(q, I, dI)
+    qFirstDip, heightFirstDip, sigmaScaledFirstDip, heightAtZero = take_polydispersity_metrics(q, I, dI)
+    x0 = qFirstDip / sigmaScaledFirstDip
+    y0 = heightFirstDip / heightAtZero
+    try:
+        references = load_references(reference_loc)
+    except:
+        print no_reference_message
+    x = references['xFirstDip'] / references['sigmaScaledFirstDip']
+    y = references['heightFirstDip'] / references['heightAtZero']
+    factor = references['factorVals']
+    fractional_variation, _, best_xy = guess_nearest_point_on_nonmonotonic_trace_normalized([x0, y0], [x, y], factor)
+    return fractional_variation, qFirstDip, heightFirstDip, sigmaScaledFirstDip, heightAtZero, dips, shoulders
+
+def choose_dips_and_shoulders(q, I, dI=None):
+    "Find the location of dips (low points) and shoulders (high points)."
+    if dI is None:
+        dI = np.ones(I.shape, dtype=float)
+    dips = local_minima_detector(I)
+    shoulders = local_maxima_detector(I)
+    # Clean out end points and wussy maxima
+    dips, shoulders = clean_extrema(dips, shoulders, I)
+    return dips, shoulders
+
+'''
+
+
+
 
 def logsafe_zip(x, y):
     bad = (x <= 0) | (y <= 0) | np.isnan(y)
@@ -180,6 +238,8 @@ def generateRhoFactor(factor):
     return factorVals, rhoVals
 
 def blur(x, factor):
+    if factor == 0:
+        return (3. * (np.sin(x) - x * np.cos(x)) * x**-3)**2
     factorVals, rhoVals = generateRhoFactor(factor)
     deltaFactor = factorVals[1] - factorVals[0]
     ysum = np.zeros(x.shape)
@@ -187,7 +247,7 @@ def blur(x, factor):
         effective_x = x / factorVals[ii]
         # spherical monodisperse diffraction:
         # (3. * (np.sin(x) - x * np.cos(x)) * x**-3)**2
-        y = (3. * (np.sin(effective_x) - x * np.cos(effective_x)) * effective_x**-3)**2
+        y = (3. * (np.sin(effective_x) - effective_x * np.cos(effective_x)) * effective_x**-3)**2
         ysum += rhoVals[ii]*y*deltaFactor
     return ysum
 
@@ -226,24 +286,6 @@ def save_references(references, reference_loc):
 
 # Funtions specifically about detecting SAXS properties
 
-def guess_polydispersity(q, I, dI=None):
-#    global references
-    if dI is None:
-        dI = np.ones(I.shape, dtype=float)
-    dips, shoulders = choose_dips_and_shoulders(q, I, dI)
-    qFirstDip, heightFirstDip, sigmaScaledFirstDip, heightAtZero = take_polydispersity_metrics(q, I, dI)
-    x0 = qFirstDip / sigmaScaledFirstDip
-    y0 = heightFirstDip / heightAtZero
-    try:
-        references = load_references(reference_loc)
-    except:
-        print no_reference_message
-    x = references['xFirstDip'] / references['sigmaScaledFirstDip']
-    y = references['heightFirstDip'] / references['heightAtZero']
-    factor = references['factorVals']
-    fractional_variation, _, best_xy = guess_nearest_point_on_nonmonotonic_trace_normalized([x0, y0], [x, y], factor)
-    return fractional_variation, qFirstDip, heightFirstDip, sigmaScaledFirstDip, heightAtZero, dips, shoulders
-
 def refine_guess(q, I, I0, r0, frac, q1, I1):
     Imodel = generate_spherical_diffraction(q, I0, r0, frac)
     I_adjustment = I.sum() / Imodel.sum()
@@ -278,15 +320,6 @@ def take_polydispersity_metrics(x, y, dy=None):
     heightAtZero = polydispersity_metric_heightAtZero(xFirstDip, x, y, dy)
     return xFirstDip, heightFirstDip[0], sigmaScaledFirstDip[0], heightAtZero
 
-def choose_dips_and_shoulders(q, I, dI=None):
-    '''Find the location of dips (low points) and shoulders (high points).'''
-    if dI is None:
-        dI = np.ones(I.shape, dtype=float)
-    dips = local_minima_detector(I)
-    shoulders = local_maxima_detector(I)
-    # Clean out end points and wussy maxima
-    dips, shoulders = clean_extrema(dips, shoulders, I)
-    return dips, shoulders
 
 def clean_extrema(dips, shoulders, y):
     # Mark endpoints False
