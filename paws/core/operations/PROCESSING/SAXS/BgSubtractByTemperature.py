@@ -13,34 +13,35 @@ class BgSubtractByTemperature(Operation):
     """
     
     def __init__(self):
-        input_names = ['I_meas','T_meas','bg_batch_output','bg_I_uri','bg_T_uri']
-        output_names = ['I_bgsub', 'bg_factor']
+        input_names = ['q_I_meas','T_meas','bg_batch_output','bg_I_uri','bg_T_uri']
+        output_names = ['q_I_bgsub', 'bg_factor']
         super(BgSubtractByTemperature, self).__init__(input_names, output_names)
-        self.input_doc['I_meas'] = 'array of I(q)'
+        self.input_doc['q_I_meas'] = 'n-by-2 array of I(q) versus q'
         self.input_doc['T_meas'] = str('temperature as taken from the dict '
         + 'produced by the detector header file')
         self.input_doc['bg_batch_output'] = str('the output (list of dicts) '
         + 'of a batch of background spectra at different temperatures')
         self.input_doc['bg_I_uri'] = str('the uri for the items saved in bg_batch_output '
-        + 'containing the background intensity spectrum') 
+        + 'containing the background intensity spectrum, expected to be on same q domain as q_I_meas') 
         self.input_doc['bg_T_uri'] = str('the uri for the items saved in bg_batch_output '
         + 'containing the background spectrum temperatures')
-        self.output_doc['I_bgsub'] = 'I_meas - bg_factor * (I_bg)'
+        self.output_doc['q_I_bgsub'] = 'n by 2 array of q and background subrated intensity (I_meas-bg_factor*I_bg)'
         self.output_doc['bg_factor'] = str('correction factor applied to background '
         + 'before subtraction, to ensure positive intensity values')
-        self.input_src['I_meas'] = optools.wf_input
+        self.input_src['q_I_meas'] = optools.wf_input
         self.input_src['T_meas'] = optools.wf_input
         self.input_src['bg_batch_output'] = optools.wf_input
         self.input_src['bg_I_uri'] = optools.wf_input
         self.input_src['bg_T_uri'] = optools.wf_input
-        self.input_type['I_meas'] = optools.ref_type
+        self.input_type['q_I_meas'] = optools.ref_type
         self.input_type['T_meas'] = optools.ref_type
         self.input_type['bg_batch_output'] = optools.ref_type
         self.input_type['bg_T_uri'] = optools.path_type
         self.input_type['bg_I_uri'] = optools.path_type
 
     def run(self):
-        I_meas = self.inputs['I_meas']
+        q_I_meas = self.inputs['q_I_meas']
+        q_I_bgsub = np.array(q_I_meas)
         T_meas = self.inputs['T_meas']
         bg_I_uri = self.inputs['bg_I_uri']
         bg_T_uri = self.inputs['bg_T_uri']
@@ -52,11 +53,11 @@ class BgSubtractByTemperature(Operation):
         #if not all(q_I[:,0] == q_I_bg[:,0]):
         #    msg = 'SPECTRUM AND BACKGROUND ON DIFFERENT q DOMAINS'
         #    raise ValueError(msg)
-        bad_data = (I_meas <= 0) | (I_bg <= 0) | np.isnan(I_meas) | np.isnan(I_bg)
-        bg_factor = np.min(I_meas[~bad_data] / I_bg[~bad_data])
+        bad_data = (q_I_meas[:,1] <= 0) | (I_bg <= 0) | np.isnan(q_I_meas[:,1]) | np.isnan(I_bg)
+        bg_factor = np.min(q_I_meas[:,1][~bad_data] / I_bg[~bad_data])
         #print 'bg factor is {}'.format(bg_factor)
-        I_bgsub = I_meas - bg_factor * I_bg
-        self.outputs['I_bgsub'] = np.array(I_bgsub)
+        q_I_bgsub[:,1] = q_I_meas[:,1] - bg_factor * I_bg
+        self.outputs['q_I_bgsub'] = q_I_bgsub
         self.outputs['bg_factor'] = bg_factor
 
 
