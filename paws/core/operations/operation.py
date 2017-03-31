@@ -126,7 +126,7 @@ class Batch(Operation):
     def output_list(self):
         """
         Produce a list of OrderedDicts representing the outputs for each batch input.
-        Each OrderedDict should be populated with [input_uri:input_value] pairs.
+        Each OrderedDict should be populated with [output_uri:output_value] pairs.
         """
         pass
 
@@ -143,7 +143,9 @@ class Batch(Operation):
         """
         Produce a list of the input routes used by the Batch,
         in the same order as each of the OrderedDicts 
-        provided by Batch.input_list()
+        provided by Batch.input_list().
+        Workflow.load_inputs() is expected to be called on this object 
+        before calling input_routes().
         """
         pass
 
@@ -151,6 +153,8 @@ class Batch(Operation):
     def saved_items(self):
         """
         Return a list of items to be saved after each execution.
+        Workflow.load_inputs() is expected to be called on this object 
+        before calling saved_items().
         """
         pass 
 
@@ -158,6 +162,8 @@ class Batch(Operation):
     def batch_ops(self):
         """
         Return a list of operation uris to be included in the Batch execution stack.
+        Workflow.load_inputs() is expected to be called on this object 
+        before calling batch_ops().
         """
         pass
 

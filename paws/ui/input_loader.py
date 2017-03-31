@@ -83,6 +83,8 @@ class InputLoader(object):
     def set_wf(self,wf_idx):
         wfname = self.ui.wf_selector.model().list_data()[wf_idx]
         self.ui.source_treeview.setModel(self.src_manager.workflows[wfname])
+        self.ui.source_treeview.hideColumn(2)
+        self.ui.source_treeview.setColumnWidth(0,250)
 
     def get_values(self):
         if self.src == optools.text_input:

@@ -6,35 +6,39 @@ from ... import optools
 
 class BatchPostProcess(Batch):
     """
-    Takes the outputs produced by a 
-    Provides a list of file paths from an input directory and regex,
-    as a sequence of inputs to be used in repeated execution of a workflow.
-    Collects the outputs produced for each of the inputs.
+    Take the batch output (list of dicts) from a previously completed Batch,
+    and use each dict to form inputs for the execution of a post-processing workflow.
+    For each input to be taken from the dict, two uris are needed:
+    one to locate it within the (previous) batch outputs, 
+    and another to specify where it will be fed to the (current) workflow.
+    Collect specified outputs from the workflow for each of the inputs.
     """
 
     def __init__(self):
-        input_names = ['dir_path','regex','input_route','batch_ops','saved_items']
+        input_names = ['batch_output','batch_uris','input_routes','batch_ops','saved_items']
         output_names = ['batch_inputs','batch_outputs']
-        super(BatchFromFiles,self).__init__(input_names,output_names)
-        self.input_doc['dir_path'] = 'path to directory containing batch of files to be used as input'
-        self.input_doc['regex'] = 'string with * wildcards that will be substituted to indicate input files'
-        self.input_doc['input_route'] = 'inputs constructed by the batch executor are directed to this uri'
+        super(BatchPostProcess,self).__init__(input_names,output_names)
+        self.input_doc['batch_output'] = ''
+        self.input_doc['batch_uris'] = str('uris from batch_output at which the inputs for the current workflow should be found- '
+        + ' one batch_uri is expected for each of the input_routes')
+        self.input_doc['input_routes'] = 'inputs found from batch_uris are directed to these inputs, which should all be within in batch_ops'
         self.input_doc['batch_ops'] = str('list of workflow uris pointing to Operations to be included in batch execution- '
         + 'the order of entries is unimportant, as the proper execution stack is resolved at runtime')
         self.input_doc['saved_items'] = 'list of uris to be saved in the batch_outputs'
-        self.output_doc['batch_inputs'] = 'list of dicts of [input_route:input_value]'
+        self.output_doc['batch_inputs'] = 'list of dicts of [input_route:input_value] as determined by batch_uris and input_routes'
         self.output_doc['batch_outputs'] = 'list of dicts of [output_route:output_value] for all saved_items '
-        self.input_src['dir_path'] = optools.fs_input
-        self.input_src['regex'] = optools.text_input 
-        self.input_src['input_route'] = optools.wf_input 
+        self.input_src['batch_output'] = optools.plugin_input
+        self.input_src['batch_uris'] = optools.wf_input 
+        self.input_src['input_routes'] = optools.wf_input 
         self.input_src['batch_ops'] = optools.wf_input 
         self.input_src['saved_items'] = optools.wf_input 
-        self.input_type['dir_path'] = optools.path_type
-        self.input_type['regex'] = optools.str_type
-        self.input_type['input_route'] = optools.path_type
+        self.input_type['batch_output'] = optools.ref_type
+        self.input_type['batch_uris'] = optools.path_type
+        self.input_type['input_routes'] = optools.path_type
         self.input_type['batch_ops'] = optools.path_type 
         self.input_type['saved_items'] = optools.path_type 
-        self.inputs['regex'] = '*.tif' 
+        self.inputs['batch_uris'] = []
+        self.inputs['input_routes'] = []
         self.inputs['batch_ops'] = []
         self.inputs['saved_items'] = []
         
@@ -42,16 +46,15 @@ class BatchPostProcess(Batch):
         """
         Build a list of [uri:value] dicts to be used in the workflow.
         """
-        dirpath = self.inputs['dir_path']
-        rx = self.inputs['regex']
-        inproute = self.inputs['input_route']
-        #batch_list = [dirpath+'/'+rx.replace('*',sub) for sub in subs]
-        batch_list = glob.glob(dirpath+'/'+rx)
+        b_prev = self.inputs['batch_output']
+        b_uris = self.inputs['batch_uris']
+        inp_rts = self.inputs['input_routes']
         input_dict_list = []
         output_dict_list = []
-        for filename in batch_list:
+        for b_out in b_prev:
             inp_dict = OrderedDict() 
-            inp_dict[inproute] = filename
+            for b_uri,inp_rt in zip(b_uris,inp_rts):
+                inp_dict[inp_rt] = optools.get_uri_from_dict(b_uri,b_out)
             input_dict_list.append(inp_dict)
             output_dict_list.append(OrderedDict())
         self.outputs['batch_inputs'] = input_dict_list
@@ -65,16 +68,27 @@ class BatchPostProcess(Batch):
         return self.outputs['batch_outputs']
 
     def input_routes(self):
-        """Provide the input route in a list- must return list."""
-        return [self.input_locator['input_route'].val]
+        """Provide the input route- currently batch execution expects a list."""
+        if isinstance(self.inputs['input_routes'],list):
+            return self.inputs['input_routes']
+        else: 
+            return [self.inputs['input_routes']]
 
     def batch_ops(self):
         """Provide a list of uri's of ops to be included in batch execution"""
-        return self.input_locator['batch_ops'].val
+        if isinstance(self.inputs['batch_ops'],list):
+            return self.inputs['batch_ops']
+        else: 
+            return [self.inputs['batch_ops']]
 
     def saved_items(self):
         """List uris to be saved/stored after execution"""
-        return self.input_locator['saved_items'].val
+        if isinstance(self.inputs['saved_items'],list):
+            return self.inputs['saved_items']
+        else: 
+            return [self.inputs['saved_items']]
+
+
 
 
 

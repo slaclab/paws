@@ -107,9 +107,9 @@ class TreeModel(QtCore.QAbstractItemModel):
 
     def get_from_uri(self, uri):
         """Get from this tree the item at the given uri."""
-        path = uri.split('.')
-        p_idx = QtCore.QModelIndex()
         try:
+            path = uri.split('.')
+            p_idx = QtCore.QModelIndex()
             for itemuri in path:
                 # get QModelIndex of item 
                 row = self.list_tags(p_idx).index(itemuri)

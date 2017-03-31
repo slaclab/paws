@@ -37,7 +37,9 @@ class WfUiManager(QtCore.QObject):
         self.val_col = 4
         self.btn_col = 5
 
-    def set_wf(self,wf_idx):
+    def set_wf(self,wf_idx=None):
+        if wf_idx is None:
+            wf_idx = self.ui.wf_selector.currentIndex()
         wfname = self.ui.wf_selector.model().list_data()[wf_idx]
         self.ui.wf_browser.setModel(self.wfman.workflows[wfname])
         self.ui.wf_browser.hideColumn(1)
@@ -209,9 +211,9 @@ class WfUiManager(QtCore.QObject):
             if isinstance(self.op.input_locator[name].val,list):
                 inp_loader.set_list_toggle()
                 for v in self.op.input_locator[name].val:
-                    inp_loader.add_value(str(v))
+                    inp_loader.add_values(str(v))
             else:
-                inp_loader.add_value(str(self.op.input_locator[name].val))
+                inp_loader.add_values(str(self.op.input_locator[name].val))
         inp_loader.ui.finish_button.clicked.connect( partial(self.set_input,name,inp_loader.ui) )
         self.input_loaders[name] = inp_loader
 
@@ -369,7 +371,8 @@ class WfUiManager(QtCore.QObject):
         # SIGNALS, SLOTS, MODELS, VIEWS (oh my!)
         lm = ListModel(self.wfman.workflows.keys())
         self.ui.wf_selector.setModel(lm)
-        self.ui.wf_selector.currentIndexChanged.connect( partial(self.set_wf) )
+        #self.ui.wf_selector.currentIndexChanged.connect( partial(self.set_wf) )
+        self.ui.wf_selector.activated.connect( partial(self.set_wf) )
         self.ui.wf_browser.clicked.connect( partial(self.get_op,None) )
         self.ui.rm_op_button.clicked.connect(self.rm_op)
         self.ui.op_selector.setModel(self.opman)

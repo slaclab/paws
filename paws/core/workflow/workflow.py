@@ -86,8 +86,10 @@ class Workflow(TreeSelectionModel):
             if il.tp == optools.ref_type:
                 if isinstance(il.val,list):
                     return [self.wfman.plugman.get_from_uri(v)[0].data for v in il.val]
-                else:
+                elif il.val is not None:
                     return self.wfman.plugman.get_from_uri(il.val)[0].data
+                else:
+                    return None
             elif il.tp == optools.path_type:
                 if isinstance(il.val,list):
                     return [str(v) for v in il.val]
@@ -304,6 +306,10 @@ class Workflow(TreeSelectionModel):
         such that all Operations in the stack have their dependencies satisfied
         by the Operations above them.     
         """
+        # Batch and Realtime execution operations expect to have their inputs loaded
+        # by calling self.load_inputs(b_itm.data)
+        # before calling realtime_ops() or batch_ops()
+        self.load_inputs(b_itm.data)
         if isinstance(b_itm.data,Realtime):
             exec_itms = [self.get_from_uri(uri)[0] for uri in b_itm.data.realtime_ops()]
         elif isinstance(b_itm.data,Batch):

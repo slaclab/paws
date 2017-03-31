@@ -6,9 +6,11 @@ from ... import optools
 
 class BatchFromFiles(Batch):
     """
-    Provides a list of file paths from an input directory and regex,
-    as a sequence of inputs to be used in repeated execution of a workflow.
-    Collects the outputs produced for each of the inputs.
+    Read a directory and filter its contents with a regular expression
+    to form  a list of file paths to be used as inputs
+    for the repeated execution of a workflow.
+    Specify, by workflow uri, where this file path will be fed to the workflow.
+    Collect specified outputs from the workflow for each of the inputs.
     """
 
     def __init__(self):
@@ -64,16 +66,28 @@ class BatchFromFiles(Batch):
         return self.outputs['batch_outputs']
 
     def input_routes(self):
-        """Provide the input route in a list- must return list."""
-        return [self.input_locator['input_route'].val]
+        """Provide the input route- a list is expected"""
+        #return [self.input_locator['input_route'].val]
+        if isinstance(self.inputs['input_route'],list):
+            return self.inputs['input_route']
+        else:
+            return [self.inputs['input_route']]
 
     def batch_ops(self):
         """Provide a list of uri's of ops to be included in batch execution"""
-        return self.input_locator['batch_ops'].val
+        if isinstance(self.inputs['batch_ops'],list):
+            return self.inputs['batch_ops']
+        else:
+            return [self.inputs['batch_ops']]
 
     def saved_items(self):
         """List uris to be saved/stored after execution"""
-        return self.input_locator['saved_items'].val
+        if isinstance(self.inputs['saved_items'],list):
+            return self.inputs['saved_items']
+        else:
+            return [self.inputs['saved_items']]
+
+
 
 
 

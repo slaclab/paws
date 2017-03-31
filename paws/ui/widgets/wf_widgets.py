@@ -86,8 +86,12 @@ class WorkflowGraphWidget(QtGui.QWidget):
                     topleft = coords[0]
                     bottomright = coords[1]
                     c[name] = [(h+topleft[0],v+topleft[1]),(h+bottomright[0],v+bottomright[1])] 
-                b_width = max([coords[1][0] for coords in b_coords.values()]) + self._scale*self.hspace 
-                b_height = max([coords[1][1] for coords in b_coords.values()]) + self._scale*self.vspace
+                if any(b_coords):
+                    b_width = max([coords[1][0] for coords in b_coords.values()]) + self._scale*self.hspace 
+                    b_height = max([coords[1][1] for coords in b_coords.values()]) + self._scale*self.vspace
+                else:
+                    b_width = 10 * len(lst[0].tag()) 
+                    b_height = b_width 
                 c[lst[0].tag()] = [(h,v),(h+b_width,v+b_height)]
                 h += b_width + self._scale*self.hspace
             else:

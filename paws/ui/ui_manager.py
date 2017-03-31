@@ -76,6 +76,10 @@ class UiManager(QtCore.QObject):
         Pass in QModelIndex to open the editor 
         with the item at that index loaded.
         """
+        wf = self.current_wf()
+        if wf is None:
+            self.add_wf('new_workflow')
+            wf = self.current_wf()
         if itm_idx.isValid():
             # valid index in workflow tree: percolate up to root ancestor
             while itm_idx.parent().isValid():
@@ -86,23 +90,26 @@ class UiManager(QtCore.QObject):
             if itm_idx.isValid():
                 while itm_idx.parent().isValid():
                     itm_idx = itm_idx.parent()
-            #else:
-            #    itm_idx = self.ui.op_tree.currentIndex()
-            #    trmod = self.opman
-        wf = self.current_wf()
-        if wf is None:
-            self.add_wf('new_workflow')
-            wf = self.current_wf()
         if itm_idx.isValid():
             uiman = self.start_wf_editor(wf,itm_idx)
-            uiman.ui.wf_browser.setCurrentIndex(itm_idx)
-            #else:
-            #    uiman.ui.op_selector.setCurrentIndex(itm_idx)
         else:
-            uiman = self.start_wf_editor()
-        wf_idx = self.ui.wf_selector.currentIndex()
-        uiman.ui.wf_selector.setCurrentIndex(wf_idx)
+            uiman = self.start_wf_editor(wf)
+        #uiman.ui.wf_selector.setCurrentIndex(self.ui.wf_selector.currentIndex())
         uiman.ui.show()
+        #wf_idx = self.ui.wf_selector.currentIndex()
+        #uiman.ui.wf_selector.setCurrentIndex(wf_idx)
+
+    def start_wf_editor(self,trmod=None,idx=QtCore.QModelIndex()):
+        """
+        Create a WfUiManager (QMainWindow), return it 
+        """
+        uiman = WfUiManager(self.wfman,self.opman,self.plugman)
+        uiman.ui.wf_selector.setCurrentIndex(self.ui.wf_selector.currentIndex())
+        uiman.set_wf()
+        if trmod and idx.isValid():
+            uiman.get_op(trmod,idx)
+        uiman.ui.setParent(self.ui,QtCore.Qt.Window)
+        return uiman
 
     def edit_ops(self,itm_idx=None):
         """
@@ -112,17 +119,6 @@ class UiManager(QtCore.QObject):
         uiman = OpUiManager(self.opman)
         uiman.ui.setParent(self.ui,QtCore.Qt.Window)
         uiman.ui.show()
-
-    def start_wf_editor(self,trmod=None,idx=QtCore.QModelIndex()):
-        """
-        Create a WfUiManager (QMainWindow), return it 
-        """
-        uiman = WfUiManager(self.wfman,self.opman,self.plugman)
-        uiman.ui.wf_selector.setCurrentIndex(self.ui.wf_selector.currentIndex())
-        if trmod and idx.isValid():
-            uiman.get_op(trmod,idx)
-        uiman.ui.setParent(self.ui,QtCore.Qt.Window)
-        return uiman
 
     def display_plugin_item(self,idx):
         """
@@ -155,8 +151,8 @@ class UiManager(QtCore.QObject):
         if wfname:
             wf = self.wfman.workflows[wfname]
         else:
-            current_wf_idx = self.ui.wf_selector.currentIndex()
-            wfname = self.ui.wf_selector.model().list_data()[current_wf_idx]
+            #wf_idx = self.ui.wf_selector.currentIndex()
+            #wfname = self.ui.wf_selector.model().list_data()[wf_idx]
             wf = self.current_wf()
         # depending on whether wf is running or not,
         # call a QtCore.Slot to get wfman to do the right thing
@@ -207,9 +203,8 @@ class UiManager(QtCore.QObject):
             advance_scrollbar = True
         else:
             advance_scrollbar = False
-        self.ui.message_board.insertPlainText(
+        self.ui.message_board.appendPlainText(
         '- ' + pawstools.timestr() + ': ' + msg + '\n') 
-        # TODO: Figure out how to get the message board to stay put if the scrollbar is under user control
         if advance_scrollbar:
             self.ui.message_board.verticalScrollBar().setValue(self.ui.message_board.verticalScrollBar().maximum())
 
@@ -312,7 +307,7 @@ class UiManager(QtCore.QObject):
                 self.ui.wf_tree.hideColumn(1)
                 self.ui.wf_tree.hideColumn(2)
         self.ui.wf_selector.setCurrentIndex(wf_selector_idx)
-        self.set_wf(wf_selector_idx)
+        #self.set_wf(wf_selector_idx)
         ui.close()
 
     def connect_actions(self):
