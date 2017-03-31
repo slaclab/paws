@@ -103,7 +103,7 @@ class NikaToPONI(Operation):
             if kv[0] == 'vertical_tilt_deg':
                 vtilt_deg = float(kv[1])    # Nika reports the vertical tilt in degrees...
                                             # TODO: figure out how Fit2D angles correspond to Nika angles 
-            if kv[0] == 'wavelength':
+            if kv[0] == 'wavelength_A':
                 wl_A = float(kv[1])         # Nika reports wavelength is in Angstroms
         # get wavelength in m 
         wl_m = wl_A*1E-10
