@@ -69,7 +69,7 @@ class NikaToPONI(Operation):
     def __init__(self):
         input_names = ['nika_file','fpolz']
         output_names = ['poni_dict']
-        super(WXDToPONI,self).__init__(input_names,output_names)
+        super(NikaToPONI,self).__init__(input_names,output_names)
         self.input_doc['nika_file'] = str('text file expressing nika automated calibration results- '
         + 'see Operation documentation for the expected format of this file')
         self.input_doc['fpolz'] = 'polarization factor'
