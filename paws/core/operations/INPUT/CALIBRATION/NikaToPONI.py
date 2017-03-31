@@ -23,14 +23,14 @@ and the horizontal and vertical tilts of the detector in degrees.
 This converter expects to read a file 
 that expresses all of the above information in the following format:
 
-Sample_to_CCD_mm = ____
-pixel_size_x_mm = ____
-pixel_size_y_mm = ____
-beam_center_x_pix = ____
-beam_center_y_pix = ____
-horizontal_tilt_deg = ____
-vertical_tilt_deg = ____ 
-wavelength_A = ____ 
+Sample_to_CCD_mm=____
+pixel_size_x_mm=____
+pixel_size_y_mm=____
+beam_center_x_pix=____
+beam_center_y_pix=____
+horizontal_tilt_deg=____
+vertical_tilt_deg=____ 
+wavelength_A=____ 
 
 See the documentation for the WXDToPONI operation
 for an explanation of FIT2D and PONI parameters.
@@ -56,14 +56,14 @@ class NikaToPONI(Operation):
     and manually input polarization factor. 
     Output a dict of pyFAI PONI calibration parameters.
     Format of text file for Nika output is expected to be:
-    Sample_to_CCD_mm = ____
-    pixel_size_x_mm = ____
-    pixel_size_y_mm = ____
-    beam_center_x_pix = ____
-    beam_center_y_pix = ____
-    horizontal_tilt_deg = ____
-    vertical_tilt_deg = ____ 
-    wavelength_A = ____ 
+    Sample_to_CCD_mm=____
+    pixel_size_x_mm=____
+    pixel_size_y_mm=____
+    beam_center_x_pix=____
+    beam_center_y_pix=____
+    horizontal_tilt_deg=____
+    vertical_tilt_deg=____ 
+    wavelength_A=____ 
     """
     
     def __init__(self):
