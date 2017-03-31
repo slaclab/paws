@@ -80,7 +80,9 @@ class InputLoader(object):
         else:
             return None
 
-    def set_wf(self,wf_idx):
+    def set_wf(self,wf_idx=None):
+        if wf_idx is None:
+            wf_idx = self.ui.wf_selector.currentIndex() 
         wfname = self.ui.wf_selector.model().list_data()[wf_idx]
         self.ui.source_treeview.setModel(self.src_manager.workflows[wfname])
         self.ui.source_treeview.hideColumn(2)

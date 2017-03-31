@@ -200,6 +200,7 @@ class WfUiManager(QtCore.QObject):
         if src == optools.wf_input:
             inp_loader = InputLoader(input_loader_title,src,self.wfman,self.ui)
             inp_loader.ui.wf_selector.setCurrentIndex(self.ui.wf_selector.currentIndex())
+            inp_loader.set_wf()
         elif src == optools.fs_input:
             trmod = QtGui.QFileSystemModel()
             inp_loader = InputLoader(input_loader_title,src,trmod,self.ui)
