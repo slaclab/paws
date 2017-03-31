@@ -275,11 +275,20 @@ class TreeModel(QtCore.QAbstractItemModel):
                 self.print_tree(rowprefix,self.index(jroot,0,parent))
             
     def tree_dataChanged(self,idx):
-        self.dataChanged.emit(idx,idx)
-        itm = idx.internalPointer()
-        for c_row in range(itm.n_children()):
-            c_idx = self.index(c_row,0,idx)
-            self.tree_dataChanged(c_idx)
+        #if idx.isValid():
+            self.dataChanged.emit(idx,idx)
+            itm = idx.internalPointer()
+            for c_row in range(itm.n_children()):
+                c_idx = self.index(c_row,0,idx)
+                self.tree_dataChanged(c_idx)
+        #else:
+        #    for root_row in range(len(self.root_items)):
+        #        idx = self.index(root_row,0,QtCore.QModelIndex())
+        #        self.dataChanged.emit(idx,idx)
+        #        itm = idx.internalPointer() 
+        #        for c_row in range(itm.n_children()):
+        #            c_idx = self.index(c_row,0,idx)
+        #            self.tree_dataChanged(c_idx)
 
     def build_dict(self,x):
         """Build a dict from structured data object x"""
