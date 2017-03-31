@@ -211,10 +211,10 @@ class WfUiManager(QtCore.QObject):
         if self.op.input_locator[name].src == src and self.op.input_locator[name].val is not None:
             if isinstance(self.op.input_locator[name].val,list):
                 inp_loader.set_list_toggle()
-                for v in self.op.input_locator[name].val:
-                    inp_loader.add_values(str(v))
+                #for v in self.op.input_locator[name].val:
+                inp_loader.add_values(self.op.input_locator[name].val)
             else:
-                inp_loader.add_values(str(self.op.input_locator[name].val))
+                inp_loader.add_values([self.op.input_locator[name].val])
         inp_loader.ui.finish_button.clicked.connect( partial(self.set_input,name,inp_loader.ui) )
         self.input_loaders[name] = inp_loader
 

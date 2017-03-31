@@ -127,7 +127,7 @@ class InputLoader(object):
     def add_values(self,vals):
         if vals is not None:
             for val in vals:
-                self.ui.values_list.model().append_item(val) 
+                self.ui.values_list.model().append_item(str(val)) 
         self.check_list_toggle()
 
     def rm_selection(self):
