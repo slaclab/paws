@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1224</width>
-    <height>536</height>
+    <width>960</width>
+    <height>721</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -25,7 +25,7 @@
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
      </property>
-     <widget class="QFrame" name="op_frame">
+     <widget class="QFrame" name="browser_frame">
       <property name="frameShape">
        <enum>QFrame::StyledPanel</enum>
       </property>
@@ -34,31 +34,56 @@
       </property>
       <layout class="QVBoxLayout" name="verticalLayout">
        <item>
-        <widget class="QTreeView" name="op_selector"/>
-       </item>
-       <item>
-        <widget class="QTreeView" name="wf_browser"/>
-       </item>
-       <item>
-        <widget class="QPushButton" name="rm_op_button">
-         <property name="text">
-          <string>PushButton</string>
+        <widget class="QGroupBox" name="op_box">
+         <property name="title">
+          <string>GroupBox</string>
          </property>
+         <layout class="QGridLayout" name="gridLayout_7">
+          <item row="0" column="0">
+           <widget class="QTreeView" name="op_selector"/>
+          </item>
+         </layout>
+         <zorder>op_selector</zorder>
+         <zorder>op_selector</zorder>
+         <zorder>op_selector</zorder>
+         <zorder>op_selector</zorder>
         </widget>
        </item>
        <item>
-        <widget class="QPlainTextEdit" name="op_info">
-         <property name="readOnly">
-          <bool>true</bool>
+        <widget class="QGroupBox" name="wf_box">
+         <property name="title">
+          <string>GroupBox</string>
          </property>
-         <property name="plainText">
-          <string/>
-         </property>
+         <layout class="QGridLayout" name="gridLayout_6">
+          <item row="0" column="0">
+           <layout class="QGridLayout" name="gridLayout_4">
+            <item row="0" column="0">
+             <widget class="QComboBox" name="wf_selector"/>
+            </item>
+            <item row="1" column="0">
+             <widget class="QTreeView" name="wf_browser"/>
+            </item>
+            <item row="2" column="0">
+             <widget class="QPushButton" name="rm_op_button">
+              <property name="text">
+               <string>PushButton</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+         <zorder>wf_selector</zorder>
+         <zorder>rm_op_button</zorder>
+         <zorder>wf_browser</zorder>
+         <zorder>wf_selector</zorder>
+         <zorder>rm_op_button</zorder>
+         <zorder>wf_browser</zorder>
         </widget>
        </item>
       </layout>
      </widget>
-     <widget class="QFrame" name="right_frame">
+     <widget class="QFrame" name="input_frame">
       <property name="frameShape">
        <enum>QFrame::StyledPanel</enum>
       </property>
@@ -120,6 +145,19 @@
           </item>
          </layout>
         </widget>
+       </item>
+       <item>
+        <spacer name="spacer">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
        </item>
       </layout>
      </widget>

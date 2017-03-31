@@ -4,8 +4,9 @@ import glob
 from ...operation import Batch
 from ... import optools
 
-class BatchFromFiles(Batch):
+class BatchPostProcess(Batch):
     """
+    Takes the outputs produced by a 
     Provides a list of file paths from an input directory and regex,
     as a sequence of inputs to be used in repeated execution of a workflow.
     Collects the outputs produced for each of the inputs.

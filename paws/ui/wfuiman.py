@@ -7,17 +7,18 @@ from ..core.operations import optools
 from ..core.operations.operation import Operation 
 from ..core import pawstools
 from ..core.operations.optools import InputLocator
+from ..core.ListModel import ListModel
 from .input_loader import InputLoader
 from . import uitools
 
 class WfUiManager(QtCore.QObject):
 
-    def __init__(self,wf,opman,plugman):
+    def __init__(self,wfman,opman,plugman):
         ui_file = QtCore.QFile(pawstools.rootdir+"/ui/qtui/wf_editor.ui")
         ui_file.open(QtCore.QFile.ReadOnly)
         self.ui = QtUiTools.QUiLoader().load(ui_file)
         ui_file.close()
-        self.wf = wf 
+        self.wfman = wfman
         self.opman = opman 
         self.plugman = plugman 
         self.op = None
@@ -36,7 +37,23 @@ class WfUiManager(QtCore.QObject):
         self.val_col = 4
         self.btn_col = 5
 
-    def get_op(self,trmod,itm_idx):
+    def set_wf(self,wf_idx):
+        wfname = self.ui.wf_selector.model().list_data()[wf_idx]
+        self.ui.wf_browser.setModel(self.wfman.workflows[wfname])
+        self.ui.wf_browser.hideColumn(1)
+        self.ui.wf_browser.hideColumn(2)
+
+    def current_wf(self):
+        current_wf_idx = self.ui.wf_selector.currentIndex()
+        if current_wf_idx > -1:
+            wfname = self.ui.wf_selector.model().list_data()[current_wf_idx]
+            return self.wfman.workflows[wfname]
+        else:
+            return None
+
+    def get_op(self,trmod=None,itm_idx=QtCore.QModelIndex()):
+        if trmod is None:
+            trmod = self.current_wf()
         xitem = trmod.get_item(itm_idx)
         if xitem.data:
             x = xitem.data
@@ -50,7 +67,7 @@ class WfUiManager(QtCore.QObject):
                 existing_op_flag = False
             if not new_op_flag and not existing_op_flag:  
                 self.clear_io()
-                self.ui.op_info.setPlainText('Selected item: {}'.format(x))
+                #self.ui.op_info.setPlainText('Selected item: {}'.format(x))
             elif new_op_flag:
                 # Create a new Operation 
                 self.create_op(x)
@@ -64,14 +81,14 @@ class WfUiManager(QtCore.QObject):
         # TODO: Instead, copy the input op, then load it,
         # and ensure that the workflow updates properly when finished
         self.op = op
-        self.ui.op_info.setPlainText(self.op.description())
+        #self.ui.op_info.setPlainText(self.op.description())
         self.build_io()
         self.ui.uri_entry.setText(uri)
 
     def create_op(self,op):
         """Instantiate op, call self.set_op()"""
         new_op = op()
-        new_op_tag = self.wf.auto_tag(type(new_op).__name__)
+        new_op_tag = self.current_wf().auto_tag(type(new_op).__name__)
         new_op.load_defaults()
         self.set_op(new_op,new_op_tag)
 
@@ -83,29 +100,29 @@ class WfUiManager(QtCore.QObject):
         if idx.isValid(): 
             while idx.internalPointer().parent.isValid():
                 idx = idx.internalPointer().parent
-            self.wf.remove_op(idx)
+            self.current_wf().remove_op(idx)
         self.clear_io()
 
     def load_op(self):
         """
-        Package the finished Operation, put it in self.wf
+        Package the finished Operation, put it in self.current_wf()
         """ 
         # Make sure all inputs are loaded
         for name in self.op.inputs.keys():
             self.set_input(name)
         uri = self.ui.uri_entry.text()
-        result = self.wf.is_good_tag(uri)
+        result = self.current_wf().is_good_tag(uri)
         if result[0]:
-            self.wf.add_op(uri,self.op) 
+            self.current_wf().add_op(uri,self.op) 
             self.clear_io()
         elif result[1] == 'Tag not unique':
-            self.wf.update_op(uri,self.op)
+            self.current_wf().update_op(uri,self.op)
             self.clear_io()
         else:
             # Request a different uri 
             msg_ui = uitools.message_ui(self.ui)
             msg_ui.setWindowTitle("Tag Error")
-            msg_ui.message_box.setPlainText(self.wf.tag_error(uri,result[1]))
+            msg_ui.message_box.setPlainText(self.current_wf().tag_error(uri,result[1]))
             msg_ui.show()
 
     def set_input(self,name,src_ui=None):
@@ -179,7 +196,8 @@ class WfUiManager(QtCore.QObject):
         src = self.src_widgets[name].currentIndex()
         input_loader_title = self.ui.uri_entry.text() + '.inputs.' + name
         if src == optools.wf_input:
-            inp_loader = InputLoader(input_loader_title,src,self.wf,self.ui)
+            inp_loader = InputLoader(input_loader_title,src,self.wfman,self.ui)
+            inp_loader.ui.wf_selector.setCurrentIndex(self.ui.wf_selector.currentIndex())
         elif src == optools.fs_input:
             trmod = QtGui.QFileSystemModel()
             inp_loader = InputLoader(input_loader_title,src,trmod,self.ui)
@@ -332,41 +350,63 @@ class WfUiManager(QtCore.QObject):
         self.btn_widgets[name] = btn_widget
 
     def setup_ui(self):
-        # TODO: constrain the height of the FINISH/LOAD box
+        # LABELS and STYLES
+        self.ui.setStyleSheet( "QLineEdit { border: none }" + self.ui.styleSheet() )
         self.ui.setWindowTitle("workflow setup")
         self.ui.input_box.setTitle("INPUTS")
         self.ui.output_box.setTitle("OUTPUTS")
         self.ui.finish_box.setTitle("FINISH / LOAD")
-        ht = self.ui.op_frame.sizeHint().height()
-        self.ui.op_frame.sizeHint = lambda: QtCore.QSize(400,ht)
-        self.ui.op_frame.setSizePolicy(
-        QtGui.QSizePolicy.Minimum,self.ui.op_frame.sizePolicy().verticalPolicy())
-        self.ui.wf_browser.setModel(self.wf)
-        self.ui.wf_browser.hideColumn(1)
-        self.ui.wf_browser.hideColumn(2)
-        self.ui.wf_browser.clicked.connect( partial(self.get_op,self.wf) )
+        self.ui.wf_box.setTitle("WORKFLOWS")
+        self.ui.op_box.setTitle("OPERATIONS")
+        self.ui.uri_prompt.setText('operation tag:')
+        self.ui.uri_prompt.setReadOnly(True)
+        self.ui.op_name.setText('-select an operation to begin setup-')
+        self.ui.uri_prompt.setAlignment(QtCore.Qt.AlignRight)
+        self.ui.uri_prompt.setStyleSheet( "QLineEdit { background-color: transparent }" 
+        + self.ui.uri_prompt.styleSheet() )
+        self.ui.load_button.setText("&Finish")
         self.ui.rm_op_button.setText("&Remove selected operation")
+        # SIGNALS, SLOTS, MODELS, VIEWS (oh my!)
+        lm = ListModel(self.wfman.workflows.keys())
+        self.ui.wf_selector.setModel(lm)
+        self.ui.wf_selector.currentIndexChanged.connect( partial(self.set_wf) )
+        self.ui.wf_browser.clicked.connect( partial(self.get_op,None) )
         self.ui.rm_op_button.clicked.connect(self.rm_op)
         self.ui.op_selector.setModel(self.opman)
         self.ui.op_selector.hideColumn(1)
         self.ui.op_selector.hideColumn(2)
         self.ui.op_selector.clicked.connect( partial(self.get_op,self.opman) )
         self.ui.op_selector.clicked.connect( partial(uitools.toggle_expand,self.ui.op_selector) ) 
-        #self.ui.wf_browser.clicked.connect( partial(uitools.toggle_expand,self.ui.wf_selector) )
-        self.ui.uri_prompt.setMaximumWidth(150)
-        self.ui.uri_prompt.setText('operation tag:')
-        self.ui.uri_prompt.setReadOnly(True)
         self.ui.op_name.setAlignment(QtCore.Qt.AlignCenter)
-        self.ui.op_name.setText('-select an operation to begin setup-')
-        self.ui.uri_prompt.setAlignment(QtCore.Qt.AlignRight)
-        self.ui.uri_prompt.setStyleSheet( "QLineEdit { background-color: transparent }" 
-        + self.ui.uri_prompt.styleSheet() )
-        self.ui.load_button.setText("&Finish")
         self.ui.load_button.clicked.connect(self.load_op)
         self.ui.load_button.setDefault(True)
         self.ui.load_button.setEnabled(False)
+        # LAYOUT AND SIZING 
+        szp = QtGui.QSizePolicy()
+        szp.setHorizontalPolicy(QtGui.QSizePolicy.Preferred)
+        szp.setVerticalPolicy(QtGui.QSizePolicy.Preferred)
+        szp.setHorizontalStretch(3)
+        szp.setVerticalStretch(1)
+        self.ui.input_frame.setSizePolicy(szp)
+        finish_box_szp = QtGui.QSizePolicy()
+        finish_box_szp.setHorizontalPolicy(QtGui.QSizePolicy.Preferred)
+        finish_box_szp.setVerticalPolicy(QtGui.QSizePolicy.Maximum)
+        self.ui.finish_box.setSizePolicy(finish_box_szp)
+        io_box_szp = QtGui.QSizePolicy()
+        io_box_szp.setHorizontalPolicy(QtGui.QSizePolicy.Preferred)
+        io_box_szp.setVerticalPolicy(QtGui.QSizePolicy.Maximum)
+        self.ui.input_box.setSizePolicy(io_box_szp)
+        self.ui.output_box.setSizePolicy(io_box_szp)
+        #spacer_szp = QtGui.QSizePolicy()
+        #spacer_szp.setHorizontalPolicy(QtGui.QSizePolicy.Preferred)
+        #spacer_szp.setVerticalPolicy(QtGui.QSizePolicy.MinimumExpanding)
+        #self.ui.spacer.setSizePolicy(spacer_szp)
         self.ui.load_button.setMinimumWidth(100)
-        self.ui.splitter.setStretchFactor(0,1000)    
-        self.ui.setStyleSheet( "QLineEdit { border: none }" + self.ui.styleSheet() )
+        self.ui.uri_prompt.setMaximumWidth(150)
 
+        #ht = self.ui.browser_frame.sizeHint().height()
+        #self.ui.browser_frame.sizeHint = lambda: QtCore.QSize(400,ht)
+        #self.ui.browser_frame.setSizePolicy(
+        #QtGui.QSizePolicy.Minimum,self.ui.browser_frame.sizePolicy().verticalPolicy())
+        #self.ui.splitter.setStretchFactor(1,2)    
 

@@ -85,9 +85,9 @@ class Workflow(TreeSelectionModel):
         elif il.src == optools.plugin_input:
             if il.tp == optools.ref_type:
                 if isinstance(il.val,list):
-                    return [self.plugman.get_from_uri(v)[0].data for v in il.val]
+                    return [self.wfman.plugman.get_from_uri(v)[0].data for v in il.val]
                 else:
-                    return self.plugman.get_from_uri(il.val)[0].data
+                    return self.wfman.plugman.get_from_uri(il.val)[0].data
             elif il.tp == optools.path_type:
                 if isinstance(il.val,list):
                     return [str(v) for v in il.val]

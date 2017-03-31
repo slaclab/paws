@@ -16,7 +16,7 @@ class WfManager(QtCore.QObject):
     """
 
     def __init__(self,plugin_manager,qapp_reference):
-        self.workflows = {} 
+        self.workflows = OrderedDict() 
         self.appref = qapp_reference 
         self.plugman = plugin_manager
         self._n_threads = QtCore.QThread.idealThreadCount()

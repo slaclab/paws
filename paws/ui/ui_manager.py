@@ -48,7 +48,6 @@ class UiManager(QtCore.QObject):
 
     def add_wf(self,wfname):
         if wfname in self.wfman.workflows.keys():
-            # TODO: check wfname unique here, request a new wfname
             wfname = self.wfman.auto_name(wfname)
         self.wfman.add_wf(wfname)
         self.ui.wf_selector.model().append_item(wfname)
@@ -77,10 +76,6 @@ class UiManager(QtCore.QObject):
         Pass in QModelIndex to open the editor 
         with the item at that index loaded.
         """
-        wf = self.current_wf()
-        if wf is None:
-            wfname = self.add_wf('default_workflow')
-            wf = self.wfman.workflows[wfname]
         if itm_idx.isValid():
             # valid index in workflow tree: percolate up to root ancestor
             while itm_idx.parent().isValid():
@@ -94,6 +89,10 @@ class UiManager(QtCore.QObject):
             #else:
             #    itm_idx = self.ui.op_tree.currentIndex()
             #    trmod = self.opman
+        wf = self.current_wf()
+        if wf is None:
+            self.add_wf('new_workflow')
+            wf = self.current_wf()
         if itm_idx.isValid():
             uiman = self.start_wf_editor(wf,itm_idx)
             uiman.ui.wf_browser.setCurrentIndex(itm_idx)
@@ -101,9 +100,11 @@ class UiManager(QtCore.QObject):
             #    uiman.ui.op_selector.setCurrentIndex(itm_idx)
         else:
             uiman = self.start_wf_editor()
+        wf_idx = self.ui.wf_selector.currentIndex()
+        uiman.ui.wf_selector.setCurrentIndex(wf_idx)
         uiman.ui.show()
 
-    def edit_ops(self,item_indx=None):
+    def edit_ops(self,itm_idx=None):
         """
         interact with user to enable existing Operations
         and edit or develop new Operations 
@@ -112,13 +113,14 @@ class UiManager(QtCore.QObject):
         uiman.ui.setParent(self.ui,QtCore.Qt.Window)
         uiman.ui.show()
 
-    def start_wf_editor(self,trmod=None,indx=QtCore.QModelIndex()):
+    def start_wf_editor(self,trmod=None,idx=QtCore.QModelIndex()):
         """
         Create a WfUiManager (QMainWindow), return it 
         """
-        uiman = WfUiManager(self.current_wf(),self.opman,self.plugman)
-        if trmod and indx.isValid():
-            uiman.get_op(trmod,indx)
+        uiman = WfUiManager(self.wfman,self.opman,self.plugman)
+        uiman.ui.wf_selector.setCurrentIndex(self.ui.wf_selector.currentIndex())
+        if trmod and idx.isValid():
+            uiman.get_op(trmod,idx)
         uiman.ui.setParent(self.ui,QtCore.Qt.Window)
         return uiman
 
@@ -279,6 +281,7 @@ class UiManager(QtCore.QObject):
         ui.close()
 
     def finish_save_wf(self,ui):
+        # TODO: A saved workflow should change its name in ui.wf_selector and in plugman.
         fname = ui.filename.text()
         if not os.path.splitext(fname)[1] == '.wfl':
             fname = fname + '.wfl'
@@ -314,14 +317,14 @@ class UiManager(QtCore.QObject):
 
     def connect_actions(self):
         """Set up the works for buttons and menu items"""
-        lm = ListModel(self.wfman.workflows.keys())
         self.wfman.wfdone.connect(self.toggle_run_wf)
+        lm = ListModel(self.wfman.workflows.keys())
         self.ui.wf_selector.setModel(lm)
         self.ui.wf_selector.currentIndexChanged.connect( partial(self.set_wf) )
         self.ui.edit_ops_button.setText("Edit operations")
         self.ui.edit_ops_button.clicked.connect(self.edit_ops)
         self.ui.add_wf_button.setText("&New")
-        self.ui.add_wf_button.clicked.connect( partial(self.add_wf,'workflow') )
+        self.ui.add_wf_button.clicked.connect( partial(self.add_wf,'new_workflow') )
         self.ui.run_wf_button.setText("&Run")
         self.ui.run_wf_button.clicked.connect(self.toggle_run_wf)
         self.ui.edit_wf_button.setText("&Edit...")
