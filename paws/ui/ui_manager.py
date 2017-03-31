@@ -204,7 +204,7 @@ class UiManager(QtCore.QObject):
         else:
             advance_scrollbar = False
         self.ui.message_board.appendPlainText(
-        '- ' + pawstools.timestr() + ': ' + msg + '\n') 
+        '- ' + pawstools.timestr() + ': ' + msg)#+ '\n') 
         if advance_scrollbar:
             self.ui.message_board.verticalScrollBar().setValue(self.ui.message_board.verticalScrollBar().maximum())
 
