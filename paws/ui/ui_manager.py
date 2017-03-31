@@ -151,8 +151,8 @@ class UiManager(QtCore.QObject):
         if wfname:
             wf = self.wfman.workflows[wfname]
         else:
-            #wf_idx = self.ui.wf_selector.currentIndex()
-            #wfname = self.ui.wf_selector.model().list_data()[wf_idx]
+            wf_idx = self.ui.wf_selector.currentIndex()
+            wfname = self.ui.wf_selector.model().list_data()[wf_idx]
             wf = self.current_wf()
         # depending on whether wf is running or not,
         # call a QtCore.Slot to get wfman to do the right thing

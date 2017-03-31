@@ -56,21 +56,27 @@ class RealtimeFromFiles(Realtime):
 
     def input_routes(self):
         """Use the Realtime.input_locators to list uri's of all input routes- must return list."""
-        return [self.input_locator['input_route'].val]
+        if isinstance(self.inputs['input_route'],list):
+            return self.inputs['input_route']
+        else:
+            return [self.inputs['input_route']]
 
     def realtime_ops(self):
         """Use the Realtime.input_locator to list uri's of ops to be saved/stored after execution"""
-        return self.input_locator['realtime_ops'].val
+        if isinstance(self.inputs['realtime_ops'],list):
+            return self.inputs['realtime_ops']
+        else:
+            return [self.inputs['realtime_ops']]
 
     def saved_items(self):
         """Use the Realtime.input_locator to list uri's of ops to be included in realtime execution"""
-        return self.input_locator['saved_items'].val
+        if isinstance(self.inputs['saved_items'],list):
+            return self.inputs['saved_items']
+        else:
+            return [self.inputs['saved_items']]
 
     @staticmethod
     def delay():
         """Amount of time to wait between execution attempts, in milliseconds"""
         return 1000
-
-
-
 
