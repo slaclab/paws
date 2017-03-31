@@ -23,7 +23,7 @@ and the horizontal and vertical tilts of the detector in degrees.
 This converter expects to read a file 
 that expresses all of the above information in the following format:
 
-Sample_to_CCD_mm=____
+sample_to_CCD_mm=____
 pixel_size_x_mm=____
 pixel_size_y_mm=____
 beam_center_x_pix=____
@@ -56,7 +56,7 @@ class NikaToPONI(Operation):
     and manually input polarization factor. 
     Output a dict of pyFAI PONI calibration parameters.
     Format of text file for Nika output is expected to be:
-    Sample_to_CCD_mm=____
+    sample_to_CCD_mm=____
     pixel_size_x_mm=____
     pixel_size_y_mm=____
     beam_center_x_pix=____
