@@ -44,7 +44,7 @@ class GuessProperties(Operation):
         shoulders = local_maxima_detector(I*q**4)
         # Clean out end points and weak maxima
         dips, shoulders = clean_extrema(dips, shoulders, I*q**4)
-
+        # identify likely first "real" dip
         qFirstDip, heightFirstDip, scaledQuadCoefficients = first_dip(q, I, dips, dI)
 
         if dI is None:
@@ -66,7 +66,7 @@ class GuessProperties(Operation):
         scaledDipCurvature = 2 * quadCoefficients[2]
         # and then pretend it's a gaussian and find the width sigma
         sigmaScaledFirstDip = np.fabs(scaledDipDepth / scaledDipCurvature) ** 0.5
-
+        # fit quadratic to low q to estimate amplitude at zero
         qlim = max(q[6], (qFirstDip - q[0]) / 2.)
         if qlim > 0.75 * qFirstDip:
             self.outputs['detailed_flags']['poor_low_q_sampling'] = True
@@ -76,13 +76,15 @@ class GuessProperties(Operation):
             heightAtZero = arbitrary_order_solution(4, q[low_q], I[low_q], None)[0]
         else:
             heightAtZero = arbitrary_order_solution(4, q[low_q], I[low_q], dI[low_q])[0]
-
+        # convert to unitless metrics
         x0 = qFirstDip / sigmaScaledFirstDip
         y0 = heightFirstDip / heightAtZero
+        # load references
         try:
             references = load_references(reference_loc)
         except:
             print no_reference_message
+        # compare metrics to reference
         x = references['xFirstDip'] / references['sigmaScaledFirstDip']
         y = references['heightFirstDip'] / references['heightAtZero']
         factor = references['factorVals']
@@ -288,39 +290,6 @@ def blur(x, factor):
         y = (3. * (np.sin(effective_x) - effective_x * np.cos(effective_x)) * effective_x**-3)**2
         ysum += rhoVals[ii]*y*deltaFactor
     return ysum
-
-'''
-def generate_references(x, factorVals):
-    num_tests = len(factorVals)
-    xFirstDip = np.zeros(num_tests)
-    sigmaScaledFirstDip = np.zeros(num_tests)
-    heightFirstDip = np.zeros(num_tests)
-    heightAtZero = np.zeros(num_tests)
-    for ii in range(num_tests):
-        factor = factorVals[ii]
-        y = blur(x, factor)
-        xFirstDip[ii], heightFirstDip[ii], sigmaScaledFirstDip[ii], heightAtZero[ii] = take_polydispersity_metrics(x, y)
-    references = consolidate_references(factorVals, xFirstDip, sigmaScaledFirstDip, heightFirstDip, heightAtZero)
-    return references
-
-def consolidate_references(factorVals, xFirstDip, sigmaScaledFirstDip, heightFirstDip, heightAtZero):
-    references = {}
-    references['factorVals'] = factorVals
-    references['xFirstDip'] = xFirstDip
-    references['heightFirstDip'] = heightFirstDip
-    references['sigmaScaledFirstDip'] = sigmaScaledFirstDip
-    references['heightAtZero'] = heightAtZero
-    return references
-
-def save_references(references, reference_loc):
-    n = references['factorVals'].size
-    x = [[references['factorVals'][ii], references['heightAtZero'][ii], references['heightFirstDip'][ii],
-          references['xFirstDip'][ii], references['sigmaScaledFirstDip'][ii]] for ii in range(n)]
-    x = np.array(x, dtype=float)
-    np.savetxt(reference_loc, x, delimiter=', ',
-               header='factorVals, heightAtZero, heightFirstDip, xFirstDip, sigmaScaledFirstDip')
-
-'''
 
 # Funtions specifically about detecting SAXS properties
 
