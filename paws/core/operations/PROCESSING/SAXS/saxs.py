@@ -37,6 +37,7 @@ class GuessProperties(Operation):
 
     def run(self):
         q, I, dI = self.inputs['q'], self.inputs['I'], self.inputs['dI']
+        self.outputs['detailed_flags'] = {}
 
         # find extrema
         dips = local_minima_detector(I*q**4)
@@ -45,8 +46,36 @@ class GuessProperties(Operation):
         dips, shoulders = clean_extrema(dips, shoulders, I*q**4)
 
         qFirstDip, heightFirstDip, scaledQuadCoefficients = first_dip(q, I, dips, dI)
-        sigmaScaledFirstDip = polydispersity_metric_sigmaScaledFirstDip(q, I, dips, shoulders, qFirstDip, heightFirstDip)
-        heightAtZero = polydispersity_metric_heightAtZero(qFirstDip, q, I, dI)
+
+        if dI is None:
+            powerCoefficients = power_law_solution(q[shoulders], I[shoulders], None)
+        else:
+            powerCoefficients = power_law_solution(q[shoulders], I[shoulders], dI[shoulders])
+        powerLawAtDip = powerCoefficients[0] * (qFirstDip ** powerCoefficients[1])
+        scaledDipDepth = (powerLawAtDip - heightFirstDip) * (qFirstDip ** 4)
+        # identify region surrounding the first dip
+        lolim = np.where(dips)[0][0] - 3
+        hilim = np.where(dips)[0][0] + 3
+        # model 1st dip region as quadratic in scaled I
+        scaled_I = I * q ** 4
+        if dI is None:
+            quadCoefficients = arbitrary_order_solution(2, q[lolim:hilim], scaled_I[lolim:hilim], None)
+        else:
+            scaled_dI = dI * q ** 4
+            quadCoefficients = arbitrary_order_solution(2, q[lolim:hilim], scaled_I[lolim:hilim], scaled_dI[lolim:hilim])
+        scaledDipCurvature = 2 * quadCoefficients[2]
+        # and then pretend it's a gaussian and find the width sigma
+        sigmaScaledFirstDip = np.fabs(scaledDipDepth / scaledDipCurvature) ** 0.5
+
+        qlim = max(q[6], (qFirstDip - q[0]) / 2.)
+        if qlim > 0.75 * qFirstDip:
+            self.outputs['detailed_flags']['poor_low_q_sampling'] = True
+            print "Low-q sampling seems to be poor and will likely affect estimate quality."
+        low_q = (q < qlim)
+        if dI is None:
+            heightAtZero = arbitrary_order_solution(4, q[low_q], I[low_q], None)[0]
+        else:
+            heightAtZero = arbitrary_order_solution(4, q[low_q], I[low_q], dI[low_q])[0]
 
         x0 = qFirstDip / sigmaScaledFirstDip
         y0 = heightFirstDip / heightAtZero
@@ -59,18 +88,19 @@ class GuessProperties(Operation):
         factor = references['factorVals']
         fractional_variation, _, best_xy = guess_nearest_point_on_nonmonotonic_trace_normalized([x0, y0], [x, y],
                                                                                                     factor)
+        # guess the mean size
+        xFirstDip = interp(fractional_variation, references['factorVals'], references['xFirstDip'])
+        mean_size = xFirstDip / qFirstDip
+
+        heightAtZero, mean_size, fractional_variation = refine_guess(q, I, heightAtZero, mean_size, fractional_variation, qFirstDip, heightFirstDip)
 
         self.outputs['additional_information'] = {'qFirstDip':qFirstDip, 'sigmaScaledFirstDip':sigmaScaledFirstDip,
                                   'heightFirstDip':heightFirstDip, 'dips':dips, 'shoulders':shoulders}
-        mean_size = guess_size(fractional_variation, qFirstDip)
-        amplitude_at_zero = polydispersity_metric_heightAtZero(qFirstDip, q, I, dI)
-        amplitude_at_zero, mean_size, fractional_variation = refine_guess(q, I, amplitude_at_zero, mean_size, fractional_variation, qFirstDip, heightFirstDip)
-        self.outputs['parameter_guesses'] = {'fractional_variation':fractional_variation, 'mean_size':mean_size, 'amplitude_at_zero':amplitude_at_zero}
-        self.outputs['I_guess'] = generate_spherical_diffraction(q, amplitude_at_zero, mean_size, fractional_variation)
+        self.outputs['parameter_guesses'] = {'fractional_variation':fractional_variation, 'mean_size':mean_size, 'amplitude_at_zero':heightAtZero}
+        self.outputs['I_guess'] = generate_spherical_diffraction(q, heightAtZero, mean_size, fractional_variation)
         self.outputs['q_I_guess'] = logsafe_zip(q, self.outputs['I_guess'])
-        self.outputs['detailed_flags'] = {} ## PLACEHOLDER
         # if any of the detailed flags are bad set good_flag to False
-        self.outputs['good_flag'] = True  ## PLACEHOLDER
+        self.outputs['good_flag'] = True
         for ii in self.outputs['detailed_flags']:
             if self.outputs['detailed_flags'][ii] == False:
                 self.outputs['good_flag'] = False
@@ -78,103 +108,21 @@ class GuessProperties(Operation):
 
 
 '''
-def guess_polydispersity(q, I, dI=None):
-#    global references
-    if dI is None:
-        dI = np.ones(I.shape, dtype=float)
-    dips, shoulders = choose_dips_and_shoulders(q, I, dI)
-    qFirstDip, heightFirstDip, sigmaScaledFirstDip, heightAtZero = take_polydispersity_metrics(q, I, dI)
-    x0 = qFirstDip / sigmaScaledFirstDip
-    y0 = heightFirstDip / heightAtZero
-    try:
-        references = load_references(reference_loc)
-    except:
-        print no_reference_message
-    x = references['xFirstDip'] / references['sigmaScaledFirstDip']
-    y = references['heightFirstDip'] / references['heightAtZero']
-    factor = references['factorVals']
-    fractional_variation, _, best_xy = guess_nearest_point_on_nonmonotonic_trace_normalized([x0, y0], [x, y], factor)
-    return fractional_variation, qFirstDip, heightFirstDip, sigmaScaledFirstDip, heightAtZero, dips, shoulders
+def generateRhoFactor(factor):
+    Generate a guassian distribution of number densities (rho).
 
-def choose_dips_and_shoulders(q, I, dI=None):
-    "Find the location of dips (low points) and shoulders (high points)."
-    if dI is None:
-        dI = np.ones(I.shape, dtype=float)
-    dips = local_minima_detector(I)
-    shoulders = local_maxima_detector(I)
-    # Clean out end points and wussy maxima
-    dips, shoulders = clean_extrema(dips, shoulders, I)
-    return dips, shoulders
+    :param factor: float
+    :return:
 
-def take_polydispersity_metrics(x, y, dy=None):
-    if dy is None:
-        dy = np.ones(y.shape)
-    dips, shoulders = choose_dips_and_shoulders(x, y, dy)
-    xFirstDip, heightFirstDip, scaledQuadCoefficients = first_dip(x, y, dips, dy)
-    sigmaScaledFirstDip = polydispersity_metric_sigmaScaledFirstDip(x, y, dips, shoulders, xFirstDip, heightFirstDip)
-    heightAtZero = polydispersity_metric_heightAtZero(xFirstDip, x, y, dy)
-    return xFirstDip, heightFirstDip[0], sigmaScaledFirstDip[0], heightAtZero
-
-
-def first_dip(q, I, dips, dI=None):
-    if dI is None:
-        dI = np.ones(I.shape, dtype=float)
-    # if the first two "dips" are very close together, they are both marking the first dip
-    # because I can't eliminate all spurious extrema with such a simple test
-    dip_locs = np.where(dips)[0]
-    # Catch the case of operation on noiseless data with few local minima
-    if dip_locs.size < 3:
-        case = 'smooth as butter'
-        q1 = q[dip_locs[0]]
-        scale = q1
-    # Real data cases
-    else:
-        q1, q2, q3 = q[dip_locs[:3]]
-        mult = 4
-        smult = 1.5
-        # q1, q2 close compared to q2, q3 and compared to 0, q1
-        if ((q2 - q1)*mult < (q3 - q2)) & ((q2 - q1)*mult < q1):
-            case = 'two'
-            scale = 0.5 * q3
-        # (q2 - q1)*1.5 approximately equal to q1
-        elif ((q2 - q1)*1.5*smult > q1) & ((q2 - q1)*1.5 < q1*smult):
-            case = 'one'
-            scale = 0.5 * q2
-        else:
-            case = 'mystery'
-            scale = q1
-#    print "Detected case: %s." % case
-    if case == 'two':
-        minq = q1 - scale*0.1
-        maxq = q2 + scale*0.1
-    else:
-        minq = q1 - scale*0.1
-        maxq = q1 + scale*0.1
-    selection = ((q < maxq) & (q > minq))
-    # make sure selection is large enough to get a useful sampling
-    if selection.sum() < 9:
-        print "Your sampling in q seems to be sparse and will likely affect the quality of the estimate."
-    for ii in range(9):
-        if selection.sum() >= 9:
-            break
-        selection[1:] = selection[1:] | selection[:-1]
-        selection[:-1] = selection[1:] | selection[:-1]
-    # fit local quadratic
-    coefficients = arbitrary_order_solution(2, q[selection], I[selection], dI[selection])
-    # extremum_location = -0.5*coefficients[1]/coefficients[2]
-    qbest = quadratic_extremum(coefficients)
-    Ibest = polynomial_value(coefficients, qbest)
-    return qbest, Ibest, coefficients
-
-def take_polydispersity_metrics(x, y, dy=None):  # IMPROVEMENTS MADE
-    if dy is None:
-        dy = np.ones(y.shape)
-    dips, shoulders = choose_dips_and_shoulders(x, y*x**4, dy)
-    xFirstDip, heightFirstDip, scaledQuadCoefficients = first_dip(x, y, dips, dy)
-    sigmaScaledFirstDip = polydispersity_metric_sigmaScaledFirstDip(x, y, dips, shoulders, xFirstDip, heightFirstDip)
-    heightAtZero = polydispersity_metric_heightAtZero(xFirstDip, x, y, dy)
-    return xFirstDip, heightFirstDip, sigmaScaledFirstDip[0], heightAtZero
-
+    factor should be 0.1 for a sigma 10% of size
+    factorCenter = 1
+    factorMin = max(factorCenter-5*factor, 0.001)
+    factorMax = factorCenter+5*factor
+    factorVals = inclusive_arange(factorMin, factorMax, factor*0.02)
+    # normalized gaussian:
+    # ((sigma * (2 * np.pi)**0.5)**-1 )*np.exp(-0.5 * ((x - x0)/sigma)**2)
+    rhoVals = ((factor * (2 * np.pi)**0.5)**-1 )*np.exp(-0.5 * ((factorVals - 1.)/factor)**2)
+    return factorVals, rhoVals
 
 '''
 
@@ -224,45 +172,10 @@ def first_dip(q, I, dips, dI=None):  # IMPROVEMENTS MADE
         selection[:-1] = selection[1:] | selection[:-1]
     # fit local quadratic
     coefficients = arbitrary_order_solution(2, q[selection], (I*q**4)[selection], dI[selection])
-    # extremum_location = -0.5*coefficients[1]/coefficients[2]
-    qbest = quadratic_extremum(coefficients)
+    qbest =  -0.5*coefficients[1]/coefficients[2]
     Ibest = polynomial_value(coefficients, qbest)*qbest**-4
     return qbest, Ibest, coefficients
 
-
-def polydispersity_metric_sigmaScaledFirstDip(q, I, dips, shoulders, qFirstDip, heightFirstDip, dI=None):
-    if dI is None:
-        dI = np.ones(I.shape, dtype=float)
-    scaled_I = I * q ** 4
-    scaled_dI = dI * q ** 4
-    powerCoefficients = power_law_solution(q[shoulders], I[shoulders], dI[shoulders])
-    powerLawAtDip = powerCoefficients[0] * (qFirstDip ** powerCoefficients[1])
-    scaledDipDepth = (powerLawAtDip - heightFirstDip) * (qFirstDip ** 4)
-    pad = 3
-    firstDipIndex = np.where(dips)[0][0]
-    lolim = firstDipIndex - pad
-    hilim = firstDipIndex + pad
-    quadCoefficients = arbitrary_order_solution(2, q[lolim:hilim], scaled_I[lolim:hilim], scaled_dI[lolim:hilim])
-    scaledDipCurvature = 2 * quadCoefficients[2]
-    _, sigma = gauss_guess(scaledDipDepth, scaledDipCurvature)
-    return sigma
-
-
-def gauss_guess(signalMagnitude, signalCurvature):
-    '''
-    Guesses a gaussian intensity and width from signal magnitude and curvature.
-
-    :param signalMagnitude: number-like with units of magnitude
-    :param signalCurvature: number-like with units of magnitude per distance squared
-    :return intensity, sigma:
-
-    The solution given is not fitted; it is a first estimate to be used in fitting.
-    '''
-    signalMagnitude = np.fabs(signalMagnitude)
-    signalCurvature = np.fabs(signalCurvature)
-    sigma = (signalMagnitude / signalCurvature) ** 0.5
-    intensity = signalMagnitude * sigma * (2 * np.pi) ** 0.5
-    return intensity, sigma
 
 
 def logsafe_zip(x, y):
@@ -297,17 +210,21 @@ def arbitrary_order_solution(order, x, y, dy=None):
     if dy is None:
         dy = np.ones(y.shape, dtype=float)
     # Formulate the equation to be solved for polynomial coefficients
-    matrix, vector = make_poly_matrices(x, y, dy, order)
+    if ((x.shape != y.shape) or (y.shape != dy.shape)):
+        raise ValueError('Arguments *x*, *y*, and *dy* must all have the same shape.')
+    size = x.size
+    index = np.arange(order+1)
+    # (n, 1, 1) a dummy vector to be summed over index zero
+    # (m, 1) a vertical vector
+    # (1, m) a horizontal vector
+    vector = (y.reshape(size,1,1) * x.reshape(size,1,1) ** index.reshape(order+1,1) * dy.reshape(size,1,1)).sum(axis=0)
+    index_block = index.reshape(1,order+1) + index.reshape(order+1,1)
+    matrix = (x.reshape(size,1,1) ** index_block * dy.reshape(size,1,1)).sum(axis=0)
     # Solve equation
     inverse = np.linalg.pinv(matrix)
     coefficients = np.matmul(inverse, vector)
     coefficients = coefficients.flatten()
     return coefficients
-
-def quadratic_extremum(coefficients):
-    '''Finds the location in independent coordinate of the extremum of a quadratic equation.'''
-    extremum_location = -0.5*coefficients[1]/coefficients[2]
-    return extremum_location
 
 def polynomial_value(coefficients, x):
     '''Finds the value of a polynomial at a location.'''
@@ -327,32 +244,6 @@ def polynomial_value(coefficients, x):
         print "Whoa there cowpoke!  WTF?"
     y = y[0]
     return y
-
-def make_poly_matrices(x, y, error, order):
-    '''Make the matrices necessary to solve a polynomial fit of order *order*.
-
-    :param x: 1d array representing independent variable
-    :param y: 1d array representing dependent variable
-    :param error: 1d array representing uncertainty in *y*
-    :param order: integer order of polynomial fit
-    :return matrix, vector: MC=V, where M is *matrix*, V is *vector*,
-        and C is the polynomial coefficients to be solved for.
-        *matrix* is an array of shape (order+1, order+1).
-        *vector* is an array of shape (order+1, 1).
-    '''
-    if not error.any():
-        error = np.ones(y.shape, dtype=float)
-    if ((x.shape != y.shape) or (y.shape != error.shape)):
-        raise ValueError('Arguments *x*, *y*, and *error* must all have the same shape.')
-    size = x.size
-    index = np.arange(order+1)
-    # (n, 1, 1) a dummy vector to be summed over index zero
-    # (m, 1) a vertical vector
-    # (1, m) a horizontal vector
-    vector = (y.reshape(size,1,1) * x.reshape(size,1,1) ** index.reshape(order+1,1) * error.reshape(size,1,1)).sum(axis=0)
-    index_block = index.reshape(1,order+1) + index.reshape(order+1,1)
-    matrix = (x.reshape(size,1,1) ** index_block * error.reshape(size,1,1)).sum(axis=0)
-    return matrix, vector
 
 def power_law_solution(x, y, dy=None):
     '''Solves for a power law by solving for a linear fit in log-log space.'''
@@ -378,15 +269,9 @@ def generate_spherical_diffraction(q, i0, r0, poly):
     i = i0 * blur(x, poly)
     return i
 
-def generateRhoFactor(factor):
-    '''
-    Generate a guassian distribution of number densities (rho).
-
-    :param factor: float
-    :return:
-
-    factor should be 0.1 for a sigma 10% of size
-    '''
+def blur(x, factor):
+    if factor == 0:
+        return (3. * (np.sin(x) - x * np.cos(x)) * x**-3)**2
     factorCenter = 1
     factorMin = max(factorCenter-5*factor, 0.001)
     factorMax = factorCenter+5*factor
@@ -394,12 +279,6 @@ def generateRhoFactor(factor):
     # normalized gaussian:
     # ((sigma * (2 * np.pi)**0.5)**-1 )*np.exp(-0.5 * ((x - x0)/sigma)**2)
     rhoVals = ((factor * (2 * np.pi)**0.5)**-1 )*np.exp(-0.5 * ((factorVals - 1.)/factor)**2)
-    return factorVals, rhoVals
-
-def blur(x, factor):
-    if factor == 0:
-        return (3. * (np.sin(x) - x * np.cos(x)) * x**-3)**2
-    factorVals, rhoVals = generateRhoFactor(factor)
     deltaFactor = factorVals[1] - factorVals[0]
     ysum = np.zeros(x.shape)
     for ii in range(len(factorVals)):
@@ -505,28 +384,6 @@ def upwards_weaksauce_identifier(four_indices, y):
 def downwards_weaksauce_identifier(four_indices, y):
     return upwards_weaksauce_identifier(four_indices, -y)
 
-def guess_size(fractional_variation, first_dip_q):
-#    global references
-    try:
-        references = load_references(reference_loc)
-    except:
-        print no_reference_message
-    #xFirstDip, factorVals = references['xFirstDip'], references['factorVals']
-    first_dip_x = interp(fractional_variation, references['factorVals'], references['xFirstDip'])
-    mean_size = first_dip_x / first_dip_q
-    return mean_size
-
-def polydispersity_metric_heightAtZero(qFirstDip, q, I, dI=None):
-    if dI is None:
-        dI = np.ones(I.shape, dtype=float)
-    qlim = max(q[6], (qFirstDip - q[0])/2.)
-    if qlim > 0.75*qFirstDip:
-        print "Low-q sampling is poor and will likely affect estimate quality."
-    low_q = (q < qlim)
-    coefficients = arbitrary_order_solution(4, q[low_q], I[low_q], dI[low_q])
-    heightAtZero = coefficients[0]
-    return heightAtZero
-
 # Other functions
 
 def local_maxima_detector(y):
@@ -605,7 +462,7 @@ def guess_nearest_point_on_nonmonotonic_trace_normalized(loclist, tracelist, coo
         if hilim >= tracesize:
             hilim = None
         distance_coefficients = arbitrary_order_solution(2,coordinate[lolim:hilim],distances[lolim:hilim])
-        best_coordinates[ii] = quadratic_extremum(distance_coefficients)
+        best_coordinates[ii] = -0.5 * distance_coefficients[1] / distance_coefficients[2]
         best_distances[ii] = polynomial_value(distance_coefficients, best_coordinates[ii])
     # Identify the approximate/probable actual best point...
     best_distance = best_distances.min()
