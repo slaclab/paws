@@ -42,8 +42,7 @@ class CalReduce(Operation):
         fpolz = pd['fpolz']
         # use a mask to screen negative pixels
         # mask should be 1 for masked pixels, 0 for unmasked pixels
-        s = int(img.shape[0])
-        msk = np.ones((s,s))*(img <= 0)
+        msk = np.ones(img.shape)*(img <= 0)
         q, I_of_q = p.integrate1d(img, 1000, mask=msk, polarization_factor=fpolz, unit='q_A^-1')
         # save results to self.outputs
         self.outputs['q'] = q
