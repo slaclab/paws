@@ -26,7 +26,7 @@ class BgSubtractByTemperature(Operation):
         self.input_doc['bg_T_uri'] = str('the uri for the items saved in bg_batch_output '
         + 'containing the background spectrum temperatures')
         self.output_doc['q_I_bgsub'] = 'n by 2 array of q and background subracted intensity (I_meas-bg_factor*I_bg)'
-        self.output_doc['T_bg'] = str('Temperature of the subtracted background spectrum'
+        self.output_doc['T_bg'] = 'Temperature of the subtracted background spectrum'
         self.output_doc['bg_factor'] = str('correction factor applied to background '
         + 'before subtraction, to ensure positive intensity values')
         self.input_src['q_I_meas'] = optools.wf_input
