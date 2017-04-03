@@ -13,7 +13,7 @@ class WriteArrayCSV(Operation):
         output_names = ['csv_path']
         super(WriteArrayCSV, self).__init__(input_names, output_names)
         self.input_doc['array'] = 'any 2d array'
-        self.input_doc['headers'] = 'list of headers- should be one for each column of array'
+        self.input_doc['headers'] = 'list of headers (optional)- one header for each column of array'
         self.input_doc['dirpath'] = 'the path to the destination directory'
         self.input_doc['filename'] = 'the name of the file to be saved- .csv will be appended if not provided'
         self.input_doc['filetag'] = 'tag appended to filename'
@@ -31,6 +31,7 @@ class WriteArrayCSV(Operation):
         self.inputs['filetag'] = ''
 
     def run(self):
+        #import pdb; pdb.set_trace()
         h = self.inputs['headers']
         a = self.inputs['array']
         tag = ''
@@ -38,9 +39,12 @@ class WriteArrayCSV(Operation):
             tag = self.inputs['filetag']
         csv_path = splitext(self.inputs['dirpath']+'/'+self.inputs['filename'])[0]+tag+'.csv'
         self.outputs['csv_path'] = csv_path
-        h_str = ''
-        for i in range(len(h)-1):
-            h_str += h[i] + ', '
-        h_str = h_str+h[-1]
-        np.savetxt(csv_path, a, delimiter=',', newline=linesep, header=h_str)
+        if h is not None:
+            h_str = ''
+            for i in range(len(h)-1):
+                h_str += h[i] + ', '
+            h_str = h_str+h[-1]
+            np.savetxt(csv_path, a, delimiter=',', newline=linesep, header=h_str)
+        else:
+            np.savetxt(csv_path, a, delimiter=',', newline=linesep)
 

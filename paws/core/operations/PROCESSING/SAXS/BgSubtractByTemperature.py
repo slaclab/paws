@@ -14,7 +14,7 @@ class BgSubtractByTemperature(Operation):
     
     def __init__(self):
         input_names = ['q_I_meas','T_meas','bg_batch_output','bg_I_uri','bg_T_uri']
-        output_names = ['q_I_bgsub', 'bg_factor']
+        output_names = ['q_I_bgsub', 'T_bg', 'bg_factor']
         super(BgSubtractByTemperature, self).__init__(input_names, output_names)
         self.input_doc['q_I_meas'] = 'n-by-2 array of I(q) versus q'
         self.input_doc['T_meas'] = str('temperature as taken from the dict '
@@ -25,7 +25,8 @@ class BgSubtractByTemperature(Operation):
         + 'containing the background intensity spectrum, expected to be on same q domain as q_I_meas') 
         self.input_doc['bg_T_uri'] = str('the uri for the items saved in bg_batch_output '
         + 'containing the background spectrum temperatures')
-        self.output_doc['q_I_bgsub'] = 'n by 2 array of q and background subrated intensity (I_meas-bg_factor*I_bg)'
+        self.output_doc['q_I_bgsub'] = 'n by 2 array of q and background subracted intensity (I_meas-bg_factor*I_bg)'
+        self.output_doc['T_bg'] = str('Temperature of the subtracted background spectrum'
         self.output_doc['bg_factor'] = str('correction factor applied to background '
         + 'before subtraction, to ensure positive intensity values')
         self.input_src['q_I_meas'] = optools.wf_input
@@ -49,6 +50,7 @@ class BgSubtractByTemperature(Operation):
         T_allbg = [optools.get_uri_from_dict(bg_T_uri,d) for d in bg_out]
         I_allbg = [optools.get_uri_from_dict(bg_I_uri,d) for d in bg_out]
         closest_T_idx = np.argmin(np.abs([T_bg - T_meas for T_bg in T_allbg]))
+        T_bg = T_allbg[closest_T_idx]
         I_bg = I_allbg[closest_T_idx]
         #if not all(q_I[:,0] == q_I_bg[:,0]):
         #    msg = 'SPECTRUM AND BACKGROUND ON DIFFERENT q DOMAINS'
@@ -58,6 +60,7 @@ class BgSubtractByTemperature(Operation):
         #print 'bg factor is {}'.format(bg_factor)
         q_I_bgsub[:,1] = q_I_meas[:,1] - bg_factor * I_bg
         self.outputs['q_I_bgsub'] = q_I_bgsub
+        self.outputs['T_bg'] = T_bg 
         self.outputs['bg_factor'] = bg_factor
 
 
