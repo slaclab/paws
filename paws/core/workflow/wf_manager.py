@@ -97,7 +97,7 @@ class WfManager(QtCore.QObject):
                 if not self._wf_threads[th_idx].isFinished():
                     done = False
                 if not done:
-                    if interval <= float(total_wait)*0.1 and interval <= 100:
+                    if interval <= float(total_wait)*0.01 and interval <= 100:
                         interval = interval * 10
                     self.loopwait(interval)
                     wait_iter += 1

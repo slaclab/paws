@@ -388,11 +388,13 @@ class Workflow(TreeSelectionModel):
             wf_thread.started.connect(wf_wkr.work)
             wf_thread.finished.connect( partial(self.wfman.finish_thread,thd_idx) )
             self.wfman.register_thread(thd_idx,wf_thread)
+            #print 'starting thread {} from run_wf_serial'.format(thd_idx)
             wf_thread.start()
             msg = 'running {} in thread {}'.format([itm.tag() for itm in lst_copy],thd_idx)
             self.wfman.write_log(msg)
             # TODO: Figure out how to remove this wait_for_thread() without freezing execution.
             # This is the next step towards multi-threaded batch execution.
+            #print 'wait for thread {} from run_wf_serial'.format(thd_idx)
             self.wfman.wait_for_thread(thd_idx)
 
     def run_wf_realtime(self,rt_itm,stk):
@@ -453,13 +455,20 @@ class Workflow(TreeSelectionModel):
             if self._running:
                 input_dict = b.input_list()[i]
                 for uri,val in input_dict.items():
+                    #print '[{}]: set {} to {}'.format(__name__,uri,val)
                     self.set_op_input_at_uri(uri,val)
+                    #print 'set {} to ...'.format(uri)
+                    #print val
                 # inputs are set, run in serial 
-                thd = self.wfman.next_available_thread()
+                thd_idx = self.wfman.next_available_thread()
                 #thd = 0
                 #self.wfman.wait_for_thread(thd)
-                self.wfman.write_log( 'BATCH EXECUTION {} / {} in thread {}'.format(i+1,len(b.input_list()),thd) )
-                self.run_wf_serial(stk,thd)
+                self.wfman.write_log( 'BATCH EXECUTION {} / {} in thread {}'.format(i+1,len(b.input_list()),thd_idx) )
+                #print 'calling run_wf_serial from run_wf_batch'
+                self.run_wf_serial(stk,thd_idx)
+                # now wait for thread to finish before saving results
+                #print 'wait for thread {} from run_wf_batch'.format(thd_idx)
+                self.wfman.wait_for_thread(thd_idx)
                 opdict = OrderedDict()
                 for uri in b.saved_items():
                     itm,idx = self.get_from_uri(uri)
@@ -480,6 +489,7 @@ class Workflow(TreeSelectionModel):
         and deeper uris (e.g. op_name.inputs.input_list.0)
         are not supported.
         """
+        #print '[{}]: set {} to {}'.format(__name__,uri,val)
         p = uri.split('.')
         op_itm, idx = self.get_from_uri(p[0])
         op = op_itm.data
