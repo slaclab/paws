@@ -214,6 +214,7 @@ class UiManager(QtCore.QObject):
         """
         save_ui = uitools.start_save_ui(self.ui)
         save_ui.setWindowTitle('plugins saver')
+        save_ui.tree_box.setTitle('Select or enter a .wfl file to save current plugins')
         save_ui.save_button.clicked.connect( partial(self.finish_save_plugins,save_ui) )
         save_ui.show()
         save_ui.activateWindow()
@@ -224,6 +225,7 @@ class UiManager(QtCore.QObject):
         """
         load_ui = uitools.start_load_ui(self.ui)
         load_ui.setWindowTitle('plugins loader')
+        load_ui.tree_box.setTitle('Select a .wfl file to load plugins')
         load_ui.load_button.clicked.connect( partial(self.finish_load_plugins,load_ui) )
         load_ui.show()
         load_ui.activateWindow()
@@ -234,6 +236,9 @@ class UiManager(QtCore.QObject):
         """
         save_ui = uitools.start_save_ui(self.ui)
         save_ui.setWindowTitle('workflow saver')
+        wf_idx = self.ui.wf_selector.currentIndex()
+        wfname = self.ui.wf_selector.model().list_data()[wf_idx]
+        save_ui.tree_box.setTitle('Select or enter a .wfl file to save workflow setup for {}'.format(wfname))
         save_ui.save_button.clicked.connect( partial(self.finish_save_wf,save_ui) )
         save_ui.show()
         save_ui.activateWindow()
@@ -244,6 +249,7 @@ class UiManager(QtCore.QObject):
         """
         load_ui = uitools.start_load_ui(self.ui)
         load_ui.setWindowTitle('workflow loader')
+        load_ui.tree_box.setTitle('Select a .wfl file to load a workflow')
         load_ui.load_button.clicked.connect( partial(self.finish_load_wf,load_ui) )
         load_ui.show()
         load_ui.activateWindow()
