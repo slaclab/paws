@@ -16,10 +16,10 @@ class BuildFilePath(Operation):
         self.input_doc['filename'] = 'name of the file, no path, no extension'
         self.input_doc['ext'] = 'extension for the file- the leading period is optional and will be appended if not provided'
         self.input_src['dir_path'] = optools.fs_input
-        self.input_type['dir_path'] = optools.path_type
         self.input_src['filename'] = optools.wf_input
-        self.input_type['filename'] = optools.ref_type
         self.input_src['ext'] = optools.text_input
+        self.input_type['dir_path'] = optools.path_type
+        self.input_type['filename'] = optools.ref_type
         self.input_type['ext'] = optools.str_type
         self.output_doc['filepath'] = 'filepath will be path/to/dir/filename.ext' 
 

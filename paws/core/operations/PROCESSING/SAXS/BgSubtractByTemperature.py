@@ -48,10 +48,10 @@ class BgSubtractByTemperature(Operation):
         bg_T_uri = self.inputs['bg_T_uri']
         bg_out = self.inputs['bg_batch_output']
         T_allbg = [optools.get_uri_from_dict(bg_T_uri,d) for d in bg_out]
-        I_allbg = [optools.get_uri_from_dict(bg_I_uri,d) for d in bg_out]
         closest_T_idx = np.argmin(np.abs([T_bg - T_meas for T_bg in T_allbg]))
+        #I_allbg = [optools.get_uri_from_dict(bg_I_uri,d) for d in bg_out]
         T_bg = T_allbg[closest_T_idx]
-        I_bg = I_allbg[closest_T_idx]
+        I_bg = optools.get_uri_from_dict(bg_I_uri,bg_out[closest_T_idx])
         #if not all(q_I[:,0] == q_I_bg[:,0]):
         #    msg = 'SPECTRUM AND BACKGROUND ON DIFFERENT q DOMAINS'
         #    raise ValueError(msg)
