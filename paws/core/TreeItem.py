@@ -1,28 +1,23 @@
-class TreeItem(object):
-    """
-    Container for packing objects into a TreeModel.
+from PySide import QtCore
 
-    This is a container to facilitate data storage in a TreeModel. 
+class TreeItem(QtCore.QObject):
+    """
+    TreeItem is a container for data stored in a TreeModel. 
     A TreeItem keeps references to a parent QModelIndex,
     and to its row and column within the QAbstractItemModel structure.
     The objective content of the TreeItem is stored at TreeItem.data. 
     Every TreeItem must have a tag() for display and uri creation.
     """
 
-    def __init__(self,row,column,parent):
-        # TODO: Consider whether TreeItem.parent is a good idea...
-        self.parent = parent
+    def __init__(self,row,column,parent_idx,parent_obj=None):
+        super(TreeItem,self).__init__(parent_obj)
+        self.parent = parent_idx    
         self.row = row
         self.column = column
         self.data = None        # TreeItem contains a single object as its data 
         self.children = []      # list of other TreeItems
-        #self._long_tag = None 
         self._tag = None
         self._checked = False
-
-
-    #def n_data(self):
-    #    return len(self.data)
 
     def n_children(self):
         return len(self.children)
@@ -39,12 +34,6 @@ class TreeItem(object):
         else:
             return self._tag
 
-    #def long_tag(self):
-    #    if not self._long_tag:
-    #        return self._tag
-    #    else:
-    #        return self._long_tag
-
     def set_tag(self,tag_in):
         self._tag = tag_in
 
@@ -59,14 +48,5 @@ class TreeItem(object):
 
     def set_checked(self,val):
         self._checked = bool(val)
-
-    #def set_long_tag(self,tag_in):
-    #    self._long_tag = tag_in
-
-    #def data_str(self):
-    #    """Build a string representing self.data"""
-    #    #for i in range(len(self.data)):
-    #    datstr = str(self.data)
-    #    return 'data:\n' + datstr[:min((len(datstr),60))]
 
 

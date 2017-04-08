@@ -40,7 +40,7 @@ class OpManager(TreeSelectionModel):
         cat_idx = self.idx_of_cat(new_cat,parent)
         if not cat_idx.isValid():
             ins_row = self.rowCount(parent)
-            new_treeitem = TreeItem(ins_row,0,parent)
+            new_treeitem = TreeItem(ins_row,0,parent,self)
             new_treeitem.data = new_cat
             new_treeitem.set_tag( new_cat )
             new_treeitem.long_tag = new_cat 
@@ -88,7 +88,7 @@ class OpManager(TreeSelectionModel):
     def add_op(self,op,parent):
         """add op to the tree under QModelIndex parent"""
         ins_row = self.rowCount(parent)
-        op_treeitem = TreeItem(ins_row,0,parent)
+        op_treeitem = TreeItem(ins_row,0,parent,self)
         op_treeitem.data = op
         op_treeitem.set_tag( op.__name__ )
         op_treeitem.long_tag = op.__doc__

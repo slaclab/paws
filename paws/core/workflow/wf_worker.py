@@ -23,6 +23,7 @@ class WfWorker(QtCore.QObject):
                 op = itm.data
                 op.run()
                 self.opDone.emit(itm.tag(),op)
+            self.deleteLater()
             self.thread().quit()
         except Exception as ex:
             # TODO: Deliver this exception to the user gracefully 
@@ -31,6 +32,7 @@ class WfWorker(QtCore.QObject):
                 + 'Error message: {} \n'.format(ex.message) 
                 + 'Stack trace: {}'.format(tb)) 
             print msg
+            self.deleteLater()
             self.thread().quit()
             raise ex
 

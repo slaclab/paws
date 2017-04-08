@@ -321,14 +321,17 @@ class TreeModel(QtCore.QAbstractItemModel):
         c_kill.sort()
         for j in c_kill[::-1]:
             self.beginRemoveRows(idx,j,j)
-            itm.children.pop(j)
+            itm_kill = itm.children.pop(j)
             self.endRemoveRows()
+            itm_kill.deleteLater()
+            #del itm_kill
+            #self.removeRows(j,1)
         # Add items for any new children 
         c_keys = [itm.children[j].tag() for j in range(itm.n_children())]
         for k in x_dict.keys():
             if not k in c_keys:
                 nc = itm.n_children()
-                c_itm = TreeItem(nc,0,idx)
+                c_itm = TreeItem(nc,0,idx,self)
                 c_itm.set_tag(k)
                 self.beginInsertRows(idx,nc,nc)
                 itm.children.insert(nc,c_itm)

@@ -94,10 +94,7 @@ class UiManager(QtCore.QObject):
             uiman = self.start_wf_editor(wf,itm_idx)
         else:
             uiman = self.start_wf_editor(wf)
-        #uiman.ui.wf_selector.setCurrentIndex(self.ui.wf_selector.currentIndex())
         uiman.ui.show()
-        #wf_idx = self.ui.wf_selector.currentIndex()
-        #uiman.ui.wf_selector.setCurrentIndex(wf_idx)
 
     def start_wf_editor(self,trmod=None,idx=QtCore.QModelIndex()):
         """
@@ -290,7 +287,7 @@ class UiManager(QtCore.QObject):
         d = {} 
         wf_dict = {} 
         for itm in self.current_wf().root_items:
-            wf_dict[str(itm.tag())] = self.wfman.op_dict(itm.data)
+            wf_dict[str(itm.tag())] = self.wfman.op_setup_dict(itm.data)
         d['WORKFLOW'] = wf_dict
         pawstools.update_file(fname,d)
         ui.close()

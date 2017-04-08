@@ -18,7 +18,6 @@ class InputLoader(object):
         self.setup_ui()
         if parent:
             self.ui.setParent(parent,QtCore.Qt.Window)
-        self.ui.show()
 
     def setup_ui(self):
         if self.src == optools.text_input:

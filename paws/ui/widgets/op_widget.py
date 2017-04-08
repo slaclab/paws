@@ -54,7 +54,10 @@ class OpWidget(QtGui.QWidget):
         p.setFont(f)
         # Label the inputs
         n_inp = len(self.op.inputs)
-        ispc = 2*rectvert/(2*n_inp) 
+        if n_inp > 0:
+            ispc = rectvert/n_inp 
+        else:
+            ispc = rectvert
         vcrd = -1*rectvert+ispc
         for name in self.op.inputs.keys():
             il = self.op.input_locator[name]

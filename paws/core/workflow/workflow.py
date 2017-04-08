@@ -109,22 +109,28 @@ class Workflow(TreeSelectionModel):
         """Add an Operation to the tree as a new top-level TreeItem."""
         # Count top-level rows by passing parent=QModelIndex()
         ins_row = self.rowCount(QtCore.QModelIndex())
-        itm = TreeItem(ins_row,0,QtCore.QModelIndex())
+        itm = TreeItem(ins_row,0,QtCore.QModelIndex(),self)
         itm.set_tag( uri )
         self.beginInsertRows(QtCore.QModelIndex(),ins_row,ins_row)
         self.root_items.insert(ins_row,itm)
         self.endInsertRows()
         idx = self.index(ins_row,0,QtCore.QModelIndex()) 
         self.tree_update(idx,new_op)
+        self.wf_updated.emit() 
 
     def remove_op(self,rm_idx):
-        """Remove an Operation from the workflow tree"""
+        """Remove a top-level TreeItem (an Operation) from the workflow tree"""
         rm_row = rm_idx.row()
         self.beginRemoveRows(QtCore.QModelIndex(),rm_row,rm_row)
         item_removed = self.root_items.pop(rm_row)
         self.endRemoveRows()
+        #import pdb; pdb.set_trace()
+        #import gc
+        item_removed.deleteLater()
+        #del item_removed
         self.tree_dataChanged(rm_idx)
-        self.update_io_deps()
+        #self.update_io_deps()
+        self.wf_updated.emit() 
 
     def update_op(self,uri,new_op):
         """
@@ -189,24 +195,24 @@ class Workflow(TreeSelectionModel):
 
     # TODO: Add checking of plugins (il.src == optools.plugin_input)
     # TODO: Add checking of fs paths (il.src == optools.fs_input)
-    def update_io_deps(self):
-        """
-        Remove any broken dependencies in the workflow.
-        Should only be called after all current data have been stored in the tree. 
-        """
-        for r,itm in zip(range(len(self.root_items)),self.root_items):
-            op = itm.data
-            op_idx = self.index(r,0,QtCore.QModelIndex())
-            for name,il in op.input_locator.items():
-                if il:
-                    if il.src == optools.wf_input and il.tp == optools.ref_type and not self.is_good_uri(il.val):
-                        #vals = optools.val_list(il)
-                        #for v in vals:
-                        #    if not self.is_good_uri(v):
-                        self.wfman.write_log('--- {}.{}.{} points to bad uri ({}): clearing InputLocator ---'.format(
-                        itm.tag(),optools.inputs_tag,name,il.val))
-                        op.input_locator[name] = optools.InputLocator(il.src,il.tp,None)
-                        self.tree_dataChanged(op_idx)
+    #def update_io_deps(self):
+    #    """
+    #    Remove any broken dependencies in the workflow.
+    #    Should only be called after all current data have been stored in the tree. 
+    #    """
+    #    for r,itm in zip(range(len(self.root_items)),self.root_items):
+    #        op = itm.data
+    #        op_idx = self.index(r,0,QtCore.QModelIndex())
+    #        for name,il in op.input_locator.items():
+    #            if il:
+    #                if il.src == optools.wf_input and il.tp == optools.ref_type and not self.is_good_uri(il.val):
+    #                    #vals = optools.val_list(il)
+    #                    #for v in vals:
+    #                    #    if not self.is_good_uri(v):
+    #                    self.wfman.write_log('--- {}.{}.{} points to bad uri ({}): clearing InputLocator ---'.format(
+    #                    itm.tag(),optools.inputs_tag,name,il.val))
+    #                    op.input_locator[name] = optools.InputLocator(il.src,il.tp,None)
+    #                    self.tree_dataChanged(op_idx)
 
     # TODO: the following
     def check_wf(self):

@@ -24,14 +24,6 @@ class PluginManager(TreeSelectionModel):
         itm, idx = self.get_from_uri(pgin_name)
         self.tree_update(idx,itm.data)
 
-    # overloaded tree_update:
-    #def tree_update(self,idx,x_new):
-        # if this is a workflow plugin, use the workflow to build the dict
-        #if isinstance(x_new,WorkflowPlugin):
-        #self.tree_update(idx,x_new.content())
-        #else:
-        #    super(PluginManager,self).tree_update(idx,x_new)
-
     def load_from_dict(self,pgin_dict):
         """
         Load plugins from a dict that specifies their setup parameters.
@@ -90,7 +82,7 @@ class PluginManager(TreeSelectionModel):
         """Add a Plugin to the tree as a new top-level TreeItem."""
         # TODO: Ensure plugin names are unique
         ins_row = self.rowCount(QtCore.QModelIndex())
-        itm = TreeItem(ins_row,0,QtCore.QModelIndex())
+        itm = TreeItem(ins_row,0,QtCore.QModelIndex(),self)
         itm.set_tag( pgin_tag )
         self.beginInsertRows(QtCore.QModelIndex(),ins_row,ins_row)
         self.root_items.insert(ins_row,itm)

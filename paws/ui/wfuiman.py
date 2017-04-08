@@ -8,16 +8,19 @@ from ..core.operations.operation import Operation
 from ..core import pawstools
 from ..core.operations.optools import InputLocator
 from ..core.ListModel import ListModel
-from .input_loader import InputLoader
+from .InputLoader import InputLoader
 from . import uitools
 
 class WfUiManager(QtCore.QObject):
+    # TODO: migrate all functionality to API calls
 
     def __init__(self,wfman,opman,plugman):
         ui_file = QtCore.QFile(pawstools.rootdir+"/ui/qtui/wf_editor.ui")
         ui_file.open(QtCore.QFile.ReadOnly)
         self.ui = QtUiTools.QUiLoader().load(ui_file)
         ui_file.close()
+        # set self.ui to be deleted and to emit destroyed() signal when its window is closed
+        self.ui.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         self.wfman = wfman
         self.opman = opman 
         self.plugman = plugman 
@@ -57,7 +60,7 @@ class WfUiManager(QtCore.QObject):
         if trmod is None:
             trmod = self.current_wf()
         xitem = trmod.get_item(itm_idx)
-        if xitem.data:
+        if xitem.data is not None:
             x = xitem.data
             try:
                 new_op_flag = issubclass(x,Operation)
@@ -74,14 +77,14 @@ class WfUiManager(QtCore.QObject):
                 # Create a new Operation 
                 self.create_op(x)
             elif existing_op_flag:
-                # Load existing Operation
-                op_copy = copy.deepcopy(x)
+                # Copy the setup of existing Operation
+                opd = self.wfman.op_setup_dict(x)
+                # Get a new op with the same setup
+                op_copy = self.wfman.build_op_from_dict(opd,self.opman)
                 self.set_op(op_copy,xitem.tag())
 
     def set_op(self,op,uri):
-        """Set up ui elements around existing input op"""
-        # TODO: Instead, copy the input op, then load it,
-        # and ensure that the workflow updates properly when finished
+        """Set up ui elements around input op"""
         self.op = op
         #self.ui.op_info.setPlainText(self.op.description())
         self.build_io()
@@ -103,7 +106,9 @@ class WfUiManager(QtCore.QObject):
             while idx.internalPointer().parent.isValid():
                 idx = idx.internalPointer().parent
             self.current_wf().remove_op(idx)
-        self.clear_io()
+            #if self.current_wf().get_item(idx).data == self.op:
+            #self.op = None
+            #self.clear_io()
 
     def load_op(self):
         """
@@ -125,6 +130,7 @@ class WfUiManager(QtCore.QObject):
             msg_ui = uitools.message_ui(self.ui)
             msg_ui.setWindowTitle("Tag Error")
             msg_ui.message_box.setPlainText(self.current_wf().tag_error(uri,result[1]))
+            msg_ui.setAttribute(QtCore.Qt.WA_DeleteOnClose)
             msg_ui.show()
 
     def set_input(self,name,src_ui=None):
@@ -217,6 +223,8 @@ class WfUiManager(QtCore.QObject):
                 inp_loader.add_values([self.op.input_locator[name].val])
         inp_loader.ui.finish_button.clicked.connect( partial(self.set_input,name,inp_loader.ui) )
         self.input_loaders[name] = inp_loader
+        inp_loader.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+        inp_loader.ui.show()
 
     def clear_io(self):
         self.ui.op_name.setText('')
@@ -369,7 +377,7 @@ class WfUiManager(QtCore.QObject):
         + self.ui.uri_prompt.styleSheet() )
         self.ui.load_button.setText("&Finish")
         self.ui.rm_op_button.setText("&Remove selected operation")
-        # SIGNALS, SLOTS, MODELS, VIEWS (oh my!)
+        # SIGNALS, SLOTS, MODELS, VIEWS 
         lm = ListModel(self.wfman.workflows.keys())
         self.ui.wf_selector.setModel(lm)
         #self.ui.wf_selector.currentIndexChanged.connect( partial(self.set_wf) )
@@ -401,16 +409,6 @@ class WfUiManager(QtCore.QObject):
         io_box_szp.setVerticalPolicy(QtGui.QSizePolicy.Maximum)
         self.ui.input_box.setSizePolicy(io_box_szp)
         self.ui.output_box.setSizePolicy(io_box_szp)
-        #spacer_szp = QtGui.QSizePolicy()
-        #spacer_szp.setHorizontalPolicy(QtGui.QSizePolicy.Preferred)
-        #spacer_szp.setVerticalPolicy(QtGui.QSizePolicy.MinimumExpanding)
-        #self.ui.spacer.setSizePolicy(spacer_szp)
         self.ui.load_button.setMinimumWidth(100)
         self.ui.uri_prompt.setMaximumWidth(150)
-
-        #ht = self.ui.browser_frame.sizeHint().height()
-        #self.ui.browser_frame.sizeHint = lambda: QtCore.QSize(400,ht)
-        #self.ui.browser_frame.setSizePolicy(
-        #QtGui.QSizePolicy.Minimum,self.ui.browser_frame.sizePolicy().verticalPolicy())
-        #self.ui.splitter.setStretchFactor(1,2)    
 

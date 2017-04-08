@@ -123,6 +123,8 @@ def start_save_ui(parent,fspath=None):
     ui_file.open(QtCore.QFile.ReadOnly)
     save_ui = QtUiTools.QUiLoader().load(ui_file)
     ui_file.close()
+    # set ui to be deleted and to emit destroyed() signal when its window is closed
+    save_ui.setAttribute(QtCore.Qt.WA_DeleteOnClose)
     trmod = QtGui.QFileSystemModel()
     trmod.setNameFilters(['*.wfl'])
     #save_ui.tree_box.setTitle('Select or enter a .wfl file to save current workflow'.format(wfname))
@@ -169,6 +171,8 @@ def start_load_ui(parent,fspath=None):
     ui_file.open(QtCore.QFile.ReadOnly)
     load_ui = QtUiTools.QUiLoader().load(ui_file)
     ui_file.close()
+    # set ui to be deleted and to emit destroyed() signal when its window is closed
+    load_ui.setAttribute(QtCore.Qt.WA_DeleteOnClose)
     trmod = QtGui.QFileSystemModel()
     trmod.setNameFilters(['*.wfl'])
     #load_ui.tree_box.setTitle('Select a .wfl file from which to load a workflow')

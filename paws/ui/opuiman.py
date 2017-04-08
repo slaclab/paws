@@ -14,6 +14,8 @@ class OpUiManager(object):
         ui_file.open(QtCore.QFile.ReadOnly)
         self.ui = QtUiTools.QUiLoader().load(ui_file)
         ui_file.close()
+        # set self.ui to be deleted and to emit destroyed() signal when its window is closed
+        self.ui.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         self.opman = opman 
         self.setup_ui()
         self.op = None

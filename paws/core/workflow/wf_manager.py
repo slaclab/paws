@@ -1,5 +1,6 @@
 from functools import partial
 from collections import OrderedDict
+import copy
 
 from PySide import QtCore
 
@@ -43,13 +44,13 @@ class WfManager(QtCore.QObject):
         self.wfdone.emit(wfname)
 
     @staticmethod
-    def op_dict(op):
+    def op_setup_dict(op):
         dct = OrderedDict() 
-        dct['type'] = type(op).__name__ 
+        dct['type'] = copy.copy(type(op).__name__)
         inp_dct = OrderedDict() 
         for name in op.inputs.keys():
             il = op.input_locator[name]
-            inp_dct[name] = {'src':il.src,'tp':il.tp,'val':il.val}
+            inp_dct[name] = {'src':copy.copy(il.src),'tp':copy.copy(il.tp),'val':copy.copy(il.val)}
         dct[optools.inputs_tag] = inp_dct 
         return dct
 
@@ -168,39 +169,42 @@ class WfManager(QtCore.QObject):
         where each item in opdict provides enough information
         to get and set inputs for an Operation from OpManager opman.
         """
-        #while any(self.root_items):
-        #    idx = self.index(self.rowCount(QtCore.QModelIndex())-1,0,QtCore.QModelIndex())
-        #    self.remove_op(idx)
         self.add_wf(wfname)
-        for uri, op_spec in opdict.items():
-            opname = op_spec['type']
-            op = opman.get_op_byname(opname)
-            if op is not None:
-                if not issubclass(op,Operation):
-                    self.write_log('Did not find Operation {} - skipping.'.format(opname))
-                else:
-                    op = op()
-                    op.load_defaults()
-                    ilspec = op_spec[optools.inputs_tag]
-                    for name in op.inputs.keys():
-                        if name in ilspec.keys():
-                            src = ilspec[name]['src']
-                            if 'tp' in ilspec[name].keys():
-                                tp = ilspec[name]['tp']
-                            val = ilspec[name]['val']
-                            if tp in optools.invalid_types[src]:
-                                il = optools.InputLocator(src,optools.none_type,None)
-                            else:
-                                il = optools.InputLocator(src,tp,val)
-                            op.input_locator[name] = il
-                            # dereference any existing inputs
-                            op.inputs[name] = None
-                        else:
-                            self.write_log('Did not find input {} for {} - skipping.'.format(name,opname))
-                    self.workflows[wfname].add_op(uri,op)
-            else:
+        for uri, op_setup in opdict.items():
+            op = self.build_op_from_dict(op_setup,opman)
+            if op is None or not issubclass(op,Operation):
                 self.write_log('Did not find Operation {} - skipping.'.format(opname))
-        # the wf_updated signal for this workflow is expected at this point
-        # to be connected to the plugin manager
+            else: 
+                self.workflows[wfname].add_op(uri,op)
+        # the wf_updated signal for this workflow is expected 
+        # to be connected to the plugin manager at this point.
+        # it happens in WfManager.add_wf(). 
         self.workflows[wfname].wf_updated.emit()
+
+    def build_op_from_dict(self,op_setup,opman):
+        opname = op_setup['type']
+        op = opman.get_op_byname(opname)
+        if issubclass(op,Operation):
+            op = op()
+            op.load_defaults()
+            il_setup_dict = op_setup[optools.inputs_tag]
+            for name in op.inputs.keys():
+                if name in il_setup_dict.keys():
+                    src = il_setup_dict[name]['src']
+                    #if 'tp' in il_setup_dict[name].keys():
+                    tp = il_setup_dict[name]['tp']
+                    val = il_setup_dict[name]['val']
+                    if tp in optools.invalid_types[src]:
+                        il = optools.InputLocator(src,optools.none_type,None)
+                    else:
+                        il = optools.InputLocator(src,tp,val)
+                    op.input_locator[name] = il
+                    # dereference any existing inputs
+                    # LAP: commented out bc it should be handled in op.load_defaults()
+                    #op.inputs[name] = None
+            return op
+        else:
+            return None
+
+
 

@@ -8,7 +8,7 @@ from ..core import plugins
 from ..core import pawstools
 from ..core.plugins.plugin import PawsPlugin
 from ..core.operations import optools
-from .input_loader import InputLoader
+from .InputLoader import InputLoader
 from . import uitools
 
 class PluginUiManager(QtCore.QObject):
@@ -18,6 +18,8 @@ class PluginUiManager(QtCore.QObject):
         ui_file.open(QtCore.QFile.ReadOnly)
         self.ui = QtUiTools.QUiLoader().load(ui_file)
         ui_file.close()
+        # set self.ui to be deleted and to emit destroyed() signal when its window is closed
+        self.ui.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         self.plugman = plugman 
         self.plugin_list_model = PluginListModel(plugins.plugin_name_list,self.ui)
         self.pgin = None
@@ -261,6 +263,7 @@ class PluginUiManager(QtCore.QObject):
             msg_ui = uitools.message_ui(self.ui)
             msg_ui.setWindowTitle("Tag Error")
             msg_ui.message_box.setPlainText(self.plugman.tag_error(uri,result[1]))
+            msg_ui.setAttribute(QtCore.Qt.WA_DeleteOnClose)
             msg_ui.show()
 
     def stop_plugin(self):
