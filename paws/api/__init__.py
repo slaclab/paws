@@ -17,6 +17,16 @@ class PawsAPI(object):
         self._wf_manager = WfManager(self._plugin_manager,self._app)
         self._current_wf_name = None 
 
+    # Provide access to core objects for ui manager and interfaces
+    def op_manager(self):
+        return self._op_manager
+    
+    def wf_manager(self):
+        return self._wf_manager
+
+    def plugin_manager(self):
+        return self._plugin_manager
+
     def add_wf(self,wfname):
         self._wf_manager.add_wf(wfname)
         if not self._current_wf_name:
@@ -40,18 +50,33 @@ class PawsAPI(object):
         #for opname in args:
         #    print 'enable {}'.format(opname)
 
-    def add_op(self,op_tag,op_spec):
+    def add_op(self,op_tag,op_spec,wfname=None):
+        if wfname is None:
+            wf = self.current_wf()
+        else:
+            wf = self._wf_manager.workflows[wfname]
         # get the op referred to by op_spec
         itm,idx = self._op_manager.get_from_uri(op_spec)
         op = itm.data
         # instantiate with default inputs
         op = op()
         op.load_defaults()
-        # add it to the workflow manager, tagged with op_tag
-        self.current_wf().add_op(op_tag,op)
+        wf.add_op(op_tag,op)
 
-    def set_input(self,op_name,input_name,**kwargs):
-        itm,idx = self.current_wf().get_from_uri(op_name)
+    def remove_op(self,op_tag,wfname=None):
+        if wfname is None:
+            wf = self.current_wf()
+        else:
+            wf = self._wf_manager.workflows[wfname]
+        rm_itm, rm_idx = wf.get_from_uri(op_tag)
+        wf.remove_op(rm_idx)
+            
+    def set_input(self,op_name,input_name,wfname=None,**kwargs):
+        if wfname is None:
+            wf = self.current_wf()
+        else:
+            wf = self._wf_manager.workflows[wfname]
+        itm,idx = wf.get_from_uri(op_name)
         op = itm.data
         src = op.input_locator[input_name].src
         tp = op.input_locator[input_name].tp
@@ -89,27 +114,17 @@ class PawsAPI(object):
     def save_config(self):
         self._op_manager.save_config()
 
-    # Provide access to core objects for ui manager and interfaces
-    def op_manager(self):
-        return self._op_manager
-    
-    def wf_manager(self):
-        return self._wf_manager
-
-    def plugin_manager(self):
-        return self._plugin_manager
-
 
 def start(app_args=[]):
     """
-    Instantiate and return PawsAPI object. 
+    Instantiate and return a PawsAPI object. 
 
     paws.api.start() calls the PawsAPI constructor.
 
     :param app_args: arguments to pass to the 
     QApplication constructor within the PawsAPI constructor
     :type args: sequence
-    :returns: a PawsAPI 
+    :returns: a PawsAPI object
     :return type: paws.api.PawsAPI 
     """
     return PawsAPI(app_args)
