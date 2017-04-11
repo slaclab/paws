@@ -60,6 +60,7 @@ class UiManager(QtCore.QObject):
     def set_wf(self,wf_selector_idx):
         wfname = self.ui.wf_selector.model().list_data()[wf_selector_idx]
         self.ui.wf_tree.setModel(self.wfman.workflows[wfname])
+        self.ui.wf_tree.setRootIndex(self.wfman.workflows[wfname].root_index())
         self.update_run_wf_button()
 
     def current_wf(self):
@@ -305,7 +306,7 @@ class UiManager(QtCore.QObject):
                 wfname = self.wfman.auto_name(wfname)
             self.wfman.load_from_dict(wfname,self.opman,d['WORKFLOW'])
             self.ui.wf_selector.model().append_item(wfname)
-            wf_selector_idx = self.ui.wf_selector.model().rowCount()-1
+            wf_selector_idx = self.ui.wf_selector.model().n_items()-1
             if self.wfman.n_wf() == 1:
                 self.ui.wf_tree.hideColumn(1)
                 self.ui.wf_tree.hideColumn(2)
@@ -325,11 +326,11 @@ class UiManager(QtCore.QObject):
         self.ui.add_wf_button.clicked.connect( partial(self.add_wf,'new_workflow') )
         self.ui.run_wf_button.setText("&Run")
         self.ui.run_wf_button.clicked.connect(self.toggle_run_wf)
-        self.ui.edit_wf_button.setText("&Edit...")
+        self.ui.edit_wf_button.setText("&Edit workflow")
         self.ui.edit_wf_button.clicked.connect( partial(self.edit_wf) )
-        self.ui.save_wf_button.setText("&Save...")
+        self.ui.save_wf_button.setText("&Save workflow")
         self.ui.save_wf_button.clicked.connect(self.save_wf)
-        self.ui.load_wf_button.setText("&Load...")
+        self.ui.load_wf_button.setText("&Load workflow")
         self.ui.load_wf_button.clicked.connect(self.load_wf)
         self.ui.save_plugins_button.setText("Save plugins")
         self.ui.save_plugins_button.clicked.connect(self.save_plugins)
@@ -340,9 +341,11 @@ class UiManager(QtCore.QObject):
         self.ui.plugin_tree.setModel(self.plugman)
         self.ui.op_tree.setModel(self.opman)
         self.ui.op_tree.clicked.connect( partial(uitools.toggle_expand,self.ui.op_tree) ) 
+        self.ui.op_tree.setRootIndex(self.opman.root_index())
         self.ui.wf_tree.clicked.connect( partial(uitools.toggle_expand,self.ui.wf_tree) )
         self.ui.wf_tree.clicked.connect( self.display_wf_item )
-        self.ui.plugin_tree.clicked.connect( self.display_plugin_item )
         self.ui.wf_tree.doubleClicked.connect( partial(self.edit_wf) )
+        self.ui.plugin_tree.clicked.connect( self.display_plugin_item )
+        self.ui.plugin_tree.setRootIndex(self.plugman.root_index())
 
 

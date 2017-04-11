@@ -50,6 +50,9 @@ class ListModel(QtCore.QAbstractListModel):
         else:
             return QtCore.Qt.NoItemFlags
 
+    def n_items(self):
+        return self.rowCount()
+
     def rowCount(self,parent=QtCore.QModelIndex()):
         return len(self._list_data)
 
@@ -79,10 +82,14 @@ class ListModel(QtCore.QAbstractListModel):
         self.endInsertRows()
 
     def removeRows(self, row, count, parent=QtCore.QModelIndex()):
-        self.beginRemoveRows(parent,row,row+count-1)
-        for j in range(row,row+count)[::-1]:
-            self._list_data.pop(j)
-        self.endRemoveRows()
+        if all([r in range(self.rowCount(parent)) for r in range(row,count)]):
+            self.beginRemoveRows(parent,row,row+count-1)
+            for j in range(row,row+count)[::-1]:
+                self._list_data.pop(j)
+            self.endRemoveRows()
+            return True
+        else:
+            return False
 
     def headerData(self,section,orientation,data_role):
         if (data_role == QtCore.Qt.DisplayRole and section == 0):

@@ -45,6 +45,7 @@ class WfUiManager(QtCore.QObject):
             wf_idx = self.ui.wf_selector.currentIndex()
         wfname = self.ui.wf_selector.model().list_data()[wf_idx]
         self.ui.wf_browser.setModel(self.wfman.workflows[wfname])
+        self.ui.wf_browser.setRootIndex(self.wfman.workflows[wfname].root_index())
         self.ui.wf_browser.hideColumn(1)
         self.ui.wf_browser.hideColumn(2)
 
@@ -103,7 +104,7 @@ class WfUiManager(QtCore.QObject):
         """
         idx = self.ui.wf_browser.currentIndex()
         if idx.isValid(): 
-            while idx.internalPointer().parent.isValid():
+            while not idx.internalPointer().parent == self.current_wf().root_index():
                 idx = idx.internalPointer().parent
             self.current_wf().remove_op(idx)
             #if self.current_wf().get_item(idx).data == self.op:
@@ -118,7 +119,7 @@ class WfUiManager(QtCore.QObject):
         for name in self.op.inputs.keys():
             self.set_input(name)
         uri = self.ui.uri_entry.text()
-        result = self.current_wf().is_good_tag(uri)
+        result = self.current_wf().is_tag_free(uri)
         if result[0]:
             self.current_wf().add_op(uri,self.op) 
             self.clear_io()
@@ -130,7 +131,6 @@ class WfUiManager(QtCore.QObject):
             msg_ui = uitools.message_ui(self.ui)
             msg_ui.setWindowTitle("Tag Error")
             msg_ui.message_box.setPlainText(self.current_wf().tag_error(uri,result[1]))
-            msg_ui.setAttribute(QtCore.Qt.WA_DeleteOnClose)
             msg_ui.show()
 
     def set_input(self,name,src_ui=None):
@@ -389,6 +389,7 @@ class WfUiManager(QtCore.QObject):
         self.ui.op_selector.hideColumn(2)
         self.ui.op_selector.clicked.connect( partial(self.get_op,self.opman) )
         self.ui.op_selector.clicked.connect( partial(uitools.toggle_expand,self.ui.op_selector) ) 
+        self.ui.op_selector.setRootIndex(self.opman.root_index())
         self.ui.op_name.setAlignment(QtCore.Qt.AlignCenter)
         self.ui.load_button.clicked.connect(self.load_op)
         self.ui.load_button.setDefault(True)

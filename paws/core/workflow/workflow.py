@@ -34,6 +34,12 @@ class Workflow(TreeSelectionModel):
         # so that the application can execute anything in the update
         # that was queued in the main event loop.
         self.wfman.appref.processEvents()
+
+    # overload super().is_tag_free: default None parent and search root index.
+    def is_tag_free(self,uri,parent=None):
+        if parent is None:
+            parent = self.root_index()
+        return super(Workflow,self).is_tag_free(uri,parent)
         
     def load_inputs(self,op):
         """
@@ -105,32 +111,34 @@ class Workflow(TreeSelectionModel):
             il.src, optools.valid_sources)
             raise ValueError(msg)
 
-    def add_op(self,uri,new_op):
+    def add_op(self,op_tag,new_op):
         """Add an Operation to the tree as a new top-level TreeItem."""
-        # Count top-level rows by passing parent=QModelIndex()
-        ins_row = self.rowCount(QtCore.QModelIndex())
-        itm = TreeItem(ins_row,0,QtCore.QModelIndex(),self)
-        itm.set_tag( uri )
-        self.beginInsertRows(QtCore.QModelIndex(),ins_row,ins_row)
-        self.root_items.insert(ins_row,itm)
-        self.endInsertRows()
-        idx = self.index(ins_row,0,QtCore.QModelIndex()) 
+        # Count operations by passing parent=self.root_index()
+        idx = self.add_item(op_tag,self.root_index())
         self.tree_update(idx,new_op)
         self.wf_updated.emit() 
 
     def remove_op(self,rm_idx):
-        """Remove a top-level TreeItem (an Operation) from the workflow tree"""
+        """
+        Remove a top-level TreeItem (an Operation) from the workflow tree.
+        It is expected that the item at rm_idx will contain an Operation 
+        """
+        if not self.parent(rm_idx) == self.root_index():
+            msg = '[{}] Called remove_op on non-Operation at QModelIndex {}. \n'.format(__name__,rm_idx)
+            raise ValueError(msg)
         rm_row = rm_idx.row()
-        self.beginRemoveRows(QtCore.QModelIndex(),rm_row,rm_row)
-        item_removed = self.root_items.pop(rm_row)
+        self.beginRemoveRows(self.root_index(),rm_row,rm_row)
+        rm_itm = self.root_item().children.pop(rm_row)
+        rm_itm.deleteLater()
         self.endRemoveRows()
-        #import pdb; pdb.set_trace()
-        #import gc
-        item_removed.deleteLater()
-        #del item_removed
-        self.tree_dataChanged(rm_idx)
-        #self.update_io_deps()
+        self.tree_dataChanged(rm_idx) 
         self.wf_updated.emit() 
+        #self.tree_update(rm_idx,None)
+        #self.removeRow(rm_row)
+        #import gc
+        #del item_removed
+        #self.tree_dataChanged(rm_idx)
+        #self.update_io_deps()
 
     def update_op(self,uri,new_op):
         """
@@ -148,10 +156,10 @@ class Workflow(TreeSelectionModel):
     def uri_to_dict(self,uri,data):
         itm,idx = self.get_from_uri(uri)
         od = OrderedDict()
-        od[itm.tag()] = (data)
+        od[itm.tag()] = data
         p_idx = self.parent(idx)
         # if this is a top level item, return od
-        if not p_idx.isValid():
+        if p_idx == self.root_index():
             return od
         # else, package od under its parent's tag
         else:
@@ -180,13 +188,6 @@ class Workflow(TreeSelectionModel):
         """
         if isinstance(x,Operation):
             d = OrderedDict()
-            #inp_dict = {}
-            #for nm in x.inputs.keys():
-            #    if x.inputs[nm] is not None:
-            #    inp_dict[nm] = x.inputs[nm]
-            #    else:
-            #        inp_dict[nm] = x.input_locator[nm]
-            #d[optools.inputs_tag] = inp_dict 
             d[optools.inputs_tag] = x.inputs 
             d[optools.outputs_tag] = x.outputs
         else:
@@ -231,10 +232,10 @@ class Workflow(TreeSelectionModel):
 
     def get_valid_wf_inputs(self,itm):
         """
-        Return all of the TreeModel uris of itm and its children
-        which can be used as downstream inputs in the workflow.
+        Return the TreeModel uris of itm and all of its children
+        that are eligible as downstream inputs in the workflow.
         """
-        # valid_wf_inputs gains the operation, its input and output dicts, and their respective entries
+        # valid_wf_inputs should be the operation, its input and output dicts, and their respective entries
         valid_wf_inputs = [itm.tag(),itm.tag()+'.'+optools.inputs_tag,itm.tag()+'.'+optools.outputs_tag]
         valid_wf_inputs += [itm.tag()+'.'+optools.outputs_tag+'.'+k for k in itm.data.outputs.keys()]
         valid_wf_inputs += [itm.tag()+'.'+optools.inputs_tag+'.'+k for k in itm.data.inputs.keys()]
@@ -252,9 +253,9 @@ class Workflow(TreeSelectionModel):
         stk = []
         valid_wf_inputs = []
         continue_flag = True
-        while not optools.stack_size(stk) == len(self.root_items) and continue_flag:
+        while not optools.stack_size(stk) == self.root_item().n_children() and continue_flag:
             items_rdy = []
-            for itm in self.root_items:
+            for itm in self.root_item().children:
                 if not optools.stack_contains(itm,stk):
                     if self.is_op_ready(itm,valid_wf_inputs):
                         items_rdy.append(itm)
@@ -434,6 +435,7 @@ class Workflow(TreeSelectionModel):
                 opdict = OrderedDict()
                 for uri in rt.saved_items():
                     itm,idx = self.get_from_uri(uri)
+                    # TODO: use build_dict to deprecate uri_to_dict 
                     itm_dict = self.uri_to_dict(uri,copy.deepcopy(itm.data))
                     opdict = self.update_uri_dict(opdict,itm_dict)
                 rt.output_list().append(opdict)
@@ -478,6 +480,7 @@ class Workflow(TreeSelectionModel):
                 opdict = OrderedDict()
                 for uri in b.saved_items():
                     itm,idx = self.get_from_uri(uri)
+                    # TODO: use build_dict to deprecate uri_to_dict 
                     itm_dict = self.uri_to_dict(uri,copy.deepcopy(itm.data))
                     opdict = self.update_uri_dict(opdict,itm_dict)
                 b.output_list()[i] = opdict
@@ -508,7 +511,8 @@ class Workflow(TreeSelectionModel):
     # Overloaded headerData() for Workflow 
     def headerData(self,section,orientation,data_role):
         if (data_role == QtCore.Qt.DisplayRole and section == 0):
-            return "{} operation(s) loaded".format(self.rowCount(QtCore.QModelIndex()))
+            #return "{} operation(s) loaded".format(self.rowCount(QtCore.QModelIndex()))
+            return "{} operation(s) loaded".format(self.n_items(self.root_index()))
         elif (data_role == QtCore.Qt.DisplayRole and section == 1):
             #return "type"
             return super(Workflow,self).headerData(section,orientation,data_role)    

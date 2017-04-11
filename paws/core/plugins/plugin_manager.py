@@ -21,6 +21,7 @@ class PluginManager(TreeSelectionModel):
 
     @QtCore.Slot(str)
     def update_plugin(self,pgin_name):
+        #import pdb;pdb.set_trace()
         itm, idx = self.get_from_uri(pgin_name)
         self.tree_update(idx,itm.data)
 
@@ -28,9 +29,6 @@ class PluginManager(TreeSelectionModel):
         """
         Load plugins from a dict that specifies their setup parameters.
         """
-        #while self.root_items:
-        #    idx = self.index(self.rowCount(QtCore.QModelIndex())-1,0,QtCore.QModelIndex())
-        #    self.remove_plugin(idx)
         for uri, pgin_spec in pgin_dict.items():
             pgin_name = pgin_spec['type']
             pgin = self.get_plugin_byname(pgin_name)
@@ -44,14 +42,14 @@ class PluginManager(TreeSelectionModel):
                             pgin.inputs[name] = pgin_spec[optools.inputs_tag][name]
                     pgin.start()
                     # if already have this uri, first generate auto_tag
-                    if self.is_good_uri(uri):
+                    if self.tree_contains_uri(uri):
                         uri = self.auto_tag(uri)
                     self.add_plugin(uri,pgin)
             else:
                 self.write_log('Did not find Plugin {} - skipping.'.format(pgin_name))
 
     def list_plugins(self):
-        return [itm.tag() for itm in self.root_items]
+        return [itm.tag() for itm in self.root_item().children]
 
     @staticmethod
     def plugin_dict(pgin):
@@ -81,13 +79,13 @@ class PluginManager(TreeSelectionModel):
     def add_plugin(self,pgin_tag,pgin):
         """Add a Plugin to the tree as a new top-level TreeItem."""
         # TODO: Ensure plugin names are unique
-        ins_row = self.rowCount(QtCore.QModelIndex())
-        itm = TreeItem(ins_row,0,QtCore.QModelIndex(),self)
+        ins_row = self.n_items(self.root_index())
+        itm = TreeItem(ins_row,0,self.root_index())
         itm.set_tag( pgin_tag )
-        self.beginInsertRows(QtCore.QModelIndex(),ins_row,ins_row)
-        self.root_items.insert(ins_row,itm)
+        self.beginInsertRows(self.root_index(),ins_row,ins_row)
+        self.root_item().children.insert(ins_row,itm)
         self.endInsertRows()
-        idx = self.index(ins_row,0,QtCore.QModelIndex()) 
+        idx = self.index(ins_row,0,self.root_index()) 
         self.tree_update(idx,pgin)
 
     def build_dict(self,x):
@@ -102,7 +100,7 @@ class PluginManager(TreeSelectionModel):
         """Remove a Plugin from the tree"""
         rm_row = rm_idx.row()
         self.beginRemoveRows(QtCore.QModelIndex(),rm_row,rm_row)
-        item_removed = self.root_items.pop(rm_row)
+        item_removed = self.root_item().children.pop(rm_row)
         self.endRemoveRows()
         self.tree_dataChanged(rm_idx)
 
@@ -120,7 +118,7 @@ class PluginManager(TreeSelectionModel):
     # Overloaded headerData() for PluginManager 
     def headerData(self,section,orientation,data_role):
         if (data_role == QtCore.Qt.DisplayRole and section == 0):
-            return "Plugins: {} active".format(len(self.root_items))
+            return "Plugins: {} active".format(self.root_item().n_children())
         elif (data_role == QtCore.Qt.DisplayRole and section == 1):
             return super(PluginManager,self).headerData(section,orientation,data_role)    
         else:

@@ -151,6 +151,7 @@ class WfManager(QtCore.QObject):
         If wfname is not unique (i.e. a workflow with that name already exists),
         this method will overwrite the existing workflow with a new one.
         """
+        #import pdb; pdb.set_trace()
         wf = Workflow(self)
         wf.exec_finished.connect( partial(self.finish_wf,wfname) )
         self.workflows[wfname] = wf
@@ -169,11 +170,12 @@ class WfManager(QtCore.QObject):
         where each item in opdict provides enough information
         to get and set inputs for an Operation from OpManager opman.
         """
+        #import pdb; pdb.set_trace()
         self.add_wf(wfname)
         for uri, op_setup in opdict.items():
             op = self.build_op_from_dict(op_setup,opman)
-            if op is None or not issubclass(op,Operation):
-                self.write_log('Did not find Operation {} - skipping.'.format(opname))
+            if op is None or not isinstance(op,Operation):
+                self.write_log('Could not build Operation {} from \n{}\n-- skipping.'.format(uri,op_setup))
             else: 
                 self.workflows[wfname].add_op(uri,op)
         # the wf_updated signal for this workflow is expected 

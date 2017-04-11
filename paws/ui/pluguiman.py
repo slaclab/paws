@@ -252,7 +252,7 @@ class PluginUiManager(QtCore.QObject):
         uri = self.ui.uri_entry.text()
         # Plugin setup occurs here via PawsPlugin.start()
         self.pgin.start()
-        result = self.plugman.is_good_tag(uri)
+        result = self.plugman.is_tag_free(uri)
         if result[0]:
             self.plugman.add_plugin(uri,self.pgin) 
             self.clear_input()

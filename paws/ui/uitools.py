@@ -215,6 +215,7 @@ def message_ui(parent):
     ui_file.close()
     msg_ui.setParent(parent,QtCore.Qt.Window)
     msg_ui.setAttribute(QtCore.Qt.WA_OpaquePaintEvent)
+    msg_ui.setAttribute(QtCore.Qt.WA_DeleteOnClose)
     msg_ui.setWindowModality(QtCore.Qt.WindowModal)
     #msg_ui.setMaximumHeight(200)
     msg_ui.message_box.setReadOnly(True)

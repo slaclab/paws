@@ -9,15 +9,16 @@ class TreeItem(QtCore.QObject):
     Every TreeItem must have a tag() for display and uri creation.
     """
 
-    def __init__(self,row,column,parent_idx,parent_obj=None):
-        super(TreeItem,self).__init__(parent_obj)
+    def __init__(self,row,column,parent_idx):
+        super(TreeItem,self).__init__()
         self.parent = parent_idx    
         self.row = row
         self.column = column
         self.data = None        # TreeItem contains a single object as its data 
         self.children = []      # list of other TreeItems
         self._tag = None
-        self._checked = False
+        # Flags: one for being selected, one for being enabled
+        self._flags = [False,False] 
 
     def n_children(self):
         return len(self.children)
@@ -38,15 +39,15 @@ class TreeItem(QtCore.QObject):
         self._tag = tag_in
 
     def is_checked(self):
-        return self._checked
+        return self._flags[0]
     
     def children_checked(self):
         if self.n_children > 0:
             return any([c_itm.children_checked() for c_itm in self.children])
         else:
-            return self._checked
+            return self._flags[0]
 
     def set_checked(self,val):
-        self._checked = bool(val)
+        self._flags[0] = bool(val)
 
 

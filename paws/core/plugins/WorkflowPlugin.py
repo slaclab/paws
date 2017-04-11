@@ -33,7 +33,7 @@ class WorkflowPlugin(PawsPlugin):
         #wf_dict = {'workflow':self.wf}
         #return wf_dict
         if isinstance(self.wf,Workflow):
-            return {itm.tag():self.wf.build_dict(itm.data) for itm in self.wf.root_items}
+            return {itm.tag():self.wf.build_dict(itm.data) for itm in self.wf.root_item().children}
         else:
             return {}
 

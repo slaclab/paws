@@ -29,7 +29,7 @@ class OpManager(TreeSelectionModel):
 
     def load_cats(self,cat_list):
         for cat in cat_list:
-            parent = QtCore.QModelIndex()
+            parent = self.root_index()
             for subcat in cat.split('.'):
                 parent = self.add_cat(subcat,parent)
 
@@ -39,16 +39,16 @@ class OpManager(TreeSelectionModel):
         """
         cat_idx = self.idx_of_cat(new_cat,parent)
         if not cat_idx.isValid():
-            ins_row = self.rowCount(parent)
-            new_treeitem = TreeItem(ins_row,0,parent,self)
+            ins_row = self.n_items(parent)
+            new_treeitem = TreeItem(ins_row,0,parent)
             new_treeitem.data = new_cat
             new_treeitem.set_tag( new_cat )
             new_treeitem.long_tag = new_cat 
             self.beginInsertRows(parent,ins_row,ins_row)
-            if parent.isValid():
-                self.get_item(parent).children.insert(ins_row,new_treeitem)
-            else:
-                self.root_items.insert(ins_row,new_treeitem)
+            #if parent.isValid():
+            self.get_item(parent).children.insert(ins_row,new_treeitem)
+            #else:
+            #    self.root_item().children.insert(ins_row,new_treeitem)
             self.endInsertRows()
             return self.index(ins_row,0,parent)
         else:
@@ -56,7 +56,7 @@ class OpManager(TreeSelectionModel):
 
     def idx_of_cat(self,catname,parent):
         """If cat exists under parent, return its index, else return an invalid QModelIndex"""
-        ncats = self.rowCount(parent)
+        ncats = self.n_items(parent)
         for j in range(ncats):
             idx = self.index(j,0,parent)
             cat = self.get_item(idx).data
@@ -78,7 +78,7 @@ class OpManager(TreeSelectionModel):
         # Tree will consist of nodes indicating categories,
         # with subcategories or Operations as children.
         for cat_op in cat_op_list:
-            parent = QtCore.QModelIndex()
+            parent = self.root_index()
             for subcat in cat_op[0].split('.'):
                 # get index of subcat
                 idx = self.idx_of_cat(subcat,parent)
@@ -86,9 +86,9 @@ class OpManager(TreeSelectionModel):
             self.add_op(cat_op[1],idx)
 
     def add_op(self,op,parent):
-        """add op to the tree under QModelIndex parent"""
-        ins_row = self.rowCount(parent)
-        op_treeitem = TreeItem(ins_row,0,parent,self)
+        """add op to the tree as child of item at QModelIndex parent"""
+        ins_row = self.n_items(parent)
+        op_treeitem = TreeItem(ins_row,0,parent)
         op_treeitem.data = op
         op_treeitem.set_tag( op.__name__ )
         op_treeitem.long_tag = op.__doc__

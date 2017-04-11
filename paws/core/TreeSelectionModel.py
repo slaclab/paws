@@ -33,14 +33,10 @@ class TreeSelectionModel(TreeModel):
     def data(self,itm_idx,data_role):
         if (not itm_idx.isValid()):
             return None
+        if itm_idx == self.root_index():
+            return None
         itm = itm_idx.internalPointer()
-        if ((data_role == QtCore.Qt.DisplayRole
-        or data_role == QtCore.Qt.ToolTipRole 
-        or data_role == QtCore.Qt.StatusTipRole
-        or data_role == QtCore.Qt.WhatsThisRole)
-        and itm_idx.column() == 0):
-            return itm.tag()
-        elif data_role == QtCore.Qt.CheckStateRole and itm_idx.column() == 1:
+        if data_role == QtCore.Qt.CheckStateRole and itm_idx.column() == 1:
             if itm.is_checked():
                 return QtCore.Qt.Checked
             elif itm.children_checked():
@@ -53,7 +49,14 @@ class TreeSelectionModel(TreeModel):
             else:
                 return QtCore.Qt.Unchecked
         else:
-            return None
+            return super(TreeSelectionModel,self).data(itm_idx,data_role)
+            #if ((data_role == QtCore.Qt.DisplayRole
+            #or data_role == QtCore.Qt.ToolTipRole 
+            #or data_role == QtCore.Qt.StatusTipRole
+            #or data_role == QtCore.Qt.WhatsThisRole)
+            #and itm_idx.column() == 0):
+            #return itm.tag()
+            #return None
 
     # Need flags to reflect checkability
     def flags(self, idx):
