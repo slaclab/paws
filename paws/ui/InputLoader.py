@@ -33,12 +33,13 @@ class InputLoader(object):
         self.ui.input_box.setTitle(self.input_name)
         if self.src in [optools.plugin_input,optools.fs_input]:
             self.ui.source_treeview.setModel(self.src_manager)
-            self.ui.source_treeview.setRootIndex(self.src_manager.root_index())
         elif self.src == optools.wf_input:
             lm = ListModel(self.src_manager.workflows.keys())
             self.ui.wf_selector.setModel(lm)
             self.ui.wf_selector.currentIndexChanged.connect( partial(self.set_wf) )
-        if self.src == optools.fs_input:
+        if self.src == optools.plugin_input:
+            self.ui.source_treeview.setRootIndex(self.src_manager.root_index())
+        elif self.src == optools.fs_input:
             self.src_manager.setRootPath(QtCore.QDir.currentPath())
             idx = self.src_manager.index(QtCore.QDir.currentPath())
             while idx.isValid():

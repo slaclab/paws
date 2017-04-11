@@ -322,7 +322,7 @@ class UiManager(QtCore.QObject):
         self.ui.wf_selector.currentIndexChanged.connect( partial(self.set_wf) )
         self.ui.edit_ops_button.setText("Edit operations")
         self.ui.edit_ops_button.clicked.connect(self.edit_ops)
-        self.ui.add_wf_button.setText("&New")
+        self.ui.add_wf_button.setText("&New workflow")
         self.ui.add_wf_button.clicked.connect( partial(self.add_wf,'new_workflow') )
         self.ui.run_wf_button.setText("&Run")
         self.ui.run_wf_button.clicked.connect(self.toggle_run_wf)

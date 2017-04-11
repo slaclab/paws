@@ -118,7 +118,7 @@ class WfUiManager(QtCore.QObject):
         # Make sure all inputs are loaded
         for name in self.op.inputs.keys():
             self.set_input(name)
-        uri = self.ui.uri_entry.text()
+        uri = str(self.ui.uri_entry.text())
         result = self.current_wf().is_tag_free(uri)
         if result[0]:
             self.current_wf().add_op(uri,self.op) 
