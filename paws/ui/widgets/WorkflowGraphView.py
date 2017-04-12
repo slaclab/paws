@@ -1,6 +1,6 @@
 from PySide import QtCore, QtGui
 
-from ...core.operations.operation import Operation, Batch, Realtime
+from ...core.operations.Operation import Operation, Batch, Realtime
 
 class WorkflowGraphView(QtGui.QScrollArea):
     

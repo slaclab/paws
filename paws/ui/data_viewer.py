@@ -3,13 +3,13 @@ from PySide import QtCore, QtGui
 from matplotlib.figure import Figure
 from pypif.obj import System
 
-from ..core.operations.operation import Operation 
-from ..core.plugins.plugin import PawsPlugin
+from ..core.operations.Operation import Operation 
+from ..core.plugins.PawsPlugin import PawsPlugin
 from ..core.plugins.WorkflowPlugin import WorkflowPlugin
 from . import uitools
-from .widgets.op_widget import OpWidget
-from .widgets.pif_widget import PifWidget
-from .widgets.wf_widgets import WorkflowGraphView
+from .widgets.OpWidget import OpWidget
+from .widgets.PifWidget import PifWidget
+from .widgets.WorkflowGraphView import WorkflowGraphView
 from .widgets.text_widgets import display_text, display_text_fast
 
 if uitools.have_qt47:

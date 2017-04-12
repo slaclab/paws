@@ -2,7 +2,7 @@ from os.path import splitext
 from os import linesep
 import numpy as np
 
-from ...operation import Operation
+from ...Operation import Operation
 from ... import optools
 
 class WriteCSV_q_I_dI(Operation):

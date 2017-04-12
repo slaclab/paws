@@ -8,7 +8,7 @@ to calibrate an input image to I(q,chi).
 import numpy as np
 import pyFAI
 
-from ...operation import Operation
+from ...Operation import Operation
 from ... import optools
 
 

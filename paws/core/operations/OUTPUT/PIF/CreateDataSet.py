@@ -1,4 +1,4 @@
-from ...operation import Operation
+from ...Operation import Operation
 from ... import optools
         
 class CreateDataSet(Operation):

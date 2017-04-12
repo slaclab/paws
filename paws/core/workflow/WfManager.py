@@ -5,8 +5,8 @@ import copy
 from PySide import QtCore
 
 from ..plugins.WorkflowPlugin import WorkflowPlugin
-from .workflow import Workflow
-from ..operations.operation import Operation        
+from .Workflow import Workflow
+from ..operations.Operation import Operation        
 from ..operations import optools        
 # TODO: consider migrating threading to a ThreadPool 
 

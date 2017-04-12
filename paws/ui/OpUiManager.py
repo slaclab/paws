@@ -5,7 +5,7 @@ from PySide import QtCore, QtGui, QtUiTools
 
 from . import uitools
 from ..core import pawstools
-from ..core.operations.operation import Operation
+from ..core.operations.Operation import Operation
 
 class OpUiManager(object):
 

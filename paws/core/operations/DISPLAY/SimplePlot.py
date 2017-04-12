@@ -1,6 +1,6 @@
 from matplotlib import pyplot as plt
 
-from ..operation import Operation
+from ..Operation import Operation
 from .. import optools
 
 class SimplePlot(Operation):

@@ -6,7 +6,7 @@ from collections import OrderedDict
 
 from PySide import QtCore
 
-import operation
+import Operation
 
 # tags for inputs and outputs TreeItems    
 inputs_tag = 'inputs'
@@ -109,7 +109,7 @@ def parameter_doc(name,value,doc):
 def stack_size(stk):
     sz = 0
     for lst in stk:
-        if isinstance(lst[0].data,operation.Batch) or isinstance(lst[0].data,operation.Realtime):
+        if isinstance(lst[0].data,Operation.Batch) or isinstance(lst[0].data,Operation.Realtime):
             sz += stack_size(lst[1])+1
         else:
             sz += len(lst)
@@ -117,7 +117,7 @@ def stack_size(stk):
 
 def stack_contains(itm,stk):
     for lst in stk:
-        if isinstance(lst[0].data,operation.Batch) or isinstance(lst[0].data,operation.Realtime):
+        if isinstance(lst[0].data,Operation.Batch) or isinstance(lst[0].data,Operation.Realtime):
             if itm == lst[0] or stack_contains(itm,lst[1]):
                 return True
         else:
@@ -131,7 +131,7 @@ def print_stack(stk):
     for i,lst in zip(range(len(stk)),stk):
         if i == len(stk)-1:
             opt_newline = ''
-        if isinstance(lst[0].data,operation.Batch) or isinstance(lst[0].data,operation.Realtime):
+        if isinstance(lst[0].data,Operation.Batch) or isinstance(lst[0].data,Operation.Realtime):
             substk = lst[1]
             stktxt += ('[\'{}\':\n{}\n]'+opt_newline).format(lst[0].tag(),print_stack(lst[1]))
         else:

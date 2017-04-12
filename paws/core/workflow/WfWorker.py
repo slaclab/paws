@@ -1,7 +1,7 @@
 import traceback
 from PySide import QtCore
 
-from ..operations.operation import Operation
+from ..operations.Operation import Operation
 
 class WfWorker(QtCore.QObject):
     """

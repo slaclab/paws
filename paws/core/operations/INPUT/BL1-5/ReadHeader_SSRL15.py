@@ -1,7 +1,7 @@
 from os.path import splitext, split
 from collections import OrderedDict
 
-from ...operation import Operation
+from ...Operation import Operation
 from ... import optools
 
 class ReadHeader_SSRL15(Operation):

@@ -3,7 +3,7 @@ import os.path
 import tifffile
 import numpy as np
 
-from ...operation import Operation
+from ...Operation import Operation
 from ... import optools
 
 class LoadTif(Operation):

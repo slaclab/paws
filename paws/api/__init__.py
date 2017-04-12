@@ -2,12 +2,15 @@
 
 from PySide import QtCore
 
-from ..core.operations.op_manager import OpManager 
-from ..core.workflow.wf_manager import WfManager 
-from ..core.plugins.plugin_manager import PluginManager 
+from ..core.operations.OpManager import OpManager 
+from ..core.workflow.WfManager import WfManager 
+from ..core.plugins.PluginManager import PluginManager 
 from ..core.operations import optools
 
 class PawsAPI(object):
+    """
+    Objects of this class act as delegates to interact with a paws application.
+    """
 
     def __init__(self,app_args):
         super(PawsAPI,self).__init__()
@@ -19,9 +22,17 @@ class PawsAPI(object):
 
     # Provide access to core objects for ui manager and interfaces
     def op_manager(self):
+        """
+        Get a reference to the operation manager (paws.core.operations.OpManager.OpManager. 
+        Intended for use by other interfaces, e.g. the GUI manager.
+        """
         return self._op_manager
     
     def wf_manager(self):
+        """
+        Get a reference to the workflow manager (paws.core.workflow.WfManager.WfManager). 
+        Intended for use by other interfaces, e.g. the GUI manager.
+        """
         return self._wf_manager
 
     def plugin_manager(self):
@@ -44,6 +55,12 @@ class PawsAPI(object):
         else:
             return None
 
+    def get_wf(self,wfname=None):
+        if wfname is None:
+            return self.current_wf()
+        else:
+            return self._wf_manager.workflows[wfname]
+
     def enable_ops(self,*args):
         # TODO: operation enable/disable functionality
         pass
@@ -51,10 +68,7 @@ class PawsAPI(object):
         #    print 'enable {}'.format(opname)
 
     def add_op(self,op_tag,op_spec,wfname=None):
-        if wfname is None:
-            wf = self.current_wf()
-        else:
-            wf = self._wf_manager.workflows[wfname]
+        wf = self.get_wf(wfname)
         # get the op referred to by op_spec
         itm,idx = self._op_manager.get_from_uri(op_spec)
         op = itm.data
@@ -64,20 +78,20 @@ class PawsAPI(object):
         wf.add_op(op_tag,op)
 
     def remove_op(self,op_tag,wfname=None):
-        if wfname is None:
-            wf = self.current_wf()
-        else:
-            wf = self._wf_manager.workflows[wfname]
+        wf = self.get_wf(wfname)
+        print 'remove {}'.format(op_tag)
         rm_itm, rm_idx = wf.get_from_uri(op_tag)
         wf.remove_op(rm_idx)
-            
-    def set_input(self,op_name,input_name,wfname=None,**kwargs):
-        if wfname is None:
-            wf = self.current_wf()
-        else:
-            wf = self._wf_manager.workflows[wfname]
+        self._app.processEvents()
+
+    def get_op(self,op_name,wfname=None):
+        wf = self.get_wf(wfname)
         itm,idx = wf.get_from_uri(op_name)
         op = itm.data
+        return op 
+
+    def set_input(self,op_name,input_name,wfname=None,**kwargs):
+        op = self.get_op(op_name,wfname) 
         src = op.input_locator[input_name].src
         tp = op.input_locator[input_name].tp
         val = op.input_locator[input_name].val

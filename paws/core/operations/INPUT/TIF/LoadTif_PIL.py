@@ -4,7 +4,7 @@ import re
 import numpy as np
 from PIL import Image
 
-from ...operation import Operation
+from ...Operation import Operation
 from ... import optools
 
 class LoadTif_PIL(Operation):

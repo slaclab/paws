@@ -6,7 +6,7 @@ from scipy import interp
 
 from scipy.optimize import curve_fit
 
-from ...operation import Operation
+from ...Operation import Operation
 from ... import optools
 
 

@@ -1,53 +1,21 @@
-"""
-WARNING: the map from Nika's horzontal and vertical tilts
-to Fit2D's tilt and tiltPlanRotation
-has not yet been verified by the developers. 
-Use this operation with nonzero tilts at your own risk.
- 
-Convert Nika calibration output 
-(saved in a text file)
-to a dict of PyFAI PONI parameters,
-by first converting from Nika to Fit2D,
-then using a pyFAI.AzimuthalIntegrator 
-to convert from Fit2D to PONI format.
-
-NIKA FORMAT
------------
-
-The calibration performed by the Nika software package
-uses a calibrant image, the rectangular pixel dimensions (in mm), 
-and the wavelength (in Angstrom), 
-to solve the sample to CCD distance in mm,
-the position at which the beam axis intersects the detector plane in pixels,
-and the horizontal and vertical tilts of the detector in degrees.
-This converter expects to read a file 
-that expresses all of the above information in the following format:
-
-sample_to_CCD_mm=____
-pixel_size_x_mm=____
-pixel_size_y_mm=____
-beam_center_x_pix=____
-beam_center_y_pix=____
-horizontal_tilt_deg=____
-vertical_tilt_deg=____ 
-wavelength_A=____ 
-
-See the documentation for the WXDToPONI operation
-for an explanation of FIT2D and PONI parameters.
-"""
-# TODO: verify wxdiff units and description
-
 import os
 
 import numpy as np
 import pyFAI
 
-from ...operation import Operation
+from ...Operation import Operation
 from ... import optools
 
 class NikaToPONI(Operation):
     """
-    WARNING: the map from Nika's horzontal and vertical tilts
+    Converts Nika calibration output 
+    (saved in a text file)
+    to a dict of PyFAI PONI parameters,
+    by first converting from Nika to Fit2D,
+    then using a pyFAI.AzimuthalIntegrator 
+    to convert from Fit2D to PONI format.
+
+    WARNING: the map from Nika's horizontal and vertical tilts
     to Fit2D's tilt and tiltPlanRotation
     has not yet been verified by the developers. 
     Use this operation with nonzero tilts at your own risk.

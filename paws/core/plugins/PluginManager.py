@@ -7,7 +7,7 @@ from ..operations import optools
 from ..TreeSelectionModel import TreeSelectionModel
 from ..TreeItem import TreeItem
 from .. import plugins as pgns
-from .plugin import PawsPlugin
+from .PawsPlugin import PawsPlugin
 from .WorkflowPlugin import WorkflowPlugin
 
 class PluginManager(TreeSelectionModel):

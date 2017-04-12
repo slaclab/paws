@@ -9,7 +9,7 @@ and then reduce it to I(q).
 import numpy as np
 import pyFAI
 
-from ...operation import Operation
+from ...Operation import Operation
 from ... import optools
 
 class CalReduce(Operation):

@@ -6,7 +6,7 @@ from PySide import QtCore, QtGui, QtUiTools
 from ..core.ListModel import PluginListModel
 from ..core import plugins 
 from ..core import pawstools
-from ..core.plugins.plugin import PawsPlugin
+from ..core.plugins.PawsPlugin import PawsPlugin
 from ..core.operations import optools
 from .InputLoader import InputLoader
 from . import uitools

@@ -4,7 +4,7 @@ import copy
 from PySide import QtCore, QtGui, QtUiTools
 
 from ..core.operations import optools
-from ..core.operations.operation import Operation 
+from ..core.operations.Operation import Operation 
 from ..core import pawstools
 from ..core.operations.optools import InputLocator
 from ..core.ListModel import ListModel

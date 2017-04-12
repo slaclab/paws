@@ -2,12 +2,9 @@ import os
 
 from pypif import pif
 
-from ...operation import Operation
+from ...Operation import Operation
 from ... import optools
         
-# TODO: Note that the entire data set can be one json,
-# of an array of pif records, and this will lead to a faster upload.
-
 class ShipToDataSet(Operation):
     """
     Take a pypif.obj.System object and ship it to a given Citrination data set.    

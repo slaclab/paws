@@ -6,7 +6,7 @@ import sys
 
 import paws.api
 import paws.ui
-import paws.ui.ui_manager
+import paws.ui.UiManager
 
 def main():
     """
@@ -18,7 +18,7 @@ def main():
     corepaw = paws.api.start()
 
     # start a ui manager
-    ui_manager = paws.ui.ui_manager.UiManager(
+    ui_manager = paws.ui.UiManager.UiManager(
     corepaw.op_manager(),corepaw.wf_manager(),corepaw.plugin_manager())
 
     ### LAUNCH ###

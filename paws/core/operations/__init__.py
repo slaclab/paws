@@ -4,7 +4,7 @@ import importlib
 
 import yaml
 
-from operation import Operation
+from Operation import Operation
 from .. import pawstools
 
 def save_cfg(cfg_data,cfg_file):
@@ -36,7 +36,7 @@ def load_ops_from_path(path_,pkg,cat_root='MISC'):
     cats = []
     # pkgutil.iter_modules returns module_loader, module_name, ispkg forall modules in path
     mods = pkgutil.iter_modules(path_)
-    mods = [mod for mod in mods if mod[1] not in ['__init__','operation','op_manager','optools','DMZ']]
+    mods = [mod for mod in mods if mod[1] not in ['__init__','Operation','OpManager','optools','DMZ']]
     for modloader, modname, ispkg in mods:
         if modname in op_load_flags.keys():
             if op_load_flags[modname]:

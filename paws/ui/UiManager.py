@@ -5,10 +5,10 @@ from PySide import QtGui, QtCore, QtUiTools
 import yaml
 
 from . import uitools
-from .wfuiman import WfUiManager
-from .opuiman import OpUiManager
-from .pluguiman import PluginUiManager
-from ..core.operations.operation import Operation
+from .WfUiManager import WfUiManager
+from .OpUiManager import OpUiManager
+from .PluginUiManager import PluginUiManager
+from ..core.operations.Operation import Operation
 from ..core import pawstools
 from . import data_viewer
 from ..core.ListModel import ListModel

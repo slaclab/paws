@@ -2,8 +2,8 @@ from PySide import QtCore
 
 from ..operations import optools
 from .. import pawstools
-from .plugin import PawsPlugin
-from ..workflow.workflow import Workflow
+from .PawsPlugin import PawsPlugin
+from ..workflow.Workflow import Workflow
 
 class WorkflowPlugin(PawsPlugin):
     """

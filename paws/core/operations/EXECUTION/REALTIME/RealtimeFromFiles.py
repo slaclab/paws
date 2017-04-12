@@ -1,4 +1,4 @@
-from ...operation import Realtime 
+from ...Operation import Realtime 
 from ... import optools
 from ....pawstools import FileSystemIterator 
 

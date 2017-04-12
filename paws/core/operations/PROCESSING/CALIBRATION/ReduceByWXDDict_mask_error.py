@@ -1,7 +1,7 @@
 import numpy as np
 import pyFAI
 
-from ...operation import Operation
+from ...Operation import Operation
 from ... import optools
 
 class ReduceByWXDDict_mask_error(Operation):

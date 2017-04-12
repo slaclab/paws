@@ -7,8 +7,8 @@ from PySide import QtCore
 from ..TreeSelectionModel import TreeSelectionModel
 from ..TreeItem import TreeItem
 from ..operations import optools
-from ..operations.operation import Operation, Batch, Realtime
-from .wf_worker import WfWorker
+from ..operations.Operation import Operation, Batch, Realtime
+from .WfWorker import WfWorker
 
 
 class Workflow(TreeSelectionModel):

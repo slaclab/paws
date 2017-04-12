@@ -8,7 +8,7 @@ TODO: Get this citation
 """
 import numpy as np
 
-from ...operation import Operation
+from ...Operation import Operation
 from ... import optools
 
 class TextureFeatures(Operation):

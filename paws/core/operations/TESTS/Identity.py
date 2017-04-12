@@ -1,4 +1,4 @@
-from ..operation import Operation
+from ..Operation import Operation
 
 class Identity(Operation):
     """An Operation testing class, loads its input into its output"""

@@ -1,7 +1,7 @@
 import numpy as np
 import pypif.obj as pifobj
 
-from ...operation import Operation
+from ...Operation import Operation
 from ... import optools
 
 class PifNPSynth(Operation):

@@ -8,7 +8,7 @@ import numpy as np
 import pyFAI as pf
 import pyFAI.calibrant as pfc
 
-from ...operation import Operation
+from ...Operation import Operation
 from ... import optools
 
 class AutoCal(Operation):
