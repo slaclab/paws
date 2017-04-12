@@ -113,9 +113,8 @@ class Workflow(TreeSelectionModel):
 
     def add_op(self,op_tag,new_op):
         """Add an Operation to the tree as a new top-level TreeItem."""
-        # Count operations by passing parent=self.root_index()
-        idx = self.add_item(op_tag,self.root_index())
-        self.tree_update(idx,new_op)
+        idx = self.add_item(op_tag,new_op,self.root_index())
+        #self.tree_update(idx,new_op)
         self.wf_updated.emit() 
 
     def remove_op(self,rm_idx):
@@ -126,13 +125,14 @@ class Workflow(TreeSelectionModel):
         if not self.parent(rm_idx) == self.root_index():
             msg = '[{}] Called remove_op on non-Operation at QModelIndex {}. \n'.format(__name__,rm_idx)
             raise ValueError(msg)
-        rm_row = rm_idx.row()
-        self.beginRemoveRows(self.root_index(),rm_row,rm_row)
-        rm_itm = self.root_item().children.pop(rm_row)
-        rm_itm.deleteLater()
-        self.endRemoveRows()
-        self.tree_dataChanged(rm_idx) 
+        self.remove_item(rm_idx)
         self.wf_updated.emit() 
+        #rm_row = rm_idx.row()
+        #self.beginRemoveRows(self.root_index(),rm_row,rm_row)
+        #rm_itm = self.root_item().children.pop(rm_row)
+        #rm_itm.deleteLater()
+        #self.endRemoveRows()
+        #self.tree_dataChanged(rm_idx) 
         #self.tree_update(rm_idx,None)
         #self.removeRow(rm_row)
         #import gc
@@ -143,9 +143,8 @@ class Workflow(TreeSelectionModel):
     def update_op(self,uri,new_op):
         """
         Update Operation in treeitem indicated by uri.
-        It is expected that new_op is a reference to the Operation stored at uri. 
-        This should be called to update an Operation while a workflow is executed,
-        so that the updated Operation data can be used downstream.
+        It is expected that new_op is a reference to the Operation 
+        that will be stored at uri when this method finishes. 
         """
         itm, idx = self.get_from_uri(uri)
         self.tree_update(idx,new_op)
@@ -392,16 +391,14 @@ class Workflow(TreeSelectionModel):
             wf_wkr.opDone.connect(self.updateOperation)
             wf_thread = QtCore.QThread(self)
             wf_wkr.moveToThread(wf_thread)
+            self.wfman.register_thread(thd_idx,wf_thread)
             wf_thread.started.connect(wf_wkr.work)
             wf_thread.finished.connect( partial(self.wfman.finish_thread,thd_idx) )
-            self.wfman.register_thread(thd_idx,wf_thread)
             #print 'starting thread {} from run_wf_serial'.format(thd_idx)
             wf_thread.start()
             msg = 'running {} in thread {}'.format([itm.tag() for itm in lst_copy],thd_idx)
             self.wfman.write_log(msg)
             # TODO: Figure out how to remove this wait_for_thread() without freezing execution.
-            # This is the next step towards multi-threaded batch execution.
-            #print 'wait for thread {} from run_wf_serial'.format(thd_idx)
             self.wfman.wait_for_thread(thd_idx)
 
     def run_wf_realtime(self,rt_itm,stk):

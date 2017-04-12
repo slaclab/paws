@@ -7,7 +7,7 @@ from ..core.workflow.WfManager import WfManager
 from ..core.plugins.PluginManager import PluginManager 
 from ..core.operations import optools
 
-class PawsAPI(object):
+class PawsAPI(QtCore.QObject):
     """
     Objects of this class act as delegates to interact with a paws application.
     """
@@ -15,28 +15,14 @@ class PawsAPI(object):
     def __init__(self,app_args):
         super(PawsAPI,self).__init__()
         self._app = core_app(app_args)
+        #self._app = None 
         self._op_manager = OpManager()
         self._plugin_manager = PluginManager()
         self._wf_manager = WfManager(self._plugin_manager,self._app)
         self._current_wf_name = None 
-
-    # Provide access to core objects for ui manager and interfaces
-    def op_manager(self):
-        """
-        Get a reference to the operation manager (paws.core.operations.OpManager.OpManager. 
-        Intended for use by other interfaces, e.g. the GUI manager.
-        """
-        return self._op_manager
+        #self.wf_exec_requested.connect(self._wf_manager.run_wf)
     
-    def wf_manager(self):
-        """
-        Get a reference to the workflow manager (paws.core.workflow.WfManager.WfManager). 
-        Intended for use by other interfaces, e.g. the GUI manager.
-        """
-        return self._wf_manager
-
-    def plugin_manager(self):
-        return self._plugin_manager
+    #wf_exec_requested = QtCore.Signal(str)
 
     def add_wf(self,wfname):
         self._wf_manager.add_wf(wfname)
@@ -46,8 +32,10 @@ class PawsAPI(object):
     def select_wf(self,wfname):
         if wfname in self._wf_manager.workflows.keys():
             self._current_wf_name = wfname
-        #else:
-        # TODO: nothing, but print a warning or error?
+        else:
+            msg = str('requested workflow {} not found in {}'
+            .format(wfname,self._wf_manager.workflows.keys()))
+            raise ValueError(msg)
 
     def current_wf(self):
         if self._current_wf_name:
@@ -82,16 +70,20 @@ class PawsAPI(object):
         print 'remove {}'.format(op_tag)
         rm_itm, rm_idx = wf.get_from_uri(op_tag)
         wf.remove_op(rm_idx)
-        self._app.processEvents()
+        #self._app.processEvents()
 
-    def get_op(self,op_name,wfname=None):
+    def get_op(self,opname,wfname=None):
         wf = self.get_wf(wfname)
-        itm,idx = wf.get_from_uri(op_name)
+        itm,idx = wf.get_from_uri(opname)
         op = itm.data
         return op 
 
-    def set_input(self,op_name,input_name,wfname=None,**kwargs):
-        op = self.get_op(op_name,wfname) 
+    def get_output(self,opname,output_name,wfname=None):
+        op = self.get_op(opname,wfname)
+        return op.outputs[output_name]
+
+    def set_input(self,opname,input_name,wfname=None,**kwargs):
+        op = self.get_op(opname,wfname) 
         src = op.input_locator[input_name].src
         tp = op.input_locator[input_name].tp
         val = op.input_locator[input_name].val
@@ -112,21 +104,46 @@ class PawsAPI(object):
         il = optools.InputLocator(src,tp,val)
         op.input_locator[input_name] = il
         #print 'set input {} of {} to src: {}, tp: {}, val: {}'.format(
-        #input_name,op_name,src,tp,val)
+        #input_name,opname,src,tp,val)
         
     def execute(self):
-        #print 'execute...'
-        self._wf_manager.run_wf(self._current_wf_name)
+        #self.wf_exec_requested.emit(self._current_wf_name)
+        #self._app.exec_()
+        #self._wf_manager.run_wf(self._current_wf_name)
+        #self._wf_manager.wfdone.connect()
         #self.current_wf().run_wf()
         # set the application start signal to execute the workflow
         # set the workflow finished signal to quit the app
-        #self._app.exec_()
 
     def stop(self):
         self._app.quit()
 
     def save_config(self):
         self._op_manager.save_config()
+
+    def op_manager(self):
+        """
+        Get a reference to the operation manager 
+        (paws.core.operations.OpManager.OpManager). 
+        Intended for use by other interfaces, e.g. the GUI manager.
+        """
+        return self._op_manager
+    
+    def wf_manager(self):
+        """
+        Get a reference to the workflow manager 
+        (paws.core.workflow.WfManager.WfManager). 
+        Intended for use by other interfaces, e.g. the GUI manager.
+        """
+        return self._wf_manager
+
+    def plugin_manager(self):
+        """
+        Get a reference to the plugin manager 
+        (paws.core.plugins.PluginManager.PluginManager). 
+        Intended for use by other interfaces, e.g. the GUI manager.
+        """
+        return self._plugin_manager
 
 
 def start(app_args=[]):

@@ -24,7 +24,9 @@ def main():
     ### LAUNCH ###
     ui_manager.ui.show()
     ret = app.exec_()
-    # TODO: connect corepaw.save_config to app.aboutToQuit() signal
+    # TODO: connect corepaw.save_config to app.aboutToQuit() signal,
+    # in case app.exec_() does not have time to return,
+    # which may happen in some situations on some platforms.
     corepaw.save_config()
     sys.exit(ret)
     

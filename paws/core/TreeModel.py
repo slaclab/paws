@@ -21,6 +21,7 @@ class TreeModel(QtCore.QAbstractItemModel):
         # keep a TreeItem with no data as the root of the tree
         self._root_item = TreeItem(0,0,QtCore.QModelIndex())
         self._root_item.set_tag('ROOT')
+        self._root_item.data = OrderedDict() 
 
     def root_index(self):
         return self.createIndex(0,0,self._root_item)
@@ -43,7 +44,7 @@ class TreeModel(QtCore.QAbstractItemModel):
             parent = self.root_index()
         return self.rowCount(parent) 
 
-    def add_item(self,itm_tag,parent=None):
+    def add_item(self,itm_tag,itm_data=None,parent=None):
         if parent is None:
             parent = self.root_index()
         ins_row = self.n_items(parent)
@@ -53,7 +54,19 @@ class TreeModel(QtCore.QAbstractItemModel):
         self.get_item(parent).children.insert(ins_row,itm)
         self.endInsertRows()
         idx = self.index(ins_row,0,parent) 
+        self.tree_update(idx,itm_data)
         return idx       
+
+    def remove_item(self,rm_idx,parent=None):
+        if parent is None:
+            parent = self.root_index()
+        rm_row = rm_idx.row()
+        self.beginRemoveRows(parent,rm_row,rm_row)
+        rm_itm = parent.internalPointer().children.pop(rm_row)
+        rm_itm.deleteLater()
+        self.endRemoveRows()
+        #self.tree_update(rm_idx,None)
+        self.tree_dataChanged(rm_idx) 
 
     def build_uri(self,idx):
         """
@@ -330,9 +343,14 @@ class TreeModel(QtCore.QAbstractItemModel):
         """
         Call this function to store x_new in the TreeItem at idx 
         and then build/update/prune the subtree rooted at that item.
-        TODO: Take measures to change as little as possible of the tree,
-        since this can be a big operation and is called frequently.
+        x_new may be an entirely new object,
+        or it may refer to the same object that already exists at idx
+        (i.e. it may be that idx.internalPointer().data == x_new),
+        in which case this will update the subtree wrt any recent changes to x_new. 
         """
+        #TODO: Take measures to change as little as possible of the tree,
+        #since this can be a big operation and is called frequently.
+        #TODO: consider: if x_new is None, delete the item at idx?
         #import pdb; pdb.set_trace()
         itm = idx.internalPointer()
         x = itm.data

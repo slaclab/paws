@@ -79,14 +79,15 @@ class PluginManager(TreeSelectionModel):
     def add_plugin(self,pgin_tag,pgin):
         """Add a Plugin to the tree as a new top-level TreeItem."""
         # TODO: Ensure plugin names are unique
-        ins_row = self.n_items(self.root_index())
-        itm = TreeItem(ins_row,0,self.root_index())
-        itm.set_tag( pgin_tag )
-        self.beginInsertRows(self.root_index(),ins_row,ins_row)
-        self.root_item().children.insert(ins_row,itm)
-        self.endInsertRows()
-        idx = self.index(ins_row,0,self.root_index()) 
-        self.tree_update(idx,pgin)
+        self.add_item(pgin_tag,pgin,self.root_index())
+        #ins_row = self.n_items(self.root_index())
+        #itm = TreeItem(ins_row,0,self.root_index())
+        #itm.set_tag( pgin_tag )
+        #self.beginInsertRows(self.root_index(),ins_row,ins_row)
+        #self.root_item().children.insert(ins_row,itm)
+        #self.endInsertRows()
+        #idx = self.index(ins_row,0,self.root_index()) 
+        #self.tree_update(idx,pgin)
 
     def build_dict(self,x):
         """Overloaded build_dict to handle Plugins"""
@@ -98,11 +99,12 @@ class PluginManager(TreeSelectionModel):
 
     def remove_plugin(self,rm_idx):
         """Remove a Plugin from the tree"""
-        rm_row = rm_idx.row()
-        self.beginRemoveRows(QtCore.QModelIndex(),rm_row,rm_row)
-        item_removed = self.root_item().children.pop(rm_row)
-        self.endRemoveRows()
-        self.tree_dataChanged(rm_idx)
+        self.remove_item(rm_idx)
+        #rm_row = rm_idx.row()
+        #self.beginRemoveRows(QtCore.QModelIndex(),rm_row,rm_row)
+        #item_removed = self.root_item().children.pop(rm_row)
+        #self.endRemoveRows()
+        #self.tree_dataChanged(rm_idx)
 
     # Overloaded data() for PluginManager
     #def data(self,itm_idx,data_role):
