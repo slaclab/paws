@@ -37,57 +37,17 @@ class GuessProperties(Operation):
 
     def run(self):
         q, I, dI = self.inputs['q'], self.inputs['I'], self.inputs['dI']
-        self.outputs['detailed_flags'] = {}
 
-        # find extrema
-        dips = local_minima_detector(I*q**4)
-        shoulders = local_maxima_detector(I*q**4)
-        # Clean out end points and weak maxima
-        dips, shoulders = clean_extrema(dips, shoulders, I*q**4)
-        # identify likely first "real" dip
-        qFirstDip, heightFirstDip, scaledQuadCoefficients = first_dip(q, I, dips, dI)
+        qFirstDip, heightFirstDip, sigmaScaledFirstDip, heightAtZero, dips, shoulders, \
+        self.outputs['detailed_flags'] = take_polydispersity_metrics(q, I, dI)
 
-        if dI is None:
-            powerCoefficients = power_law_solution(q[shoulders], I[shoulders], None)
-        else:
-            powerCoefficients = power_law_solution(q[shoulders], I[shoulders], dI[shoulders])
-        powerLawAtDip = powerCoefficients[0] * (qFirstDip ** powerCoefficients[1])
-        scaledDipDepth = (powerLawAtDip - heightFirstDip) * (qFirstDip ** 4)
-        # identify region surrounding the first dip
-        lolim = np.where(dips)[0][0] - 3
-        hilim = np.where(dips)[0][0] + 3
-        # model 1st dip region as quadratic in scaled I
-        scaled_I = I * q ** 4
-        if dI is None:
-            quadCoefficients = arbitrary_order_solution(2, q[lolim:hilim], scaled_I[lolim:hilim], None)
-        else:
-            scaled_dI = dI * q ** 4
-            quadCoefficients = arbitrary_order_solution(2, q[lolim:hilim], scaled_I[lolim:hilim], scaled_dI[lolim:hilim])
-        scaledDipCurvature = 2 * quadCoefficients[2]
-        # and then pretend it's a gaussian and find the width sigma
-        sigmaScaledFirstDip = np.fabs(scaledDipDepth / scaledDipCurvature) ** 0.5
-        # fit quadratic to low q to estimate amplitude at zero
-        qlim = max(q[6], (qFirstDip - q[0]) / 2.)
-        if qlim > 0.75 * qFirstDip:
-            self.outputs['detailed_flags']['poor_low_q_sampling'] = True
-            print "Low-q sampling seems to be poor and will likely affect estimate quality."
-        low_q = (q < qlim)
-        if dI is None:
-            heightAtZero = arbitrary_order_solution(4, q[low_q], I[low_q], None)[0]
-        else:
-            heightAtZero = arbitrary_order_solution(4, q[low_q], I[low_q], dI[low_q])[0]
         # convert to unitless metrics
-        x0 = qFirstDip / sigmaScaledFirstDip
+        x0 = sigmaScaledFirstDip / qFirstDip
         y0 = heightFirstDip / heightAtZero
-        # load references
-        try:
-            references = load_references(reference_loc)
-        except:
-            print no_reference_message
         # compare metrics to reference
-        x = references['xFirstDip'] / references['sigmaScaledFirstDip']
-        y = references['heightFirstDip'] / references['heightAtZero']
         factor = references['factorVals']
+        x = references['widthFirstDip'] / references['xFirstDip']
+        y = references['heightFirstDip'] / references['heightAtZero']
         fractional_variation, _, best_xy = guess_nearest_point_on_nonmonotonic_trace_normalized([x0, y0], [x, y],
                                                                                                     factor)
         # guess the mean size
@@ -129,7 +89,7 @@ def generateRhoFactor(factor):
 '''
 
 
-def first_dip(q, I, dips, dI=None):  # IMPROVEMENTS MADE
+def first_dip(q, I, dips, dI=None):
     if dI is None:
         dI = np.ones(I.shape, dtype=float)
     # if the first two "dips" are very close together, they are both marking the first dip
@@ -176,17 +136,55 @@ def first_dip(q, I, dips, dI=None):  # IMPROVEMENTS MADE
     coefficients = arbitrary_order_solution(2, q[selection], (I*q**4)[selection], dI[selection])
     qbest =  -0.5*coefficients[1]/coefficients[2]
     Ibest = polynomial_value(coefficients, qbest)*qbest**-4
-    return qbest, Ibest, coefficients
+    return qbest, Ibest, coefficients  #?
 
+def take_polydispersity_metrics(q, I, dI=None):
+    detailed_flags = {}
+    # find extrema
+    dips = local_minima_detector(I * q ** 4)
+    shoulders = local_maxima_detector(I * q ** 4)
+    # Clean out end points and weak maxima
+    dips, shoulders = clean_extrema(dips, shoulders, I * q ** 4)
+    # identify likely first "real" dip
+    qFirstDip, heightFirstDip, scaledQuadCoefficients = first_dip(q, I, dips, dI)
 
+    if dI is None:
+        powerCoefficients = power_law_solution(q[shoulders], I[shoulders], None)
+    else:
+        powerCoefficients = power_law_solution(q[shoulders], I[shoulders], dI[shoulders])
+    qWidthIndex = np.where((I > heightFirstDip * 5.) & (q < qFirstDip))[0][-1]
+    widthFirstDip = qFirstDip - q[qWidthIndex]
+    # TODO: should there be a fit to local I(q)? Probably.
 
-def logsafe_zip(x, y):
-    bad = (x <= 0) | (y <= 0) | np.isnan(y)
-    x, y = x[~bad], y[~bad]
-    x_y = np.zeros((x.size, 2))
-    x_y[:, 0] = x
-    x_y[:, 1] = y
-    return x_y
+    '''
+    powerLawAtDip = powerCoefficients[0] * (qFirstDip ** powerCoefficients[1])
+    scaledDipDepth = (powerLawAtDip - heightFirstDip) * (qFirstDip ** 4)
+    # identify region surrounding the first dip
+    lolim = np.where(dips)[0][0] - 3
+    hilim = np.where(dips)[0][0] + 3
+    # model 1st dip region as quadratic in scaled I
+    scaled_I = I * q ** 4
+    if dI is None:
+        quadCoefficients = arbitrary_order_solution(2, q[lolim:hilim], scaled_I[lolim:hilim], None)
+    else:
+        scaled_dI = dI * q ** 4
+        quadCoefficients = arbitrary_order_solution(2, q[lolim:hilim], scaled_I[lolim:hilim], scaled_dI[lolim:hilim])
+    scaledDipCurvature = 2 * quadCoefficients[2]
+    # and then pretend it's a gaussian and find the width sigma
+    sigmaScaledFirstDip = np.fabs(scaledDipDepth / scaledDipCurvature) ** 0.5
+    '''
+    # fit quadratic to low q to estimate amplitude at zero
+    qlim = max(q[6], (qFirstDip - q[0]) / 2.)
+    if qlim > 0.75 * qFirstDip:
+        detailed_flags['poor_low_q_sampling'] = True
+        print "Low-q sampling seems to be poor and will likely affect estimate quality."
+    low_q = (q < qlim)
+    if dI is None:
+        heightAtZero = arbitrary_order_solution(4, q[low_q], I[low_q], None)[0]
+    else:
+        heightAtZero = arbitrary_order_solution(4, q[low_q], I[low_q], dI[low_q])[0]
+    return qFirstDip, heightFirstDip, widthFirstDip, heightAtZero, dips, shoulders, detailed_flags
+
 
 
 # I/O functions
@@ -292,6 +290,28 @@ def blur(x, factor):
     return ysum
 
 # Funtions specifically about detecting SAXS properties
+
+def generate_references():
+    x = np.arange(1.0, 15, 0.01)
+    polylist = np.arange(1., 51., 0.5) * 0.01
+    x1s = []
+    i1s = []
+    dxs = []
+    i0s = []
+    for ii in range(1, len(polylist)):
+        poly = polylist[ii]
+        intensity = blur(x, poly)
+        xFirstDip, heightFirstDip, widthFirstDip, heightAtZero, _,_,_ = take_polydispersity_metrics(x, intensity)
+        x1s.append(xFirstDip)
+        i1s.append(heightFirstDip)
+        dxs.append(widthFirstDip)
+        i0s.append(heightAtZero)
+    references = {'factorVals' : polylist,
+                  'xFirstDip' : np.array(x1s),
+                  'widthFirstDip' : np.array(dxs),
+                  'heightFirstDip' : np.array(i1s),
+                  'heightAtZero' : np.array(i0s)}
+    return references
 
 def refine_guess(q, I, I0, r0, frac, q1, I1):
     Imodel = generate_spherical_diffraction(q, I0, r0, frac)
@@ -453,23 +473,7 @@ def guess_nearest_point_on_nonmonotonic_trace_normalized(loclist, tracelist, coo
         best_location[jj] = best_xjj
     return best_coordinate, best_distance, best_location #, distances
 
-no_reference_message = '''No reference file exists.  Use the GenerateReferences operation once to generate
-an appropriate file; the file will be saved and need not be generated again.'''
 
-reference_loc = join('paws','core','operations','DMZ','references','polydispersity_guess_references.csv.gz')
-try:
-    references = load_references(reference_loc)
-except:
-    print "Something other than an IOerror seems to have gone wrong."
+# generate references that will be used by this operation
 
-'''
-import numpy as np
-import os.path
-reference_folder = join('paws','core','operations','DMZ','references')
-reference_loc = join('paws','core','operations','DMZ','references','polydispersity_guess_references.csv.gz')
-os.path.exists(reference_folder)
-os.path.exists(reference_loc)
-fake = reference_loc + 'lol'
-os.path.exists(fake)
-load_references(reference_loc)
-'''
+references = generate_references()
