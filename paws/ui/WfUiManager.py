@@ -240,6 +240,7 @@ class WfUiManager(QtCore.QObject):
             item = self.ui.output_layout.takeAt(i)
             item.widget().close()
             #item.widget().deleteLater()
+        self.op = None
         self.src_widgets = {}
         self.type_widgets = {}
         self.val_widgets = {}

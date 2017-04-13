@@ -1,5 +1,7 @@
 """Module defining the API for paws"""
 
+from functools import partial
+
 from PySide import QtCore
 
 from ..core.operations.OpManager import OpManager 
@@ -20,9 +22,9 @@ class PawsAPI(QtCore.QObject):
         self._plugin_manager = PluginManager()
         self._wf_manager = WfManager(self._plugin_manager,self._app)
         self._current_wf_name = None 
-        #self.wf_exec_requested.connect(self._wf_manager.run_wf)
+        self.wf_exec_requested.connect(self._wf_manager.run_wf)
     
-    #wf_exec_requested = QtCore.Signal(str)
+    wf_exec_requested = QtCore.Signal(str)
 
     def add_wf(self,wfname):
         self._wf_manager.add_wf(wfname)
@@ -67,7 +69,7 @@ class PawsAPI(QtCore.QObject):
 
     def remove_op(self,op_tag,wfname=None):
         wf = self.get_wf(wfname)
-        print 'remove {}'.format(op_tag)
+        #print 'remove {}'.format(op_tag)
         rm_itm, rm_idx = wf.get_from_uri(op_tag)
         wf.remove_op(rm_idx)
         #self._app.processEvents()
@@ -106,11 +108,28 @@ class PawsAPI(QtCore.QObject):
         #print 'set input {} of {} to src: {}, tp: {}, val: {}'.format(
         #input_name,opname,src,tp,val)
         
-    def execute(self):
-        #self.wf_exec_requested.emit(self._current_wf_name)
+    def execute(self,wfname=None):
+        wf = self.get_wf(wfname)
+        wf.run_wf()
+
+        #if wfname is None:
+        #    wfname = self._current_wf_name
+        #wf.exec_finished.connect(self._app.quit)
+
+        #l = QtCore.QEventLoop()
+        #t = QtCore.QTimer()
+        #t.setSingleShot(True)
+        #t.timeout.connect( partial(self.wf_exec_requested,wfname) )
+        #t.start(0)
         #self._app.exec_()
+        #l.exec_()
+        # processEvents() to continue the main event loop while waiting.
+        #self._wf_manager.wfdone.connect(self._app.quit)
+
+        #self.wf_exec_requested.emit(self._current_wf_name)
+        # self._app provides a QEventLoop to update data structures while workflow runs
+
         #self._wf_manager.run_wf(self._current_wf_name)
-        #self._wf_manager.wfdone.connect()
         #self.current_wf().run_wf()
         # set the application start signal to execute the workflow
         # set the workflow finished signal to quit the app

@@ -29,6 +29,7 @@ class WfManager(QtCore.QObject):
         super(WfManager,self).__init__()
 
     # this signal should emit the name (self.workflows dict key) of the workflow that finished.
+    # used to signal the gui to update the "Run" button.
     wfdone = QtCore.Signal(str)
 
     @QtCore.Slot(str)
@@ -154,12 +155,12 @@ class WfManager(QtCore.QObject):
         #import pdb; pdb.set_trace()
         wf = Workflow(self)
         wf.exec_finished.connect( partial(self.finish_wf,wfname) )
+        wf.wf_updated.connect( partial(self.plugman.update_plugin,wfname) )
         self.workflows[wfname] = wf
         # for every new workflow, add a plugin 
         wf_pgin = WorkflowPlugin()
         wf_pgin.inputs['workflow'] = self.workflows[wfname] 
         wf_pgin.start()
-        wf.wf_updated.connect( partial(self.plugman.update_plugin,wfname) )
         self.plugman.add_plugin(wfname,wf_pgin)
 
     def load_from_dict(self,wfname,opman,opdict):

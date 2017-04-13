@@ -21,18 +21,24 @@ class Workflow(TreeSelectionModel):
         self._running = False
         self.wfman = wfman
     
-    # signal to emit when this workflow finishes execution
+    # signal to emit when this workflow finishes execution.
+    # connects to workflow manager's finish_wf slot,
+    # which in turn emits workflow manager's wfdone signal. 
     exec_finished = QtCore.Signal()
 
-    # signal to emit when the state of this workflow changes 
+    # Signal to emit when the state of this Workflow changes.
+    # WfManager connects this to PluginManager
+    # so that PluginManager can update the associated WorkflowPlugin
+    # whenever this Workflow is updated.
     wf_updated = QtCore.Signal()
 
     @QtCore.Slot(str,Operation)
     def updateOperation(self,tag,op):
         self.update_op(tag,op)
-        # after updating an operation, best processEvents()
-        # so that the application can execute anything in the update
-        # that was queued in the main event loop.
+        # processEvents() after updating an operation
+        # so that the application can execute anything 
+        # that was queued in the main event loop during the update,
+        # such as updating views in the GUI.
         self.wfman.appref.processEvents()
 
     # overload super().is_tag_free: default None parent and search root index.

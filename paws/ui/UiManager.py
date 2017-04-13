@@ -157,9 +157,11 @@ class UiManager(QtCore.QObject):
         # and still continue to update_run_wf_button()
         if wf.is_running():
             self.wfman.stop_wf(wfname)
-            self.ui.run_wf_button.setText("&Run")
+            if wf == self.current_wf():
+                self.ui.run_wf_button.setText("&Run")
         else:
-            self.ui.run_wf_button.setText("S&top")
+            if wf == self.current_wf():
+                self.ui.run_wf_button.setText("S&top")
             self.wfman.run_wf(wfname)
 
     def update_run_wf_button(self):
