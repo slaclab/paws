@@ -69,26 +69,6 @@ class GuessProperties(Operation):
 
 
 
-'''
-def generateRhoFactor(factor):
-    Generate a guassian distribution of number densities (rho).
-
-    :param factor: float
-    :return:
-
-    factor should be 0.1 for a sigma 10% of size
-    factorCenter = 1
-    factorMin = max(factorCenter-5*factor, 0.001)
-    factorMax = factorCenter+5*factor
-    factorVals = inclusive_arange(factorMin, factorMax, factor*0.02)
-    # normalized gaussian:
-    # ((sigma * (2 * np.pi)**0.5)**-1 )*np.exp(-0.5 * ((x - x0)/sigma)**2)
-    rhoVals = ((factor * (2 * np.pi)**0.5)**-1 )*np.exp(-0.5 * ((factorVals - 1.)/factor)**2)
-    return factorVals, rhoVals
-
-'''
-
-
 def first_dip(q, I, dips, dI=None):
     if dI is None:
         dI = np.ones(I.shape, dtype=float)
@@ -258,12 +238,6 @@ def power_law_solution(x, y, dy=None):
 
 # Functions about simulating SAXS patterns
 
-def inclusive_arange(min, max, step):
-    '''An inclusive-range version of np.arange.'''
-    if np.mod((max - min), step) == 0:
-        max += 0.5*step
-    return np.arange(min, max, step)
-
 def generate_spherical_diffraction(q, i0, r0, poly):
     x = q * r0
     i = i0 * blur(x, poly)
@@ -275,7 +249,10 @@ def blur(x, factor):
     factorCenter = 1
     factorMin = max(factorCenter-5*factor, 0.001)
     factorMax = factorCenter+5*factor
-    factorVals = inclusive_arange(factorMin, factorMax, factor*0.02)
+    factorStep = factor*0.02
+    if np.mod((factorMax - factorMin), factorStep) == 0:
+        max += 0.5*factorStep
+    factorVals = np.arange(factorMin, factorMax, factorStep)
     # normalized gaussian:
     # ((sigma * (2 * np.pi)**0.5)**-1 )*np.exp(-0.5 * ((x - x0)/sigma)**2)
     rhoVals = ((factor * (2 * np.pi)**0.5)**-1 )*np.exp(-0.5 * ((factorVals - 1.)/factor)**2)
