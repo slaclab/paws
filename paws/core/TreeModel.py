@@ -355,32 +355,38 @@ class TreeModel(QtCore.QAbstractItemModel):
         itm = idx.internalPointer()
         x = itm.data
         itm.data = x_new
-        # Build dict of the intended children 
-        x_dict = self.build_dict(x_new)
-        # Remove obsolete children
-        c_kill = [] 
+        # Build a dict around the new data 
+        x_new_dict = self.build_dict(x_new)
+        # Remove any obsolete children
+        obsolete_child_rows = [] 
         for j in range(itm.n_children()):
             #if not self.index(j,0,idx).internalPointer().tag() in x_dict.keys():
-            if not itm.children[j].tag() in x_dict.keys():
-                c_kill.append( j )
-        c_kill.sort()
-        for j in c_kill[::-1]:
-            self.beginRemoveRows(idx,j,j)
-            itm_kill = itm.children.pop(j)
-            self.endRemoveRows()
-            itm_kill.deleteLater()
+            if not itm.children[j].tag() in x_new_dict.keys():
+                obsolete_child_rows.append( j )
+        #obsolete_child_rows.sort()
+        for j in obsolete_child_rows[::-1]:
+            obsolete_child_idx = self.index(j,0,idx)
+            self.remove_item(obsolete_child_idx,idx)
+            #self.beginRemoveRows(idx,j,j)
+            #itm_kill = itm.children.pop(j)
+            #self.endRemoveRows()
+            #itm_kill.deleteLater()
             #del itm_kill
             #self.removeRow(j)
         # Add items for any new children 
-        c_keys = [itm.children[j].tag() for j in range(itm.n_children())]
-        for k in x_dict.keys():
-            if not k in c_keys:
-                nc = itm.n_children()
-                c_itm = TreeItem(nc,0,idx)
-                c_itm.set_tag(k)
-                self.beginInsertRows(idx,nc,nc)
-                itm.children.insert(nc,c_itm)
-                self.endInsertRows()
+        child_tags = [itm.children[j].tag() for j in range(itm.n_children())]
+        for k in x_new_dict.keys():
+            if not k in child_tags:
+                # note, add_item will recursively call tree_update
+                self.add_item(k,x_new_dict[k],idx)
+
+                #nc = itm.n_children()
+                #c_itm = TreeItem(nc,0,idx)
+                #c_itm.set_tag(k)
+                #self.beginInsertRows(idx,nc,nc)
+                #itm.children.insert(nc,c_itm)
+                #self.endInsertRows()
+
         # Recurse to update children
         for j in range(itm.n_children()):
             c_idx = self.index(j,0,idx)
