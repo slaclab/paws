@@ -223,7 +223,7 @@ class WfUiManager(QtCore.QObject):
                 inp_loader.add_values([self.op.input_locator[name].val])
         inp_loader.ui.finish_button.clicked.connect( partial(self.set_input,name,inp_loader.ui) )
         self.input_loaders[name] = inp_loader
-        inp_loader.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+        inp_loader.ui.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         inp_loader.ui.show()
 
     def clear_io(self):
