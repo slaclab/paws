@@ -156,6 +156,7 @@ class WfManager(QtCore.QObject):
         wf = Workflow(self)
         wf.exec_finished.connect( partial(self.finish_wf,wfname) )
         wf.wf_updated.connect( partial(self.plugman.update_plugin,wfname) )
+        #wf.setParent(self)
         self.workflows[wfname] = wf
         # for every new workflow, add a plugin 
         wf_pgin = WorkflowPlugin()

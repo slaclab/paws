@@ -233,21 +233,27 @@ class WfUiManager(QtCore.QObject):
         self.ui.op_name.setText('')
         self.ui.uri_entry.setText('')
         self.ui.load_button.setEnabled(False)
-        n_inp_widgets = self.ui.input_layout.count()
-        for i in range(n_inp_widgets-1,-1,-1):
-            item = self.ui.input_layout.takeAt(i)
-            item.widget().close()
-            #item.widget().deleteLater()
-        n_out_widgets = self.ui.output_layout.count()
-        for i in range(n_out_widgets-1,-1,-1):
-            item = self.ui.output_layout.takeAt(i)
-            item.widget().close()
-            #item.widget().deleteLater()
+        # clean up internal objects via deleteLater()
+        for nm,widg in (self.src_widgets.items()+self.type_widgets.items()
+        +self.val_widgets.items()+self.btn_widgets.items()+self.input_loaders.items()):
+            widg.close()
+            widg.deleteLater()
+        # dereference them to ensure they are collected
         self.src_widgets = {}
         self.type_widgets = {}
         self.val_widgets = {}
         self.btn_widgets = {}
         self.input_loaders = {}
+        n_inp_widgets = self.ui.input_layout.count()
+        for i in range(n_inp_widgets-1,-1,-1):
+            item = self.ui.input_layout.takeAt(i)
+            item.widget().close()
+            item.widget().deleteLater()
+        n_out_widgets = self.ui.output_layout.count()
+        for i in range(n_out_widgets-1,-1,-1):
+            item = self.ui.output_layout.takeAt(i)
+            item.widget().close()
+            item.widget().deleteLater()
     
     def reset_input_headers(self):
         if len(self.op.inputs) > 0:

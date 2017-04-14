@@ -5,7 +5,7 @@ class TreeItem(QtCore.QObject):
     TreeItem is a container for data stored in a TreeModel. 
     A TreeItem keeps references to a parent QModelIndex,
     and to its row and column within the QAbstractItemModel structure.
-    The objective content of the TreeItem is stored at TreeItem.data. 
+    The object content of the TreeItem is stored at TreeItem.data. 
     Every TreeItem must have a tag() for display and uri creation.
     """
 
@@ -17,7 +17,9 @@ class TreeItem(QtCore.QObject):
         self.data = None        # TreeItem contains a single object as its data 
         self.children = []      # list of other TreeItems
         self._tag = None
-        # Flags: use these to serve as toggles for things specific to a TreeItem-based model
+        # Flags: use these for things specific to TreeModel subclasses,
+        # e.g. a flag for selecting the TreeItem in a view,
+        # or for displaying the state of the TreeItem
         self.flags = [] 
 
     def n_children(self):

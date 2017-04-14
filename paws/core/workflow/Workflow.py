@@ -21,7 +21,7 @@ class Workflow(TreeSelectionModel):
         self.set_flag_names(['select','enable'],[False,True])
         self._running = False
         self.wfman = wfman
-    
+
     # signal to emit when this workflow finishes execution.
     # connects to workflow manager's finish_wf slot,
     # which in turn emits workflow manager's wfdone signal. 
@@ -338,6 +338,7 @@ class Workflow(TreeSelectionModel):
             self.wfman.register_thread(thd_idx,wf_thread)
             wf_thread.started.connect(wf_wkr.work)
             wf_thread.finished.connect( partial(self.wfman.finish_thread,thd_idx) )
+            wf_thread.finished.connect( partial(wf_thread.deleteLater) )
             #print 'starting thread {} from run_wf_serial'.format(thd_idx)
             wf_thread.start()
             msg = 'running {} in thread {}'.format([itm.tag() for itm in lst_copy],thd_idx)

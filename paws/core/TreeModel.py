@@ -49,6 +49,7 @@ class TreeModel(QtCore.QAbstractItemModel):
             parent = self.root_index()
         ins_row = self.item_count(parent)
         itm = TreeItem(ins_row,0,parent)
+        #itm.setParent(self)
         itm.set_tag(itm_tag)
         itm.data = itm_data
         self.beginInsertRows(parent,ins_row,ins_row)
@@ -62,16 +63,17 @@ class TreeModel(QtCore.QAbstractItemModel):
         rm_itm = self.get_item(rm_idx)
         parent = rm_itm.parent
         if parent.isValid():
+            #rm_itm = rm_idx.internalPointer()
+            #for child_row in range(rm_itm.n_children()):
+            #    child_idx = self.index(child_row,0,rm_idx)
+            #    self.remove_item(child_idx)
             rm_row = rm_idx.row()
-            rm_itm = rm_idx.internalPointer()
-            for child_row in range(rm_itm.n_children()):
-                child_idx = self.index(child_row,0,rm_idx)
-                self.remove_item(child_idx)
             self.beginRemoveRows(parent,rm_row,rm_row)
             rm_itm = parent.internalPointer().children.pop(rm_row)
             self.endRemoveRows()
             rm_itm.deleteLater()
             #del rm_itm
+            rm_itm = None
         self.dataChanged.emit(rm_idx,rm_idx)
         #self.tree_dataChanged(rm_idx) 
 

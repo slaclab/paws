@@ -22,9 +22,11 @@ class PluginManager(TreeSelectionModel):
 
     @QtCore.Slot(str)
     def update_plugin(self,pgin_name):
+        #print '[{}] update_plugin {}'.format(__name__,pgin_name)
         #import pdb;pdb.set_trace()
-        itm, idx = self.get_from_uri(pgin_name)
-        self.tree_update(idx,itm.data)
+        if self.tree_contains_uri(pgin_name):
+            itm, idx = self.get_from_uri(pgin_name)
+            self.tree_update(idx,itm.data)
 
     def load_from_dict(self,pgin_dict):
         """

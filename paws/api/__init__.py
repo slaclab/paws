@@ -9,7 +9,8 @@ from ..core.workflow.WfManager import WfManager
 from ..core.plugins.PluginManager import PluginManager 
 from ..core.operations import optools
 
-class PawsAPI(QtCore.QObject):
+#class PawsAPI(QtCore.QObject):
+class PawsAPI(object):
     """
     Objects of this class act as delegates to interact with a paws application.
     """
@@ -22,14 +23,16 @@ class PawsAPI(QtCore.QObject):
         self._plugin_manager = PluginManager()
         self._wf_manager = WfManager(self._plugin_manager,self._app)
         self._current_wf_name = None 
-        self.wf_exec_requested.connect(self._wf_manager.run_wf)
+        #print self.inspect_objects()
+        #self.wf_exec_requested.connect(self._wf_manager.run_wf)
     
-    wf_exec_requested = QtCore.Signal(str)
+    #wf_exec_requested = QtCore.Signal(str)
 
     def add_wf(self,wfname):
         self._wf_manager.add_wf(wfname)
         if not self._current_wf_name:
             self.select_wf(wfname)
+        #print self.inspect_objects()
 
     def select_wf(self,wfname):
         if wfname in self._wf_manager.workflows.keys():
@@ -66,13 +69,15 @@ class PawsAPI(QtCore.QObject):
         op = op()
         op.load_defaults()
         wf.add_op(op_tag,op)
+        #print self.inspect_objects()
 
     def remove_op(self,op_tag,wfname=None):
         wf = self.get_wf(wfname)
         #print 'remove {}'.format(op_tag)
         rm_itm, rm_idx = wf.get_from_uri(op_tag)
         wf.remove_op(rm_idx)
-        #self._app.processEvents()
+        self._app.processEvents()
+        #print self.inspect_objects()
 
     def get_op(self,opname,wfname=None):
         wf = self.get_wf(wfname)
@@ -111,6 +116,7 @@ class PawsAPI(QtCore.QObject):
     def execute(self,wfname=None):
         wf = self.get_wf(wfname)
         wf.run_wf()
+        #print self.inspect_objects()
 
         #if wfname is None:
         #    wfname = self._current_wf_name
@@ -134,8 +140,8 @@ class PawsAPI(QtCore.QObject):
         # set the application start signal to execute the workflow
         # set the workflow finished signal to quit the app
 
-    def stop(self):
-        self._app.quit()
+    #def stop(self):
+    #    self._app.quit()
 
     def save_config(self):
         self._op_manager.save_config()
@@ -164,6 +170,24 @@ class PawsAPI(QtCore.QObject):
         """
         return self._plugin_manager
 
+    def inspect_objects(self):
+        """
+        Use QObject.findChildren() to count references to child objects
+        of the top-level paws resource managers.
+        Return a report of the result as a string.
+        """
+        opman_children = self._op_manager.findChildren(QtCore.QObject)
+        wfman_children = self._wf_manager.findChildren(QtCore.QObject)
+        plugman_children = self._plugin_manager.findChildren(QtCore.QObject)
+        rpt = str('paws QObject count:\n'
+            + 'operations manager: {}\n{}...\n'.format(len(opman_children),opman_children)
+            + 'plugins manager: {}\n{}\n'.format(len(plugman_children),plugman_children)
+            + 'workflow manager: {}\n{}\n'.format(len(wfman_children),wfman_children))
+        for wfname,wf in self._wf_manager.workflows.items():
+            wf_children = wf.findChildren(QtCore.QObject)
+            rpt += '\tworkflow {}: {}\n\t{}\n'.format(wfname,len(wf_children),wf_children)
+        return rpt
+        
 
 def start(app_args=[]):
     """
