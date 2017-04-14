@@ -18,7 +18,7 @@ class TreeItem(QtCore.QObject):
         self.children = []      # list of other TreeItems
         self._tag = None
         # Flags: use these to serve as toggles for things specific to a TreeItem-based model
-        self._flags = [] 
+        self.flags = [] 
 
     def n_children(self):
         return len(self.children)

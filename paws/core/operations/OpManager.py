@@ -15,7 +15,8 @@ class OpManager(TreeSelectionModel):
     # TODO: Ensure that the cfg file of enabled/disabled ops is saved before closing
 
     def __init__(self,**kwargs):
-        super(OpManager,self).__init__()
+        super(OpManager,self).__init__(2)
+        self.set_flag_names(['select','enable'],[False,False])
         self._cat_list = ops.cat_list 
         self._op_list = [cat_op[1] for cat_op in ops.cat_op_list]
         self.load_cats(ops.cat_list) 
@@ -31,6 +32,7 @@ class OpManager(TreeSelectionModel):
         for cat in cat_list:
             parent = self.root_index()
             for subcat in cat.split('.'):
+                #print 'add cat {} under {}'.format(subcat,parent.internalPointer().tag())
                 parent = self.add_cat(subcat,parent)
 
     def add_cat(self,new_cat,parent):
@@ -57,7 +59,7 @@ class OpManager(TreeSelectionModel):
 
     def idx_of_cat(self,catname,parent):
         """If cat exists under parent, return its index, else return an invalid QModelIndex"""
-        ncats = self.n_items(parent)
+        ncats = self.item_count(parent)
         for j in range(ncats):
             idx = self.index(j,0,parent)
             cat = self.get_item(idx).data
@@ -121,10 +123,10 @@ class OpManager(TreeSelectionModel):
         treeitem = self.get_item(indx)
         return treeitem.data
  
-    # Overloaded headerData() for OpManager 
+    # Reimplemented headerData() for OpManager 
     def headerData(self,section,orientation,data_role):
         if (data_role == QtCore.Qt.DisplayRole and section == 0):
             return "{} operations available".format(len(self._op_list))
         else:
-            return None
+            return super(OpManager,self).headerData(section,orientation,data_role) 
 

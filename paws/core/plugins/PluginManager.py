@@ -16,7 +16,8 @@ class PluginManager(TreeSelectionModel):
     """
 
     def __init__(self,**kwargs):
-        super(PluginManager,self).__init__()
+        super(PluginManager,self).__init__(1)
+        self.set_flag_names(['select'],[False])
         self.logmethod = None
 
     @QtCore.Slot(str)

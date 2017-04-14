@@ -39,7 +39,7 @@ class TreeModel(QtCore.QAbstractItemModel):
         else:
             return self._root_item
 
-    def n_items(self,parent=None):
+    def item_count(self,parent=None):
         if parent is None:
             parent = self.root_index()
         return self.rowCount(parent) 
@@ -47,26 +47,71 @@ class TreeModel(QtCore.QAbstractItemModel):
     def add_item(self,itm_tag,itm_data=None,parent=None):
         if parent is None:
             parent = self.root_index()
-        ins_row = self.n_items(parent)
+        ins_row = self.item_count(parent)
         itm = TreeItem(ins_row,0,parent)
         itm.set_tag(itm_tag)
+        itm.data = itm_data
         self.beginInsertRows(parent,ins_row,ins_row)
         self.get_item(parent).children.insert(ins_row,itm)
         self.endInsertRows()
         idx = self.index(ins_row,0,parent) 
-        self.tree_update(idx,itm_data)
+        self.tree_dataChanged(idx)
         return idx       
 
-    def remove_item(self,rm_idx,parent=None):
-        if parent is None:
-            parent = self.root_index()
-        rm_row = rm_idx.row()
-        self.beginRemoveRows(parent,rm_row,rm_row)
-        rm_itm = parent.internalPointer().children.pop(rm_row)
-        rm_itm.deleteLater()
-        self.endRemoveRows()
-        #self.tree_update(rm_idx,None)
-        self.tree_dataChanged(rm_idx) 
+    def remove_item(self,rm_idx):
+        rm_itm = self.get_item(rm_idx)
+        parent = rm_itm.parent
+        if parent.isValid():
+            rm_row = rm_idx.row()
+            rm_itm = rm_idx.internalPointer()
+            for child_row in range(rm_itm.n_children()):
+                child_idx = self.index(child_row,0,rm_idx)
+                self.remove_item(child_idx)
+            self.beginRemoveRows(parent,rm_row,rm_row)
+            rm_itm = parent.internalPointer().children.pop(rm_row)
+            self.endRemoveRows()
+            rm_itm.deleteLater()
+            #del rm_itm
+        self.dataChanged.emit(rm_idx,rm_idx)
+        #self.tree_dataChanged(rm_idx) 
+
+    def tree_update(self,idx,x_new):
+        """
+        Call this function to store x_new as TreeItem.data at idx 
+        and then build/update/prune the subtree rooted at that item
+        based on the result of self.build_dict(x_new).
+        x_new may be an entirely new object, an altered copy of an old object,
+        or even the same object that already exists at idx
+        (i.e. it may already be that idx.internalPointer().data == x_new),
+        in which case any updates that happened to x_new since the last tree_update
+        will be percolated down the subtree. 
+        """
+        itm = idx.internalPointer()
+        itm.data = x_new
+        x_new_dict = self.build_dict(x_new)
+        obsolete_child_rows = [] 
+        for j in range(itm.n_children()):
+            if not itm.children[j].tag() in x_new_dict.keys():
+                obsolete_child_rows.append( j )
+        for j in obsolete_child_rows[::-1]:
+            obsolete_child_idx = self.index(j,0,idx)
+            self.remove_item(obsolete_child_idx)
+        child_tags = self.list_child_tags(idx)
+        for k in x_new_dict.keys():
+            if not k in child_tags:
+                c_idx = self.add_item(k,x_new_dict[k],idx)
+                self.tree_update(c_idx,x_new_dict[k])
+        self.tree_dataChanged(idx) 
+
+    def build_dict(self,x):
+        """Build a dict from structured data object x"""
+        if isinstance(x,dict):
+            d = x 
+        elif isinstance(x,list):
+            d = OrderedDict(zip([str(i) for i in range(len(x))],x)) 
+        else:
+            d = {} 
+        return d
 
     def build_uri(self,idx):
         """
@@ -81,11 +126,20 @@ class TreeModel(QtCore.QAbstractItemModel):
             item_ref = self.get_item(item_ref.parent)
         return item_uri
 
-    def list_child_tags(self,parent=QtCore.QModelIndex()):
+    def tree_dataChanged(self,idx):
+        self.dataChanged.emit(idx,idx)
+        itm = idx.internalPointer()
+        for c_row in range(itm.n_children()):
+            c_idx = self.index(c_row,0,idx)
+            self.tree_dataChanged(c_idx)
+
+    def list_child_tags(self,parent=None):
         """Get a list of tags for TreeItems under parent."""
         #if not parent.isValid():
         #    return [item.tag() for item in self.root_items]
         #else:
+        if parent is None:
+            parent = self.root_index()
         return [itm.tag() for itm in self.get_item(parent).children]
 
     def auto_tag(self,prefix):
@@ -93,23 +147,25 @@ class TreeModel(QtCore.QAbstractItemModel):
         Generate the next unique tag from prefix by appending '_x' to it, 
         where x is a minimal nonnegative integer.
         """
-        idx = 0
+        suffix = 0
         goodtag = False
         while not goodtag:
-            testtag = prefix+'_{}'.format(idx)
-            if not testtag in self.list_child_tags(self.root_index()):
+            testtag = prefix+'_{}'.format(suffix)
+            if not testtag in self.list_child_tags(self.root_index()): 
                 goodtag = True
             else:
-                idx += 1
+                suffix += 1
         return testtag
     
     # test uniqueness and good form of a tag
-    def is_tag_free(self,testtag,parent=QtCore.QModelIndex()):
+    def is_tag_free(self,testtag,parent=None):
         """
         Checks for uniqueness and good form of a tag, returns a (bool,string) tuple
         where the bool indicates whether the tag is good, 
         and the string provides explanation if the tag is not good. 
         """
+        if parent is None:
+            parent = self.root_index()
         spec_chars = string.punctuation 
         spec_chars = spec_chars.replace('_','')
         spec_chars = spec_chars.replace('-','')
@@ -143,9 +199,6 @@ class TreeModel(QtCore.QAbstractItemModel):
             except ValueError as ex:
                 return False
             idx = self.index(row,0,p_idx)
-            # get TreeItem from QModelIndex
-            #item = self.get_item(idx)
-            # set new parent in case the path continues...
             p_idx = idx
         return True
 
@@ -153,20 +206,15 @@ class TreeModel(QtCore.QAbstractItemModel):
         """Get from this tree the item at the given uri."""
         try:
             path = uri.split('.')
-            #p_idx = QtCore.QModelIndex()
             p_idx = self.root_index()
             for itemuri in path:
-                # get QModelIndex of item 
                 row = self.list_child_tags(p_idx).index(itemuri)
                 idx = self.index(row,0,p_idx)
-                # get TreeItem from QModelIndex
                 itm = self.get_item(idx)
-                # set new parent in case the path continues...
                 p_idx = idx
             return itm, idx
         except Exception as ex:
-            msg = '-----\nbad uri: {}\n-----\n'.format(uri)
-            #print msg
+            msg = '\n[{}] bad uri: {}\n'.format(__name__,uri)
             ex.message = msg + ex.message
             raise ex
 
@@ -178,23 +226,13 @@ class TreeModel(QtCore.QAbstractItemModel):
         returns invalid QModelIndex().
         """
         if not parent.isValid():
-            # If parent is not a valid index, the root item is being queried.
-            #if row < len(self.root_items) and row >= 0:
-            #if not row == 0:
-            #    # Bad row: return invalid index
-            #    return QtCore.QModelIndex()
-            #else:
-            #    # Return the index
-            #    return self.createIndex(row,col,self.root_items[row])
+            # If parent is not a valid index, assume the root_index is desirable. 
             return self.root_index()
         else:
-            # Grab the parent from its QModelIndex...
-            p_item = self.get_item(parent)
-            # Return the index of the child at row
-            if row < len(p_item.children) and row >= 0:
-                return self.createIndex(row,col,p_item.children[row])
+            p_itm = self.get_item(parent)
+            if row < p_itm.n_children() and row >= 0:
+                return self.createIndex(row,col,p_itm.children[row])
             else:
-                # Bad row: return invalid index
                 return QtCore.QModelIndex()
                 
     # Subclass of QAbstractItemModel must implement parent()
@@ -202,15 +240,8 @@ class TreeModel(QtCore.QAbstractItemModel):
         """
         Returns QModelIndex of parent of item at QModelIndex index
         """
-        # Grab this TreeItem from its QModelIndex
         itm = idx.internalPointer()
         return itm.parent
-        #if not itm.parent.isValid():
-        #if itm == self._root_item:
-        #    # The parent of the root item is a bare (invalid) QModelIndex 
-        #    return QtCore.QModelIndex()
-        #else:
-        #    return itm.parent
         
     # Subclass of QAbstractItemModel must implement rowCount()
     def rowCount(self,parent=QtCore.QModelIndex()):
@@ -232,8 +263,6 @@ class TreeModel(QtCore.QAbstractItemModel):
         Let TreeModels by default have one column,
         to display the local TreeItem's tag.
         """
-        # TODO: Make the column count adjustable via addColumns() and removeColumns().
-        # Then make TreeModel subclasses adjust their number of columns in their constructors.
         return 1
 
     # QAbstractItemModel subclass must implement 
@@ -263,9 +292,9 @@ class TreeModel(QtCore.QAbstractItemModel):
     # insertRows(row,count[,parent=QModelIndex()])
     def insertRows(self,row,count,parent=QtCore.QModelIndex()):
         if parent.isValid():
-            self.beginInsertRows(parent,row,row+count-1)
             # Get the TreeItem referred to by QModelIndex parent:
             itm = parent.internalPointer()
+            self.beginInsertRows(parent,row,row+count-1)
             for j in range(row,row+count):
                 itm.children.insert(TreeItem(j,0,parent))
             self.endInsertRows()
@@ -277,16 +306,12 @@ class TreeModel(QtCore.QAbstractItemModel):
     # removeRows(row,count[,parent=QModelIndex()])
     def removeRows(self, row, count, parent=QtCore.QModelIndex()):
         if parent.isValid():
-            self.beginRemoveRows(parent,row,row+count-1)
             p_itm = parent.internalPointer()
+            self.beginRemoveRows(parent,row,row+count-1)
             for j in range(row,row+count)[::-1]:
                 del_idx = self.index(j,0,parent)
-                #print 'delete item at {}'.format(self.build_uri(del_idx))
                 del_itm = p_itm.children.pop(j)
-                # First recurse on the children.
-                #self.removeRows(0,del_itm.n_children(),del_idx)
-                # Then delete the parent.
-                del del_itm
+                del_itm.deleteLater()
             self.endRemoveRows()
             return True
         else:
@@ -296,22 +321,20 @@ class TreeModel(QtCore.QAbstractItemModel):
         # note: section indicates row or column number, depending on orientation
         if (data_role == QtCore.Qt.DisplayRole and section == 0):
             return "{} item(s)".format(self.rowCount(QtCore.QModelIndex()))
-        #elif (data_role == QtCore.Qt.DisplayRole and section == 1):
-        #    return "info".format(self.rowCount(QtCore.QModelIndex()))
         else:
             return None
 
-    def iter_indexes(self,parent=QtCore.QModelIndex()):
-        """Provide a list of the QModelIndexes held in the tree"""
-        if parent.isValid():
-            idxs = [parent]
-            itms = self.get_item(parent).children
-            for j in range(len(itms)):
-                itm = itms[j]
-                idx = self.index(j,0,parent)
-                if itm.n_children > 0:
-                    idxs = idxs + self.iter_indexes(idx)
-            return idxs
+    #def iter_indexes(self,parent=QtCore.QModelIndex()):
+    #    """Provide a list of the QModelIndexes held in the tree"""
+    #    if parent.isValid():
+    #        idxs = [parent]
+    #        itms = self.get_item(parent).children
+    #        for j in range(len(itms)):
+    #            itm = itms[j]
+    #            idx = self.index(j,0,parent)
+    #            if itm.n_children > 0:
+    #                idxs = idxs + self.iter_indexes(idx)
+    #        return idxs
 
     def print_tree(self,rowprefix='',parent=QtCore.QModelIndex()):
         tree_string = ''
@@ -322,80 +345,3 @@ class TreeModel(QtCore.QAbstractItemModel):
                 tree_string = tree_string + self.print_tree(rowprefix+'\t',self.index(j,0,parent))
         return tree_string
             
-    def tree_dataChanged(self,idx):
-        self.dataChanged.emit(idx,idx)
-        itm = idx.internalPointer()
-        for c_row in range(itm.n_children()):
-            c_idx = self.index(c_row,0,idx)
-            self.tree_dataChanged(c_idx)
-
-    def build_dict(self,x):
-        """Build a dict from structured data object x"""
-        if isinstance(x,dict):
-            d = x 
-        elif isinstance(x,list):
-            d = OrderedDict(zip([str(i) for i in range(len(x))],x)) 
-        else:
-            d = {} 
-        return d
-
-    def tree_update(self,idx,x_new):
-        """
-        Call this function to store x_new in the TreeItem at idx 
-        and then build/update/prune the subtree rooted at that item.
-        x_new may be an entirely new object,
-        or it may refer to the same object that already exists at idx
-        (i.e. it may be that idx.internalPointer().data == x_new),
-        in which case this will update the subtree wrt any recent changes to x_new. 
-        """
-        #TODO: Take measures to change as little as possible of the tree,
-        #since this can be a big operation and is called frequently.
-        #TODO: consider: if x_new is None, delete the item at idx?
-        #import pdb; pdb.set_trace()
-        itm = idx.internalPointer()
-        x = itm.data
-        itm.data = x_new
-        # Build a dict around the new data 
-        x_new_dict = self.build_dict(x_new)
-        # Remove any obsolete children
-        obsolete_child_rows = [] 
-        for j in range(itm.n_children()):
-            #if not self.index(j,0,idx).internalPointer().tag() in x_dict.keys():
-            if not itm.children[j].tag() in x_new_dict.keys():
-                obsolete_child_rows.append( j )
-        #obsolete_child_rows.sort()
-        for j in obsolete_child_rows[::-1]:
-            obsolete_child_idx = self.index(j,0,idx)
-            self.remove_item(obsolete_child_idx,idx)
-            #self.beginRemoveRows(idx,j,j)
-            #itm_kill = itm.children.pop(j)
-            #self.endRemoveRows()
-            #itm_kill.deleteLater()
-            #del itm_kill
-            #self.removeRow(j)
-        # Add items for any new children 
-        child_tags = [itm.children[j].tag() for j in range(itm.n_children())]
-        for k in x_new_dict.keys():
-            if not k in child_tags:
-                # note, add_item will recursively call tree_update
-                self.add_item(k,x_new_dict[k],idx)
-
-                #nc = itm.n_children()
-                #c_itm = TreeItem(nc,0,idx)
-                #c_itm.set_tag(k)
-                #self.beginInsertRows(idx,nc,nc)
-                #itm.children.insert(nc,c_itm)
-                #self.endInsertRows()
-
-        # Recurse to update children
-        for j in range(itm.n_children()):
-            c_idx = self.index(j,0,idx)
-            c_tag = c_idx.internalPointer().tag()
-            self.tree_update(c_idx,x_dict[c_tag])
-        # Finish by informing views that dataChanged().
-        self.tree_dataChanged(idx) 
-
-    def setData(self,idx,value,data_role):
-        return False
-
-

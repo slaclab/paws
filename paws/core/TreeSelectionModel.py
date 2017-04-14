@@ -12,6 +12,16 @@ class TreeSelectionModel(TreeModel):
     def __init__(self,n_flags):
         super(TreeSelectionModel,self).__init__()
         self.flag_names = ['flag{}'.format(j) for j in range(n_flags)]
+        self.flag_defaults = [False for j in range(n_flags)]
+
+    def set_flag_names(self,flag_names,flag_defaults=None):
+        if flag_defaults is None:
+            flag_defaults = [False for j in range(len(flag_names))]
+        if self.n_flags() == len(flag_names):
+            self.flag_names = flag_names
+        else:
+            msg = 'expected {} flag names, got {}'.format(self.n_flags(),len(flag_names))
+            raise ValueError(msg)
 
     def n_flags(self):
         return len(self.flag_names)
@@ -81,10 +91,10 @@ class TreeSelectionModel(TreeModel):
             # Not column 0, not CheckStateRole: return None
             return None
 
-    def check_state(itm,flag_idx):
-        if self.is_checked(itm,flag_idx):
+    def check_state(self,itm,flag_idx):
+        if self.is_flagged(itm,flag_idx):
             return QtCore.Qt.Checked
-        elif self.children_checked(itm,flag_idx):
+        elif self.children_flagged(itm,flag_idx):
             return QtCore.Qt.PartiallyChecked
         else:
             return QtCore.Qt.Unchecked

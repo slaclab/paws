@@ -54,7 +54,6 @@ class InputLocator(object):
         self.val = val 
         self.data = None 
 
-
 def cast_type_val(tp,val):
     """
     Perform type casting for operation inputs.
@@ -74,6 +73,80 @@ def cast_type_val(tp,val):
         msg = 'type selection {}, should be one of {}'.format(tp,valid_types)
         raise ValueError(msg)
     return val
+
+def locate_input(il,wf=None):
+    """
+    Return the data pointed to by a given InputLocator object.
+    Optionally, a reference to a Workflow can be given as the second argument;
+    it will be used to fetch data as needed.
+    """
+    if il.src == no_input or il.tp == none_type:
+        return None
+    elif il.src == batch_input:
+        # Expect this input to have been set by Workflow.set_op_input_at_uri().
+        # See Workflow.run_wf_batch().
+        return il.data 
+    elif il.src == text_input: 
+        if isinstance(il.val,list):
+            return [cast_type_val(il.tp,v) for v in il.val]
+        else:
+            return cast_type_val(il.tp,il.val)
+    elif il.src == wf_input:
+        if il.tp == ref_type:
+
+            # Note, this will return whatever data is stored in the TreeItem at uri.
+            # If il.val is the uri of an input that has not yet been loaded,
+            # this means it will get the InputLocator that currently inhabits that uri.
+
+            # Note, this problem has now been fixed by changing Workflow.build_dict()
+            # to not substitute InputLocators for inputs that had not been loaded.
+
+            if isinstance(il.val,list):
+                return [wf.get_from_uri(v)[0].data for v in il.val]
+            else:
+                return wf.get_from_uri(il.val)[0].data
+        elif il.tp == path_type: 
+            if isinstance(il.val,list):
+                return [str(v) for v in il.val]
+            else:
+                return str(il.val)
+    elif il.src == plugin_input:
+        if il.tp == ref_type:
+            if isinstance(il.val,list):
+                return [wf.wfman.plugman.get_from_uri(v)[0].data for v in il.val]
+            elif il.val is not None:
+                return wf.wfman.plugman.get_from_uri(il.val)[0].data
+            else:
+                return None
+        elif il.tp == path_type:
+            if isinstance(il.val,list):
+                return [str(v) for v in il.val]
+            else:
+                return str(il.val)
+    elif il.src == fs_input:
+        if isinstance(il.val,list):
+            return [str(v) for v in il.val]
+        else:
+            return str(il.val)
+    else: 
+        msg = 'found input source {}, should be one of {}'.format(
+        il.src, valid_sources)
+        raise ValueError(msg)
+
+def load_inputs(op,wf=None):
+    """
+    Loads input data for an Operation from its input_locators.
+    A workflow can be provided as a second argument,
+    in which case it may be used to fetch data.
+    """
+    for name,il in op.input_locator.items():
+        if isinstance(il,InputLocator):
+            il.data = locate_input(il,wf)
+            op.inputs[name] = il.data
+        else:
+            msg = '[{}] Found broken Operation.input_locator for {}: {}'.format(
+            __name__, name, il)
+            raise ValueError(msg)
 
 def get_uri_from_dict(uri,d):
     keys = uri.split('.')

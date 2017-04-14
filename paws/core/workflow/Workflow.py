@@ -13,11 +13,12 @@ from .WfWorker import WfWorker
 
 class Workflow(TreeSelectionModel):
     """
-    Tree structure for a workflow built from paws Operations.
+    Tree structure for a Workflow built from paws Operations.
     """
 
     def __init__(self,wfman):
-        super(Workflow,self).__init__()
+        super(Workflow,self).__init__(2)
+        self.set_flag_names(['select','enable'],[False,True])
         self._running = False
         self.wfman = wfman
     
@@ -41,81 +42,20 @@ class Workflow(TreeSelectionModel):
         # such as updating views in the GUI.
         self.wfman.appref.processEvents()
 
-    # overload super().is_tag_free: default None parent and search root index.
-    def is_tag_free(self,uri,parent=None):
-        if parent is None:
-            parent = self.root_index()
-        return super(Workflow,self).is_tag_free(uri,parent)
-        
-    def load_inputs(self,op):
+    def set_op_input_at_uri(self,uri,val):
         """
-        Loads input data for an Operation from that Operation's input_locators.
-        It is expected that op.input_locator[name] will refer to an InputLocator.
+        Set an op input, indicated by uri, to provided value.
+        uri must be of the form op_name.inputs.input_name.
+        Currently shallower uris (e.g. op_name.inputs) 
+        and deeper uris (e.g. op_name.inputs.input_list.0)
+        are not supported.
         """
-        for name,il in op.input_locator.items():
-            if isinstance(il,optools.InputLocator):
-                il.data = self.locate_input(il)
-                op.inputs[name] = il.data
-            else:
-                msg = '[{}] Found broken Operation.input_locator for {}: {}'.format(
-                __name__, name, il)
-                raise ValueError(msg)
-
-    def locate_input(self,il):
-        """
-        Return the data pointed to by a given InputLocator object.
-        """
-        if il.src == optools.no_input or il.tp == optools.none_type:
-            return None
-        elif il.src == optools.batch_input:
-            # Expect this input to have been set by self.set_op_input_at_uri().
-            return il.data 
-        elif il.src == optools.text_input: 
-            if isinstance(il.val,list):
-                return [optools.cast_type_val(il.tp,v) for v in il.val]
-            else:
-                return optools.cast_type_val(il.tp,il.val)
-        elif il.src == optools.wf_input:
-            if il.tp == optools.ref_type:
-
-                # Note, this will return whatever data is stored in the TreeItem at uri.
-                # If il.val is the uri of an input that has not yet been loaded,
-                # this means it will get the InputLocator that currently inhabits that uri.
-
-                # Note, this problem has now been fixed by changing Workflow.build_dict()
-                # to not substitute InputLocators for inputs that had not been loaded.
-
-                if isinstance(il.val,list):
-                    return [self.get_from_uri(v)[0].data for v in il.val]
-                else:
-                    return self.get_from_uri(il.val)[0].data
-            elif il.tp == optools.path_type: 
-                if isinstance(il.val,list):
-                    return [str(v) for v in il.val]
-                else:
-                    return str(il.val)
-        elif il.src == optools.plugin_input:
-            if il.tp == optools.ref_type:
-                if isinstance(il.val,list):
-                    return [self.wfman.plugman.get_from_uri(v)[0].data for v in il.val]
-                elif il.val is not None:
-                    return self.wfman.plugman.get_from_uri(il.val)[0].data
-                else:
-                    return None
-            elif il.tp == optools.path_type:
-                if isinstance(il.val,list):
-                    return [str(v) for v in il.val]
-                else:
-                    return str(il.val)
-        elif il.src == optools.fs_input:
-            if isinstance(il.val,list):
-                return [str(v) for v in il.val]
-            else:
-                return str(il.val)
-        else: 
-            msg = 'found input source {}, should be one of {}'.format(
-            il.src, optools.valid_sources)
-            raise ValueError(msg)
+        #print '[{}]: set {} to {}'.format(__name__,uri,val)
+        p = uri.split('.')
+        op_itm, idx = self.get_from_uri(p[0])
+        op = op_itm.data
+        op.inputs[p[2]] = val
+        op.input_locator[p[2]].data = val
 
     def add_op(self,op_tag,new_op):
         """Add an Operation to the tree as a new top-level TreeItem."""
@@ -280,8 +220,6 @@ class Workflow(TreeSelectionModel):
                     valid_wf_inputs += self.get_valid_wf_inputs(b_rt_itm)
             else:
                 continue_flag = False
-        #print 'RESOLVED A STACK'
-        #print 'STACK PRINTOUT:'
         #print optools.print_stack(stk)
         return stk
 
@@ -319,9 +257,9 @@ class Workflow(TreeSelectionModel):
         by the Operations above them.     
         """
         # Batch and Realtime execution operations expect to have their inputs loaded
-        # by calling self.load_inputs(b_itm.data)
+        # by calling optools.load_inputs()
         # before calling realtime_ops() or batch_ops()
-        self.load_inputs(b_itm.data)
+        optools.load_inputs(b_itm.data,self)
         if isinstance(b_itm.data,Realtime):
             exec_itms = [self.get_from_uri(uri)[0] for uri in b_itm.data.realtime_ops()]
         elif isinstance(b_itm.data,Batch):
@@ -390,7 +328,7 @@ class Workflow(TreeSelectionModel):
             self.wfman.wait_for_thread(thd_idx)
             for itm in lst: 
                 op = itm.data
-                self.load_inputs(op)
+                optools.load_inputs(op,self)
             lst_copy = copy.deepcopy(lst)
             # Make a new Worker, give None parent so that it can be thread-mobile
             wf_wkr = WfWorker(lst_copy,None)
@@ -413,7 +351,7 @@ class Workflow(TreeSelectionModel):
         where the realtime controller Operation is found at rt_itm.data.
         """
         rt = rt_itm.data
-        self.load_inputs(rt)
+        optools.load_inputs(rt,self)
         rt.run()
         self.update_op(rt_itm.tag(),rt)
         nx = 0
@@ -457,7 +395,7 @@ class Workflow(TreeSelectionModel):
         Executes the items in the stack stk under the control of one Batch controller Operation
         """
         b = b_itm.data
-        self.load_inputs(b)
+        optools.load_inputs(b,self)
         b.run()
         self.update_op(b_itm.tag(),b)
         # After b.run(), it is expected that b.input_list() will refer to a list of dicts,
@@ -493,41 +431,11 @@ class Workflow(TreeSelectionModel):
                 return
         self.wfman.write_log( 'BATCH EXECUTION FINISHED' )
 
-    def set_op_input_at_uri(self,uri,val):
-        """
-        Set an op input, indicated by uri, to provided value.
-        uri must be of the form op_name.inputs.input_name.
-        Currently shallower uris (e.g. op_name.inputs) 
-        and deeper uris (e.g. op_name.inputs.input_list.0)
-        are not supported.
-        """
-        #print '[{}]: set {} to {}'.format(__name__,uri,val)
-        p = uri.split('.')
-        op_itm, idx = self.get_from_uri(p[0])
-        op = op_itm.data
-        op.inputs[p[2]] = val
-        op.input_locator[p[2]].data = val
-
-    #def data(self,itm_idx,data_role):
-    #    currently using super().data() 
-
-    # Overloaded headerData() for Workflow 
     def headerData(self,section,orientation,data_role):
         if (data_role == QtCore.Qt.DisplayRole and section == 0):
-            #return "{} operation(s) loaded".format(self.rowCount(QtCore.QModelIndex()))
-            return "{} operation(s) loaded".format(self.n_items(self.root_index()))
-        elif (data_role == QtCore.Qt.DisplayRole and section == 1):
-            #return "type"
-            return super(Workflow,self).headerData(section,orientation,data_role)    
+            return "{} operation(s) loaded".format(self.item_count(self.root_index()))
         else:
-            return None
-
-    # Overload columnCount()
-    #def columnCount(self,parent):
-    #    return 2
-
-
-
+            return super(Workflow,self).headerData(section,orientation,data_role)    
 
 
 

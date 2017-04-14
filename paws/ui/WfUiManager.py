@@ -72,6 +72,7 @@ class WfUiManager(QtCore.QObject):
             except:
                 existing_op_flag = False
             if not new_op_flag and not existing_op_flag:  
+                self.op = None
                 self.clear_io()
                 #self.ui.op_info.setPlainText('Selected item: {}'.format(x))
             elif new_op_flag:
@@ -122,9 +123,11 @@ class WfUiManager(QtCore.QObject):
         result = self.current_wf().is_tag_free(uri)
         if result[0]:
             self.current_wf().add_op(uri,self.op) 
+            self.op = None
             self.clear_io()
         elif result[1] == 'Tag not unique':
             self.current_wf().update_op(uri,self.op)
+            self.op = None
             self.clear_io()
         else:
             # Request a different uri 
@@ -240,7 +243,6 @@ class WfUiManager(QtCore.QObject):
             item = self.ui.output_layout.takeAt(i)
             item.widget().close()
             #item.widget().deleteLater()
-        self.op = None
         self.src_widgets = {}
         self.type_widgets = {}
         self.val_widgets = {}
