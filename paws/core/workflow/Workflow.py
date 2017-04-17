@@ -4,8 +4,8 @@ from functools import partial
 
 from PySide import QtCore
 
-from ..TreeSelectionModel import TreeSelectionModel
-from ..TreeItem import TreeItem
+from ..models.TreeSelectionModel import TreeSelectionModel
+from ..models.TreeItem import TreeItem
 from ..operations import optools
 from ..operations.Operation import Operation, Batch, Realtime
 from .WfWorker import WfWorker

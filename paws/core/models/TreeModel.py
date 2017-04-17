@@ -64,7 +64,7 @@ class TreeModel(QtCore.QAbstractItemModel):
         parent = rm_itm.parent
         if parent.isValid():
             #rm_itm = rm_idx.internalPointer()
-            #for child_row in range(rm_itm.n_children()):
+            #for child_row in range(rm_itm.n_children())[::-1]:
             #    child_idx = self.index(child_row,0,rm_idx)
             #    self.remove_item(child_idx)
             rm_row = rm_idx.row()
@@ -76,6 +76,7 @@ class TreeModel(QtCore.QAbstractItemModel):
             rm_itm = None
         self.dataChanged.emit(rm_idx,rm_idx)
         #self.tree_dataChanged(rm_idx) 
+        #self.tree_dataChanged(self.root_index()) 
 
     def tree_update(self,idx,x_new):
         """
@@ -129,9 +130,9 @@ class TreeModel(QtCore.QAbstractItemModel):
         return item_uri
 
     def tree_dataChanged(self,idx):
-        self.dataChanged.emit(idx,idx)
         itm = idx.internalPointer()
-        for c_row in range(itm.n_children()):
+        self.dataChanged.emit(idx,idx)
+        for c_row in range(itm.n_children())[::-1]:
             c_idx = self.index(c_row,0,idx)
             self.tree_dataChanged(c_idx)
 

@@ -76,7 +76,7 @@ class PawsAPI(object):
         #print 'remove {}'.format(op_tag)
         rm_itm, rm_idx = wf.get_from_uri(op_tag)
         wf.remove_op(rm_idx)
-        self._app.processEvents()
+        #self._app.processEvents()
         #print self.inspect_objects()
 
     def get_op(self,opname,wfname=None):

@@ -11,7 +11,7 @@ from PySide import QtGui, QtCore, QtUiTools
 import yaml
 
 from ..core.operations import optools
-from ..core.ListModel import ListModel
+from ..core.models.ListModel import ListModel
 from ..core import pawstools
 
 ## Test whether we have Qt >= 4.7 

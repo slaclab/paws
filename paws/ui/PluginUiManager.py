@@ -3,7 +3,7 @@ from functools import partial
 
 from PySide import QtCore, QtGui, QtUiTools
 
-from ..core.ListModel import PluginListModel
+from ..core.models.ListModel import PluginListModel
 from ..core import plugins 
 from ..core import pawstools
 from ..core.plugins.PawsPlugin import PawsPlugin

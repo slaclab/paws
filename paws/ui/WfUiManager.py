@@ -7,7 +7,7 @@ from ..core.operations import optools
 from ..core.operations.Operation import Operation 
 from ..core import pawstools
 from ..core.operations.optools import InputLocator
-from ..core.ListModel import ListModel
+from ..core.models.ListModel import ListModel
 from .InputLoader import InputLoader
 from . import uitools
 
