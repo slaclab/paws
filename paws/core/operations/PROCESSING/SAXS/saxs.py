@@ -67,7 +67,13 @@ class GuessProperties(Operation):
             if self.outputs['detailed_flags'][ii] == False:
                 self.outputs['good_flag'] = False
 
-
+def logsafe_zip(x, y):
+    bad = (x <= 0) | (y <= 0) | np.isnan(y)
+    x, y = x[~bad], y[~bad]
+    x_y = np.zeros((x.size, 2))
+    x_y[:, 0] = x
+    x_y[:, 1] = y
+    return x_y
 
 def first_dip(q, I, dips, dI=None):
     if dI is None:
@@ -165,24 +171,6 @@ def take_polydispersity_metrics(q, I, dI=None):
         heightAtZero = arbitrary_order_solution(4, q[low_q], I[low_q], dI[low_q])[0]
     return qFirstDip, heightFirstDip, widthFirstDip, heightAtZero, dips, shoulders, detailed_flags
 
-
-
-# I/O functions
-
-def load_references(reference_loc):
-    try:
-        x = np.loadtxt(reference_loc, delimiter=',')
-        references = {'factorVals': x[:, 0],
-                      'heightAtZero': x[:, 1],
-                      'heightFirstDip': x[:, 2],
-                      'xFirstDip': x[:, 3],
-                      'sigmaScaledFirstDip': x[:, 4]
-                      }
-    except IOError:
-        print '''Your references file (%s)
-        appears to be missing.  Re-download or re-generate it.''' % reference_loc
-    return references
-
 # Functions about algebraic solutions
 
 def arbitrary_order_solution(order, x, y, dy=None):
@@ -251,7 +239,7 @@ def blur(x, factor):
     factorMax = factorCenter+5*factor
     factorStep = factor*0.02
     if np.mod((factorMax - factorMin), factorStep) == 0:
-        max += 0.5*factorStep
+        factorMax += 0.5*factorStep
     factorVals = np.arange(factorMin, factorMax, factorStep)
     # normalized gaussian:
     # ((sigma * (2 * np.pi)**0.5)**-1 )*np.exp(-0.5 * ((x - x0)/sigma)**2)
@@ -275,7 +263,7 @@ def generate_references():
     i1s = []
     dxs = []
     i0s = []
-    for ii in range(1, len(polylist)):
+    for ii in range(len(polylist)):
         poly = polylist[ii]
         intensity = blur(x, poly)
         xFirstDip, heightFirstDip, widthFirstDip, heightAtZero, _,_,_ = take_polydispersity_metrics(x, intensity)
@@ -298,10 +286,10 @@ def refine_guess(q, I, I0, r0, frac, q1, I1):
     #first_dip_index = np.where(local_minima_detector(Imodel))[0][0]
     #model_q1 = q[first_dip_index]
     #model_I1 = I[first_dip_index]
-    try:
-        references = load_references(reference_loc)
-    except:
-        print no_reference_message
+#    try:
+#        references = load_references(reference_loc)
+#    except:
+#        print no_reference_message
     x = references['factorVals']
     y1 = references['heightFirstDip']/references['heightAtZero']
     y2 = references['xFirstDip']
