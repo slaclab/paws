@@ -1,44 +1,22 @@
-from PySide import QtCore
-
-class TreeItem(QtCore.QObject):
+class TreeItem(object):
     """
-    TreeItem is a container for data stored in a TreeModel. 
-    A TreeItem keeps references to a parent QModelIndex,
-    and to its row and column within the QAbstractItemModel structure.
-    The object content of the TreeItem is stored at TreeItem.data. 
-    Every TreeItem must have a tag() for display and uri creation.
+    A TreeItem is a structured container 
+    for building a QTreeModel on top of a TreeModel. 
+    A TreeItem keeps references to a parent TreeItem
+    and a list of child TreeItems.
+    It is labeled by a tag (TreeItem._tag or TreeItem.tag())
+    which must be unique across its sibling TreeItems.
     """
 
-    def __init__(self,row,column,parent_idx):
+    def __init__(self,parent_itm,tag):
         super(TreeItem,self).__init__()
-        self.parent = parent_idx    
-        self.row = row
-        self.column = column
-        self.data = None        # TreeItem contains a single object as its data 
-        self.children = []      # list of other TreeItems
-        self._tag = None
-        # Flags: use these for things specific to TreeModel subclasses,
-        # e.g. a flag for selecting the TreeItem in a view,
-        # or for displaying the state of the TreeItem
-        self.flags = [] 
+        self.parent = parent_itm 
+        self.children = []      # list of child TreeItems
+        self.flags = {}         # dict for any added functionality (e.g. toggles, etc) 
+        self.tag = tag          # string tag for indexing and display
+        #self.data = None       # TreeItem contains a single object as its data 
 
     def n_children(self):
         return len(self.children)
-
-    def tag(self):
-        if not self._tag:
-            return 'untagged'
-        else:
-            return self._tag
-
-    def set_tag(self,tag_in):
-        self._tag = tag_in
-
-    #def insert_child(self,new_child,row):
-    #    self.children.insert(row,new_child)
-
-    #def remove_child(self,row):
-    #    self.children.pop(row)
-    
 
 
