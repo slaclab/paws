@@ -61,7 +61,8 @@ class QTreeModel(QtCore.QAbstractItemModel):
                 itm = itm.children[child_keys.index(k)]
             k = path[-1]
             if k:
-                return itm[k]
+                child_keys = [c.tag for c in itm.children]
+                return itm.children[child_keys.index(k)]
             elif k == '':
                 return itm 
         except Exception as ex:
@@ -69,19 +70,46 @@ class QTreeModel(QtCore.QAbstractItemModel):
             ex.message = msg + ex.message
             raise ex
 
+    def get_idx_of_uri(self,uri):
+        try:
+            path = uri.split('.')
+            idx = self.root_index()
+            for k in path[:-1]:
+                itm = self.get_from_idx(idx)
+                child_keys = [c.tag for c in itm.children]
+                idx = self.index(child_keys.index(k),0,idx)
+            k = path[-1]
+            if k:
+                itm = self.get_from_idx(idx)
+                child_keys = [c.tag for c in itm.children]
+                return self.index(child_keys.index(k),0,idx)
+            elif k == '':
+                return idx 
+        except Exception as ex:
+            msg = '\n[{}] Encountered an error while indexing uri {}\n'.format(__name__,uri)
+            ex.message = msg + ex.message
+            raise ex
+
+    def get_data_from_uri(self,uri):
+        return self._tree.get_from_uri(uri)
+
+    def get_data_from_idx(self,idx):
+        uri = self.build_uri(idx)
+        return self.get_data_from_uri(uri)
+
     def build_uri(self,idx):
         """
         Build a URI for the TreeItem at idx 
         by prepending its parent tags with '.' as a delimiter.
         """
         itm = self.get_from_idx(idx)
-        uri = itm.tag()
+        uri = itm.tag
         while not itm == self._root_item:
-            uri = itm.tag()+"."+uri
+            uri = itm.tag+"."+uri
             itm = itm.parent
         return uri
 
-    def add_item(self,itm_tag,itm_data=None,parent_idx=None):
+    def set_item(self,itm_tag,itm_data=None,parent_idx=None):
         if parent_idx is None:
             parent_idx = self.root_index()
         parent_uri = self.build_uri(parent_idx)
@@ -95,17 +123,22 @@ class QTreeModel(QtCore.QAbstractItemModel):
         self.tree_dataChanged(itm_idx) 
 
     def tree_update(self,parent_idx,itm_tag,itm_data):
-        # Get the parent item, build the new item
         parent_itm = self.get_from_idx(parent_uri)
-        itm = TreeItem(parent_itm,itm_tag)
-        # Give the new TreeItem the end row
-        end_row = self.item_count(parent_idx)
-        self.beginInsertRows(parent_idx,end_row,end_row)
-        parent_itm.children.insert(end_row,itm)
-        self.endInsertRows()
+        child_keys = [c.tag for c in parent_itm.children]
+        if itm_tag in child_keys:
+            # Find the row of existing itm_tag under parent,
+            itm_row = child_keys.index(itm_tag)
+            itm = parent_itm.children[itm_row]
+        else:
+            # Else, put a new TreeItem at the end row
+            itm_row = self.item_count(parent_idx)
+            itm = TreeItem(parent_itm,itm_tag)
+            self.beginInsertRows(parent_idx,itm_row,itm_row)
+            parent_itm.children.insert(itm_row,itm)
+            self.endInsertRows()
         # If needed, get the index of the new item and recurse 
         if isinstance(itm_data,dict):
-            itm_idx = self.index(end_row,0,parent_idx)
+            itm_idx = self.index(itm_row,0,parent_idx)
             for tag,val in itm_data.items():
                 self.tree_update(itm_idx,tag,val)
 
@@ -124,6 +157,7 @@ class QTreeModel(QtCore.QAbstractItemModel):
         parent_itm.children.pop(rm_row)
         self.endRemoveRows()
         self.dataChanged.emit(rm_idx,rm_idx)
+
     def item_count(self,parent_idx=None):
         if parent_idx is None:
             parent_idx = self.root_index()

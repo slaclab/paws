@@ -12,18 +12,16 @@ class WfWorker(QtCore.QObject):
     #finished = QtCore.Signal()
     opDone = QtCore.Signal(str,Operation)
 
-    def __init__(self,to_run=None,parent=None):
-        super(WfWorker,self).__init__(parent)
-        self.to_run = to_run
+    def __init__(self,op_dict=None,parent_QObject=None):
+        super(WfWorker,self).__init__(parent_QObject)
+        self.op_dict = op_dict 
 
     def work(self):
         try:
-            for itm in self.to_run:
+            for op_tag,op in self.op_dict:
                 # run and update the Operation in this TreeItem
-                op = itm.data
                 op.run()
-                self.opDone.emit(itm.tag(),op)
-            self.deleteLater()
+                self.opDone.emit(op_tag,op)
             self.thread().quit()
         except Exception as ex:
             # TODO: Deliver this exception to the user gracefully 
@@ -32,7 +30,6 @@ class WfWorker(QtCore.QObject):
                 + 'Error message: {} \n'.format(ex.message) 
                 + 'Stack trace: {}'.format(tb)) 
             print msg
-            self.deleteLater()
             self.thread().quit()
             raise ex
 

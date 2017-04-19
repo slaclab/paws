@@ -241,13 +241,4 @@ class TreeModel(object):
 #                l.append(root_uri+'.'+str(i))
 #                l = l + self.list_uris(root_uri+'.'+str(i))
 #
-#    def build_dict(self,x):
-#        """Build a dict from structured data object x"""
-#        if isinstance(x,dict):
-#            d = x 
-#        elif isinstance(x,list):
-#            d = OrderedDict(zip([str(i) for i in range(len(x))],x)) 
-#        else:
-#            d = {} 
-#        return d
             

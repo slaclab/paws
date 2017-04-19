@@ -148,6 +148,34 @@ def load_inputs(op,wf=None):
             __name__, name, il)
             raise ValueError(msg)
 
+def get_valid_wf_inputs(self,op_tag,op):
+    """
+    Return the TreeModel uris of the op and its inputs/outputs 
+    that are eligible as downstream inputs in the workflow.
+    """
+    # valid_wf_inputs should be the operation, its input and output dicts, and their respective entries
+    valid_wf_inputs = [op_tag,op_tag+'.'+optools.inputs_tag,op_tag+'.'+optools.outputs_tag]
+    valid_wf_inputs += [op_tag+'.'+optools.outputs_tag+'.'+k for k in op.outputs.keys()]
+    valid_wf_inputs += [op_tag+'.'+optools.inputs_tag+'.'+k for k in op.inputs.keys()]
+    return valid_wf_inputs
+    
+def build_dict(self,x):
+    if isinstance(x,Operation):
+        d = OrderedDict()
+        d[optools.inputs_tag] = build_dict(x.inputs)
+        d[optools.outputs_tag] = build_dict(x.outputs)
+    elif isinstance(x,dict):
+        d = OrderedDict(x)
+        for k,v in d:
+            d[k] = build_dict[v]
+    elif isinstance(x,list):
+        d = OrderedDict(zip([str(i) for i in range(len(x))],x)) 
+        for k,v in d:
+            d[k] = build_dict[v]
+    else:
+        return x 
+    return d
+
 def get_uri_from_dict(uri,d):
     keys = uri.split('.')
     itm = d
@@ -182,20 +210,21 @@ def parameter_doc(name,value,doc):
 def stack_size(stk):
     sz = 0
     for lst in stk:
-        if isinstance(lst[0].data,Operation.Batch) or isinstance(lst[0].data,Operation.Realtime):
-            sz += stack_size(lst[1])+1
-        else:
-            sz += len(lst)
+        for lst_itm in lst:
+            if isinstance(lst_itm,list):
+                sz += stack_size(lst_itm)
+            else:
+                sz += 1
     return sz
 
 def stack_contains(itm,stk):
     for lst in stk:
-        if isinstance(lst[0].data,Operation.Batch) or isinstance(lst[0].data,Operation.Realtime):
-            if itm == lst[0] or stack_contains(itm,lst[1]):
-                return True
-        else:
-            if itm in lst:
-                return True
+        if itm in lst:
+            return True
+        for lst_itm in lst:
+            if isinstance(lst_itm,list):
+                if stack_contains(itm,lst_itm):
+                    return True
     return False
 
 def print_stack(stk):
