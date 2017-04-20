@@ -2,11 +2,8 @@
 import re
 from collections import OrderedDict
 
-from PySide import QtCore
-
 import optools
 
-#class Operation(QtCore.QObject):
 class Operation(object):
 #    __metaclass__ = abc.ABCMeta
 #    Abstract class template for implementing paws operations.

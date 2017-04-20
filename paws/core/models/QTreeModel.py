@@ -90,6 +90,13 @@ class QTreeModel(QtCore.QAbstractItemModel):
             ex.message = msg + ex.message
             raise ex
 
+    def contains_uri(self,uri):
+        """Returns whether or not input uri points to an item in this tree."""
+        return self._tree.contains_uri(uri)
+
+    def list_uris(self,root_uri=''):
+        return self._tree.list_uris(root_uri)
+
     def get_data_from_uri(self,uri):
         return self._tree.get_from_uri(uri)
 
@@ -99,8 +106,8 @@ class QTreeModel(QtCore.QAbstractItemModel):
 
     def build_uri(self,idx):
         """
-        Build a URI for the TreeItem at idx 
-        by prepending its parent tags with '.' as a delimiter.
+        Build a URI for idx by combining the tags 
+        of the lineage of idx, with '.' as a delimiter.
         """
         itm = self.get_from_idx(idx)
         uri = itm.tag
@@ -132,7 +139,7 @@ class QTreeModel(QtCore.QAbstractItemModel):
         else:
             # Else, put a new TreeItem at the end row
             itm_row = self.item_count(parent_idx)
-            itm = TreeItem(parent_itm,itm_tag)
+            itm = self.create_tree_item(parent_itm,itm_tag)
             self.beginInsertRows(parent_idx,itm_row,itm_row)
             parent_itm.children.insert(itm_row,itm)
             self.endInsertRows()
@@ -141,6 +148,15 @@ class QTreeModel(QtCore.QAbstractItemModel):
             itm_idx = self.index(itm_row,0,parent_idx)
             for tag,val in itm_data.items():
                 self.tree_update(itm_idx,tag,val)
+
+    def create_tree_item(self,parent_itm,itm_tag):
+        """
+        Build a TreeItem for use in this tree.
+        Reimplement create_tree_item() in subclasses of QTreeModel
+        to add features to TreeItems, such as TreeItem.flags.
+        QTreeModel implementation returns TreeItem(parent_itm,itm_tag).
+        """
+        return TreeItem(parent_itm,itm_tag)
 
     def remove_item(self,itm_tag,parent_idx=None):
         if parent_idx is None:

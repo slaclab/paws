@@ -109,18 +109,18 @@ class TreeModel(object):
             itm = self.get_from_uri(root_uri)
         else:
             itm = self._root
-        l = []
+        l = [root_uri]
         if isinstance(itm,dict):
             for k,x in itm.items():
-                l.append(root_uri+'.'+k)
+                #l.append(root_uri+'.'+k)
                 l = l + self.list_uris(root_uri+'.'+k)
         #elif isinstance(itm,list):
         #    for i,x in zip(range(len(itm)),itm):
         #        l.append(root_uri+'.'+str(i))
         #        l = l + self.list_uris(root_uri+'.'+str(i))
-        else:
-            # uris are built only from dicts 
-            l = [] 
+        #else:
+        #    # uris are built only from dicts 
+        #    l = [] 
         return l
             
     def is_uri_valid(self,uri):

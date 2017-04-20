@@ -7,10 +7,29 @@ import yaml
 from Operation import Operation
 from .. import pawstools
 
+# check for an ops.cfg file
+cfg_file = pawstools.rootdir+'/core/operations/ops.cfg'
+if os.path.exists(cfg_file):
+    load_flags = load_cfg(cfg_file)
+else:
+    load_flags = {}
+
+# list to keep track of keys that get loaded in this run
+# these keys are used to remove load_flags
+# when Operations or categories are renamed or removed.
+load_keys = []
+
 def save_cfg(cfg_data,cfg_file):
     cfg = open(cfg_file,'w')
     yaml.dump(cfg_data,cfg)
     cfg.close()
+    
+def save_config():
+    """
+    Call save_config() before closing 
+    to save the state of which ops are enabled/disabled.
+    """
+    save_cfg(load_flags,cfg_file)
 
 def load_cfg(cfg_file):
     cfg = open(cfg_file,'r')
@@ -20,98 +39,104 @@ def load_cfg(cfg_file):
         cfg_data = {}
     return cfg_data
 
-# check for an ops.cfg file
-cfg_file = pawstools.rootdir+'/core/operations/ops.cfg'
-if os.path.exists(cfg_file):
-    op_load_flags = load_cfg(cfg_file)
-else:
-    op_load_flags = {}
+def update_load_flags():
+    for k in load_flags.keys():
+        if not k in load_keys:
+            load_flags.pop(k)
 
-# list to keep track of keys that get loaded in this run
-# these keys are later used to maintain a lean, sane cfg file
-op_load_keys = []
-
-def load_ops_from_path(path_,pkg,cat_root='MISC'):
+def load_ops_from_path(path_,pkg,cat_root=''):
     ops = []
     cats = []
     # pkgutil.iter_modules returns module_loader, module_name, ispkg forall modules in path
     mods = pkgutil.iter_modules(path_)
     mods = [mod for mod in mods if mod[1] not in ['__init__','Operation','OpManager','optools','DMZ']]
     for modloader, modname, ispkg in mods:
-        if modname in op_load_flags.keys():
-            if op_load_flags[modname]:
+        if cat_root == '':
+            mod_root = modname 
+        else:
+            mod_root = cat_root+'.'+modname
+        load_keys.append(mod_root)
+        if mod_root in load_flags.keys():
+            if load_flags[mod_root]:
                 load_mod = True
             else:
                 load_mod = False 
         else:
-            load_mod = True
-        # if load_mod, load it
-        if load_mod:
-            mod = importlib.import_module('.'+modname,pkg)
+            # NOTE: This line determines whether or not 
+            # newly arrived modules should be loaded by default.
+            load_mod = False
+        load_flags[mod_root] = load_mod
         # if it is a package, recurse
         if load_mod and ispkg:
             pkg_path = [path_[0]+'/'+modname]
-            if cat_root == 'MISC':
-                pkg_cat_root = modname 
-            else:
-                pkg_cat_root = cat_root+'.'+modname
-            pkg_ops, pkg_cats = load_ops_from_path(pkg_path,pkg+'.'+modname,pkg_cat_root)
+            pkg_ops, pkg_cats = load_ops_from_path(pkg_path,pkg+'.'+modname,mod_root)
             pkg_ops = [op for op in pkg_ops if not op in ops]
             pkg_cats = [cat for cat in pkg_cats if not cat in cats]
             ops = ops + pkg_ops
             cats = cats + pkg_cats
         elif load_mod:
-            new_ops, new_cats = load_ops_from_module(mod,cat_root)
-            new_ops = [op for op in new_ops if not op in ops]
-            new_cats = [cat for cat in new_cats if not cat in cats]
-            ops = ops + new_ops
-            cats = cats + new_cats
+            mod = importlib.import_module('.'+modname,pkg)
+            # Get the operation from the module:
+            # assume Operation name is same as module name
+            op = getattr(mod,modname)
+            ops.append( (cat_root,op) )
+            if not cat_root in cats:
+                cats.append(cat_root)
     return ops, cats
 
-def load_ops_from_module(mod,cat_root):
-    # iterate through the module's __dict__, find Operations 
-    ops = []
-    cats = []
-    #print '\n\nattempt load_ops_from_module on {}, root {}\n\n'.format(mod,cat_root)
-    for nm, itm in mod.__dict__.items():
-        try:
-            # is it a class?
-            if isinstance(itm,type):
-                # is it a non-abstract subclass of Operation?
-                if issubclass(itm,Operation) and not nm in ['Operation','Realtime','Batch']:
-                    op = getattr(mod,nm)
-                    #op_cats = [cat_root]
-                    ops.append( (cat_root,op) )
-                    #for cat in op_cats:
-                    if not cat_root in cats:
-                        cats.append(cat_root)
-                        op_load_flags[cat_root] = True
-                        op_load_keys.append(cat_root)
-                    cat = cat_root
-                    parent_cats_done = False
-                    while not parent_cats_done:
-                        if not cat.rfind('.') == -1:
-                            parcat = cat[:cat.rfind('.')]
-                            if not parcat in cats:
-                                cats.append(parcat)
-                                op_load_keys.append(parcat)
-                            cat = parcat
-                        else:
-                            parent_cats_done = True
-                    op_load_flags[nm] = True
-                    op_load_keys.append(nm)
-        except ImportError as ex:
-            print '[{}] had trouble dealing with {}: {}'.format(__name__,name,item)
-            print 'Error text: {}'.format(ex.message)
-            pass 
-    return ops, cats
+def disable_ops(self,disable_root):
+    # get all keys that contain disable_root
+    disable_keys = [k for k in load_flags.keys() if disable_root in k]
+    for k in disable_keys:
+        ops.load_flags[k] = False 
 
 cat_op_list, cat_list = load_ops_from_path(__path__,__name__)
 
-# remove any keys from op_load_flags that are not in op_load_keys
-# this serves to update the cfg file if ops or directories are removed
-for k in op_load_flags.keys():
-    if not k in op_load_keys:
-        op_load_flags.pop(k)
+update_load_flags()
+
+#op = load_op_from_module(mod,cat_root)
+#mod_ops, mod_cats = load_ops_from_module(mod,cat_root)
+#mod_ops = [op for op in mod_ops if not op in ops]
+#mod_cats = [cat for cat in mod_cats if not cat in cats]
+#ops = ops + mod_ops
+#cats = cats + mod_cats
+
+#def load_op_from_module(mod,cat_root):
+    # Get the operation from the module:
+    # assume Operation name is same as module name
+    #op = getattr(mod,mod)
+    #ops = []
+    #cats = []
+    #for nm, itm in mod.__dict__.items():
+    #    try:
+    #        # is it a class?
+    #        if isinstance(itm,type):
+    #            # is it a non-abstract subclass of Operation?
+    #            if issubclass(itm,Operation) and not nm in ['Operation','Realtime','Batch']:
+    #                op = getattr(mod,nm)
+    #                ops.append( (cat_root,op) )
+    #                if not cat_root in cats:
+    #                    cats.append(cat_root)
+    #                    #load_flags[cat_root] = True
+    #                    #load_keys.append(cat_root)
+    #                #cat = cat_root
+    #                parent_cats_done = False
+    #                while not parent_cats_done:
+    #                    if not cat.rfind('.') == -1:
+    #                        parcat = cat[:cat.rfind('.')]
+    #                        if not parcat in cats:
+    #                            cats.append(parcat)
+    #                            load_keys.append(parcat)
+    #                        cat = parcat
+    #                    else:
+    #                        parent_cats_done = True
+    #                load_flags[nm] = True
+    #                load_keys.append(nm)
+    #    except ImportError as ex:
+    #        print '[{}] had trouble dealing with {}: {}'.format(__name__,name,item)
+    #        print 'Error text: {}'.format(ex.message)
+    #        pass 
+    #return ops, cats
+
 
 

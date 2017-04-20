@@ -5,7 +5,6 @@ from functools import partial
 from PySide import QtCore
 
 from ..models.QTreeSelectionModel import QTreeSelectionModel
-#from ..models.TreeItem import TreeItem
 from ..operations import optools
 from ..operations.Operation import Operation, Batch, Realtime
 from .WfWorker import WfWorker
@@ -54,20 +53,20 @@ class Workflow(QTreeSelectionModel):
             return super(Workflow,self).headerData(section,orientation,data_role)    
 
     def add_op(self,op_tag,new_op):
-        """Add an Operation to the tree as a new top-level TreeItem."""
+        """Add an Operation to the tree at the top level."""
         self.set_item(op_tag,optools.build_dict(new_op),self.root_index())
         self.wf_updated.emit() 
 
     def remove_op(self,rm_idx):
         """
-        Remove a top-level TreeItem (an Operation) from the workflow tree.
+        Remove a an Operation from the workflow tree.
         """
         p_idx = self.parent(rm_idx)
         if not p_idx == self.root_index():
             msg = '[{}] Called remove_op on non-Operation at QModelIndex {}. \n'.format(__name__,rm_idx)
             raise ValueError(msg)
         rm_itm = self.get_from_idx(rm_idx)
-        self.remove_item(rm_itm.tag,rm_idx)
+        self.remove_item(rm_itm.tag,p_idx)
         self.wf_updated.emit() 
 
     def update_op(self,op_tag,new_op):

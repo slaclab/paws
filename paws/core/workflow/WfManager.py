@@ -182,7 +182,7 @@ class WfManager(QtCore.QObject):
                 self.workflows[wfname].add_op(uri,op)
         # the wf_updated signal for this workflow is expected 
         # to be connected to the plugin manager at this point.
-        # it happens in WfManager.add_wf(). 
+        # See WfManager.add_wf(). 
         self.workflows[wfname].wf_updated.emit()
 
     def build_op_from_dict(self,op_setup,opman):

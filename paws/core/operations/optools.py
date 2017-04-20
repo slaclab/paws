@@ -160,11 +160,7 @@ def get_valid_wf_inputs(self,op_tag,op):
     return valid_wf_inputs
     
 def build_dict(self,x):
-    if isinstance(x,Operation):
-        d = OrderedDict()
-        d[optools.inputs_tag] = build_dict(x.inputs)
-        d[optools.outputs_tag] = build_dict(x.outputs)
-    elif isinstance(x,dict):
+    if isinstance(x,dict):
         d = OrderedDict(x)
         for k,v in d:
             d[k] = build_dict[v]
@@ -172,6 +168,15 @@ def build_dict(self,x):
         d = OrderedDict(zip([str(i) for i in range(len(x))],x)) 
         for k,v in d:
             d[k] = build_dict[v]
+    elif isinstance(x,Operation):
+        d = OrderedDict()
+        d[optools.inputs_tag] = build_dict(x.inputs)
+        d[optools.outputs_tag] = build_dict(x.outputs)
+    elif isinstance(x,PawsPlugin):
+        d = OrderedDict()
+        d[optools.inputs_tag] = build_dict(x.inputs)
+        for k,v in x.content():
+            d[k] = build_dict(v)
     else:
         return x 
     return d

@@ -1,3 +1,5 @@
+import copy
+
 from PySide import QtCore
 
 from .QTreeModel import QTreeModel
@@ -8,14 +10,15 @@ class QTreeSelectionModel(QTreeModel):
         super(QTreeSelectionModel,self).__init__()
         self.flag_defaults = flag_defaults 
 
-    #def set_flag_names(self,flag_names,flag_defaults=None):
-    #    if flag_defaults is None:
-    #        flag_defaults = [False for j in range(len(flag_names))]
-    #    if self.n_flags() == len(flag_names):
-    #        self.flag_names = flag_names
-    #    else:
-    #        msg = 'expected {} flag names, got {}'.format(self.n_flags(),len(flag_names))
-    #        raise ValueError(msg)
+    def create_tree_item(self,parent_itm,itm_tag):
+        """
+        Build a TreeItem for use in this tree.
+        Reimplemented for QTreeSelectionModel to set its flag_defaults
+        as the flags for any new TreeItems.
+        """
+        itm = TreeItem(parent_itm,itm_tag)
+        itm.flags = copy.copy(self.flag_defaults)
+        return itm
 
     def n_flags(self):
         return len(self.flag_defaults)

@@ -7,7 +7,17 @@ from PySide import QtCore
 from ..core.operations.OpManager import OpManager 
 from ..core.workflow.WfManager import WfManager 
 from ..core.plugins.PluginManager import PluginManager 
+from ..core import operations as ops
 from ..core.operations import optools
+
+    # TODO: Use OpManager's add_op, add_cat, remove_op, remove_cat
+    # to enable and disable Operations.
+    # Use operations.load_flags to build the list of options.
+    # Build a gui around this.
+
+    # TODO: Ensure that the cfg file of enabled/disabled ops is saved before closing,
+    # even in the event of a sudden shutdown.
+    # Use the Application.aboutToQuit() signal.
 
 #class PawsAPI(QtCore.QObject):
 class PawsAPI(object):
@@ -22,6 +32,8 @@ class PawsAPI(object):
         self._op_manager = OpManager()
         self._plugin_manager = PluginManager()
         self._wf_manager = WfManager(self._plugin_manager,self._app)
+        self._op_manager.load_cats(ops.cat_list) 
+        self._op_manager.load_ops(ops.cat_op_list)
         self._current_wf_name = None 
         #print self.inspect_objects()
         #self.wf_exec_requested.connect(self._wf_manager.run_wf)

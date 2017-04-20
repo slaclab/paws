@@ -51,9 +51,8 @@ class PawsPlugin(object):
         """
         PawsPlugin.content() returns a dict
         containing the meaningful objects contained in the plugin.
-        The default implementation returns the plugin itself,
-        keyed by 'plugin'.
+        The default implementation returns an empty dict. 
         """
-        return {'plugin':self}
+        return {}
 
 
