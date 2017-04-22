@@ -97,7 +97,7 @@ class OpManager(QTreeSelectionModel):
     # Reimplemented headerData() for OpManager 
     def headerData(self,section,orientation,data_role):
         if (data_role == QtCore.Qt.DisplayRole and section == 0):
-            return "{} operations available".format(self.item_count())
+            return "{} operations available".format(self.n_items())
         else:
             return super(OpManager,self).headerData(section,orientation,data_role) 
 

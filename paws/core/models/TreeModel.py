@@ -29,6 +29,11 @@ class TreeModel(object):
         return self.n_items()
  
     def n_items(self,root_uri=''):
+        """
+        Get the total number of data items in the tree.
+        Only nodes containing data (i.e. end nodes) are counted.
+        Nodes referencing containers, for example, are not counted. 
+        """
         if root_uri:
             itm = self.get_from_uri(root_uri)
             prefix = root_uri + '.'

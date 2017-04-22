@@ -72,7 +72,7 @@ class QTreeModel(QtCore.QAbstractItemModel):
             ex.message = msg + ex.message
             raise ex
 
-    def get_idx_of_uri(self,uri):
+    def get_index_of_uri(self,uri):
         try:
             path = uri.split('.')
             idx = self.root_index()
@@ -91,6 +91,9 @@ class QTreeModel(QtCore.QAbstractItemModel):
             msg = '\n[{}] Encountered an error while indexing uri {}\n'.format(__name__,uri)
             ex.message = msg + ex.message
             raise ex
+
+    def n_items(self):
+        return self._tree.n_items()
 
     def tag_error(self,tag):
         return self._tree.tag_error(tag)

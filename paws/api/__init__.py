@@ -22,7 +22,8 @@ from ..core.operations import optools
 #class PawsAPI(QtCore.QObject):
 class PawsAPI(object):
     """
-    Objects of this class act as delegates to interact with a paws application.
+    A container to facilitate interaction with a set of paws objects:
+    an Operations Manager, a Workflow Manager, and a Plugins Manager. 
     """
 
     def __init__(self,app_args):
@@ -75,8 +76,7 @@ class PawsAPI(object):
     def add_op(self,op_tag,op_spec,wfname=None):
         wf = self.get_wf(wfname)
         # get the op referred to by op_spec
-        itm,idx = self._op_manager.get_from_uri(op_spec)
-        op = itm.data
+        op = self._op_manager.get_data_from_uri(op_spec)
         # instantiate with default inputs
         op = op()
         op.load_defaults()
@@ -86,16 +86,13 @@ class PawsAPI(object):
     def remove_op(self,op_tag,wfname=None):
         wf = self.get_wf(wfname)
         #print 'remove {}'.format(op_tag)
-        rm_itm, rm_idx = wf.get_from_uri(op_tag)
+        rm_idx = wf.get_index_of_uri(op_tag)
         wf.remove_op(rm_idx)
         #self._app.processEvents()
         #print self.inspect_objects()
 
     def get_op(self,opname,wfname=None):
-        wf = self.get_wf(wfname)
-        itm,idx = wf.get_from_uri(opname)
-        op = itm.data
-        return op 
+        return self.get_wf(wfname).get_data_from_uri(opname) 
 
     def get_output(self,opname,output_name,wfname=None):
         op = self.get_op(opname,wfname)
