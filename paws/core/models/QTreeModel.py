@@ -1,3 +1,5 @@
+from collections import OrderedDict
+
 from PySide import QtCore
 
 from .TreeItem import TreeItem
@@ -90,8 +92,19 @@ class QTreeModel(QtCore.QAbstractItemModel):
             ex.message = msg + ex.message
             raise ex
 
+    def tag_error(self,tag):
+        return self._tree.tag_error(tag)
+
+    def is_uri_valid(self,uri):
+        return self._tree.is_uri_valid(uri)
+
+    def is_tag_valid(self,tag):
+        return self._tree.is_tag_valid(tag)
+
+    def make_unique_uri(self,prefix):
+        return self._tree.make_unique_uri(prefix)
+
     def contains_uri(self,uri):
-        """Returns whether or not input uri points to an item in this tree."""
         return self._tree.contains_uri(uri)
 
     def list_uris(self,root_uri=''):
@@ -109,17 +122,21 @@ class QTreeModel(QtCore.QAbstractItemModel):
         Build a URI for idx by combining the tags 
         of the lineage of idx, with '.' as a delimiter.
         """
-        itm = self.get_from_idx(idx)
-        uri = itm.tag
-        while not itm == self._root_item:
-            uri = itm.tag+"."+uri
-            itm = itm.parent
-        return uri
+        if idx == self.root_index():
+            return ''
+        elif idx.isValid():
+            itm = self.get_from_idx(idx)
+            uri = itm.tag
+            while not itm.parent == self._root_item:
+                itm = itm.parent
+                uri = itm.tag+"."+uri
+            return uri
 
     def set_item(self,itm_tag,itm_data=None,parent_idx=None):
         if parent_idx is None:
             parent_idx = self.root_index()
         parent_uri = self.build_uri(parent_idx)
+        parent_itm = self.get_from_idx(parent_idx)
         itm_uri = parent_uri+'.'+itm_tag
         # store the data in the underlying TreeModel
         self._tree.set_uri(itm_uri,itm_data)
@@ -130,7 +147,7 @@ class QTreeModel(QtCore.QAbstractItemModel):
         self.tree_dataChanged(itm_idx) 
 
     def tree_update(self,parent_idx,itm_tag,itm_data):
-        parent_itm = self.get_from_idx(parent_uri)
+        parent_itm = self.get_from_idx(parent_idx)
         child_keys = [c.tag for c in parent_itm.children]
         if itm_tag in child_keys:
             # Find the row of existing itm_tag under parent,
@@ -148,6 +165,20 @@ class QTreeModel(QtCore.QAbstractItemModel):
             itm_idx = self.index(itm_row,0,parent_idx)
             for tag,val in itm_data.items():
                 self.tree_update(itm_idx,tag,val)
+
+    def build_tree(self,x):
+        if isinstance(x,dict):
+            d = OrderedDict(x)
+            for k,v in d.items():
+                d[k] = self.build_tree(v)
+            return d
+        elif isinstance(x,list):
+            d = OrderedDict(zip([str(i) for i in range(len(x))],x)) 
+            for k,v in d.items():
+                d[k] = self.build_tree(v)
+            return d
+        else:
+            return x
 
     def create_tree_item(self,parent_itm,itm_tag):
         """
@@ -172,7 +203,7 @@ class QTreeModel(QtCore.QAbstractItemModel):
         self.beginRemoveRows(parent_idx,rm_row,rm_row)
         parent_itm.children.pop(rm_row)
         self.endRemoveRows()
-        self.dataChanged.emit(rm_idx,rm_idx)
+        self.dataChanged.emit(parent_idx,parent_idx)
 
     def item_count(self,parent_idx=None):
         if parent_idx is None:
@@ -201,7 +232,7 @@ class QTreeModel(QtCore.QAbstractItemModel):
         grandparent_itm = parent_itm.parent
         parent_keys = [p.tag for p in grandparent_itm.children]
         parent_row = parent_keys.index(parent_tag)
-        return self.createIndex(row,0,grandparent_itm.children[parent_row])
+        return self.createIndex(parent_row,0,grandparent_itm.children[parent_row])
         
     # Subclass of QAbstractItemModel must implement rowCount()
     def rowCount(self,parent_idx=QtCore.QModelIndex()):
@@ -243,12 +274,12 @@ class QTreeModel(QtCore.QAbstractItemModel):
         #if itm_idx == self.root_index():
         #    return None
         #itm = itm_idx.internalPointer()
-        itm = self.get_from_idx(itm_idx)
         if ((data_role == QtCore.Qt.DisplayRole
         or data_role == QtCore.Qt.ToolTipRole 
         or data_role == QtCore.Qt.StatusTipRole
         or data_role == QtCore.Qt.WhatsThisRole)
         and itm_idx.column() == 0):
+            itm = self.get_from_idx(itm_idx)
             return itm.tag
         else:
             return None

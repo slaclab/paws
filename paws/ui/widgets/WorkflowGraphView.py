@@ -80,7 +80,8 @@ class WorkflowGraphWidget(QtGui.QWidget):
         v = self._scale*self.vspace 
         for lst in stk:
             v = self._scale*self.vspace
-            if isinstance(lst[0].data,Batch) or isinstance(lst[0].data,Realtime):
+            first_op = self.wf.get_data_from_uri(lst[0])
+            if isinstance(first_op,Batch) or isinstance(first_op,Realtime):
                 b_coords, b_inp_coords, b_out_coords = self.get_op_coords(lst[1])
                 for name,coords in b_coords.items():
                     topleft = coords[0]
@@ -92,13 +93,14 @@ class WorkflowGraphWidget(QtGui.QWidget):
                 else:
                     b_width = 10 * len(lst[0].tag()) 
                     b_height = b_width 
-                c[lst[0].tag()] = [(h,v),(h+b_width,v+b_height)]
+                c[lst[0]] = [(h,v),(h+b_width,v+b_height)]
                 h += b_width + self._scale*self.hspace
             else:
                 layer_width = 0
-                for itm in lst:
-                    d = self.op_dims(itm.data)
-                    c[itm.tag()] = [(h,v),(h+d[0],v+d[1])]
+                for name in lst:
+                    op = self.wf.get_data_from_uri(name)
+                    d = self.op_dims(op)
+                    c[name] = [(h,v),(h+d[0],v+d[1])]
                     v += d[1] + self._scale*self.vspace
                     layer_width = max([layer_width,d[0]])
                 h += layer_width + self._scale*self.hspace

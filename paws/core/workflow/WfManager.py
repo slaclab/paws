@@ -4,6 +4,7 @@ import copy
 
 from PySide import QtCore
 
+from ..plugins.PawsPlugin import PawsPlugin
 from ..plugins.WorkflowPlugin import WorkflowPlugin
 from .Workflow import Workflow
 from ..operations.Operation import Operation        
@@ -43,17 +44,6 @@ class WfManager(QtCore.QObject):
     @QtCore.Slot(str)
     def finish_wf(self,wfname):
         self.wfdone.emit(wfname)
-
-    @staticmethod
-    def op_setup_dict(op):
-        dct = OrderedDict() 
-        dct['type'] = copy.copy(type(op).__name__)
-        inp_dct = OrderedDict() 
-        for name in op.inputs.keys():
-            il = op.input_locator[name]
-            inp_dct[name] = {'src':copy.copy(il.src),'tp':copy.copy(il.tp),'val':copy.copy(il.val)}
-        dct[optools.inputs_tag] = inp_dct 
-        return dct
 
     def auto_name(self,wfname):
         """
@@ -152,7 +142,6 @@ class WfManager(QtCore.QObject):
         If wfname is not unique (i.e. a workflow with that name already exists),
         this method will overwrite the existing workflow with a new one.
         """
-        #import pdb; pdb.set_trace()
         wf = Workflow(self)
         wf.exec_finished.connect( partial(self.finish_wf,wfname) )
         wf.wf_updated.connect( partial(self.plugman.update_plugin,wfname) )
@@ -172,7 +161,6 @@ class WfManager(QtCore.QObject):
         where each item in opdict provides enough information
         to get and set inputs for an Operation from OpManager opman.
         """
-        #import pdb; pdb.set_trace()
         self.add_wf(wfname)
         for uri, op_setup in opdict.items():
             op = self.build_op_from_dict(op_setup,opman)
@@ -185,9 +173,21 @@ class WfManager(QtCore.QObject):
         # See WfManager.add_wf(). 
         self.workflows[wfname].wf_updated.emit()
 
+    def op_setup_dict(self,op):
+        op_mod = op.__module__[op.__module__.find('operations'):]
+        op_mod = op_mod[op_mod.find('.')+1:]
+        dct = OrderedDict() 
+        dct['op_module'] = op_mod
+        inp_dct = OrderedDict() 
+        for name in op.inputs.keys():
+            il = op.input_locator[name]
+            inp_dct[name] = {'src':copy.copy(il.src),'tp':copy.copy(il.tp),'val':copy.copy(il.val)}
+        dct[optools.inputs_tag] = inp_dct 
+        return dct
+
     def build_op_from_dict(self,op_setup,opman):
-        opname = op_setup['type']
-        op = opman.get_op_byname(opname)
+        op_uri = op_setup['op_module']
+        op = opman.get_data_from_uri(op_uri)
         if issubclass(op,Operation):
             op = op()
             op.load_defaults()
@@ -209,6 +209,5 @@ class WfManager(QtCore.QObject):
             return op
         else:
             return None
-
 
 

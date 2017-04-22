@@ -31,12 +31,14 @@ class TreeModel(object):
     def n_items(self,root_uri=''):
         if root_uri:
             itm = self.get_from_uri(root_uri)
+            prefix = root_uri + '.'
         else:
             itm = self._root
+            prefix = ''
         #elif isinstance(itm,list):
         #    return sum([self.n_items(root_uri+'.'+str(i)) for i in range(len(itm))])
         if isinstance(itm,dict):
-            return sum([self.n_items(root_uri+'.'+k) for k in itm.keys()])
+            return sum([self.n_items(prefix+k) for k in itm.keys()])
         else:
             # terminal node: return 1
             return 1 
@@ -48,7 +50,7 @@ class TreeModel(object):
         """
         try:
             itm = self._root
-            if '.' in path:
+            if '.' in uri:
                 itm = self.get_from_uri(uri[:uri.rfind('.')])
             path = uri.split('.')
             k = path[-1]
@@ -66,10 +68,9 @@ class TreeModel(object):
         """
         try:
             itm = self._root
-            if '.' in path:
+            if '.' in uri:
                 itm = self.get_from_uri(uri[:uri.rfind('.')])
-            path = uri.split('.')
-            k = path[-1]
+            k = uri.split('.')[-1]
             if k:
                 #if isinstance(itm,list):
                 #    k = int(k)
@@ -95,32 +96,27 @@ class TreeModel(object):
             for k in path[:-1]:
                 itm = itm[k]
             k = path[-1]
-            if k:
-                return itm[k]
-            elif k == '':
+            if k == '':
                 return itm 
+            elif k is not None:
+                return itm[k]
         except Exception as ex:
-            msg = '\n[{}] Encountered an error while fetching uri {}\n'.format(__name__,uri)
-            ex.message = msg + ex.message
-            raise ex
+            msg = str('[{}] Encountered an error while fetching uri {}'
+            .format(__name__,uri) + ex.message)
+            raise KeyError(msg) 
 
     def list_uris(self,root_uri=''):
         if root_uri:
             itm = self.get_from_uri(root_uri)
+            l = [root_uri]
+            prefix = root_uri+'.'
         else:
             itm = self._root
-        l = [root_uri]
+            l = []
+            prefix = ''
         if isinstance(itm,dict):
             for k,x in itm.items():
-                #l.append(root_uri+'.'+k)
-                l = l + self.list_uris(root_uri+'.'+k)
-        #elif isinstance(itm,list):
-        #    for i,x in zip(range(len(itm)),itm):
-        #        l.append(root_uri+'.'+str(i))
-        #        l = l + self.list_uris(root_uri+'.'+str(i))
-        #else:
-        #    # uris are built only from dicts 
-        #    l = [] 
+                l = l + self.list_uris(prefix+k)
         return l
             
     def is_uri_valid(self,uri):
@@ -134,8 +130,8 @@ class TreeModel(object):
         """
         #if parent is None:
         #    parent = self.root_index()
-        if (any(map(lambda s: s in testtag,self.space_chars))
-            or any(map(lambda s: s in testtag,self.bad_chars))):
+        if (any(map(lambda s: s in uri,self.space_chars))
+            or any(map(lambda s: s in uri,self.bad_chars))):
             return False 
         return True 
 
@@ -148,7 +144,7 @@ class TreeModel(object):
         if '.' in tag:
             return False 
         else:
-            return self.is_uri_valid(tag):
+            return self.is_uri_valid(tag)
 
     def is_uri_unique(self,uri):
         """

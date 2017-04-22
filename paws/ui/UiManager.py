@@ -8,24 +8,16 @@ from . import uitools
 from .WfUiManager import WfUiManager
 from .OpUiManager import OpUiManager
 from .PluginUiManager import PluginUiManager
-from ..core.operations.Operation import Operation
 from ..core import pawstools
 from . import data_viewer
 from ..core.models.ListModel import ListModel
 from ..core.plugins.WorkflowPlugin import WorkflowPlugin
-
-# TODO: Make a metaclass that generates Operation subclasses.
-# TODO: Use the above to make an Op development interface. 
 
 class UiManager(QtCore.QObject):
     """
     Stores a reference to a QMainWindow,
     performs operations on it
     """
-
-    # TODO: when the QImageView widget gets resized,
-    # it will call QWidget.resizeEvent().
-    # Try to use this to resize the images in the QImageView.
 
     def __init__(self,opman,wfman,plugman):
         """Make a UI from ui_file, save a reference to it"""
@@ -34,7 +26,6 @@ class UiManager(QtCore.QObject):
         ui_file.open(QtCore.QFile.ReadOnly)
         self.ui = QtUiTools.QUiLoader().load(ui_file)
         ui_file.close()
-        # Set up the self.ui widget to delete itself when closed
         self.ui.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         opman.logmethod = self.msg_board_log
         wfman.logmethod = self.msg_board_log
@@ -123,7 +114,7 @@ class UiManager(QtCore.QObject):
         Display selected item from the plugin tree in image_viewer 
         """
         if idx.isValid(): 
-            itm_data = self.plugman.get_item(idx).data
+            itm_data = self.plugman.get_data_from_idx(idx)
             data_viewer.display_item(itm_data,self.ui.image_viewer,None)
 
     def display_wf_item(self,idx):
@@ -131,7 +122,7 @@ class UiManager(QtCore.QObject):
         Display selected item from the workflow tree in image_viewer 
         """
         if idx.isValid(): 
-            itm_data = self.current_wf().get_item(idx).data
+            itm_data = self.current_wf().get_data_from_idx(idx)
             data_viewer.display_item(itm_data,self.ui.image_viewer,None)
 
     def final_setup(self):
@@ -289,8 +280,8 @@ class UiManager(QtCore.QObject):
         self.msg_board_log( 'dumping current state to {}'.format(fname) )
         d = {} 
         wf_dict = {} 
-        for itm in self.current_wf().root_items:
-            wf_dict[str(itm.tag())] = self.wfman.op_setup_dict(itm.data)
+        for opname,op in self.current_wf().op_dict().items():
+            wf_dict[opname] = self.wfman.op_setup_dict(op)
         d['WORKFLOW'] = wf_dict
         pawstools.update_file(fname,d)
         ui.close()

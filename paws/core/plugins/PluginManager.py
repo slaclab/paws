@@ -3,6 +3,7 @@ from collections import OrderedDict
 
 from PySide import QtCore
 
+from ..operations.Operation import Operation
 from ..operations import optools
 from ..models.QTreeSelectionModel import QTreeSelectionModel
 from ..models.TreeItem import TreeItem
@@ -22,7 +23,7 @@ class PluginManager(QTreeSelectionModel):
     def update_plugin(self,pgin_name):
         if self.contains_uri(pgin_name):
             pgin = self.get_data_from_uri(pgin_name)
-            self.tree_update(self.root_index(),pgin_name,pgin)
+            self.tree_update(self.root_index(),pgin_name,self.build_tree(pgin))
 
     def load_from_dict(self,pgin_dict):
         """
@@ -47,16 +48,41 @@ class PluginManager(QTreeSelectionModel):
             else:
                 self.write_log('Did not find Plugin {} - skipping.'.format(pgin_name))
 
+    def tree_update(self,parent_idx,itm_tag,itm_data):
+        if isinstance(itm_data,Operation) or isinstance(itm_data,PawsPlugin):
+            super(PluginManager,self).tree_update(parent_idx,itm_tag,self.build_tree(itm_data))
+        else:
+            super(PluginManager,self).tree_update(parent_idx,itm_tag,itm_data)
+
+    def build_tree(self,x):
+        if isinstance(x,PawsPlugin):
+            d = x.content()
+            #OrderedDict()
+            #d[optools.inputs_tag] = self.build_tree(x.inputs)
+            #for k,v in x.content().items():
+            #    d[k] = self.build_tree(v)
+        elif isinstance(x,Operation):
+            d = OrderedDict()
+            d[optools.inputs_tag] = self.build_tree(x.inputs)
+            d[optools.outputs_tag] = self.build_tree(x.outputs)
+        else:
+            return super(PluginManager,self).build_tree(x) 
+        return d
+
     def get_plugin(self,pgin_type):    
         try:
             mod = importlib.import_module('.'+pgin_type,pgns.__name__)
             if pgin_type in mod.__dict__.keys():
                 return mod.__dict__[pgin_type]
             else:
-                self.write_log('Did not find plugin {} in module {}'.format(pgin_type,mod.__name__))
+                msg = str('Did not find plugin {} in module {}'
+                .format(pgin_type,mod.__name__))
+                self.write_log(msg)
                 return None 
         except Exception as ex:
-            self.write_log('Trouble loading module for plugin {}. Error message: '.format(pgin_name) + ex.message)
+            msg = str('Trouble loading module for plugin {}. '
+            .format(pgin_name) + 'Error message: ' + ex.message)
+            self.write_log(msg)
             return None
 
     def list_plugins(self):
@@ -71,7 +97,7 @@ class PluginManager(QTreeSelectionModel):
 
     def add_plugin(self,pgin_tag,pgin):
         """Add a Plugin to the tree as a new top-level TreeItem."""
-        self.set_item(pgin_tag,optools.build_dict(pgin),self.root_index())
+        self.set_item(pgin_tag,pgin,self.root_index())
 
     def remove_plugin(self,rm_idx):
         """Remove a Plugin from the tree"""
@@ -84,7 +110,7 @@ class PluginManager(QTreeSelectionModel):
     # Overloaded headerData() for PluginManager 
     def headerData(self,section,orientation,data_role):
         if (data_role == QtCore.Qt.DisplayRole and section == 0):
-            return "Plugins: {} active".format(self.root_item().n_children())
+            return "Plugins: {} active".format(self.item_count())
         elif (data_role == QtCore.Qt.DisplayRole and section == 1):
             return super(PluginManager,self).headerData(section,orientation,data_role)    
         else:

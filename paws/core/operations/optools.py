@@ -6,8 +6,6 @@ from collections import OrderedDict
 
 from PySide import QtCore
 
-import Operation
-
 # tags for inputs and outputs TreeItems    
 inputs_tag = 'inputs'
 outputs_tag = 'outputs'
@@ -148,39 +146,17 @@ def load_inputs(op,wf=None):
             __name__, name, il)
             raise ValueError(msg)
 
-def get_valid_wf_inputs(self,op_tag,op):
+def get_valid_wf_inputs(op_tag,op):
     """
     Return the TreeModel uris of the op and its inputs/outputs 
     that are eligible as downstream inputs in the workflow.
     """
     # valid_wf_inputs should be the operation, its input and output dicts, and their respective entries
-    valid_wf_inputs = [op_tag,op_tag+'.'+optools.inputs_tag,op_tag+'.'+optools.outputs_tag]
-    valid_wf_inputs += [op_tag+'.'+optools.outputs_tag+'.'+k for k in op.outputs.keys()]
-    valid_wf_inputs += [op_tag+'.'+optools.inputs_tag+'.'+k for k in op.inputs.keys()]
+    valid_wf_inputs = [op_tag,op_tag+'.'+inputs_tag,op_tag+'.'+outputs_tag]
+    valid_wf_inputs += [op_tag+'.'+outputs_tag+'.'+k for k in op.outputs.keys()]
+    valid_wf_inputs += [op_tag+'.'+inputs_tag+'.'+k for k in op.inputs.keys()]
     return valid_wf_inputs
     
-def build_dict(self,x):
-    if isinstance(x,dict):
-        d = OrderedDict(x)
-        for k,v in d:
-            d[k] = build_dict[v]
-    elif isinstance(x,list):
-        d = OrderedDict(zip([str(i) for i in range(len(x))],x)) 
-        for k,v in d:
-            d[k] = build_dict[v]
-    elif isinstance(x,Operation):
-        d = OrderedDict()
-        d[optools.inputs_tag] = build_dict(x.inputs)
-        d[optools.outputs_tag] = build_dict(x.outputs)
-    elif isinstance(x,PawsPlugin):
-        d = OrderedDict()
-        d[optools.inputs_tag] = build_dict(x.inputs)
-        for k,v in x.content():
-            d[k] = build_dict(v)
-    else:
-        return x 
-    return d
-
 def get_uri_from_dict(uri,d):
     keys = uri.split('.')
     itm = d
@@ -232,18 +208,6 @@ def stack_contains(itm,stk):
                     return True
     return False
 
-def print_stack(stk):
-    stktxt = ''
-    opt_newline = '\n'
-    for i,lst in zip(range(len(stk)),stk):
-        if i == len(stk)-1:
-            opt_newline = ''
-        if isinstance(lst[0].data,Operation.Batch) or isinstance(lst[0].data,Operation.Realtime):
-            substk = lst[1]
-            stktxt += ('[\'{}\':\n{}\n]'+opt_newline).format(lst[0].tag(),print_stack(lst[1]))
-        else:
-            stktxt += ('{}'+opt_newline).format([itm.tag() for itm in lst])
-    return stktxt
 
 #def loader_extensions():
 #    return str(

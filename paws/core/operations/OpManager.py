@@ -1,6 +1,7 @@
 from PySide import QtCore
 
 from .. import operations as ops
+from ..operations import optools
 from ..models.QTreeSelectionModel import QTreeSelectionModel
 
 class OpManager(QTreeSelectionModel):
@@ -10,15 +11,14 @@ class OpManager(QTreeSelectionModel):
 
     def __init__(self,**kwargs):
         super(OpManager,self).__init__({'select':False,'enable':False})
-        self._module_list = []
+        #self._module_list = []
         self.logmethod = None
 
     def load_cats(self,cat_list):
         for cat in cat_list:
             p_idx = self.root_index()
-            self._module_list.append(cat)
+            #self._module_list.append(cat)
             for subcat in cat.split('.'):
-                #print 'add cat {} under {}'.format(subcat,parent.internalPointer().tag())
                 self.add_cat(subcat,p_idx)
                 p_idx = self.idx_of_cat(subcat,p_idx)
 
@@ -29,7 +29,7 @@ class OpManager(QTreeSelectionModel):
         """
         cat_idx = self.idx_of_cat(new_cat,p_idx)
         if not cat_idx.isValid():
-            self.set_item(new_cat,None,p_idx)
+            self.set_item(new_cat,{},p_idx)
 
     def idx_of_cat(self,catname,p_idx):
         """
@@ -59,7 +59,7 @@ class OpManager(QTreeSelectionModel):
         # Tree will consist of nodes indicating categories,
         # with subcategories or Operations as children.
         for cat_op in cat_op_list:
-            self._module_list.append(cat_op[0]+'.'+cat_op[1].__name__)
+            #self._module_list.append(cat_op[0]+'.'+cat_op[1].__name__)
             idx = self.root_index()
             for subcat in cat_op[0].split('.'):
                 idx = self.idx_of_cat(subcat,idx)
@@ -97,7 +97,7 @@ class OpManager(QTreeSelectionModel):
     # Reimplemented headerData() for OpManager 
     def headerData(self,section,orientation,data_role):
         if (data_role == QtCore.Qt.DisplayRole and section == 0):
-            return "{} operations available".format(len(self._op_list))
+            return "{} operations available".format(self.item_count())
         else:
             return super(OpManager,self).headerData(section,orientation,data_role) 
 

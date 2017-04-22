@@ -18,7 +18,7 @@ class WfWorker(QtCore.QObject):
 
     def work(self):
         try:
-            for op_tag,op in self.op_dict:
+            for op_tag,op in self.op_dict.items():
                 # run and update the Operation in this TreeItem
                 op.run()
                 self.opDone.emit(op_tag,op)

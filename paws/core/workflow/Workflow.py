@@ -54,12 +54,12 @@ class Workflow(QTreeSelectionModel):
 
     def add_op(self,op_tag,new_op):
         """Add an Operation to the tree at the top level."""
-        self.set_item(op_tag,optools.build_dict(new_op),self.root_index())
+        self.set_item(op_tag,new_op,self.root_index())
         self.wf_updated.emit() 
 
     def remove_op(self,rm_idx):
         """
-        Remove a an Operation from the workflow tree.
+        Remove an Operation from the workflow tree.
         """
         p_idx = self.parent(rm_idx)
         if not p_idx == self.root_index():
@@ -69,12 +69,32 @@ class Workflow(QTreeSelectionModel):
         self.remove_item(rm_itm.tag,p_idx)
         self.wf_updated.emit() 
 
+    def op_dict(self):
+        op_names = [itm.tag for itm in self.get_from_idx(self.root_index()).children]
+        op_dict = OrderedDict(zip(op_names,[self.get_data_from_uri(nm) for nm in op_names]))
+        return op_dict
+
     def update_op(self,op_tag,new_op):
         """
         Update given uri op_tag to Operation new_op.
         """
-        self.set_item(op_tag,optools.build_dict(new_op),self.root_index())
+        self.set_item(op_tag,new_op,self.root_index())
         self.wf_updated.emit() 
+
+    def tree_update(self,parent_idx,itm_tag,itm_data):
+        if isinstance(itm_data,Operation):
+            super(Workflow,self).tree_update(parent_idx,itm_tag,self.build_tree(itm_data))
+        else:
+            super(Workflow,self).tree_update(parent_idx,itm_tag,itm_data)
+
+    def build_tree(self,x):
+        if isinstance(x,Operation):
+            d = OrderedDict()
+            d[optools.inputs_tag] = self.build_tree(x.inputs)
+            d[optools.outputs_tag] = self.build_tree(x.outputs)
+            return d
+        else:
+            return super(Workflow,self).build_tree(x) 
 
     def set_op_input_at_uri(self,uri,val):
         """
@@ -113,7 +133,7 @@ class Workflow(QTreeSelectionModel):
         continue_flag = True
         while not optools.stack_size(stk) == self.item_count(self.root_index()) and continue_flag:
             ops_rdy = []
-            for itm in self.get_item(self.root_index()).children:
+            for itm in self.get_from_idx(self.root_index()).children:
                 if not optools.stack_contains(itm.tag,stk):
                     if self.is_op_ready(itm.tag,valid_wf_inputs):
                         ops_rdy.append(itm.tag)
@@ -142,6 +162,20 @@ class Workflow(QTreeSelectionModel):
                 continue_flag = False
         #print optools.print_stack(stk)
         return stk
+
+    def print_stack(self,stk):
+        stktxt = ''
+        opt_newline = '\n'
+        for i,lst in zip(range(len(stk)),stk):
+            if i == len(stk)-1:
+                opt_newline = ''
+            first_op = self.get_data_from_uri(lst[0])
+            if isinstance(first_op,Batch) or isinstance(first_op,Realtime):
+                substk = lst[1]
+                stktxt += ('[\'{}\':\n{}\n]'+opt_newline).format(lst[0],self.print_stack(lst[1]))
+            else:
+                stktxt += ('{}'+opt_newline).format(lst)
+        return stktxt
 
     def is_op_ready(self,op_tag,valid_wf_inputs,batch_routes=[]):
         op = self.get_data_from_uri(op_tag)
@@ -209,7 +243,7 @@ class Workflow(QTreeSelectionModel):
         self._running = True
         stk = self.execution_stack()
         msg = 'STARTING EXECUTION\n----\nexecution stack: \n'
-        msg += optools.print_stack(stk)
+        msg += self.print_stack(stk)
         msg += '\n----'
         self.wfman.write_log(msg)
         batch_flags = [isinstance(self.get_data_from_uri(lst[0]),Batch) for lst in stk]
@@ -376,6 +410,7 @@ class Workflow(QTreeSelectionModel):
                 # d[k] does not exist: insert
                 d[k] = v
         return d
+
 
 
     #    itm,idx = self.get_from_uri(uri)

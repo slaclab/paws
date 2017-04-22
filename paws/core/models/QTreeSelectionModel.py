@@ -3,6 +3,7 @@ import copy
 from PySide import QtCore
 
 from .QTreeModel import QTreeModel
+from .TreeItem import TreeItem
 
 class QTreeSelectionModel(QTreeModel):
 
@@ -23,21 +24,18 @@ class QTreeSelectionModel(QTreeModel):
     def n_flags(self):
         return len(self.flag_defaults)
 
-    @staticmethod
-    def is_flagged(itm,flag_key):
+    def is_flagged(self,itm,flag_key):
         if flag_key in itm.flags.keys():
             return bool(itm.flags[flag_key])
 
-    @staticmethod  
-    def children_flagged(itm,flag_key):
+    def children_flagged(self,itm,flag_key):
         if flag_key in itm.flags.keys():
             if itm.n_children() > 0:
                 return any([self.children_flagged(c_itm,flag_key) for c_itm in itm.children])
             else:
                 return bool(itm.flags[flag_key])
 
-    @staticmethod
-    def set_flagged(itm,flag_key,val):
+    def set_flagged(self,itm,flag_key,val):
         itm.flags[flag_key] = bool(val)
 
     def set_all_flagged(self,itm,flag_key,val):
@@ -67,7 +65,7 @@ class QTreeSelectionModel(QTreeModel):
     def headerData(self,section,orientation,data_role):
         # note: section indicates row or column number, depending on orientation
         if (data_role == QtCore.Qt.DisplayRole and section == 0):
-            return super(TreeSelectionModel,self).data(section,orientation,data_role) 
+            return super(QTreeSelectionModel,self).data(section,orientation,data_role) 
         elif (data_role == QtCore.Qt.DisplayRole and section < self.n_flags()+1):
             return self.flag_defaults.keys()[section-1]
         else:
@@ -82,7 +80,7 @@ class QTreeSelectionModel(QTreeModel):
             return None
         itm = idx.internalPointer()
         if idx.column() == 0:
-            return super(TreeSelectionModel,self).data(idx,data_role)
+            return super(QTreeSelectionModel,self).data(idx,data_role)
         elif data_role == QtCore.Qt.CheckStateRole: 
             return self.check_state(itm,self.flag_defaults.keys()[idx.column()-1])
         else:
@@ -102,19 +100,19 @@ class QTreeSelectionModel(QTreeModel):
         if not idx.isValid():
             return None
         elif idx.column() == 0:
-            return super(TreeSelectionModel,self).flags(idx)
+            return super(QTreeSelectionModel,self).flags(idx)
         else:
-            return super(TreeSelectionModel,self).flags(idx) | QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsTristate
+            return super(QTreeSelectionModel,self).flags(idx) | QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsTristate
     
     # Ui-editable QAbstractItemModel subclasses must implement setData(index,value[,role])
     def setData(self,idx,val,data_role):
         if idx.column() == 0:
-            return super(TreeSelectionModel,self).setData(index,val,data_role)
+            return super(QTreeSelectionModel,self).setData(index,val,data_role)
         elif data_role == QtCore.Qt.CheckStateRole:
             itm = self.get_from_idx(idx)
             self.set_flagged(itm,self.flag_defaults.keys()[idx.column()-1],val)
             self.dataChanged.emit(idx,idx)
             return True
         else:
-            return super(TreeSelectionModel,self).setData(index,val,data_role)
+            return super(QTreeSelectionModel,self).setData(index,val,data_role)
 

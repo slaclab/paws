@@ -42,6 +42,15 @@ class Operation(object):
             self.outputs[name] = None
             self.output_doc[name] = None
 
+    def __getitem__(self,key):
+        if key == optools.inputs_tag:
+            return self.inputs
+        elif key == optools.outputs_tag:
+            return self.outputs
+        else:
+            raise KeyError('[{}] Operation.__getitem__ can only return values for keys {} and {}'
+            .format(__name__,optools.inputs_tag,optools.outputs_tag))
+
     def load_defaults(self):
         for name in self.inputs.keys():
             src = optools.no_input

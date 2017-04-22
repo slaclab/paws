@@ -1,23 +1,12 @@
 import os
 import pkgutil
 import importlib
+from collections import OrderedDict
 
 import yaml
 
-from Operation import Operation
+#from Operation import Operation
 from .. import pawstools
-
-# check for an ops.cfg file
-cfg_file = pawstools.rootdir+'/core/operations/ops.cfg'
-if os.path.exists(cfg_file):
-    load_flags = load_cfg(cfg_file)
-else:
-    load_flags = {}
-
-# list to keep track of keys that get loaded in this run
-# these keys are used to remove load_flags
-# when Operations or categories are renamed or removed.
-load_keys = []
 
 def save_cfg(cfg_data,cfg_file):
     cfg = open(cfg_file,'w')
@@ -29,15 +18,31 @@ def save_config():
     Call save_config() before closing 
     to save the state of which ops are enabled/disabled.
     """
-    save_cfg(load_flags,cfg_file)
+    # Order the load flags using load_keys...
+    od_load_flags = OrderedDict()
+    for k in load_keys:
+        od_load_flags[k] = load_flags[k]
+    save_cfg(od_load_flags,cfg_file)
 
 def load_cfg(cfg_file):
     cfg = open(cfg_file,'r')
     cfg_data = yaml.load(cfg)
     cfg.close()
     if not cfg_data:
-        cfg_data = {}
+        cfg_data = OrderedDict() 
     return cfg_data
+
+# check for an ops.cfg file
+cfg_file = pawstools.rootdir+'/core/operations/ops.cfg'
+if os.path.exists(cfg_file):
+    load_flags = load_cfg(cfg_file)
+else:
+    load_flags = OrderedDict() 
+
+# Keep track of keys that get loaded in this run.
+# These keys are used to remove load_flags automatically
+# when Operations or categories are renamed or removed.
+load_keys = []
 
 def update_load_flags():
     for k in load_flags.keys():
@@ -57,14 +62,15 @@ def load_ops_from_path(path_,pkg,cat_root=''):
             mod_root = cat_root+'.'+modname
         load_keys.append(mod_root)
         if mod_root in load_flags.keys():
-            if load_flags[mod_root]:
-                load_mod = True
-            else:
-                load_mod = False 
+            load_mod = bool(load_flags[mod_root])
         else:
             # NOTE: This line determines whether or not 
             # newly arrived modules should be loaded by default.
             load_mod = False
+        # NOTE: Leaving all modules load_flag = True for now...
+        #
+        load_mod = True
+        #
         load_flags[mod_root] = load_mod
         # if it is a package, recurse
         if load_mod and ispkg:
@@ -78,17 +84,25 @@ def load_ops_from_path(path_,pkg,cat_root=''):
             mod = importlib.import_module('.'+modname,pkg)
             # Get the operation from the module:
             # assume Operation name is same as module name
-            op = getattr(mod,modname)
+            try:
+                op = getattr(mod,modname)
+            except AttributeError as ex:
+                msg = str('Failed to load Operation subclass {} '.format(modname)
+                + 'from module of the same name. Error message: '+ ex.message
+                + '\nTo load an Operation subclass, '
+                + 'ensure the Operation subclass '
+                + 'has the same name as its .py module file')
+                print msg
             ops.append( (cat_root,op) )
             if not cat_root in cats:
                 cats.append(cat_root)
     return ops, cats
 
-def disable_ops(self,disable_root):
+def disable_ops(disable_root):
     # get all keys that contain disable_root
     disable_keys = [k for k in load_flags.keys() if disable_root in k]
     for k in disable_keys:
-        ops.load_flags[k] = False 
+        load_flags[k] = False 
 
 cat_op_list, cat_list = load_ops_from_path(__path__,__name__)
 

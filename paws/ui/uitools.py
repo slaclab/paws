@@ -10,9 +10,9 @@ from functools import partial
 from PySide import QtGui, QtCore, QtUiTools
 import yaml
 
+from ..core import pawstools
 from ..core.operations import optools
 from ..core.models.ListModel import ListModel
-from ..core import pawstools
 
 ## Test whether we have Qt >= 4.7 
 have_qt47 = True

@@ -156,7 +156,8 @@ class PawsAPI(object):
     #    self._app.quit()
 
     def save_config(self):
-        self._op_manager.save_config()
+        ops.save_config()
+        #self._op_manager.save_config()
 
     def op_manager(self):
         """

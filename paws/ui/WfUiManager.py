@@ -1,18 +1,15 @@
 from functools import partial
-import copy
 
 from PySide import QtCore, QtGui, QtUiTools
 
 from ..core.operations import optools
 from ..core.operations.Operation import Operation 
 from ..core import pawstools
-from ..core.operations.optools import InputLocator
 from ..core.models.ListModel import ListModel
 from .InputLoader import InputLoader
 from . import uitools
 
 class WfUiManager(QtCore.QObject):
-    # TODO: migrate all functionality to API calls
 
     def __init__(self,wfman,opman,plugman):
         ui_file = QtCore.QFile(pawstools.rootdir+"/ui/qtui/wf_editor.ui")
@@ -60,9 +57,8 @@ class WfUiManager(QtCore.QObject):
     def get_op(self,trmod=None,itm_idx=QtCore.QModelIndex()):
         if trmod is None:
             trmod = self.current_wf()
-        xitem = trmod.get_item(itm_idx)
-        if xitem.data is not None:
-            x = xitem.data
+        x = trmod.get_data_from_idx(itm_idx)
+        if x is not None:
             try:
                 new_op_flag = issubclass(x,Operation)
             except:
@@ -80,10 +76,11 @@ class WfUiManager(QtCore.QObject):
                 self.create_op(x)
             elif existing_op_flag:
                 # Copy the setup of existing Operation
-                opd = self.wfman.op_setup_dict(x)
+                op_dict = self.wfman.op_setup_dict(x)
                 # Get a new op with the same setup
-                op_copy = self.wfman.build_op_from_dict(opd,self.opman)
-                self.set_op(op_copy,xitem.tag())
+                op_copy = self.wfman.build_op_from_dict(op_dict,self.opman)
+                op_tag = trmod.build_uri(itm_idx)
+                self.set_op(op_copy,op_tag)
 
     def set_op(self,op,uri):
         """Set up ui elements around input op"""
@@ -95,7 +92,7 @@ class WfUiManager(QtCore.QObject):
     def create_op(self,op):
         """Instantiate op, call self.set_op()"""
         new_op = op()
-        new_op_tag = self.current_wf().auto_tag(type(new_op).__name__)
+        new_op_tag = self.current_wf().make_unique_uri(type(new_op).__name__)
         new_op.load_defaults()
         self.set_op(new_op,new_op_tag)
 
@@ -105,8 +102,8 @@ class WfUiManager(QtCore.QObject):
         """
         idx = self.ui.wf_browser.currentIndex()
         if idx.isValid(): 
-            while not idx.internalPointer().parent == self.current_wf().root_index():
-                idx = idx.internalPointer().parent
+            while not self.current_wf().parent(idx) == self.current_wf().root_index():
+                idx = self.current_wf().parent(idx)
             self.current_wf().remove_op(idx)
             #if self.current_wf().get_item(idx).data == self.op:
             #self.op = None
@@ -119,22 +116,23 @@ class WfUiManager(QtCore.QObject):
         # Make sure all inputs are loaded
         for name in self.op.inputs.keys():
             self.set_input(name)
-        uri = str(self.ui.uri_entry.text())
-        result = self.current_wf().is_tag_free(uri)
-        if result[0]:
-            self.current_wf().add_op(uri,self.op) 
-            self.op = None
-            self.clear_io()
-        elif result[1] == 'Tag not unique':
-            self.current_wf().update_op(uri,self.op)
+        tag = str(self.ui.uri_entry.text())
+        good_tag_flag = self.current_wf().is_tag_valid(tag)
+        if not good_tag_flag: 
+            # Request a different tag 
+            msg_ui = uitools.message_ui(self.ui)
+            msg_ui.setWindowTitle("Tag Error")
+            msg_ui.message_box.setPlainText(self.current_wf().tag_error(tag))
+            msg_ui.show()
+        replace_op_flag = self.current_wf().contains_uri(tag)
+        if replace_op_flag: 
+            self.current_wf().update_op(tag,self.op)
             self.op = None
             self.clear_io()
         else:
-            # Request a different uri 
-            msg_ui = uitools.message_ui(self.ui)
-            msg_ui.setWindowTitle("Tag Error")
-            msg_ui.message_box.setPlainText(self.current_wf().tag_error(uri,result[1]))
-            msg_ui.show()
+            self.current_wf().add_op(tag,self.op) 
+            self.op = None
+            self.clear_io()
 
     def set_input(self,name,src_ui=None):
         """
@@ -205,7 +203,7 @@ class WfUiManager(QtCore.QObject):
                 self.input_loaders[name].ui.close()
                 self.input_loaders[name] = None
         src = self.src_widgets[name].currentIndex()
-        input_loader_title = self.ui.uri_entry.text() + '.inputs.' + name
+        input_loader_title = self.ui.uri_entry.text()+'.'+optools.inputs_tag+'.'+name
         if src == optools.wf_input:
             inp_loader = InputLoader(input_loader_title,src,self.wfman,self.ui)
             inp_loader.ui.wf_selector.setCurrentIndex(self.ui.wf_selector.currentIndex())

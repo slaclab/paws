@@ -22,6 +22,14 @@ class PawsPlugin(object):
             self.inputs[name] = None
             self.input_doc[name] = None
 
+    def __getitem__(self,key):
+        d = self.content()
+        if key in d.keys():
+            return d[key]
+        else:
+            raise KeyError('[{}] {}.__getitem__ can only return values for keys {}'
+            .format(__name__,type(self).__name__,d.keys()))
+
     def start(self):
         """
         PawsPlugin.start() should perform any setup required by the plugin,
