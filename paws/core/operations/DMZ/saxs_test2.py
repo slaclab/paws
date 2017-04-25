@@ -1,80 +1,60 @@
+from os.path import join
+from os import listdir
+
 import numpy as np
 from scipy import interp
 
-#from scipy.optimize import curve_fit
+from matplotlib import pyplot as plt
+#import pdb; pdb.set_trace()
 
-from ...Operation import Operation
-from ... import optools
+meganame = "/Users/Amanda/Desktop/Travails/Programming/ImageProcessing/SampleData/Liheng/megaSAXSspreadsheet/megaSAXSspreadsheet.csv"
 
-class GuessProperties(Operation):
-    """Guess the polydispersity, mean size, and amplitude of spherical diffraction pattern.
+def load_mega():
+    speclist = []
+    for ii in range(6):
+        a, b, c = 4*ii, 4*ii+1, 4*ii+2
+        q, I, dI = np.loadtxt(meganame, dtype=float, delimiter=',', skiprows=2, converters={a:blanktoNaN, b:blanktoNaN, c:blanktoNaN}, usecols=(a, b, c), unpack=True)
+        goods = ~np.isnan(q)
+        q, I, dI = q[goods], I[goods], dI[goods]
+        speclist.append([q, I, dI])
+    q, I, dI = np.loadtxt(meganame, dtype=float, delimiter=',', skiprows=2, usecols=(24, 25, 26), unpack=True)
+    speclist.append([q, I, dI])
+    return speclist
 
-    Assumes the data have already been background subtracted, smoothed, and otherwise cleaned."""
+def blanktoNaN(floatstring):
+    try:
+        return float(floatstring)
+    except ValueError:
+        return np.nan
 
-    def __init__(self):
-        input_names = ['q', 'I', 'dI']
-        output_names = ['parameter_guesses','good_flag','detailed_flags','I_guess','q_I_guess','additional_information']
-        super(GuessProperties, self).__init__(input_names, output_names)
-        # Documentation
-        self.input_doc['q'] = '1d ndarray; wave vector values'
-        self.input_doc['I'] = '1d ndarray; intensity values'
-        self.input_doc['dI'] = '1d ndarray; error estimate of intensity values; input None if no dI exists'
-        self.output_doc['parameter_guesses'] = 'dictionary containing guessed parameters mean_size, amplitude_at_zero, and fractional_variation'
-        self.output_doc['additional_information'] = 'dictionary of information primarily useful for debug purposes' #'qFirstDip','heightFirstDip','sigmaScaledFirstDip','heightAtZero',dips, shoulders
-        self.output_doc['good_flag'] = 'presently a placeholder boolean'
-        self.output_doc['detailed_flags'] = 'presently a placeholder dictionary'
-        # Source and type
-        self.input_src['q'] = optools.wf_input
-        self.input_src['I'] = optools.wf_input
-        self.input_src['dI'] = optools.wf_input
-        self.input_type['q'] = optools.ref_type
-        self.input_type['I'] = optools.ref_type
-        self.input_type['dI'] = optools.ref_type
+def load_csv(path):
+    q, I = np.loadtxt(path, dtype=float, delimiter=',', skiprows=1, unpack=True)
+    return q, I
 
 
-    def run(self):
-        q, I, dI = self.inputs['q'], self.inputs['I'], self.inputs['dI']
-
-        qFirstDip, heightFirstDip, sigmaScaledFirstDip, heightAtZero, dips, shoulders, \
-        self.outputs['detailed_flags'] = take_polydispersity_metrics(q, I, dI)
-
-        # convert to unitless metrics
-        x0 = sigmaScaledFirstDip / qFirstDip
-        y0 = heightFirstDip / heightAtZero
-        # compare metrics to reference
-        try:
-            factor = references['factorVals']
-        except NameError:
-            references = generate_references()
-            factor = references['factorVals']
-        x = references['widthFirstDip'] / references['xFirstDip']
-        y = references['heightFirstDip'] / references['heightAtZero']
-        fractional_variation, _, best_xy = guess_nearest_point_on_nonmonotonic_trace_normalized([x0, y0], [x, y], factor)
-        # guess the mean size
-        xFirstDip = interp(fractional_variation, references['factorVals'], references['xFirstDip'])
-        mean_size = xFirstDip / qFirstDip
-        Imodel = generate_spherical_diffraction(q, heightAtZero, mean_size, fractional_variation)
-        I_adjustment = I.sum() / Imodel.sum()
-        heightAtZero = heightAtZero * I_adjustment
-
-        self.outputs['additional_information'] = {'qFirstDip':qFirstDip, 'sigmaScaledFirstDip':sigmaScaledFirstDip,
-                                  'heightFirstDip':heightFirstDip, 'dips':dips, 'shoulders':shoulders}
-        self.outputs['parameter_guesses'] = {'fractional_variation':fractional_variation, 'mean_size':mean_size, 'amplitude_at_zero':heightAtZero}
-        self.outputs['I_guess'] = generate_spherical_diffraction(q, heightAtZero, mean_size, fractional_variation)
-        self.outputs['q_I_guess'] = logsafe_zip(q, self.outputs['I_guess'])
-        # if any of the detailed flags are bad set good_flag to False
-        self.outputs['good_flag'] = True
-        for ii in self.outputs['detailed_flags']:
-            if self.outputs['detailed_flags'][ii] == False:
-                self.outputs['good_flag'] = False
-
-def logsafe_zip(x, y):
-    bad = (x <= 0) | (y <= 0) | np.isnan(y)
-    x, y = x[~bad], y[~bad]
-    x_y = np.zeros((x.size, 2))
-    x_y[:, 0] = x
-    x_y[:, 1] = y
-    return x_y
+def guess(q, I, dI=None):
+    qFirstDip, heightFirstDip, sigmaScaledFirstDip, heightAtZero, dips, shoulders, \
+    detailed_flags = take_polydispersity_metrics(q, I, dI)
+    # convert to unitless metrics
+    x0 = sigmaScaledFirstDip / qFirstDip
+    y0 = heightFirstDip / heightAtZero
+    # compare metrics to reference
+    try:
+        factor = references['factorVals']
+    except NameError:
+        references = generate_references()
+        factor = references['factorVals']
+    x = references['widthFirstDip'] / references['xFirstDip']
+    y = references['heightFirstDip'] / references['heightAtZero']
+    fractional_variation, _, best_xy = guess_nearest_point_on_nonmonotonic_trace_normalized([x0, y0], [x, y],
+                                                                                            factor)
+    # guess the mean size
+    xFirstDip = interp(fractional_variation, references['factorVals'], references['xFirstDip'])
+    mean_size = xFirstDip / qFirstDip
+    Imodel = generate_spherical_diffraction(q, heightAtZero, mean_size, fractional_variation)
+    I_adjustment = I.sum() / Imodel.sum()
+    heightAtZero = heightAtZero * I_adjustment
+    return heightAtZero, mean_size, fractional_variation
 
 def first_dip(q, I, dips, shoulders, dI=None):
     y = I*q**4
@@ -136,6 +116,14 @@ def take_polydispersity_metrics(q, I, dI=None):
     else:
         heightAtZero = arbitrary_order_solution(2, q[low_q], I[low_q], dI[low_q])[0]
     return qFirstDip, heightFirstDip, widthFirstDip, heightAtZero, dips, shoulders, detailed_flags
+
+def logsafe_zip(x, y):
+    bad = (x <= 0) | (y <= 0) | np.isnan(y)
+    x, y = x[~bad], y[~bad]
+    x_y = np.zeros((x.size, 2))
+    x_y[:, 0] = x
+    x_y[:, 1] = y
+    return x_y
 
 # Functions about algebraic solutions
 
@@ -352,6 +340,40 @@ def guess_nearest_point_on_nonmonotonic_trace_normalized(loclist, tracelist, coo
         best_location[jj] = best_xjj
     return best_coordinate, best_distance, best_location #, distances
 
+
 # generate references that will be used by this operation
 
 references = generate_references()
+
+#q, I, dI, dq = np.loadtxt(path, dtype=float, delimiter=',', unpack=True)
+
+speclist = load_mega()
+for jj in range(len(speclist)):
+    ii = speclist[jj]
+    q, I, dI = ii[0], ii[1], ii[2]
+    fig, ax = plt.subplots()
+    ax.plot(q,I,color='k',lw=2)
+    heightAtZero, mean_size, fractional_variation = guess(q, I, dI)
+    Imodel = generate_spherical_diffraction(q, heightAtZero, mean_size, fractional_variation)
+    ax.plot(q,Imodel,color='b',lw=1)
+    plt.xscale('log')
+    plt.yscale('log')
+
+loc = "/Users/Amanda/Data20161118/R1"
+csvlist = [join(loc,ii) for ii in listdir(loc) if (ii[-4:] == '.csv')]
+#for jj in range(len(csvlist)):
+for jj in range(20):
+    q, I = load_csv(csvlist[jj])
+    fig, ax = plt.subplots()
+    ax.plot(q,I,color='k',lw=2)
+    heightAtZero, mean_size, fractional_variation = guess(q, I, dI)
+    Imodel = generate_spherical_diffraction(q, heightAtZero, mean_size, fractional_variation)
+    ax.plot(q,Imodel,color='b',lw=1)
+    plt.xscale('log')
+    plt.yscale('log')
+print 'done'
+
+
+
+
+
