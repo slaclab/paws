@@ -64,9 +64,9 @@ def guess(q, I, dI=None):
     # are there vaguely zinger-like or dead pixel-like features?
     curv = (I[2:] - 2*I[1:-1] + I[:-2])
     var = (curv**2).mean()**0.5
-    if (curv < -10*var).any():
+    if (curv < -5*var).any():
         detailed_flags['zinger_like_feature'] = True
-    if (curv > 10*var).any():
+    if (curv > 5*var).any():
         detailed_flags['dead_pixel_like_feature'] = True
     # vaguely figure-of-merit-like numbers
     detailed_flags['root_mean_square_diff'] = ((Imodel - I)**2).mean()**0.5
