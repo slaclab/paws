@@ -36,7 +36,7 @@ class GuessProperties(Operation):
         q, I, dI = self.inputs['q'], self.inputs['I'], self.inputs['dI']
 
         qFirstDip, heightFirstDip, sigmaScaledFirstDip, heightAtZero, dips, shoulders, \
-        self.outputs['detailed_flags'] = take_polydispersity_metrics(q, I, dI)
+        detailed_flags = take_polydispersity_metrics(q, I, dI)
 
         # convert to unitless metrics
         x0 = sigmaScaledFirstDip / qFirstDip
@@ -56,7 +56,32 @@ class GuessProperties(Operation):
         Imodel = generate_spherical_diffraction(q, heightAtZero, mean_size, fractional_variation)
         I_adjustment = I.sum() / Imodel.sum()
         heightAtZero = heightAtZero * I_adjustment
+        # more checks
+        # is highest value early? is qFirstDip late?
+        if np.argmax(I) > int(0.3 * I.size):
+            detailed_flags['late_intensity_max'] = True
+        if np.where(q < qFirstDip)[0][-1] < int(0.1 * q.size):
+            detailed_flags['early_qFirstDip'] = True
+        # are there vaguely zinger-like or dead pixel-like features?
+        curv = (I[2:] - 2 * I[1:-1] + I[:-2])
+        var = (curv ** 2).mean() ** 0.5
+        if (curv < -10 * var).any():
+            detailed_flags['zinger_like_feature'] = True
+        if (curv > 10 * var).any():
+            detailed_flags['dead_pixel_like_feature'] = True
+        # vaguely figure-of-merit-like numbers
+        detailed_flags['root_mean_square_diff'] = ((Imodel - I) ** 2).mean() ** 0.5
+        logsafe = ~(np.isnan(I) | (I < 0))
+        detailed_flags['logarithmic_root_mean_square_diff'] = np.e ** (
+        ((np.log((Imodel - I)[logsafe])) ** 2).mean() ** 0.5)
+        if dI is not None:
+            detailed_flags['weighted_root_mean_square_diff'] = (((Imodel - I) / dI) ** 2).mean() ** 0.5
+            logsafe = ~(np.isnan(I) | (I < 0) | np.isnan(dI) | (I <= dI))
+            logdI = np.log(((I + dI) / I)[logsafe])
+            detailed_flags['logarithmic_weighted_root_mean_square_diff'] = np.e ** (
+            ((np.log(np.abs(Imodel - I)[logsafe]) / logdI) ** 2).mean() ** 0.5)
 
+        self.outputs['detailed_flags'] = detailed_flags
         self.outputs['additional_information'] = {'qFirstDip':qFirstDip, 'sigmaScaledFirstDip':sigmaScaledFirstDip,
                                   'heightFirstDip':heightFirstDip, 'dips':dips, 'shoulders':shoulders}
         self.outputs['parameter_guesses'] = {'fractional_variation':fractional_variation, 'mean_size':mean_size, 'amplitude_at_zero':heightAtZero}

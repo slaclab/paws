@@ -54,7 +54,31 @@ def guess(q, I, dI=None):
     Imodel = generate_spherical_diffraction(q, heightAtZero, mean_size, fractional_variation)
     I_adjustment = I.sum() / Imodel.sum()
     heightAtZero = heightAtZero * I_adjustment
+    Imodel = Imodel*I_adjustment
+    # more checks
+    # is highest value early? is qFirstDip late?
+    if np.argmax(I) > int(0.3*I.size):
+        detailed_flags['late_intensity_max'] = True
+    if np.where(q<qFirstDip)[0][-1] < int(0.1*q.size):
+        detailed_flags['early_qFirstDip'] = True
+    # are there vaguely zinger-like or dead pixel-like features?
+    curv = (I[2:] - 2*I[1:-1] + I[:-2])
+    var = (curv**2).mean()**0.5
+    if (curv < -10*var).any():
+        detailed_flags['zinger_like_feature'] = True
+    if (curv > 10*var).any():
+        detailed_flags['dead_pixel_like_feature'] = True
+    # vaguely figure-of-merit-like numbers
+    detailed_flags['root_mean_square_diff'] = ((Imodel - I)**2).mean()**0.5
+    logsafe = ~(np.isnan(I) | (I < 0))
+    detailed_flags['logarithmic_root_mean_square_diff'] = np.e**(((np.log((Imodel - I)[logsafe]))**2).mean()**0.5)
+    if dI is not None:
+        detailed_flags['weighted_root_mean_square_diff'] = (((Imodel - I)/dI)**2).mean()**0.5
+        logsafe = ~(np.isnan(I) | (I < 0) | np.isnan(dI) | (I <= dI))
+        logdI = np.log(((I + dI)/I)[logsafe])
+        detailed_flags['logarithmic_weighted_root_mean_square_diff'] = np.e**(((np.log(np.abs(Imodel - I)[logsafe]) / logdI)**2).mean()**0.5)
     return heightAtZero, mean_size, fractional_variation
+
 
 def first_dip(q, I, dips, shoulders, dI=None):
     y = I*q**4
@@ -358,12 +382,14 @@ for jj in range(len(speclist)):
     ax.plot(q,Imodel,color='b',lw=1)
     plt.xscale('log')
     plt.yscale('log')
+print 'done'
 
 loc = "/Users/Amanda/Data20161118/R1"
 csvlist = [join(loc,ii) for ii in listdir(loc) if (ii[-4:] == '.csv')]
 #for jj in range(len(csvlist)):
 for jj in range(20):
     q, I = load_csv(csvlist[jj])
+    dI = np.ones(I.size)
     fig, ax = plt.subplots()
     ax.plot(q,I,color='k',lw=2)
     heightAtZero, mean_size, fractional_variation = guess(q, I, dI)
