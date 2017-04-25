@@ -389,7 +389,6 @@ csvlist = [join(loc,ii) for ii in listdir(loc) if (ii[-4:] == '.csv')]
 #for jj in range(len(csvlist)):
 for jj in range(20):
     q, I = load_csv(csvlist[jj])
-    dI = np.ones(I.size)
     fig, ax = plt.subplots()
     ax.plot(q,I,color='k',lw=2)
     heightAtZero, mean_size, fractional_variation = guess(q, I, dI)
