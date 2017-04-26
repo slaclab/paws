@@ -18,7 +18,5 @@ class BigLoad(Operation):
     
     def run(self):
         s = self.inputs['size']
-        #self.outputs['big_array'] = list(np.random.rand(s,s))
         self.outputs['big_array'] = np.random.rand(s,s) 
-        #self.outputs['big_array'] = [[(i,j) for i in range(int(s))] for j in range(int(s))]
-        #self.outputs['big_array'] = [i for i in range(int(s*10))] 
+

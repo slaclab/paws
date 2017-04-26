@@ -335,6 +335,7 @@ class UiManager(QtCore.QObject):
         fname_noext = os.path.splitext(fname_nopath)[0]
         if 'WORKFLOW' in d.keys():
             wfname = fname_noext
+<<<<<<< 24fa0f4d7c8e67872db2f63129b040d3f04100a7:paws/ui/UiManager.py
             self.qwfman.load_from_dict(wfname,self.qopman.opman,d['WORKFLOW'])
             #if wfname in self.qwfman.qworkflows.keys():
             #    wfname = self.qwfman.auto_name(wfname)
@@ -342,8 +343,54 @@ class UiManager(QtCore.QObject):
                 self.ui.wf_selector.model().append_item(wfname)
             new_wf_idx = self.ui.wf_selector.model().list_data().index(wfname) 
             if self.qwfman.n_wf() == 1:
+=======
+            if wfname in self.wfman.workflows.keys():
+                wfname = self.wfman.auto_name(wfname)
+            self.wfman.load_from_dict(wfname,self.opman,d['WORKFLOW'])
+            self.ui.wf_selector.model().append_item(wfname)
+            wf_selector_idx = self.ui.wf_selector.model().n_items()-1
+            if self.wfman.n_wf() == 1:
+>>>>>>> refactored all tree models to use a root index:paws/ui/ui_manager.py
                 self.ui.wf_tree.hideColumn(1)
                 self.ui.wf_tree.hideColumn(2)
         self.ui.wf_selector.setCurrentIndex(new_wf_idx)
         ui.close()
 
+<<<<<<< 24fa0f4d7c8e67872db2f63129b040d3f04100a7:paws/ui/UiManager.py
+=======
+    def connect_actions(self):
+        """Set up the works for buttons and menu items"""
+        self.wfman.wfdone.connect(self.toggle_run_wf)
+        lm = ListModel(self.wfman.workflows.keys())
+        self.ui.wf_selector.setModel(lm)
+        self.ui.wf_selector.currentIndexChanged.connect( partial(self.set_wf) )
+        self.ui.edit_ops_button.setText("Edit operations")
+        self.ui.edit_ops_button.clicked.connect(self.edit_ops)
+        self.ui.add_wf_button.setText("&New")
+        self.ui.add_wf_button.clicked.connect( partial(self.add_wf,'new_workflow') )
+        self.ui.run_wf_button.setText("&Run")
+        self.ui.run_wf_button.clicked.connect(self.toggle_run_wf)
+        self.ui.edit_wf_button.setText("&Edit...")
+        self.ui.edit_wf_button.clicked.connect( partial(self.edit_wf) )
+        self.ui.save_wf_button.setText("&Save...")
+        self.ui.save_wf_button.clicked.connect(self.save_wf)
+        self.ui.load_wf_button.setText("&Load...")
+        self.ui.load_wf_button.clicked.connect(self.load_wf)
+        self.ui.save_plugins_button.setText("Save plugins")
+        self.ui.save_plugins_button.clicked.connect(self.save_plugins)
+        self.ui.load_plugins_button.setText("Load plugins")
+        self.ui.load_plugins_button.clicked.connect(self.load_plugins)
+        self.ui.edit_plugins_button.setText("Edit plugins")
+        self.ui.edit_plugins_button.clicked.connect(self.start_plugins_ui)
+        self.ui.plugin_tree.setModel(self.plugman)
+        self.ui.op_tree.setModel(self.opman)
+        self.ui.op_tree.clicked.connect( partial(uitools.toggle_expand,self.ui.op_tree) ) 
+        self.ui.op_tree.setRootIndex(self.opman.root_index())
+        self.ui.wf_tree.clicked.connect( partial(uitools.toggle_expand,self.ui.wf_tree) )
+        self.ui.wf_tree.clicked.connect( self.display_wf_item )
+        self.ui.wf_tree.doubleClicked.connect( partial(self.edit_wf) )
+        self.ui.plugin_tree.clicked.connect( self.display_plugin_item )
+        self.ui.plugin_tree.setRootIndex(self.plugman.root_index())
+
+
+>>>>>>> refactored all tree models to use a root index:paws/ui/ui_manager.py

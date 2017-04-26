@@ -33,6 +33,7 @@ class InputLoader(object):
         self.ui.input_box.setTitle(self.input_name)
         if self.src in [optools.plugin_input,optools.fs_input]:
             self.ui.source_treeview.setModel(self.src_manager)
+            self.ui.source_treeview.setRootIndex(self.src_manager.root_index())
         elif self.src == optools.wf_input:
             lm = ListModel(self.src_manager.qworkflows.keys())
             self.ui.wf_selector.setModel(lm)
