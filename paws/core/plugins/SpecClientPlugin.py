@@ -1,6 +1,6 @@
 import socket 
 
-from plugin import PawsPlugin
+from .PawsPlugin import PawsPlugin
 from ..operations import optools
 
 class SpecClientPlugin(PawsPlugin):

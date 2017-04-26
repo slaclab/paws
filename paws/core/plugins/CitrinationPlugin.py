@@ -3,7 +3,7 @@ from citrination_client import CitrinationClient
 
 from ..operations import optools
 from .. import pawstools
-from plugin import PawsPlugin
+from .PawsPlugin import PawsPlugin
 
 
 class CitrinationPlugin(PawsPlugin):

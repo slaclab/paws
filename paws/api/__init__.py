@@ -1,8 +1,6 @@
-"""Module defining the API for paws"""
+"""This module presents an object encompassing an API for paws"""
 
 from functools import partial
-
-from PySide import QtCore
 
 from ..core.operations.OpManager import OpManager 
 from ..core.workflow.WfManager import WfManager 
@@ -10,42 +8,25 @@ from ..core.plugins.PluginManager import PluginManager
 from ..core import operations as ops
 from ..core.operations import optools
 
-    # TODO: Use OpManager's add_op, add_cat, remove_op, remove_cat
-    # to enable and disable Operations.
-    # Use operations.load_flags to build the list of options.
-    # Build a gui around this.
-
-    # TODO: Ensure that the cfg file of enabled/disabled ops is saved before closing,
-    # even in the event of a sudden shutdown.
-    # Use the Application.aboutToQuit() signal.
-
-#class PawsAPI(QtCore.QObject):
 class PawsAPI(object):
     """
     A container to facilitate interaction with a set of paws objects:
     an Operations Manager, a Workflow Manager, and a Plugins Manager. 
     """
 
-    def __init__(self,app_args):
+    def __init__(self,api_args):
         super(PawsAPI,self).__init__()
-        self._app = core_app(app_args)
-        #self._app = None 
         self._op_manager = OpManager()
         self._plugin_manager = PluginManager()
-        self._wf_manager = WfManager(self._plugin_manager,self._app)
+        self._wf_manager = WfManager(self._plugin_manager)
         self._op_manager.load_cats(ops.cat_list) 
         self._op_manager.load_ops(ops.cat_op_list)
         self._current_wf_name = None 
-        #print self.inspect_objects()
-        #self.wf_exec_requested.connect(self._wf_manager.run_wf)
     
-    #wf_exec_requested = QtCore.Signal(str)
-
     def add_wf(self,wfname):
         self._wf_manager.add_wf(wfname)
         if not self._current_wf_name:
             self.select_wf(wfname)
-        #print self.inspect_objects()
 
     def select_wf(self,wfname):
         if wfname in self._wf_manager.workflows.keys():
@@ -80,14 +61,13 @@ class PawsAPI(object):
         # instantiate with default inputs
         op = op()
         op.load_defaults()
-        wf.add_op(op_tag,op)
-        #print self.inspect_objects()
+        wf.set_item(op_tag,op)
 
     def remove_op(self,op_tag,wfname=None):
         wf = self.get_wf(wfname)
+        wf.remove_item(op_tag)
         #print 'remove {}'.format(op_tag)
-        rm_idx = wf.get_index_of_uri(op_tag)
-        wf.remove_op(rm_idx)
+        #rm_idx = wf.get_index_of_uri(op_tag)
         #self._app.processEvents()
         #print self.inspect_objects()
 
@@ -122,10 +102,28 @@ class PawsAPI(object):
         #print 'set input {} of {} to src: {}, tp: {}, val: {}'.format(
         #input_name,opname,src,tp,val)
         
+    def save_config(self):
+        ops.save_config()
+
     def execute(self,wfname=None):
-        wf = self.get_wf(wfname)
-        wf.run_wf()
-        #print self.inspect_objects()
+        if wfname is None:
+            wfname = self._current_wf_name
+        self._wf_manager.run_wf(wfname)
+
+def start(app_args=[]):
+    """
+    Instantiate and return a PawsAPI object. 
+
+    paws.api.start() calls the PawsAPI constructor.
+
+    :param app_args: arguments to pass to the 
+    QApplication constructor within the PawsAPI constructor
+    :type args: sequence
+    :returns: a PawsAPI object
+    :return type: paws.api.PawsAPI 
+    """
+    return PawsAPI(app_args)
+
 
         #if wfname is None:
         #    wfname = self._current_wf_name
@@ -152,89 +150,49 @@ class PawsAPI(object):
     #def stop(self):
     #    self._app.quit()
 
-    def save_config(self):
-        ops.save_config()
         #self._op_manager.save_config()
 
-    def op_manager(self):
-        """
-        Get a reference to the operation manager 
-        (paws.core.operations.OpManager.OpManager). 
-        Intended for use by other interfaces, e.g. the GUI manager.
-        """
-        return self._op_manager
-    
-    def wf_manager(self):
-        """
-        Get a reference to the workflow manager 
-        (paws.core.workflow.WfManager.WfManager). 
-        Intended for use by other interfaces, e.g. the GUI manager.
-        """
-        return self._wf_manager
-
-    def plugin_manager(self):
-        """
-        Get a reference to the plugin manager 
-        (paws.core.plugins.PluginManager.PluginManager). 
-        Intended for use by other interfaces, e.g. the GUI manager.
-        """
-        return self._plugin_manager
-
-    def inspect_objects(self):
-        """
-        Use QObject.findChildren() to count references to child objects
-        of the top-level paws resource managers.
-        Return a report of the result as a string.
-        """
-        opman_children = self._op_manager.findChildren(QtCore.QObject)
-        wfman_children = self._wf_manager.findChildren(QtCore.QObject)
-        plugman_children = self._plugin_manager.findChildren(QtCore.QObject)
-        rpt = str('paws QObject count:\n'
-            + 'operations manager: {}\n{}...\n'.format(len(opman_children),opman_children)
-            + 'plugins manager: {}\n{}\n'.format(len(plugman_children),plugman_children)
-            + 'workflow manager: {}\n{}\n'.format(len(wfman_children),wfman_children))
-        for wfname,wf in self._wf_manager.workflows.items():
-            wf_children = wf.findChildren(QtCore.QObject)
-            rpt += '\tworkflow {}: {}\n\t{}\n'.format(wfname,len(wf_children),wf_children)
-        return rpt
+    #def inspect_objects(self):
+    #    """
+    #    Use QObject.findChildren() to count references to child objects
+    #    of the top-level paws resource managers.
+    #    Return a report of the result as a string.
+    #    """
+    #    opman_children = self._op_manager.findChildren(QtCore.QObject)
+    #    wfman_children = self._wf_manager.findChildren(QtCore.QObject)
+    #    plugman_children = self._plugin_manager.findChildren(QtCore.QObject)
+    #    rpt = str('paws QObject count:\n'
+    #        + 'operations manager: {}\n{}...\n'.format(len(opman_children),opman_children)
+    #        + 'plugins manager: {}\n{}\n'.format(len(plugman_children),plugman_children)
+    #        + 'workflow manager: {}\n{}\n'.format(len(wfman_children),wfman_children))
+    #    for wfname,wf in self._wf_manager.workflows.items():
+    #        wf_children = wf.findChildren(QtCore.QObject)
+    #        rpt += '\tworkflow {}: {}\n\t{}\n'.format(wfname,len(wf_children),wf_children)
+    #    return rpt
         
 
-def start(app_args=[]):
-    """
-    Instantiate and return a PawsAPI object. 
 
-    paws.api.start() calls the PawsAPI constructor.
-
-    :param app_args: arguments to pass to the 
-    QApplication constructor within the PawsAPI constructor
-    :type args: sequence
-    :returns: a PawsAPI object
-    :return type: paws.api.PawsAPI 
-    """
-    return PawsAPI(app_args)
-
-
-def core_app(app_args=[]):
-    """
-    Return a reference to a new QCoreApplication or a currently running QApplication.
-    
-    Input arguments are passed to the QApplication constructor.
-    If a RuntimeError is thrown,
-    it is assumed that a QApplication is already running,
-    and an attempt is made to return a reference to that QApplication.
-    If that fails, this returns None.
-
-    :param app_args: arguments to pass to the QApplication constructor
-    :type args: sequence
-    :returns: reference to a new or existing QCoreApplication
-    :return type: PySide.QtCore.QCoreApplication or None
-    """
-    try:
-        app = QtCore.QCoreApplication(app_args)
-    except RuntimeError:
-        try:
-            app = QtCore.QCoreApplication.instance()
-        except:
-            app = None
-    return app
+#def core_app(app_args=[]):
+#    """
+#    Return a reference to a new QCoreApplication or a currently running QApplication.
+#    
+#    Input arguments are passed to the QApplication constructor.
+#    If a RuntimeError is thrown,
+#    it is assumed that a QApplication is already running,
+#    and an attempt is made to return a reference to that QApplication.
+#    If that fails, this returns None.
+#
+#    :param app_args: arguments to pass to the QApplication constructor
+#    :type args: sequence
+#    :returns: reference to a new or existing QCoreApplication
+#    :return type: PySide.QtCore.QCoreApplication or None
+#    """
+#    try:
+#        app = QtCore.QCoreApplication(app_args)
+#    except RuntimeError:
+#        try:
+#            app = QtCore.QCoreApplication.instance()
+#        except:
+#            app = None
+#    return app
 

@@ -43,10 +43,6 @@
            <widget class="QTreeView" name="op_selector"/>
           </item>
          </layout>
-         <zorder>op_selector</zorder>
-         <zorder>op_selector</zorder>
-         <zorder>op_selector</zorder>
-         <zorder>op_selector</zorder>
         </widget>
        </item>
        <item>
@@ -73,12 +69,6 @@
            </layout>
           </item>
          </layout>
-         <zorder>wf_selector</zorder>
-         <zorder>rm_op_button</zorder>
-         <zorder>wf_browser</zorder>
-         <zorder>wf_selector</zorder>
-         <zorder>rm_op_button</zorder>
-         <zorder>wf_browser</zorder>
         </widget>
        </item>
       </layout>
@@ -125,10 +115,10 @@
          </property>
          <layout class="QHBoxLayout" name="horizontalLayout_2">
           <item>
-           <widget class="QLineEdit" name="uri_prompt"/>
+           <widget class="QLineEdit" name="tag_prompt"/>
           </item>
           <item>
-           <widget class="QLineEdit" name="uri_entry"/>
+           <widget class="QLineEdit" name="tag_entry"/>
           </item>
           <item>
            <widget class="QPushButton" name="load_button">

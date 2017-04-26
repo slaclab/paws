@@ -1,17 +1,21 @@
 import os
 from functools import partial
+from collections import OrderedDict
 
 from PySide import QtGui, QtCore, QtUiTools
 import yaml
 
 from . import uitools
+from . import data_viewer
+from ..core import pawstools
 from .WfUiManager import WfUiManager
 from .OpUiManager import OpUiManager
 from .PluginUiManager import PluginUiManager
-from ..core import pawstools
-from . import data_viewer
 from ..core.models.ListModel import ListModel
 from ..core.plugins.WorkflowPlugin import WorkflowPlugin
+from ..qt.QWfManager import QWfManager
+from ..qt.QOpManager import QOpManager
+from ..qt.QPluginManager import QPluginManager
 
 class UiManager(QtCore.QObject):
     """
@@ -19,48 +23,173 @@ class UiManager(QtCore.QObject):
     performs operations on it
     """
 
-    def __init__(self,opman,wfman,plugman):
-        """Make a UI from ui_file, save a reference to it"""
+    def __init__(self,paws_api,app):
         super(UiManager,self).__init__()
-        ui_file = QtCore.QFile(pawstools.rootdir+"/ui/qtui/basic.ui")
+        ui_file = QtCore.QFile(pawstools.sourcedir+"/ui/qtui/basic.ui")
         ui_file.open(QtCore.QFile.ReadOnly)
         self.ui = QtUiTools.QUiLoader().load(ui_file)
         ui_file.close()
         self.ui.setAttribute(QtCore.Qt.WA_DeleteOnClose)
-        opman.logmethod = self.msg_board_log
-        wfman.logmethod = self.msg_board_log
-        plugman.logmethod = self.msg_board_log
-        self.opman = opman 
-        self.wfman = wfman 
-        self.plugman = plugman
+        paws_api._op_manager.logmethod = self.msg_board_log
+        paws_api._wf_manager.logmethod = self.msg_board_log
+        paws_api._plugin_manager.logmethod = self.msg_board_log
+        self.qplugman = QPluginManager(paws_api._plugin_manager)
+        self.qopman = QOpManager(paws_api._op_manager)
+        self.qwfman = QWfManager(paws_api._wf_manager,self.qplugman,app)
         self.make_title()
-        self.connect_actions()
-        self.final_setup()
+        self.build()
 
-    def add_wf(self,wfname):
-        if wfname in self.wfman.workflows.keys():
-            wfname = self.wfman.auto_name(wfname)
-        self.wfman.add_wf(wfname)
-        self.ui.wf_selector.model().append_item(wfname)
-        # if this is the first workflow loaded, need to hide the treeview columns.
-        if self.wfman.n_wf() == 1:
-            self.ui.wf_tree.hideColumn(1)
-            self.ui.wf_tree.hideColumn(2)
-        self.ui.wf_selector.setCurrentIndex(self.wfman.n_wf()-1)
+    #requestStopWorkflow = QtCore.Signal(str)
+    #requestRunWorkflow = QtCore.Signal(str)
+
+    def msg_board_log(self,msg):
+        """Print timestamped message to msg board"""
+        if (self.ui.message_board.verticalScrollBar().value() == 
+        self.ui.message_board.verticalScrollBar().maximum()):
+            advance_scrollbar = True
+        else:
+            advance_scrollbar = False
+        self.ui.message_board.appendPlainText(
+        '- ' + pawstools.timestr() + ': ' + msg)#+ '\n') 
+        if advance_scrollbar:
+            self.ui.message_board.verticalScrollBar().setValue(
+            self.ui.message_board.verticalScrollBar().maximum())
+
+    def make_title(self):
+        """Display the paws logo in the image viewer"""
+        img_file = os.path.join(pawstools.sourcedir, "ui/graphics/paws_icon_white.png")
+        pixmap = QtGui.QPixmap(img_file)
+        pixmap_item = QtGui.QGraphicsPixmapItem(pixmap)
+        scene = QtGui.QGraphicsScene()
+        scene.addItem(pixmap_item)
+        qwhite = QtGui.QColor(255,255,255,255)
+        textitem = scene.addText("v{}".format(pawstools.version))
+        textitem.setPos(100,35)
+        textitem.setDefaultTextColor(qwhite)
+        logo_view = QtGui.QGraphicsView()
+        logo_view.setScene(scene)
+        self.ui.data_viewer.addWidget(logo_view,0,0,1,1)
+        self.ui.setWindowTitle("paws v{}".format(pawstools.version))
+        self.ui.setWindowIcon(pixmap)
+
+    def build(self):
+        """
+        Set up QObjects and model views 
+        for communicating with paws objects 
+        """
+        self.qwfman.wfdone.connect(self.update_run_wf_button)
+        #self.requestRunWorkflow.connect(self.qwfman.runWorkflow)
+        #self.requestStopWorkflow.connect(self.qwfman.stopWorkflow)
+        lm = ListModel(self.qwfman.qworkflows.keys())
+        self.ui.wf_selector.setModel(lm)
+        self.ui.wf_selector.currentIndexChanged.connect( partial(self.set_wf) )
+        self.ui.add_wf_button.clicked.connect( partial(self.add_wf,'new_workflow') )
+        self.ui.plugin_tree.setModel(self.qplugman)
+        self.ui.op_tree.setModel(self.qopman)
+        self.ui.op_tree.clicked.connect( partial(uitools.toggle_expand,self.ui.op_tree) ) 
+        self.ui.op_tree.setRootIndex(self.qopman.root_index())
+        self.ui.wf_tree.clicked.connect( partial(uitools.toggle_expand,self.ui.wf_tree) )
+        self.ui.wf_tree.clicked.connect( self.display_wf_item )
+        self.ui.wf_tree.doubleClicked.connect( partial(self.edit_wf) )
+        self.ui.plugin_tree.clicked.connect( self.display_plugin_item )
+        self.ui.plugin_tree.setRootIndex(self.qplugman.root_index())
+        self.ui.run_wf_button.setText("&Run")
+        self.ui.run_wf_button.clicked.connect(self.toggle_run_wf)
+        self.ui.edit_ops_button.setText("Edit operations")
+        self.ui.edit_ops_button.clicked.connect(self.edit_ops)
+        self.ui.add_wf_button.setText("&New workflow")
+        self.ui.edit_wf_button.setText("&Edit workflow")
+        self.ui.edit_wf_button.clicked.connect(self.edit_wf)
+        self.ui.save_wf_button.setText("&Save workflow")
+        self.ui.save_wf_button.clicked.connect(self.save_wf)
+        self.ui.load_wf_button.setText("&Load workflow")
+        self.ui.load_wf_button.clicked.connect(self.load_wf)
+        self.ui.save_plugins_button.setText("Save plugins")
+        self.ui.save_plugins_button.clicked.connect(self.save_plugins)
+        self.ui.load_plugins_button.setText("Load plugins")
+        self.ui.load_plugins_button.clicked.connect(self.load_plugins)
+        self.ui.edit_plugins_button.setText("Edit plugins")
+        self.ui.edit_plugins_button.clicked.connect(self.start_plugins_ui)
+        self.ui.message_board.setReadOnly(True)
+        self.ui.message_board.insertPlainText('--- MESSAGE BOARD ---') 
+        self.msg_board_log('paws is ready') 
+        self.ui.op_tree.hideColumn(1)
+        self.ui.op_tree.hideColumn(2)
+        self.ui.plugin_tree.hideColumn(1)
+        self.ui.plugin_tree.hideColumn(2)
+        self.ui.hsplitter.setStretchFactor(1,2)    
+        self.ui.vsplitter.setStretchFactor(0,1)    
 
     def set_wf(self,wf_selector_idx):
         wfname = self.ui.wf_selector.model().list_data()[wf_selector_idx]
-        self.ui.wf_tree.setModel(self.wfman.workflows[wfname])
-        self.ui.wf_tree.setRootIndex(self.wfman.workflows[wfname].root_index())
+        self.ui.wf_tree.setModel(self.qwfman.qworkflows[wfname])
+        self.ui.wf_tree.setRootIndex(self.qwfman.qworkflows[wfname].root_index())
         self.update_run_wf_button()
 
+    def add_wf(self,wfname):
+        #if wfname in self.wfman.workflows.keys():
+        #    wfname = self.wfman.auto_name(wfname)
+        if wfname in self.qwfman.qworkflows.keys():
+            raise KeyError('[{}] Name {} already assigned to a Workflow. '
+            .format(__name__,wfname) + 'Loaded workflows: {}'
+            .format(self.qwfman.qworkflows.keys()))
+        self.qwfman.add_wf(wfname)
+        self.ui.wf_selector.model().append_item(wfname)
+        # if this is the first workflow loaded, need to hide the treeview columns.
+        if self.qwfman.n_wf() == 1:
+            self.ui.wf_tree.hideColumn(1)
+            self.ui.wf_tree.hideColumn(2)
+        self.ui.wf_selector.setCurrentIndex(self.qwfman.n_wf()-1)
+
+    def display_plugin_item(self,idx):
+        """
+        Display selected item from the plugin tree in data_viewer 
+        """
+        if idx.isValid(): 
+            itm_data = self.qplugman.get_data_from_index(idx)
+            data_viewer.display_item(itm_data,self.ui.data_viewer,None)
+
+    def display_wf_item(self,idx):
+        """
+        Display selected item from the workflow tree in data_viewer 
+        """
+        if idx.isValid(): 
+            itm_data = self.current_wf().get_data_from_index(idx)
+            data_viewer.display_item(itm_data,self.ui.data_viewer,None)
+
     def current_wf(self):
+        wfname = self.current_wfname()
+        if wfname:
+            return self.qwfman.qworkflows[wfname]
+
+    def current_wfname(self):
         idx = self.ui.wf_selector.currentIndex()
         if idx == -1:
             return None
         else:
-            wfname = self.ui.wf_selector.model().list_data()[idx]
-            return self.wfman.workflows[wfname]
+            return self.ui.wf_selector.model().list_data()[idx]
+
+    def toggle_run_wf(self,wfname=None):
+        if wfname:
+            qwf = self.qwfman.qworkflows[wfname]
+        else:
+            wfname = self.current_wfname()
+            qwf = self.qwfman.qworkflows[wfname]
+        if self.qwfman.wf_running[wfname]: 
+            self.qwfman.stop_wf(wfname)
+            self.ui.run_wf_button.setText("&Run")
+            #self.requestStopWorkflow.emit(wfname)
+        else:
+            self.ui.run_wf_button.setText("S&top")
+            self.qwfman.run_wf(wfname)
+        #self.update_run_wf_button()
+
+    def update_run_wf_button(self):
+        wfname = self.current_wfname() 
+        if self.qwfman.wf_running[wfname]:
+            self.ui.run_wf_button.setText("S&top")
+        else:
+            self.ui.run_wf_button.setText("&Run")
 
     def edit_wf(self,itm_idx=QtCore.QModelIndex()):
         """
@@ -76,27 +205,21 @@ class UiManager(QtCore.QObject):
             # valid index in workflow tree: percolate up to root ancestor
             while itm_idx.parent().isValid():
                 itm_idx = itm_idx.parent()
-        else:
-            # invalid index: try to find something valid that is selected
-            itm_idx = self.ui.wf_tree.currentIndex()
-            if itm_idx.isValid():
-                while itm_idx.parent().isValid():
-                    itm_idx = itm_idx.parent()
         if itm_idx.isValid():
             uiman = self.start_wf_editor(wf,itm_idx)
         else:
             uiman = self.start_wf_editor(wf)
         uiman.ui.show()
 
-    def start_wf_editor(self,trmod=None,idx=QtCore.QModelIndex()):
+    def start_wf_editor(self,qwf=None,idx=QtCore.QModelIndex()):
         """
         Create a WfUiManager (QMainWindow), return it 
         """
-        uiman = WfUiManager(self.wfman,self.opman,self.plugman)
+        uiman = WfUiManager(self.qwfman,self.qopman,self.qplugman)
         uiman.ui.wf_selector.setCurrentIndex(self.ui.wf_selector.currentIndex())
-        uiman.set_wf()
-        if trmod and idx.isValid():
-            uiman.get_op(trmod,idx)
+        #uiman.set_wf()
+        if qwf and idx.isValid():
+            uiman.get_op(qwf,idx)
         uiman.ui.setParent(self.ui,QtCore.Qt.Window)
         return uiman
 
@@ -105,99 +228,14 @@ class UiManager(QtCore.QObject):
         interact with user to enable existing Operations
         and edit or develop new Operations 
         """
-        uiman = OpUiManager(self.opman)
+        uiman = OpUiManager(self.qopman)
         uiman.ui.setParent(self.ui,QtCore.Qt.Window)
         uiman.ui.show()
-
-    def display_plugin_item(self,idx):
-        """
-        Display selected item from the plugin tree in image_viewer 
-        """
-        if idx.isValid(): 
-            itm_data = self.plugman.get_data_from_idx(idx)
-            data_viewer.display_item(itm_data,self.ui.image_viewer,None)
-
-    def display_wf_item(self,idx):
-        """
-        Display selected item from the workflow tree in image_viewer 
-        """
-        if idx.isValid(): 
-            itm_data = self.current_wf().get_data_from_idx(idx)
-            data_viewer.display_item(itm_data,self.ui.image_viewer,None)
-
-    def final_setup(self):
-        self.ui.message_board.setReadOnly(True)
-        self.ui.message_board.insertPlainText('--- MESSAGE BOARD ---\n') 
-        self.msg_board_log('paws is ready') 
-        self.ui.op_tree.hideColumn(1)
-        self.ui.op_tree.hideColumn(2)
-        self.ui.plugin_tree.hideColumn(1)
-        self.ui.plugin_tree.hideColumn(2)
-        self.ui.hsplitter.setStretchFactor(1,2)    
-        self.ui.vsplitter.setStretchFactor(0,1)    
-
-    def toggle_run_wf(self,wfname=None):
-        if wfname:
-            wf = self.wfman.workflows[wfname]
-        else:
-            wf_idx = self.ui.wf_selector.currentIndex()
-            wfname = self.ui.wf_selector.model().list_data()[wf_idx]
-            wf = self.current_wf()
-        # depending on whether wf is running or not,
-        # call a QtCore.Slot to get wfman to do the right thing
-        # and still continue to update_run_wf_button()
-        if wf.is_running():
-            self.wfman.stop_wf(wfname)
-            if wf == self.current_wf():
-                self.ui.run_wf_button.setText("&Run")
-        else:
-            if wf == self.current_wf():
-                self.ui.run_wf_button.setText("S&top")
-            self.wfman.run_wf(wfname)
-
-    def update_run_wf_button(self):
-        if self.current_wf().is_running():
-            self.ui.run_wf_button.setText("S&top")
-        else:
-            self.ui.run_wf_button.setText("&Run")
 
     def start_plugins_ui(self):
-        uiman = PluginUiManager(self.plugman)
+        uiman = PluginUiManager(self.qplugman)
         uiman.ui.setParent(self.ui,QtCore.Qt.Window)
         uiman.ui.show()
-
-    def make_title(self):
-        """Display the paws logo in the image viewer"""
-        # Load the graphic  
-        img_file = os.path.join(pawstools.rootdir, "ui/graphics/paws_icon_white.png")
-        # Make a QtGui.QPixmap from this file
-        pixmap = QtGui.QPixmap(img_file)
-        # Make a QtGui.QGraphicsPixmapItem from this QPixmap
-        pixmap_item = QtGui.QGraphicsPixmapItem(pixmap)
-        # Add this QtGui.QGraphicsPixmapItem to a QtGui.QGraphicsScene 
-        scene = QtGui.QGraphicsScene()
-        scene.addItem(pixmap_item)
-        qwhite = QtGui.QColor(255,255,255,255)
-        textitem = scene.addText("v{}".format(pawstools.version))
-        textitem.setPos(100,35)
-        textitem.setDefaultTextColor(qwhite)
-        # Add the QGraphicsScene to self.ui.image_viewer layout 
-        logo_view = QtGui.QGraphicsView()
-        logo_view.setScene(scene)
-        self.ui.image_viewer.addWidget(logo_view,0,0,1,1)
-        self.ui.setWindowTitle("paws v{}".format(pawstools.version))
-        self.ui.setWindowIcon(pixmap)
-
-    def msg_board_log(self,msg):
-        """Print timestamped message to msg board"""
-        if self.ui.message_board.verticalScrollBar().value() == self.ui.message_board.verticalScrollBar().maximum():
-            advance_scrollbar = True
-        else:
-            advance_scrollbar = False
-        self.ui.message_board.appendPlainText(
-        '- ' + pawstools.timestr() + ': ' + msg)#+ '\n') 
-        if advance_scrollbar:
-            self.ui.message_board.verticalScrollBar().setValue(self.ui.message_board.verticalScrollBar().maximum())
 
     def save_plugins(self):
         """
@@ -251,12 +289,13 @@ class UiManager(QtCore.QObject):
             fname = fname + '.wfl'
         self.msg_board_log( 'dumping current set of plugins to {}'.format(fname) )
         d = {} 
-        pgin_dict = {} 
-        for itm in self.plugman.root_items:
-            if isinstance(itm.data,WorkflowPlugin):
-                self.msg_board_log('--- skipping WorkflowPlugin {} ---'.format(itm.tag()))
+        pgin_dict = OrderedDict() 
+        for pgin_name in self.qplugman.plugman.list_child_tags():
+            pgin = self.qplugman.plugman.get_data_from_uri(pgin_name)
+            if isinstance(pgin,WorkflowPlugin):
+                self.msg_board_log('--- skipping WorkflowPlugin {} ---'.format(pgin_name))
             else:
-                pgin_dict[str(itm.tag())] = self.plugman.plugin_dict(itm.data)
+                pgin_dict[pgin_name] = self.qplugman.plugman.plugin_setup_dict(pgin)
         d['PLUGINS'] = pgin_dict
         pawstools.update_file(fname,d)
         ui.close()
@@ -269,7 +308,7 @@ class UiManager(QtCore.QObject):
         fname_nopath = os.path.split(fname)[1]
         fname_noext = os.path.splitext(fname_nopath)[0]
         if 'PLUGINS' in d.keys():
-            self.plugman.load_from_dict(d['PLUGINS'])
+            self.qplugman.load_from_dict(d['PLUGINS'])
         ui.close()
 
     def finish_save_wf(self,ui):
@@ -279,9 +318,10 @@ class UiManager(QtCore.QObject):
             fname = fname + '.wfl'
         self.msg_board_log( 'dumping current state to {}'.format(fname) )
         d = {} 
-        wf_dict = {} 
-        for opname,op in self.current_wf().op_dict().items():
-            wf_dict[opname] = self.wfman.op_setup_dict(op)
+        wf_dict = OrderedDict() 
+        for opname in self.current_wf().wf.list_child_tags():
+            op = self.current_wf().wf.get_data_from_uri(opname)
+            wf_dict[opname] = self.qwfman.wfman.op_setup_dict(op)
         d['WORKFLOW'] = wf_dict
         pawstools.update_file(fname,d)
         ui.close()
@@ -295,50 +335,15 @@ class UiManager(QtCore.QObject):
         fname_noext = os.path.splitext(fname_nopath)[0]
         if 'WORKFLOW' in d.keys():
             wfname = fname_noext
-            if wfname in self.wfman.workflows.keys():
-                wfname = self.wfman.auto_name(wfname)
-            self.wfman.load_from_dict(wfname,self.opman,d['WORKFLOW'])
-            self.ui.wf_selector.model().append_item(wfname)
-            wf_selector_idx = self.ui.wf_selector.model().n_items()-1
-            if self.wfman.n_wf() == 1:
+            self.qwfman.load_from_dict(wfname,self.qopman.opman,d['WORKFLOW'])
+            #if wfname in self.qwfman.qworkflows.keys():
+            #    wfname = self.qwfman.auto_name(wfname)
+            if not wfname in self.ui.wf_selector.model().list_data():
+                self.ui.wf_selector.model().append_item(wfname)
+            new_wf_idx = self.ui.wf_selector.model().list_data().index(wfname) 
+            if self.qwfman.n_wf() == 1:
                 self.ui.wf_tree.hideColumn(1)
                 self.ui.wf_tree.hideColumn(2)
-        self.ui.wf_selector.setCurrentIndex(wf_selector_idx)
-        #self.set_wf(wf_selector_idx)
+        self.ui.wf_selector.setCurrentIndex(new_wf_idx)
         ui.close()
-
-    def connect_actions(self):
-        """Set up the works for buttons and menu items"""
-        self.wfman.wfdone.connect(self.toggle_run_wf)
-        lm = ListModel(self.wfman.workflows.keys())
-        self.ui.wf_selector.setModel(lm)
-        self.ui.wf_selector.currentIndexChanged.connect( partial(self.set_wf) )
-        self.ui.edit_ops_button.setText("Edit operations")
-        self.ui.edit_ops_button.clicked.connect(self.edit_ops)
-        self.ui.add_wf_button.setText("&New workflow")
-        self.ui.add_wf_button.clicked.connect( partial(self.add_wf,'new_workflow') )
-        self.ui.run_wf_button.setText("&Run")
-        self.ui.run_wf_button.clicked.connect(self.toggle_run_wf)
-        self.ui.edit_wf_button.setText("&Edit workflow")
-        self.ui.edit_wf_button.clicked.connect( partial(self.edit_wf) )
-        self.ui.save_wf_button.setText("&Save workflow")
-        self.ui.save_wf_button.clicked.connect(self.save_wf)
-        self.ui.load_wf_button.setText("&Load workflow")
-        self.ui.load_wf_button.clicked.connect(self.load_wf)
-        self.ui.save_plugins_button.setText("Save plugins")
-        self.ui.save_plugins_button.clicked.connect(self.save_plugins)
-        self.ui.load_plugins_button.setText("Load plugins")
-        self.ui.load_plugins_button.clicked.connect(self.load_plugins)
-        self.ui.edit_plugins_button.setText("Edit plugins")
-        self.ui.edit_plugins_button.clicked.connect(self.start_plugins_ui)
-        self.ui.plugin_tree.setModel(self.plugman)
-        self.ui.op_tree.setModel(self.opman)
-        self.ui.op_tree.clicked.connect( partial(uitools.toggle_expand,self.ui.op_tree) ) 
-        self.ui.op_tree.setRootIndex(self.opman.root_index())
-        self.ui.wf_tree.clicked.connect( partial(uitools.toggle_expand,self.ui.wf_tree) )
-        self.ui.wf_tree.clicked.connect( self.display_wf_item )
-        self.ui.wf_tree.doubleClicked.connect( partial(self.edit_wf) )
-        self.ui.plugin_tree.clicked.connect( self.display_plugin_item )
-        self.ui.plugin_tree.setRootIndex(self.plugman.root_index())
-
 

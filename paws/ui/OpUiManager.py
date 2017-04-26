@@ -7,16 +7,16 @@ from . import uitools
 from ..core import pawstools
 from ..core.operations.Operation import Operation
 
-class OpUiManager(object):
+class OpUiManager(QtCore.QObject):
 
-    def __init__(self,opman):
-        ui_file = QtCore.QFile(pawstools.rootdir+"/ui/qtui/op_editor.ui")
+    def __init__(self,qopman):
+        ui_file = QtCore.QFile(pawstools.sourcedir+"/ui/qtui/op_editor.ui")
         ui_file.open(QtCore.QFile.ReadOnly)
         self.ui = QtUiTools.QUiLoader().load(ui_file)
         ui_file.close()
         # set self.ui to be deleted and to emit destroyed() signal when its window is closed
         self.ui.setAttribute(QtCore.Qt.WA_DeleteOnClose)
-        self.opman = opman 
+        self.qopman = qopman 
         self.setup_ui()
         self.op = None
         self.filepath = ''
@@ -33,16 +33,14 @@ class OpUiManager(object):
         self._edit_mode = False
 
     def get_op(self,idx):
-        itm = self.opman.get_item(idx)
-        x = itm.data
+        x = self.qopman.get_data_from_index(idx)
         try:
             op_flag = issubclass(x,Operation)
-            #op_flag = isinstance(x,Operation)
         except:
             op_flag = False
         if op_flag:
-            op_uri = self.opman.build_uri(idx)
-            self.filepath = pawstools.sourcedir + '/' + 'paws/core/operations'
+            op_uri = self.qopman.opman.get_uri_of_index(idx)
+            self.filepath = pawstools.sourcedir + '/core/operations'
             for uri_piece in op_uri.split('.'):
                 self.filepath = self.filepath + '/' + uri_piece
             self.filepath = self.filepath + '.py'
@@ -226,7 +224,7 @@ class OpUiManager(object):
 
     def setup_ui(self):
         self.ui.setWindowTitle("operation setup")
-        self.ui.op_selector.setModel(self.opman)
+        self.ui.op_selector.setModel(self.qopman)
         self.ui.op_selector.hideColumn(1)
         self.ui.op_selector.hideColumn(2)
         self.ui.op_selector.clicked.connect( partial(self.get_op) )

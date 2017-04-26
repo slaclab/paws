@@ -1,49 +1,28 @@
-from PySide import QtCore
-
 from .. import operations as ops
 from ..operations import optools
-from ..models.QTreeSelectionModel import QTreeSelectionModel
+from ..models.TreeModel import TreeModel
 
-class OpManager(QTreeSelectionModel):
+class OpManager(TreeModel):
     """
     Tree structure for categorized storage and retrieval of Operations.
     """
 
-    def __init__(self,**kwargs):
-        super(OpManager,self).__init__({'select':False,'enable':False})
-        #self._module_list = []
+    def __init__(self):
+        super(OpManager,self).__init__()
         self.logmethod = None
 
     def load_cats(self,cat_list):
         for cat in cat_list:
-            p_idx = self.root_index()
-            #self._module_list.append(cat)
-            for subcat in cat.split('.'):
-                self.add_cat(subcat,p_idx)
-                p_idx = self.idx_of_cat(subcat,p_idx)
-
-    def add_cat(self,new_cat,p_idx):
-        """
-        Add a category to the tree under parent,
-        if not already there. Return its index.
-        """
-        cat_idx = self.idx_of_cat(new_cat,p_idx)
-        if not cat_idx.isValid():
-            self.set_item(new_cat,{},p_idx)
-
-    def idx_of_cat(self,catname,p_idx):
-        """
-        If cat exists under p_idx, return its index, 
-        else return an invalid QModelIndex.
-        """
-        ncats = self.item_count(p_idx)
-        p_itm = self.get_from_idx(p_idx)
-        for j in range(ncats):
-            idx = self.index(j,0,p_idx)
-            cat = self.get_from_idx(idx).tag
-            if cat == catname:
-                return idx
-        return QtCore.QModelIndex() 
+            itm = self._root_item
+            cat_tags = cat.split('.')
+            cat_uri = cat_tags[0]
+            if not cat_uri in self.list_child_tags():
+                self.set_item(cat_uri,{})
+            if len(cat_tags) > 1:
+                for cat_tag in cat_tags[1:]:
+                    if not cat_tag in self.list_child_tags(cat_uri):
+                        self.set_item(cat_uri+'.'+cat_tag,{})
+                    cat_uri = cat_uri+'.'+cat_tag
 
     def load_ops(self,cat_op_list):
         """
@@ -52,52 +31,22 @@ class OpManager(QTreeSelectionModel):
         i.e. each operation in cat_op_list is specified by a tuple,
         where the first element is a category,
         and the second element is the Operation itself.
-        load_cats() MUST be called before load_ops()
-        and MUST ensure that all cats in cat_op_list exist in the tree.
+        load_cats() should be called before load_ops()
+        and should ensure that all cats in cat_op_list exist in the tree.
         """
         #### BUILD OPERATIONS TREE
         # Tree will consist of nodes indicating categories,
         # with subcategories or Operations as children.
         for cat_op in cat_op_list:
-            #self._module_list.append(cat_op[0]+'.'+cat_op[1].__name__)
-            idx = self.root_index()
-            for subcat in cat_op[0].split('.'):
-                idx = self.idx_of_cat(subcat,idx)
-            self.add_op(cat_op[1],idx)
+            self.add_op(cat_op[0],cat_op[1])
 
-    def add_op(self,op,p_idx):
+    def add_op(self,cat,op):
         """
-        Add op to the tree, 
-        as a child of the TreeItem at QModelIndex p_idx.
+        Add op to the tree under category specified by uri cat.
         """
-        self.set_item(op.__name__,op,p_idx)
+        self.set_item(cat+'.'+op.__name__,op)
 
-    def remove_ops(self,rm_idx):
-        """
-        Remove an Operation or category from the tree.
-        """
-        if not rm_idx == self.root_index() and rm_idx.isValid():
-            p_idx = self.parent(rm_idx)
-            rm_itm = self.get_from_idx(rm_idx)
-            self.delete_item(rm_itm.tag,p_idx)            
-
-    # get an Operation by its cat.[subcat.(...).]opname uri
-    #def get_op_from_uri(self,op_uri):
-        #return self.get_data_from_uri(op_uri)
-        #for op in self._op_list:
-        #    if op.__name__ == op_name:
-        #        return op
-        #return None
-
-    # get an Operation from the list by its TreeItem's QModelIndex
-    #def get_op(self,indx):
-        #treeitem = self.get_item(indx)
-        #return treeitem.data
- 
-    # Reimplemented headerData() for OpManager 
-    def headerData(self,section,orientation,data_role):
-        if (data_role == QtCore.Qt.DisplayRole and section == 0):
-            return "{} operations available".format(self.n_items())
-        else:
-            return super(OpManager,self).headerData(section,orientation,data_role) 
+    def remove_op(self,op_uri):
+        """Remove op from the tree by its full category.opname uri"""
+        self.remove_item(op_uri)
 

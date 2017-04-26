@@ -21,11 +21,11 @@ class InputLoader(object):
 
     def setup_ui(self):
         if self.src == optools.text_input:
-            ui_file = QtCore.QFile(pawstools.rootdir+"/ui/qtui/text_input_loader.ui")
+            ui_file = QtCore.QFile(pawstools.sourcedir+"/ui/qtui/text_input_loader.ui")
         elif self.src in [optools.plugin_input,optools.fs_input]:
-            ui_file = QtCore.QFile(pawstools.rootdir+"/ui/qtui/tree_input_loader.ui")
+            ui_file = QtCore.QFile(pawstools.sourcedir+"/ui/qtui/tree_input_loader.ui")
         elif self.src == optools.wf_input:
-            ui_file = QtCore.QFile(pawstools.rootdir+"/ui/qtui/wf_input_loader.ui")
+            ui_file = QtCore.QFile(pawstools.sourcedir+"/ui/qtui/wf_input_loader.ui")
         ui_file.open(QtCore.QFile.ReadOnly)
         self.ui = QtUiTools.QUiLoader().load(ui_file)
         ui_file.close()
@@ -34,7 +34,7 @@ class InputLoader(object):
         if self.src in [optools.plugin_input,optools.fs_input]:
             self.ui.source_treeview.setModel(self.src_manager)
         elif self.src == optools.wf_input:
-            lm = ListModel(self.src_manager.workflows.keys())
+            lm = ListModel(self.src_manager.qworkflows.keys())
             self.ui.wf_selector.setModel(lm)
             self.ui.wf_selector.currentIndexChanged.connect( partial(self.set_wf) )
         if self.src == optools.plugin_input:
@@ -50,10 +50,10 @@ class InputLoader(object):
             self.ui.source_treeview.hideColumn(3)
             self.ui.source_treeview.setColumnWidth(0,250)
         elif self.src in [optools.wf_input,optools.plugin_input]:
-            self.ui.source_treeview.setColumnWidth(0,250)
+            self.ui.source_treeview.setColumnWidth(0,500)
             self.ui.source_treeview.hideColumn(2)
             # Reset all selections
-            self.tree_model().set_all_unselected()
+            self.tree_model().set_all_flagged('select',False)
         if self.src == optools.text_input:
             self.ui.set_button.setText("&Set entries")
             self.ui.add_button.setText("&Add entries")
@@ -77,7 +77,7 @@ class InputLoader(object):
         elif self.src == optools.wf_input:
             wf_idx = self.ui.wf_selector.currentIndex()
             wfname = self.ui.wf_selector.model().list_data()[wf_idx]
-            return self.src_manager.workflows[wfname]
+            return self.src_manager.qworkflows[wfname]
         else:
             return None
 
@@ -85,25 +85,26 @@ class InputLoader(object):
         if wf_idx is None:
             wf_idx = self.ui.wf_selector.currentIndex() 
         wfname = self.ui.wf_selector.model().list_data()[wf_idx]
-        self.ui.source_treeview.setModel(self.src_manager.workflows[wfname])
-        self.ui.source_treeview.setRootIndex(self.src_manager.workflows[wfname].root_index())
+        self.ui.source_treeview.setModel(self.src_manager.qworkflows[wfname])
+        self.ui.source_treeview.setRootIndex(self.src_manager.qworkflows[wfname].root_index())
         self.ui.source_treeview.hideColumn(2)
         self.ui.source_treeview.setColumnWidth(0,250)
 
     def get_values(self):
+        #import pdb; pdb.set_trace()
         if self.src == optools.text_input:
             vals = self.ui.source_textedit.toPlainText().split(os.linesep)
         elif self.src in [optools.plugin_input,optools.wf_input]:
             # Get all items currently selected
-            idxs = self.tree_model().get_all_selected()
+            idxs = self.tree_model().get_flagged_idxs('select')
             if any(idxs) and all([idx.isValid() for idx in idxs]):
-                vals = [str(self.tree_model().build_uri(idx)).strip() for idx in idxs]
+                vals = [str(self.tree_model().get_uri_of_index(idx)).strip() for idx in idxs]
             # If user did not use tree selection model, take currentIndex()
             else:
                 idx = self.ui.source_treeview.currentIndex()
-                vals = [str(self.tree_model().build_uri(idx)).strip()]
+                vals = [str(self.tree_model().get_uri_of_index(idx)).strip()]
             # Reset all selections
-            self.tree_model().set_all_unselected()
+            self.tree_model().set_all_flagged('select',False)
         elif self.src == optools.fs_input:
             idx = self.ui.source_treeview.currentIndex()
             vals = [str(self.ui.source_treeview.model().filePath(idx)).strip()]

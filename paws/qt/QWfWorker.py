@@ -1,9 +1,9 @@
 import traceback
 from PySide import QtCore
 
-from ..operations.Operation import Operation
+from ..core.operations.Operation import Operation
 
-class WfWorker(QtCore.QObject):
+class QWfWorker(QtCore.QObject):
     """
     Container for storing and executing parts of a workflow,
     to be pushed onto QtCore.QThread(s) as needed.
@@ -11,18 +11,21 @@ class WfWorker(QtCore.QObject):
     
     #finished = QtCore.Signal()
     opDone = QtCore.Signal(str,Operation)
+    wfDone = QtCore.Signal()
 
     def __init__(self,op_dict=None,parent_QObject=None):
-        super(WfWorker,self).__init__(parent_QObject)
+        super(QWfWorker,self).__init__(parent_QObject)
         self.op_dict = op_dict 
 
     def work(self):
         try:
             for op_tag,op in self.op_dict.items():
-                # run and update the Operation in this TreeItem
-                op.run()
-                self.opDone.emit(op_tag,op)
-            self.thread().quit()
+                #try:
+                    op.run()
+                    self.opDone.emit(op_tag,op)
+                #except Exception as ex:
+                #    print '[{}] crashed with {}'.format(__name__,ex.message)
+            self.wfDone.emit()
         except Exception as ex:
             # TODO: Deliver this exception to the user gracefully 
             tb = traceback.format_exc()
@@ -30,7 +33,6 @@ class WfWorker(QtCore.QObject):
                 + 'Error message: {} \n'.format(ex.message) 
                 + 'Stack trace: {}'.format(tb)) 
             print msg
-            self.thread().quit()
             raise ex
 
 

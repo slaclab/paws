@@ -3,7 +3,7 @@ from twisted.internet.protocol import ClientFactory
 from twisted.protocols.basic import LineReceiver
 from twisted.protocols.policies import TimeoutMixin
 
-from plugin import PawsPlugin
+from .PawsPlugin import PawsPlugin
 from ..operations import optools
 
 class TCPClientPlugin(PawsPlugin):

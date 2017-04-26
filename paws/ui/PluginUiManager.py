@@ -12,15 +12,16 @@ from .InputLoader import InputLoader
 from . import uitools
 
 class PluginUiManager(QtCore.QObject):
+    # TODO: API cleanup: hide refs to self.qplugman.plugman._tree
 
-    def __init__(self,plugman):
-        ui_file = QtCore.QFile(pawstools.rootdir+"/ui/qtui/plugin_control.ui")
+    def __init__(self,qplugman):
+        ui_file = QtCore.QFile(pawstools.sourcedir+"/ui/qtui/plugin_control.ui")
         ui_file.open(QtCore.QFile.ReadOnly)
         self.ui = QtUiTools.QUiLoader().load(ui_file)
         ui_file.close()
         # set self.ui to be deleted and to emit destroyed() signal when its window is closed
         self.ui.setAttribute(QtCore.Qt.WA_DeleteOnClose)
-        self.plugman = plugman 
+        self.qplugman = qplugman 
         self.plugin_list_model = PluginListModel(plugins.plugin_name_list,self.ui)
         self.pgin = None
         self.setup_ui()
@@ -47,9 +48,10 @@ class PluginUiManager(QtCore.QObject):
         QtGui.QSizePolicy.Minimum,self.ui.plugin_frame.sizePolicy().verticalPolicy())
         self.ui.plugins_available.clicked.connect( partial(self.start_plugin) )
         self.ui.plugins_available.setModel(self.plugin_list_model)
-        self.ui.plugins_loaded.setModel(self.plugman)
+        self.ui.plugins_loaded.setModel(self.qplugman)
         self.ui.plugins_loaded.hideColumn(1)
         self.ui.plugins_loaded.hideColumn(2)
+        self.ui.plugins_loaded.setRootIndex(self.qplugman.root_index())
         self.ui.stop_plugin_button.clicked.connect(self.stop_plugin)
         self.ui.stop_plugin_button.setText("&Stop selected plugin")
         self.ui.uri_prompt.setMaximumWidth(150)
@@ -82,7 +84,9 @@ class PluginUiManager(QtCore.QObject):
         self.pgin = pgin
         self.ui.plugin_info.setPlainText(self.pgin.description())
         self.build_input()
-        self.ui.uri_entry.setText(self.plugman.auto_tag(type(self.pgin).__name__))
+        # TODO: clean up the following
+        self.ui.uri_entry.setText(
+        self.qplugman.plugman._tree.make_unique_uri(type(self.pgin).__name__))
         
     def clear_input(self):
         self.ui.plugin_name.setText('')
@@ -216,6 +220,7 @@ class PluginUiManager(QtCore.QObject):
                 inp_loader.add_value(str(self.pgin.inputs[name]))
         inp_loader.ui.finish_button.clicked.connect( partial(self.set_input,name,inp_loader.ui) )
         self.input_loaders[name] = inp_loader
+        inp_loader.ui.show()
 
     def fetch_from_input_ui(self,ui):
         # no matter the input source, ui.values_list.model().list_data() should be a list of strings.
@@ -245,35 +250,35 @@ class PluginUiManager(QtCore.QObject):
 
     def load_plugin(self):
         """
-        Package the finished Plugin, ship to self.plugman
+        Package the finished Plugin, ship to plugin manager
         """ 
         for name in self.pgin.inputs.keys():
             self.set_input(name)
         uri = self.ui.uri_entry.text()
         # Plugin setup occurs here via PawsPlugin.start()
         self.pgin.start()
-        result = self.plugman.is_tag_free(uri)
-        if result[0]:
-            self.plugman.add_plugin(uri,self.pgin) 
+        if self.qplugman.plugman.is_uri_valid(uri):
+            self.qplugman.add_plugin(uri,self.pgin) 
             self.clear_input()
-            #self.ui.close()
-            #self.ui.deleteLater()
         else:
             # Request a different uri 
             msg_ui = uitools.message_ui(self.ui)
             msg_ui.setWindowTitle("Tag Error")
-            msg_ui.message_box.setPlainText(self.plugman.tag_error(uri,result[1]))
+            msg_ui.message_box.setPlainText(
+            self.qplugman.plugman._tree.tag_error(uri))
             msg_ui.setAttribute(QtCore.Qt.WA_DeleteOnClose)
             msg_ui.show()
 
-    def stop_plugin(self):
+    def stop_plugin(self,idx=QtCore.QModelIndex()):
         """
         remove the selected plugin from self.plugman 
         """
-        idx = self.ui.plugins_loaded.currentIndex()
+        if not idx.isValid():
+            idx = self.ui.plugins_loaded.currentIndex()
         if idx.isValid(): 
             while idx.internalPointer().parent.isValid():
                 idx = idx.internalPointer().parent
-            self.plugman.remove_plugin(idx)
+            pgin_tag = self.qplugman.get_uri_of_index(idx)
+            self.qplugman.remove_plugin(pgin_tag)
 
 

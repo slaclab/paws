@@ -1,128 +1,23 @@
-from functools import partial
 from collections import OrderedDict
 import copy
 
-from PySide import QtCore
-
-from ..plugins.PawsPlugin import PawsPlugin
 from ..plugins.WorkflowPlugin import WorkflowPlugin
 from .Workflow import Workflow
-from ..operations.Operation import Operation        
+from ..operations.Operation import Operation, Batch, Realtime        
 from ..operations import optools        
-# TODO: consider migrating threading to a ThreadPool 
 
-class WfManager(QtCore.QObject):
+class WfManager(object):
     """
     Manager for paws Workflows. 
-    Stores a list of Workflow objects, performs operations on them.
+    Stores a list of Workflow objects, 
+    performs operations on them.
     """
 
-    def __init__(self,plugin_manager,qapp_reference):
+    def __init__(self,plugin_manager):
+        #super(WfManager,self).__init__()
         self.workflows = OrderedDict() 
-        self.appref = qapp_reference 
         self.plugman = plugin_manager
-        self._n_threads = QtCore.QThread.idealThreadCount()
-        # TODO: get more wf_threads working
-        self._n_wf_threads = 1
-        self._wf_threads = dict.fromkeys(range(self._n_threads)[:self._n_wf_threads]) 
-        #self._wf_threads = dict.fromkeys(range(self._n_threads)) 
         self.logmethod = None
-        super(WfManager,self).__init__()
-
-    # this signal should emit the name (self.workflows dict key) of the workflow that finished.
-    # used to signal the gui to update the "Run" button.
-    wfdone = QtCore.Signal(str)
-
-    @QtCore.Slot(str)
-    def run_wf(self,wfname):
-        self.workflows[wfname].run_wf()
-
-    @QtCore.Slot(str)
-    def stop_wf(self,wfname):
-        self.workflows[wfname].stop_wf()
-
-    @QtCore.Slot(str)
-    def finish_wf(self,wfname):
-        self.wfdone.emit(wfname)
-
-    def auto_name(self,wfname):
-        """
-        Generate the next unique workflow name by appending '_x',
-        where x is a minimal nonnegative integer.
-        """
-        goodname = False
-        prefix = wfname
-        idx = 1
-        while not goodname:
-            if not wfname in self.workflows.keys():
-                goodname = True
-            else:
-                wfname = prefix+'_{}'.format(idx)
-                idx += 1
-        return wfname 
-
-    def finish_thread(self,th_idx):
-        #print 'finishing thread {}'.format(th_idx)
-        self.appref.processEvents()
-        self._wf_threads[th_idx] = None
-
-    def register_thread(self,th_idx,th):
-        #print 'saving thread {}'.format(th_idx)
-        self._wf_threads[th_idx] = th
-
-    def wait_for_thread(self,th_idx):
-        """Wait for the thread at self._wf_threads[th_idx] to be finished"""
-        #print 'waiting for thread {}'.format(th_idx)
-        # when waiting for a thread to execute something,
-        # best processEvents() to ensure that the application has a chance
-        # to prepare the thing that will be executed
-        self.appref.processEvents()
-        done = False
-        interval = 1
-        wait_iter = 0
-        total_wait = 0
-        while not done:
-            #if wait_iter > 0:
-            #    print '{}... still waiting for thread {} for {}ms'.format(wait_iter,th_idx,total_wait)
-            done = True
-            if self._wf_threads[th_idx] is not None:
-                if not self._wf_threads[th_idx].isFinished():
-                    done = False
-                if not done:
-                    if interval <= float(total_wait)*0.01 and interval <= 100:
-                        interval = interval * 10
-                    self.loopwait(interval)
-                    wait_iter += 1
-                    total_wait += interval
-
-    def next_available_thread(self):
-        for idx,th in self._wf_threads.items():
-            if not th:
-                #print '[{}] found available thread {}'.format(__name__,idx)
-                return idx
-        # if none found, wait for first thread in self.wfman.wf_threads 
-        self.wait_for_thread(0)
-        #print '[{}] falling back on thread 0'.format(__name__)
-        return 0
-
-    def wait_for_threads(self):
-        """Wait for all workflow execution threads to finish"""
-        for idx,th in self._wf_threads.items():
-            self.wait_for_thread(idx)
-
-    def loopwait(self,interval):
-        """
-        Create an event loop to delay some time without busywaiting.
-        Time interval is specified in milliseconds.
-        """
-        l = QtCore.QEventLoop()
-        t = QtCore.QTimer()
-        t.setSingleShot(True)
-        t.timeout.connect(l.quit)
-        t.start(interval)
-        l.exec_()
-        # processEvents() to continue the main event loop while waiting.
-        self.appref.processEvents()
 
     def n_wf(self):
         return len(self.workflows)
@@ -133,9 +28,6 @@ class WfManager(QtCore.QObject):
         else:
             print(msg)
 
-    def wf_threads(self):
-        return self._wf_threads
-
     def add_wf(self,wfname):
         """
         Add a workflow to self.workflows, with key specified by wfname.
@@ -143,35 +35,135 @@ class WfManager(QtCore.QObject):
         this method will overwrite the existing workflow with a new one.
         """
         wf = Workflow(self)
-        wf.exec_finished.connect( partial(self.finish_wf,wfname) )
-        wf.wf_updated.connect( partial(self.plugman.update_plugin,wfname) )
-        #wf.setParent(self)
         self.workflows[wfname] = wf
         # for every new workflow, add a plugin 
         wf_pgin = WorkflowPlugin()
         wf_pgin.inputs['workflow'] = self.workflows[wfname] 
         wf_pgin.start()
-        self.plugman.add_plugin(wfname,wf_pgin)
+        self.plugman.set_item(wfname,wf_pgin)
+
+    def run_wf(self,wfname):
+        """
+        Serially execute the operations of WfManager.workflows[wfname].
+        Uses Workflow.execution_stack() to determine execution order,
+        and performs all operations in serial.
+        """
+        stk,diag = self.workflows[wfname].execution_stack()
+        for lst in stk:
+            batch_flag = isinstance(self.workflows[wfname].get_data_from_uri(lst[0]),Batch)
+            rt_flag = isinstance(self.workflows[wfname].get_data_from_uri(lst[0]),Realtime)
+            if not any([batch_flag,rt_flag]):
+                self.execute_serial(wfname,lst)
+            elif batch_flag:
+                self.execute_batch(wfname,lst[0],lst[1])
+            elif rt_flag:
+                self.execute_realtime(wfname,lst[0],lst[1])
+
+    def execute_batch(self,wfname,batch_op_tag,batch_stk):
+        batch_op = self.workflows[wfname].get_data_from_uri(batch_op_tag) 
+        optools.load_inputs(batch_op,self.workflows[wfname])
+        batch_op.run()
+        self.workflows[wfname].set_item(batch_op_tag,batch_op)
+        n_batch = len(batch_op.input_list())
+        for i in range(n_batch):
+            input_dict = batch_op.input_list()[i]
+            for uri,val in input_dict.items():
+                self.workflows[wfname].set_item(uri,val)
+            self.write_log( 'BATCH EXECUTION {} / {}'.format(i+1,n_batch) )
+            for batch_lst in batch_stk:
+                self.execute_serial(wfname,batch_lst)
+            saved_items_dict = OrderedDict()
+            for uri in batch_op.saved_items():
+                save_data = self.workflows[wfname].get_data_from_uri(uri)
+                save_dict = self.uri_to_embedded_dict(uri,save_data) 
+                saved_items_dict = self.update_embedded_dict(saved_items_dict,save_dict)
+            batch_op.output_list()[i] = saved_items_dict
+            self.workflows[wfname].set_item(batch_op_tag,batch_op)
+
+    def execute_realtime(self,wfname,rt_op_tag,rt_stk):
+        rt_op = self.workflows[wfname].get_data_from_uri(rt_op_tag) 
+        optools.load_inputs(rt_op,self.workflows[wfname])
+        rt_op.run()
+        self.workflows[wfname].set_item(rt_op_tag,rt_op)
+        keep_running = True
+        n_exec = 0
+        while keep_running:
+        #TODO: ways to control the loop exit condition
+            vals = rt_op.input_iter().next()
+            if not None in vals:
+                n_exec += 1
+                wait_iter = 0
+                inp_dict = OrderedDict( zip(rt_op.input_routes(), vals) )
+                self.write_log( 'REALTIME EXECUTION {}'.format(n_exec))
+                for uri,val in inp_dict.items():
+                    self.workflows[wfname].set_item(uri,val) 
+                for rt_lst in rt_stk:
+                    self.execute_serial(wfname,rt_lst)
+                saved_items_dict = OrderedDict()
+                for uri in rt_op.saved_items():
+                    save_data = self.workflows[wfname].get_data_from_uri(uri)
+                    save_dict = self.uri_to_embedded_dict(uri,save_data) 
+                    saved_items_dict = self.update_embedded_dict(saved_items_dict,save_dict)
+                rt_op.output_list().append(saved_items_dict)
+                self.workflows[wfname].set_item(rt_op_tag,rt_op)
+            else:
+                if wait_iter == 0:
+                    self.write_log( 'Waiting for new inputs...' )
+                wait_iter += 1 
+                time.sleep(float(rt_op.delay())/1000.0)
+            if wait_iter > 1000:
+                self.write_log( 'Waited 1000 loops of {}ms. Exiting...'.format(rt_op.delay()) )
+                keep_running = False
+
+    def execute_serial(self,wfname,op_list):
+        self.write_log('workflow {} running {}'.format(wfname,op_list))
+        for op_tag in op_list: 
+            op = self.workflows[wfname].get_data_from_uri(op_tag) 
+            optools.load_inputs(op,self.workflows[wfname])
+            op.run() 
+            self.workflows[wfname].set_item(op_tag,op)
+
+    def uri_to_embedded_dict(self,uri,data=None):
+        path = uri.split('.')
+        endtag = path[-1]
+        d = OrderedDict()
+        d[endtag] = data
+        for tag in path[:-1][::-1]:
+            parent_d = OrderedDict()
+            parent_d[tag] = d
+            d = parent_d
+        return d
+
+    def update_embedded_dict(self,d,d_new):
+        for k,v in d_new.items():
+            if k in d.keys():
+                if isinstance(d[k],dict) and isinstance(d_new[k],dict):
+                    # embedded dicts: recurse
+                    d[k] = self.update_embedded_dict(d[k],d_new[k])
+                else:
+                    # existing d[k] is not dict, and d_new[k] is dict: replace  
+                    d[k] = d_new[k]
+            else:
+                # d[k] does not exist: insert
+                d[k] = v
+        return d
 
     def load_from_dict(self,wfname,opman,opdict):
         """
-        Create a workflow with name (self.workflows dict key) wfname.
+        Create a workflow with name wfname.
         If wfname is not unique, self.workflows[wfname] is overwritten.
         Input opdict specifies operation setup,
         where each item in opdict provides enough information
-        to get and set inputs for an Operation from OpManager opman.
+        to get an Operation from OpManager opman
+        and set up its Operation.input_locators.
         """
         self.add_wf(wfname)
-        for uri, op_setup in opdict.items():
+        for opname, op_setup in opdict.items():
             op = self.build_op_from_dict(op_setup,opman)
-            if op is None or not isinstance(op,Operation):
-                self.write_log('Could not build Operation {} from \n{}\n-- skipping.'.format(uri,op_setup))
-            else: 
-                self.workflows[wfname].add_op(uri,op)
-        # the wf_updated signal for this workflow is expected 
-        # to be connected to the plugin manager at this point.
-        # See WfManager.add_wf(). 
-        self.workflows[wfname].wf_updated.emit()
+            if isinstance(op,Operation):
+                self.workflows[wfname].set_item(opname,op)
+            else:
+                self.write_log('[{}] Failed to load {}.'.format(uri))
 
     def op_setup_dict(self,op):
         op_mod = op.__module__[op.__module__.find('operations'):]
@@ -209,5 +201,21 @@ class WfManager(QtCore.QObject):
             return op
         else:
             return None
+
+    #def auto_name(self,wfname):
+    #    """
+    #    Generate the next unique workflow name by appending '_x',
+    #    where x is a minimal nonnegative integer.
+    #    """
+    #    goodname = False
+    #    prefix = wfname
+    #    idx = 1
+    #    while not goodname:
+    #        if not wfname in self.workflows.keys():
+    #            goodname = True
+    #        else:
+    #            wfname = prefix+'_{}'.format(idx)
+    #            idx += 1
+    #    return wfname 
 
 

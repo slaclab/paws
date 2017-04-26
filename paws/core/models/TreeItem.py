@@ -1,10 +1,9 @@
 class TreeItem(object):
     """
-    A TreeItem is a structured container 
-    for building a QTreeModel on top of a TreeModel. 
+    A structured container for indexing a TreeModel.
     A TreeItem keeps references to a parent TreeItem
     and a list of child TreeItems.
-    It is labeled by a tag (TreeItem._tag or TreeItem.tag())
+    It is labeled by a tag (TreeItem.tag)
     which must be unique across its sibling TreeItems.
     """
 

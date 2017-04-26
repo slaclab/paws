@@ -1,245 +1,176 @@
-import os
-import string 
 from collections import OrderedDict
+
+from .TreeItem import TreeItem
+from .DictTree import DictTree
 
 class TreeModel(object):
     """
-    A tree as an ordered dictionary (root), 
-    extended by embedding other ordered dictionaries.
-    Fetches an item by a uri string that is a sequence 
-    of dict keys, connected by '.'s.
+    This class indexes a DictTree with a set of TreeItems.
+    TreeItems keep track of their lineage in the DictTree,
+    and can be modified for additional functionality
+    in subclasses of TreeModel by adding TreeItem.flags.
     """
 
-    def __init__(self):
+    def __init__(self):#,dicttree=DictTree()):
         super(TreeModel,self).__init__()
-        self._root = OrderedDict()
-        self.bad_chars = string.punctuation 
-        self.bad_chars = self.bad_chars.replace('_','')
-        self.bad_chars = self.bad_chars.replace('-','')
-        self.bad_chars = self.bad_chars.replace('.','')
-        self.space_chars = [' ','\t','\n',os.linesep]
+        # a TreeItem with no parent is the root of the tree
+        self._root_item = TreeItem(None,'ROOT')
+        # the tree data is all stored in a DictTree. 
+        self._tree = DictTree()
+        #if isinstance(dicttree,DictTree):
+        #    for k in dicttree.list_child_tags():
+        #        self.set_item(k,dicttree[k])
+        #    self._tree = dicttree
 
     def __getitem__(self,uri):
-        return self.get_from_uri(uri)
+        return self._tree.get_from_uri(uri)
 
     def __setitem__(self,uri,val):
-        self.set_uri(uri,val)
+        self._tree.set_uri(uri,val)
 
     def __len__(self):
-        return self.n_items()
+        return self._tree.n_items()
  
-    def n_items(self,root_uri=''):
-        """
-        Get the total number of data items in the tree.
-        Only nodes containing data (i.e. end nodes) are counted.
-        Nodes referencing containers, for example, are not counted. 
-        """
-        if root_uri:
-            itm = self.get_from_uri(root_uri)
-            prefix = root_uri + '.'
+    def list_child_tags(self,parent_uri=''):
+        return self._tree.list_child_tags(parent_uri)
+
+    def set_item(self,itm_uri,itm_data=None):
+        if '.' in itm_uri:
+            parent_uri = itm_uri[:itm_uri.rfind('.')]
+            parent_itm = self.get_from_uri(parent_uri)
+            itm_tag = itm_uri[itm_uri.rfind('.')+1:]
         else:
-            itm = self._root
-            prefix = ''
-        #elif isinstance(itm,list):
-        #    return sum([self.n_items(root_uri+'.'+str(i)) for i in range(len(itm))])
-        if isinstance(itm,dict):
-            return sum([self.n_items(prefix+k) for k in itm.keys()])
+            parent_itm = self._root_item
+            itm_tag = itm_uri
+        # add TreeItems to index the new TreeModel content 
+        self.tree_update(parent_itm,itm_tag,self.build_tree(itm_data))
+        # store the data 
+        self._tree.set_uri(itm_uri,itm_data)
+
+    def remove_item(self,itm_uri):
+        itm = self.get_from_uri(itm_uri)
+        self._tree.delete_uri(itm_uri)
+        # remove the corresponding subtree or TreeItem.
+        parent_itm = itm.parent 
+        child_keys = [c.tag for c in parent_itm.children]
+        rm_row = child_keys.index(itm.tag)
+        parent_itm.children.pop(rm_row)
+
+    def tree_update(self,parent_itm,itm_tag,itm_data):
+        """
+        Update the tree structure around parent_itm.children[itm_tag],
+        such that TreeItems get built to index
+        all of the items in itm_data 
+        that are supported by self.build_tree().
+        """
+        child_keys = [c.tag for c in parent_itm.children]
+        if itm_tag in child_keys:
+            # Find the row of existing itm_tag under parent,
+            itm_row = child_keys.index(itm_tag)
+            itm = parent_itm.children[itm_row]
         else:
-            # terminal node: return 1
-            return 1 
+            # Else, put a new TreeItem at the end row
+            itm_row = parent_itm.n_children()
+            itm = self.create_tree_item(parent_itm,itm_tag)
+            #self.beginInsertRows(parent_idx,itm_row,itm_row)
+            parent_itm.children.insert(itm_row,itm)
+            #self.endInsertRows()
+        # If needed, recurse on itm_data
+        if isinstance(itm_data,dict):
+            for tag,val in itm_data.items():
+                self.tree_update(itm,tag,val)
 
-    def delete_uri(self,uri=''):
+    def build_tree(self,x):
         """
-        Delete the given uri, i.e., 
-        remove the corresponding key from the embedded dict.
+        TreeModel.build_tree is called on some object x
+        before x is assigned an index in the tree.
+        For subclasses of TreeModel to build tree data
+        for data types other than dicts and lists,
+        build_tree should be reimplemented.
+        If data types other than dicts and lists have child items 
+        that should be accessible by TreeModel uris,
+        they should implement __getitem__(tag).
         """
-        try:
-            itm = self._root
-            if '.' in uri:
-                itm = self.get_from_uri(uri[:uri.rfind('.')])
-            path = uri.split('.')
-            k = path[-1]
-            if k:
-                itm.pop(k)
-        except Exception as ex:
-            msg = str('\n[{}] Encountered an error while trying to delete uri {}\n'
-            .format(__name__,uri))
-            ex.message = msg + ex.message
-            raise ex
+        if isinstance(x,dict):
+            d = OrderedDict(x)
+            for k,v in d.items():
+                d[k] = self.build_tree(v)
+            return d
+        elif isinstance(x,list):
+            d = OrderedDict(zip([str(i) for i in range(len(x))],x)) 
+            for k,v in d.items():
+                d[k] = self.build_tree(v)
+            return d
+        else:
+            return x
 
-    def set_uri(self,uri='',val=None):
-        """
-        Set the data at the given uri to provided value val.
-        """
-        try:
-            itm = self._root
-            if '.' in uri:
-                itm = self.get_from_uri(uri[:uri.rfind('.')])
-            k = uri.split('.')[-1]
-            if k:
-                #if isinstance(itm,list):
-                #    k = int(k)
-                #if isinstance(val,list):
-                #    d = OrderedDict()
-                #    for i in range(len(val)):
-                #        d[str(i)] = val[i]
-                #    val = d
-                itm[k] = val
-        except Exception as ex:
-            msg = str('\n[{}] Encountered an error while trying to set uri {} to val {}\n'
-            .format(__name__,uri,val))
-            ex.message = msg + ex.message
-            raise ex
-
-    def get_from_uri(self,uri=''):
-        """
-        Return the data stored at uri.
-        """
+    def get_from_uri(self,uri):
         try:
             path = uri.split('.')
-            itm = self._root 
+            itm = self._root_item
             for k in path[:-1]:
-                itm = itm[k]
+                child_keys = [c.tag for c in itm.children]
+                itm = itm.children[child_keys.index(k)]
             k = path[-1]
-            if k == '':
+            if k:
+                child_keys = [c.tag for c in itm.children]
+                return itm.children[child_keys.index(k)]
+            elif k == '':
                 return itm 
-            elif k is not None:
-                return itm[k]
         except Exception as ex:
-            msg = str('[{}] Encountered an error while fetching uri {}'
-            .format(__name__,uri) + ex.message)
-            raise KeyError(msg) 
+            msg = '\n[{}] Encountered an error while fetching uri {}\n'.format(__name__,uri)
+            ex.message = msg + ex.message
+            raise ex
 
-    def list_uris(self,root_uri=''):
-        if root_uri:
-            itm = self.get_from_uri(root_uri)
-            l = [root_uri]
-            prefix = root_uri+'.'
-        else:
-            itm = self._root
-            l = []
-            prefix = ''
-        if isinstance(itm,dict):
-            for k,x in itm.items():
-                l = l + self.list_uris(prefix+k)
-        return l
-            
+    def get_data_from_uri(self,uri):
+        return self._tree.get_from_uri(uri)
+
+    def n_items(self):
+        return self._tree.n_items()
+
+    def tag_error(self,tag):
+        return self._tree.tag_error(tag)
+
     def is_uri_valid(self,uri):
-        """
-        Check for validity of a uri. 
-        Uris may contain upper case letters, lower case letters, 
-        numbers, dashes (-), and underscores (_). 
-        Periods (.) are used as delimiters between tags in the uri.
-        Any whitespace or any character in the string.punctuation library
-        (other than -, _, or .) results in an invalid uri.
-        """
-        #if parent is None:
-        #    parent = self.root_index()
-        if (any(map(lambda s: s in uri,self.space_chars))
-            or any(map(lambda s: s in uri,self.bad_chars))):
-            return False 
-        return True 
+        return self._tree.is_uri_valid(uri)
 
     def is_tag_valid(self,tag):
-        """
-        Check for validity of a tag.
-        The conditions for a valid tag are the same as for a valid uri,
-        except that a tag should not contain period (.) characters.
-        """
-        if '.' in tag:
-            return False 
-        else:
-            return self.is_uri_valid(tag)
-
-    def is_uri_unique(self,uri):
-        """
-        Check for uniqueness of a uri. 
-        """
-        #if parent is None:
-        #    parent = self.root_index()
-        if uri in self.list_uris():
-            return False 
-        else:
-            return True 
-
-    @staticmethod
-    def uri_error(uri):
-        """Provide a human-readable error message for bad uris."""
-        if not uri:
-            err_msg = 'uri is blank.'
-        elif any(map(lambda s: s in uri,self.space_chars)):
-            err_msg = 'uri contains whitespace.'
-        elif any(map(lambda s: s in uri,self.bad_chars)):
-            err_msg = 'uri contains special characters.'
-        else:
-            err_msg = 'Unforeseen uri error.'
-        return str('uri error for {}: \n{}\n'.format(uri,err_msg))
-
-    @staticmethod
-    def tag_error(tag):
-        """Provide a human-readable error message for bad tags."""
-        if '.' in tag:
-            return 'tag error for {}: \ntag contains a period (.)\n'.format(tag)
-        else:
-            return self.uri_error(tag)
-
-    def contains_uri(self,uri):
-        """Returns whether or not input uri points to an item in this tree."""
-        return uri in self.list_uris()
-        #if not uri:
-        #    return False
-        #path = uri.split('.')
-        #p_idx = QtCore.QModelIndex()
-        #for itemuri in path:
-        #    try:
-        #        row = self.list_child_tags(p_idx).index(itemuri)
-        #    except ValueError as ex:
-        #        return False
-        #    idx = self.index(row,0,p_idx)
-        #    p_idx = idx
-        #return True
+        return self._tree.is_tag_valid(tag)
 
     def make_unique_uri(self,prefix):
-        """
-        Generate the next unique uri from prefix by appending '_x' to it, 
-        where x is a minimal nonnegative integer.
-        """
-        suffix = 0
-        gooduri = False
-        urilist = self.list_uris()
-        while not gooduri:
-            testuri = prefix+'_{}'.format(suffix)
-            if not testuri in urilist: 
-                gooduri = True
-            else:
-                suffix += 1
-        return testuri 
+        return self._tree.make_unique_uri(prefix)
 
-    def print_tree(self,rowprefix='',root_uri=''):
-        if root_uri:
-            itm = self.get_from_uri(root_uri)
-        else:
-            itm = self._root
-        if isinstance(itm,dict):
-            tree_string = '\n'
-            for k,x in itm.items():
-                x_tree = self.print_tree(rowprefix+'\t',root_uri+'.'+k)
-                tree_string = tree_string+rowprefix+'{}: {}\n'.format(k,x_tree)
-        #elif isinstance(itm,list):
-        #    tree_string = '\n'
-        #    for i,x in zip(range(len(itm)),itm):
-        #        x_tree = self.print_tree(rowprefix+'\t',root_uri+'.'+str(i))
-        #        tree_string = tree_string+rowprefix+'{}: {}\n'.format(i,x_tree)
-        else:
-            return '{}'.format(itm)
-        return tree_string
+    def contains_uri(self,uri):
+        import pdb; pdb.set_trace()
+        return self._tree.contains_uri(uri)
 
-#        if parent.isValid():
-#            itm = self.get_item(parent)
-#            tree_string = tree_string+rowprefix+str(itm.data)+'\n'
-#            for j in range(itm.n_children()):
-#                tree_string = tree_string + self.print_tree(rowprefix+'\t',self.index(j,0,parent))
-#                l.append(root_uri+'.'+str(i))
-#                l = l + self.list_uris(root_uri+'.'+str(i))
-#
-            
+    def list_uris(self,root_uri=''):
+        return self._tree.list_uris(root_uri)
+
+    def get_data_from_idx(self,idx):
+        uri = self.build_uri(idx)
+        return self.get_data_from_uri(uri)
+
+    def build_uri(self,itm):
+        """
+        Build a URI for TreeItem itm by combining the tags 
+        of the lineage of itm, with '.' as a delimiter.
+        """
+        if itm == self._root_item:
+            return ''
+        else:
+            uri = itm.tag
+            while not itm.parent == self._root_item:
+                itm = itm.parent
+                uri = itm.tag+"."+uri
+            return uri
+
+    def create_tree_item(self,parent_itm,itm_tag):
+        """
+        Build a TreeItem for use in this tree.
+        Reimplement create_tree_item() in subclasses of TreeModel
+        to add features to TreeItems, such as default values for TreeItem.flags.
+        TreeModel implementation returns TreeItem(parent_itm,itm_tag).
+        """
+        return TreeItem(parent_itm,itm_tag)
+

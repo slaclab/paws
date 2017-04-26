@@ -3,12 +3,15 @@ import copy
 from PySide import QtCore
 
 from .QTreeModel import QTreeModel
-from .TreeItem import TreeItem
 
 class QTreeSelectionModel(QTreeModel):
+    """
+    QTreeSelectionModel extends QTreeModel 
+    by using TreeItem.flags to indicate selection of tree items.
+    """
 
-    def __init__(self,flag_defaults={}):
-        super(QTreeSelectionModel,self).__init__()
+    def __init__(self,flag_defaults={},trmod=QTreeModel()):
+        super(QTreeSelectionModel,self).__init__(trmod)
         self.flag_defaults = flag_defaults 
 
     def create_tree_item(self,parent_itm,itm_tag):
@@ -17,7 +20,7 @@ class QTreeSelectionModel(QTreeModel):
         Reimplemented for QTreeSelectionModel to set its flag_defaults
         as the flags for any new TreeItems.
         """
-        itm = TreeItem(parent_itm,itm_tag)
+        itm = self._tree.create_tree_item(parent_itm,itm_tag)
         itm.flags = copy.copy(self.flag_defaults)
         return itm
 
@@ -38,21 +41,25 @@ class QTreeSelectionModel(QTreeModel):
     def set_flagged(self,itm,flag_key,val):
         itm.flags[flag_key] = bool(val)
 
-    def set_all_flagged(self,itm,flag_key,val):
-       self.set_flagged(itm,flag_key,val)
-       for c_itm in itm.children:
-           self.set_all_flagged(c_itm,flag_key,val)
+    def set_all_flagged(self,flag_key,val,itm=None):
+        if itm is None:
+            itm = self._tree._root_item
+        self.set_flagged(itm,flag_key,val)
+        for c_itm in itm.children:
+            self.set_all_flagged(flag_key,val,c_itm)
 
     def get_flagged_idxs(self,flag_key,idx=None,val=True):
         if idx is None:
             idx = self.root_index()
-        itm = self.get_from_idx(idx) 
+        #import pdb; pdb.set_trace()
+        itm = self.get_from_index(idx) 
         flagged_idxs = []
         if self.is_flagged(itm,flag_key) == val:
-            flagged_idxs.append(idx)
-            for c_row in range(itm.n_children()):
-                c_idx = self.index(c_row,0,idx)
-                flagged_idxs = flagged_idxs + self.get_flagged_idxs(flag_key,c_idx,val)
+            if not idx == self.root_index():
+                flagged_idxs.append(idx)
+        for c_row in range(itm.n_children()):
+            c_idx = self.index(c_row,0,idx)
+            flagged_idxs = flagged_idxs + self.get_flagged_idxs(flag_key,c_idx,val)
         return flagged_idxs
 
     def columnCount(self,parent):
@@ -65,7 +72,7 @@ class QTreeSelectionModel(QTreeModel):
     def headerData(self,section,orientation,data_role):
         # note: section indicates row or column number, depending on orientation
         if (data_role == QtCore.Qt.DisplayRole and section == 0):
-            return super(QTreeSelectionModel,self).data(section,orientation,data_role) 
+            return super(QTreeSelectionModel,self).headerData(section,orientation,data_role) 
         elif (data_role == QtCore.Qt.DisplayRole and section < self.n_flags()+1):
             return self.flag_defaults.keys()[section-1]
         else:
@@ -109,7 +116,7 @@ class QTreeSelectionModel(QTreeModel):
         if idx.column() == 0:
             return super(QTreeSelectionModel,self).setData(index,val,data_role)
         elif data_role == QtCore.Qt.CheckStateRole:
-            itm = self.get_from_idx(idx)
+            itm = self.get_from_index(idx)
             self.set_flagged(itm,self.flag_defaults.keys()[idx.column()-1],val)
             self.dataChanged.emit(idx,idx)
             return True

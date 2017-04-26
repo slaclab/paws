@@ -8,10 +8,12 @@ import yaml
 #from Operation import Operation
 from .. import pawstools
 
-def save_cfg(cfg_data,cfg_file):
-    cfg = open(cfg_file,'w')
-    yaml.dump(cfg_data,cfg)
-    cfg.close()
+# check for an ops.cfg file
+cfg_file = pawstools.sourcedir+'/core/operations/ops.cfg'
+if os.path.exists(cfg_file):
+    load_flags = pawstools.load_cfg(cfg_file)
+else:
+    load_flags = OrderedDict() 
     
 def save_config():
     """
@@ -22,22 +24,7 @@ def save_config():
     od_load_flags = OrderedDict()
     for k in load_keys:
         od_load_flags[k] = load_flags[k]
-    save_cfg(od_load_flags,cfg_file)
-
-def load_cfg(cfg_file):
-    cfg = open(cfg_file,'r')
-    cfg_data = yaml.load(cfg)
-    cfg.close()
-    if not cfg_data:
-        cfg_data = OrderedDict() 
-    return cfg_data
-
-# check for an ops.cfg file
-cfg_file = pawstools.rootdir+'/core/operations/ops.cfg'
-if os.path.exists(cfg_file):
-    load_flags = load_cfg(cfg_file)
-else:
-    load_flags = OrderedDict() 
+    pawstools.save_cfg(od_load_flags,cfg_file)
 
 # Keep track of keys that get loaded in this run.
 # These keys are used to remove load_flags automatically

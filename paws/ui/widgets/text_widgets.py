@@ -2,7 +2,7 @@
 
 from ...core.operations import optools 
 from ...core.operations.Operation import Operation
-from ...core.pawstools import FileSystemIterator
+from ...core.operations.optools import FileSystemIterator
 
 unit_indent='&nbsp;&nbsp;&nbsp;&nbsp;'
 

@@ -10,25 +10,28 @@ from .InputLoader import InputLoader
 from . import uitools
 
 class WfUiManager(QtCore.QObject):
+    # TODO: remove calls to workflow instance methods.
+    # Replace with calls to workflow manager.
 
-    def __init__(self,wfman,opman,plugman):
-        ui_file = QtCore.QFile(pawstools.rootdir+"/ui/qtui/wf_editor.ui")
+    def __init__(self,qwfman,qopman,qplugman):
+        ui_file = QtCore.QFile(pawstools.sourcedir+"/ui/qtui/wf_editor.ui")
         ui_file.open(QtCore.QFile.ReadOnly)
         self.ui = QtUiTools.QUiLoader().load(ui_file)
         ui_file.close()
-        # set self.ui to be deleted and to emit destroyed() signal when its window is closed
+        # set self.ui to be deleted and to signal destroyed()
+        # when its window is closed
         self.ui.setAttribute(QtCore.Qt.WA_DeleteOnClose)
-        self.wfman = wfman
-        self.opman = opman 
-        self.plugman = plugman 
+        self.qwfman = qwfman
+        self.qopman = qopman 
+        self.qplugman = qplugman 
         self.op = None
+        self.setup_ui()
         # Dicts to keep track of input widgets, keyed by input variable names
         self.src_widgets = {} 
         self.type_widgets = {} 
         self.val_widgets = {} 
         self.btn_widgets = {} 
         self.input_loaders = {} 
-        self.setup_ui()
         # Column definitions for the io layout        
         self.name_col = 0
         self.eq_col = 1
@@ -36,28 +39,33 @@ class WfUiManager(QtCore.QObject):
         self.type_col = 3
         self.val_col = 4
         self.btn_col = 5
+        self.set_wf()
 
     def set_wf(self,wf_idx=None):
         if wf_idx is None:
             wf_idx = self.ui.wf_selector.currentIndex()
         wfname = self.ui.wf_selector.model().list_data()[wf_idx]
-        self.ui.wf_browser.setModel(self.wfman.workflows[wfname])
-        self.ui.wf_browser.setRootIndex(self.wfman.workflows[wfname].root_index())
+        self.ui.wf_browser.setModel(self.qwfman.qworkflows[wfname])
+        self.ui.wf_browser.setRootIndex(self.qwfman.qworkflows[wfname].root_index())
         self.ui.wf_browser.hideColumn(1)
         self.ui.wf_browser.hideColumn(2)
 
     def current_wf(self):
+        wfname = self.current_wfname()
+        if wfname:
+            return self.qwfman.qworkflows[wfname]
+
+    def current_wfname(self):
         current_wf_idx = self.ui.wf_selector.currentIndex()
         if current_wf_idx > -1:
-            wfname = self.ui.wf_selector.model().list_data()[current_wf_idx]
-            return self.wfman.workflows[wfname]
+            return self.ui.wf_selector.model().list_data()[current_wf_idx]
         else:
             return None
 
-    def get_op(self,trmod=None,itm_idx=QtCore.QModelIndex()):
-        if trmod is None:
-            trmod = self.current_wf()
-        x = trmod.get_data_from_idx(itm_idx)
+    def get_op(self,src_qtree=None,itm_idx=QtCore.QModelIndex()):
+        if src_qtree is None:
+            src_qtree = self.current_wf()
+        x = src_qtree.get_data_from_index(itm_idx)
         if x is not None:
             try:
                 new_op_flag = issubclass(x,Operation)
@@ -76,38 +84,37 @@ class WfUiManager(QtCore.QObject):
                 self.create_op(x)
             elif existing_op_flag:
                 # Copy the setup of existing Operation
-                op_dict = self.wfman.op_setup_dict(x)
+                op_dict = self.qwfman.wfman.op_setup_dict(x)
                 # Get a new op with the same setup
-                op_copy = self.wfman.build_op_from_dict(op_dict,self.opman)
-                op_tag = trmod.build_uri(itm_idx)
+                op_copy = self.qwfman.wfman.build_op_from_dict(op_dict,self.qopman.opman)
+                op_tag = src_qtree.get_uri_of_index(itm_idx)
                 self.set_op(op_copy,op_tag)
 
-    def set_op(self,op,uri):
+    def set_op(self,op,op_tag):
         """Set up ui elements around input op"""
         self.op = op
         #self.ui.op_info.setPlainText(self.op.description())
         self.build_io()
-        self.ui.uri_entry.setText(uri)
+        self.ui.tag_entry.setText(op_tag)
 
     def create_op(self,op):
         """Instantiate op, call self.set_op()"""
         new_op = op()
-        new_op_tag = self.current_wf().make_unique_uri(type(new_op).__name__)
+        new_op_tag = self.current_wf().wf.make_unique_uri(type(new_op).__name__)
         new_op.load_defaults()
         self.set_op(new_op,new_op_tag)
 
-    def rm_op(self):
+    def remove_op(self):
         """
         remove the selected operation from the workflow
         """
         idx = self.ui.wf_browser.currentIndex()
-        if idx.isValid(): 
-            while not self.current_wf().parent(idx) == self.current_wf().root_index():
-                idx = self.current_wf().parent(idx)
-            self.current_wf().remove_op(idx)
-            #if self.current_wf().get_item(idx).data == self.op:
-            #self.op = None
-            #self.clear_io()
+        if idx.isValid():
+            itm = self.current_wf().get_from_index(idx) 
+            while not itm.parent == self.current_wf().wf._root_item:
+                itm = itm.parent
+            self.current_wf().remove_item(itm.tag)
+            self.qwfman.wf_updated.emit(self.current_wfname())
 
     def load_op(self):
         """
@@ -116,23 +123,26 @@ class WfUiManager(QtCore.QObject):
         # Make sure all inputs are loaded
         for name in self.op.inputs.keys():
             self.set_input(name)
-        tag = str(self.ui.uri_entry.text())
-        good_tag_flag = self.current_wf().is_tag_valid(tag)
-        if not good_tag_flag: 
+        tag = str(self.ui.tag_entry.text())
+        if self.current_wf().wf.is_tag_valid(tag):
+            self.current_wf().set_item(tag,self.op)
+            self.qwfman.wf_updated.emit(self.current_wfname())
+        else:
             # Request a different tag 
             msg_ui = uitools.message_ui(self.ui)
             msg_ui.setWindowTitle("Tag Error")
-            msg_ui.message_box.setPlainText(self.current_wf().tag_error(tag))
+            msg_ui.message_box.setPlainText(self.current_wf().wf.tag_error(tag))
             msg_ui.show()
-        replace_op_flag = self.current_wf().contains_uri(tag)
-        if replace_op_flag: 
-            self.current_wf().update_op(tag,self.op)
-            self.op = None
-            self.clear_io()
-        else:
-            self.current_wf().add_op(tag,self.op) 
-            self.op = None
-            self.clear_io()
+        self.op = None
+        self.clear_io()
+        #replace_op_flag = self.current_wf().wf.contains_uri(tag)
+        #if replace_op_flag: 
+        #    self.current_wf().update_op(tag,self.op)
+        #    self.op = None
+        #else:
+        #    self.current_wf().add_op(tag,self.op) 
+        #    self.op = None
+        #    self.clear_io()
 
     def set_input(self,name,src_ui=None):
         """
@@ -158,9 +168,8 @@ class WfUiManager(QtCore.QObject):
         if src == optools.no_input:
             il = optools.InputLocator() 
         elif src == optools.batch_input:
-            if tp == optools.ref_type:
-                # TODO: set val to indicate which batch (if any) will set this input 
-                val = 'auto' 
+            if tp == optools.auto_type:
+                val = 'batch_input' 
             else:
                 val = None
             il = optools.InputLocator(src,tp,val) 
@@ -171,7 +180,7 @@ class WfUiManager(QtCore.QObject):
                 il = optools.InputLocator(src,tp,val)
                 self.val_widgets[name].setText(str(il.val))
                 ui.close()
-                #ui.deleteLater()
+                ui.deleteLater()
                 # dereference the ui now that it is closed...
                 self.input_loaders[name] = None
             else:
@@ -187,9 +196,12 @@ class WfUiManager(QtCore.QObject):
         return il
 
     def fetch_from_input_ui(self,ui):
-        # no matter the input source, ui.values_list.model().list_data() should be a list of strings.
+        # no matter the input source, 
+        # ui.values_list.model().list_data()
+        # should be a list of strings.
         val = ui.values_list.model().list_data()
-        # if ui.list_toggle is not checked, the value should be unpacked. 
+        # if ui.list_toggle is not checked,
+        # the value should be unpacked. 
         if not ui.list_toggle.isChecked():
             if len(val) == 0:
                 val = None
@@ -203,16 +215,16 @@ class WfUiManager(QtCore.QObject):
                 self.input_loaders[name].ui.close()
                 self.input_loaders[name] = None
         src = self.src_widgets[name].currentIndex()
-        input_loader_title = self.ui.uri_entry.text()+'.'+optools.inputs_tag+'.'+name
+        input_loader_title = self.ui.tag_entry.text()+'.'+optools.inputs_tag+'.'+name
         if src == optools.wf_input:
-            inp_loader = InputLoader(input_loader_title,src,self.wfman,self.ui)
+            inp_loader = InputLoader(input_loader_title,src,self.qwfman,self.ui)
             inp_loader.ui.wf_selector.setCurrentIndex(self.ui.wf_selector.currentIndex())
             inp_loader.set_wf()
         elif src == optools.fs_input:
             trmod = QtGui.QFileSystemModel()
             inp_loader = InputLoader(input_loader_title,src,trmod,self.ui)
         elif src == optools.plugin_input:
-            inp_loader = InputLoader(input_loader_title,src,self.plugman,self.ui)
+            inp_loader = InputLoader(input_loader_title,src,self.qplugman,self.ui)
         elif src == optools.text_input:
             inp_loader = InputLoader(input_loader_title,src,None,self.ui)
         if self.op.input_locator[name].src == src and self.op.input_locator[name].val is not None:
@@ -224,18 +236,25 @@ class WfUiManager(QtCore.QObject):
                 inp_loader.add_values([self.op.input_locator[name].val])
         inp_loader.ui.finish_button.clicked.connect( partial(self.set_input,name,inp_loader.ui) )
         self.input_loaders[name] = inp_loader
-        inp_loader.ui.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+        #These do not need to be deleted on close. 
+        #They will be deleted on clear_io() or when WfUiManager is closed.
+        #inp_loader.ui.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         inp_loader.ui.show()
 
     def clear_io(self):
         self.ui.op_name.setText('')
-        self.ui.uri_entry.setText('')
+        self.ui.tag_entry.setText('')
         self.ui.load_button.setEnabled(False)
         # clean up internal objects via deleteLater()
         for nm,widg in (self.src_widgets.items()+self.type_widgets.items()
-        +self.val_widgets.items()+self.btn_widgets.items()+self.input_loaders.items()):
-            widg.close()
-            widg.deleteLater()
+        +self.val_widgets.items()+self.btn_widgets.items()):
+            if widg:
+                widg.close()
+                widg.deleteLater()
+        for nm,il in self.input_loaders.items():
+            if il:
+                il.ui.close()
+                il.ui.deleteLater()
         # dereference them to ensure they are collected
         self.src_widgets = {}
         self.type_widgets = {}
@@ -376,28 +395,29 @@ class WfUiManager(QtCore.QObject):
         self.ui.finish_box.setTitle("FINISH / LOAD")
         self.ui.wf_box.setTitle("WORKFLOWS")
         self.ui.op_box.setTitle("OPERATIONS")
-        self.ui.uri_prompt.setText('operation tag:')
-        self.ui.uri_prompt.setReadOnly(True)
+        self.ui.tag_prompt.setText('operation tag:')
+        self.ui.tag_prompt.setReadOnly(True)
         self.ui.op_name.setText('-select an operation to begin setup-')
-        self.ui.uri_prompt.setAlignment(QtCore.Qt.AlignRight)
-        self.ui.uri_prompt.setStyleSheet( "QLineEdit { background-color: transparent }" 
-        + self.ui.uri_prompt.styleSheet() )
+        self.ui.op_name.setAlignment(QtCore.Qt.AlignCenter)
+        self.ui.tag_prompt.setAlignment(QtCore.Qt.AlignRight)
+        self.ui.tag_prompt.setStyleSheet( "QLineEdit { background-color: transparent }" 
+        + self.ui.tag_prompt.styleSheet() )
         self.ui.load_button.setText("&Finish")
         self.ui.rm_op_button.setText("&Remove selected operation")
         # SIGNALS, SLOTS, MODELS, VIEWS 
-        lm = ListModel(self.wfman.workflows.keys())
+        lm = ListModel(self.qwfman.qworkflows.keys())
         self.ui.wf_selector.setModel(lm)
+        self.ui.wf_selector.currentIndexChanged.connect(self.set_wf)
         #self.ui.wf_selector.currentIndexChanged.connect( partial(self.set_wf) )
-        self.ui.wf_selector.activated.connect( partial(self.set_wf) )
+        self.ui.wf_selector.activated.connect(self.set_wf)
         self.ui.wf_browser.clicked.connect( partial(self.get_op,None) )
-        self.ui.rm_op_button.clicked.connect(self.rm_op)
-        self.ui.op_selector.setModel(self.opman)
+        self.ui.rm_op_button.clicked.connect(self.remove_op)
+        self.ui.op_selector.setModel(self.qopman)
         self.ui.op_selector.hideColumn(1)
         self.ui.op_selector.hideColumn(2)
-        self.ui.op_selector.clicked.connect( partial(self.get_op,self.opman) )
+        self.ui.op_selector.clicked.connect( partial(self.get_op,self.qopman) )
         self.ui.op_selector.clicked.connect( partial(uitools.toggle_expand,self.ui.op_selector) ) 
-        self.ui.op_selector.setRootIndex(self.opman.root_index())
-        self.ui.op_name.setAlignment(QtCore.Qt.AlignCenter)
+        self.ui.op_selector.setRootIndex(self.qopman.root_index())
         self.ui.load_button.clicked.connect(self.load_op)
         self.ui.load_button.setDefault(True)
         self.ui.load_button.setEnabled(False)
@@ -418,5 +438,5 @@ class WfUiManager(QtCore.QObject):
         self.ui.input_box.setSizePolicy(io_box_szp)
         self.ui.output_box.setSizePolicy(io_box_szp)
         self.ui.load_button.setMinimumWidth(100)
-        self.ui.uri_prompt.setMaximumWidth(150)
+        self.ui.tag_prompt.setMaximumWidth(150)
 

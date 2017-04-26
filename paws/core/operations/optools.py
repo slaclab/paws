@@ -2,9 +2,9 @@
 Operations config and processing routines
 """
 
+import glob
+from collections import Iterator
 from collections import OrderedDict
-
-from PySide import QtCore
 
 # tags for inputs and outputs TreeItems    
 inputs_tag = 'inputs'
@@ -52,6 +52,22 @@ class InputLocator(object):
         self.val = val 
         self.data = None 
 
+class FileSystemIterator(Iterator):
+
+    def __init__(self,dirpath,regex):
+        self.paths_done = []
+        self.dirpath = dirpath
+        self.rx = regex
+        super(FileSystemIterator,self).__init__()
+
+    def next(self):
+        batch_list = glob.glob(self.dirpath+'/'+self.rx)
+        for path in batch_list:
+            if not path in self.paths_done:
+                self.paths_done.append(path)
+                return [path]
+        return [None]
+
 def cast_type_val(tp,val):
     """
     Perform type casting for operation inputs.
@@ -81,8 +97,7 @@ def locate_input(il,wf=None):
     if il.src == no_input or il.tp == none_type:
         return None
     elif il.src == batch_input:
-        # Expect this input to have been set by Workflow.set_op_input_at_uri().
-        # See Workflow.run_wf_batch().
+        # Expect this input to have been set by Workflow Manager.
         return il.data 
     elif il.src == text_input: 
         if isinstance(il.val,list):
@@ -100,9 +115,9 @@ def locate_input(il,wf=None):
             # to not substitute InputLocators for inputs that had not been loaded.
 
             if isinstance(il.val,list):
-                return [wf.get_from_uri(v)[0].data for v in il.val]
+                return [wf.get_data_from_uri(v) for v in il.val]
             else:
-                return wf.get_from_uri(il.val)[0].data
+                return wf.get_data_from_uri(il.val)
         elif il.tp == path_type: 
             if isinstance(il.val,list):
                 return [str(v) for v in il.val]
@@ -111,9 +126,9 @@ def locate_input(il,wf=None):
     elif il.src == plugin_input:
         if il.tp == ref_type:
             if isinstance(il.val,list):
-                return [wf.wfman.plugman.get_from_uri(v)[0].data for v in il.val]
+                return [wf.wfman.plugman.get_data_from_uri(v) for v in il.val]
             elif il.val is not None:
-                return wf.wfman.plugman.get_from_uri(il.val)[0].data
+                return wf.wfman.plugman.get_data_from_uri(il.val)
             else:
                 return None
         elif il.tp == path_type:

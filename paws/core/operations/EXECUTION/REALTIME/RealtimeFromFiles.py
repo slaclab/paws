@@ -1,6 +1,5 @@
 from ...Operation import Realtime 
 from ... import optools
-from ....pawstools import FileSystemIterator 
 
 class RealtimeFromFiles(Realtime):
     """
@@ -45,7 +44,7 @@ class RealtimeFromFiles(Realtime):
         dirpath = self.inputs['dir_path']
         rx = self.inputs['regex']
         inproute = self.inputs['input_route']
-        self.outputs['realtime_inputs'] = FileSystemIterator(dirpath,rx)
+        self.outputs['realtime_inputs'] = optools.FileSystemIterator(dirpath,rx)
         self.outputs['realtime_outputs'] = [] 
 
     def input_iter(self):

@@ -14,12 +14,11 @@ def main():
     """
     # start QtGui.QApplication
     app = paws.ui.ui_app(sys.argv)
-    # start an api 
+    # start paws objects 
     corepaw = paws.api.start()
 
     # start a ui manager
-    ui_manager = paws.ui.UiManager.UiManager(
-    corepaw.op_manager(),corepaw.wf_manager(),corepaw.plugin_manager())
+    ui_manager = paws.ui.UiManager.UiManager(corepaw,app)
 
     ### LAUNCH ###
     ui_manager.ui.show()

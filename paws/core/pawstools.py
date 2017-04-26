@@ -1,51 +1,32 @@
-import glob
 import os
-from collections import Iterator
 from datetime import datetime as dt
 
-from PySide import QtCore
 import yaml
 
 # TODO: Make scratch directory and other cfg'ables into a cfg file
 
-qdir = QtCore.QDir(__file__)
-qdir.cdUp()
-qdir.cdUp()
-rootdir = qdir.absolutePath() 
-qdir.cdUp()
-sourcedir = qdir.absolutePath()
-if not os.path.exists(os.path.join(qdir.absolutePath(),'scratch')):
-    os.mkdir(os.path.join(qdir.absolutePath(),'scratch'))
-qdir.cd('scratch')
-scratchdir = qdir.absolutePath()
-#print '[{}]: source directory sourcedir = {}'.format(__name__,sourcedir)
-#print '[{}]: root directory rootdir = {}'.format(__name__,rootdir)
-#print '[{}]: scratch directory scratchdir = {}'.format(__name__,scratchdir)
+p = os.path.abspath(__file__)
+# p = (pawsroot)/paws/core/pawstools.py
+d = os.path.dirname(p)
+# d = (pawsroot)/paws/core/
+d = os.path.dirname(d)
+# d = (pawsroot)/paws/
+sourcedir = str(d)
+d = os.path.dirname(d)
+# d = (pawsroot)
+rootdir = str(d)
+scratchdir = os.path.join(rootdir,'scratch')
+if not os.path.exists(scratchdir):
+    os.mkdir(scratchdir)
 
 # Get the code version from the paws_config.py file, store as __version__
-with open(os.path.join(sourcedir,'paws_config.py')) as f: 
+with open(os.path.join(rootdir,'paws_config.py')) as f: 
     exec(f.read())
 version=__version__
 
 class LazyCodeError(Exception):
     def __init__(self,msg):
         super(LazyCodeError,self).__init__(self,msg)
-
-class FileSystemIterator(Iterator):
-
-    def __init__(self,dirpath,regex):
-        self.paths_done = []
-        self.dirpath = dirpath
-        self.rx = regex
-        super(FileSystemIterator,self).__init__()
-
-    def next(self):
-        batch_list = glob.glob(self.dirpath+'/'+self.rx)
-        for path in batch_list:
-            if not path in self.paths_done:
-                self.paths_done.append(path)
-                return [path]
-        return [None]
 
 def dtstr():
     """Return date and time as a string"""
@@ -70,4 +51,16 @@ def update_file(filename,d):
     yaml.dump(d, f)
     f.close()
 
+def save_cfg(cfg_data,cfg_file):
+    cfg = open(cfg_file,'w')
+    yaml.dump(cfg_data,cfg)
+    cfg.close()
+
+def load_cfg(cfg_file):
+    cfg = open(cfg_file,'r')
+    cfg_data = yaml.load(cfg)
+    cfg.close()
+    if not cfg_data:
+        cfg_data = OrderedDict() 
+    return cfg_data
 

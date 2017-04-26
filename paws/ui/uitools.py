@@ -119,7 +119,7 @@ def bigtext_widget(text):
     return widg
 
 def start_save_ui(parent,fspath=None):
-    ui_file = QtCore.QFile(pawstools.rootdir+"/ui/qtui/save_browser.ui")
+    ui_file = QtCore.QFile(pawstools.sourcedir+"/ui/qtui/save_browser.ui")
     ui_file.open(QtCore.QFile.ReadOnly)
     save_ui = QtUiTools.QUiLoader().load(ui_file)
     ui_file.close()
@@ -167,7 +167,7 @@ def save_path(ui,idx=QtCore.QModelIndex(),oldidx=QtCore.QModelIndex()):
         ui.filename.setText(p)
 
 def start_load_ui(parent,fspath=None):
-    ui_file = QtCore.QFile(pawstools.rootdir+"/ui/qtui/load_browser.ui")
+    ui_file = QtCore.QFile(pawstools.sourcedir+"/ui/qtui/load_browser.ui")
     ui_file.open(QtCore.QFile.ReadOnly)
     load_ui = QtUiTools.QUiLoader().load(ui_file)
     ui_file.close()
@@ -209,7 +209,7 @@ def load_path(ui,idx=QtCore.QModelIndex()):
             ui.load_button.setEnabled(True)
     
 def message_ui(parent):
-    ui_file = QtCore.QFile(pawstools.rootdir+"/ui/qtui/message.ui")
+    ui_file = QtCore.QFile(pawstools.sourcedir+"/ui/qtui/message.ui")
     ui_file.open(QtCore.QFile.ReadOnly)
     msg_ui = QtUiTools.QUiLoader().load(ui_file)
     ui_file.close()

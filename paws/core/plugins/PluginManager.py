@@ -1,40 +1,45 @@
 import importlib
 from collections import OrderedDict
 
-from PySide import QtCore
-
 from ..operations.Operation import Operation
 from ..operations import optools
-from ..models.QTreeSelectionModel import QTreeSelectionModel
-from ..models.TreeItem import TreeItem
+from ..models.TreeModel import TreeModel
 from .. import plugins as pgns
 from .PawsPlugin import PawsPlugin
 
-class PluginManager(QTreeSelectionModel):
+class PluginManager(TreeModel):
     """
     Tree structure for managing paws plugins.
     """
 
     def __init__(self,**kwargs):
-        super(PluginManager,self).__init__({'select':False})
+        super(PluginManager,self).__init__()
         self.logmethod = None
 
-    @QtCore.Slot(str)
-    def update_plugin(self,pgin_name):
-        if self.contains_uri(pgin_name):
-            pgin = self.get_data_from_uri(pgin_name)
-            self.tree_update(self.root_index(),pgin_name,self.build_tree(pgin))
+    def write_log(self,msg):
+        if self.logmethod:
+            self.logmethod(msg)
+        else:
+            print(msg)
 
-    def load_from_dict(self,pgin_dict):
+    def plugin_setup_dict(self,pgin):
+        pgin_mod = pgin.__module__[pgin.__module__.find('plugins'):]
+        pgin_mod = pgin_mod[pgin_mod.find('.')+1:]
+        dct = OrderedDict() 
+        dct['plugin_module'] = pgin_mod
+        dct[optools.inputs_tag] = pgin.inputs 
+        return dct
+
+    def load_from_dict(self,plugin_dict):
         """
         Load plugins from a dict that specifies their setup parameters.
         """
-        for uri, pgin_spec in pgin_dict.items():
-            pgin_type = pgin_spec['type']
-            pgin = self.get_plugin(pgin_type)
+        for tag, pgin_spec in plugin_dict.items():
+            pgin_uri = pgin_spec['plugin_module']
+            pgin = self.get_plugin(pgin_uri)
             if pgin is not None:
                 if not issubclass(pgin,PawsPlugin):
-                    self.write_log('Did not find Plugin {} - skipping.'.format(pgin_type))
+                    self.write_log('Did not find Plugin {} - skipping.'.format(pgin_uri))
                 else:
                     pgin = pgin()
                     for name in pgin.inputs.keys():
@@ -42,21 +47,29 @@ class PluginManager(QTreeSelectionModel):
                             pgin.inputs[name] = pgin_spec[optools.inputs_tag][name]
                     pgin.start()
                     # if already have this uri, first generate auto_tag
-                    if self.tree_contains_uri(uri):
-                        uri = self.auto_tag(uri)
-                    self.add_plugin(uri,pgin)
+                    #if self.tree_contains_uri(uri):
+                    #    uri = self.auto_tag(uri)
+                    #self.add_plugin(uri,pgin)
+                    self.set_item(tag,pgin)
             else:
-                self.write_log('Did not find Plugin {} - skipping.'.format(pgin_name))
+                self.write_log('Did not find Plugin {} - skipping.'.format(ptype))
 
-    def tree_update(self,parent_idx,itm_tag,itm_data):
-        if isinstance(itm_data,Operation) or isinstance(itm_data,PawsPlugin):
-            super(PluginManager,self).tree_update(parent_idx,itm_tag,self.build_tree(itm_data))
-        else:
-            super(PluginManager,self).tree_update(parent_idx,itm_tag,itm_data)
+    #def tree_update(self,parent_idx,itm_tag,itm_data):
+    #    if isinstance(itm_data,Operation) or isinstance(itm_data,PawsPlugin):
+    #        super(PluginManager,self).tree_update(parent_idx,itm_tag,self.build_tree(itm_data))
+    #    else:
+    #        super(PluginManager,self).tree_update(parent_idx,itm_tag,itm_data)
 
     def build_tree(self,x):
+        """
+        Reimplemented TreeModel.build_tree() 
+        so that TreeItems are built from PawsPlugins
+        as well as Operations.
+        """
         if isinstance(x,PawsPlugin):
             d = x.content()
+            for k,v in d.items():
+                d[k] = self.build_tree(v)
             #OrderedDict()
             #d[optools.inputs_tag] = self.build_tree(x.inputs)
             #for k,v in x.content().items():
@@ -86,34 +99,7 @@ class PluginManager(QTreeSelectionModel):
             return None
 
     def list_plugins(self):
-        r = self.get_from_idx(self.root_index())
-        return [itm.tag for itm in r.children]
-
-    def write_log(self,msg):
-        if self.logmethod:
-            self.logmethod(msg)
-        else:
-            print(msg)
-
-    def add_plugin(self,pgin_tag,pgin):
-        """Add a Plugin to the tree as a new top-level TreeItem."""
-        self.set_item(pgin_tag,pgin,self.root_index())
-
-    def remove_plugin(self,rm_idx):
-        """Remove a Plugin from the tree"""
-        p_idx = self.parent(rm_idx)
-        if not p_idx == self.root_index():
-            msg = '[{}] Called remove_plugin on non-Plugin at QModelIndex {}. \n'.format(__name__,rm_idx)
-            raise ValueError(msg)
-        self.remove_item(rm_itm.tag,p_idx)
-
-    # Overloaded headerData() for PluginManager 
-    def headerData(self,section,orientation,data_role):
-        if (data_role == QtCore.Qt.DisplayRole and section == 0):
-            return "Plugins: {} active".format(self.item_count())
-        elif (data_role == QtCore.Qt.DisplayRole and section == 1):
-            return super(PluginManager,self).headerData(section,orientation,data_role)    
-        else:
-            return None
-
+        return self.list_child_tags()
+        #r = self.get_from_idx(self.root_index())
+        #return [itm.tag for itm in r.children]
 
