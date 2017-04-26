@@ -51,8 +51,8 @@ class InputLoader(object):
             self.ui.source_treeview.hideColumn(3)
             self.ui.source_treeview.setColumnWidth(0,250)
         elif self.src in [optools.wf_input,optools.plugin_input]:
-            self.ui.source_treeview.setColumnWidth(0,500)
             self.ui.source_treeview.hideColumn(2)
+            self.ui.source_treeview.setColumnWidth(0,250)
             # Reset all selections
             self.tree_model().set_all_flagged('select',False)
         if self.src == optools.text_input:
