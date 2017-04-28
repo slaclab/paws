@@ -28,6 +28,10 @@ class LazyCodeError(Exception):
     def __init__(self,msg):
         super(LazyCodeError,self).__init__(self,msg)
 
+class WorkflowAborted(Exception):
+    def __init__(self,msg):
+        super(WorkflowAborted,self).__init__(self,msg)
+
 def dtstr():
     """Return date and time as a string"""
     return dt.strftime(dt.now(),'%Y %m %d, %H:%M:%S')

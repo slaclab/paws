@@ -6,10 +6,12 @@ from PySide import QtCore
 
 from .QWfWorker import QWfWorker
 from .QWorkflow import QWorkflow
+from ..core import pawstools
 from ..core.operations import optools
 from ..core.workflow.Workflow import Workflow
 from ..core.plugins.WorkflowPlugin import WorkflowPlugin
 from ..core.operations.Operation import Operation, Batch, Realtime
+
 
 class QWfManager(QtCore.QObject):
     """
@@ -151,19 +153,23 @@ class QWfManager(QtCore.QObject):
         self.qworkflows[wfname].set_item(batch_op_tag,batch_op)
         n_batch = len(batch_op.input_list())
         for i in range(n_batch):
-            input_dict = batch_op.input_list()[i]
-            for uri,val in input_dict.items():
-                self.qworkflows[wfname].set_op_input_at_uri(uri,val)
-            self.wfman.write_log( 'BATCH EXECUTION {} / {}'.format(i+1,n_batch) )
-            for batch_lst in batch_stk:
-                self.execute_serial(wfname,batch_lst)
-            saved_items_dict = OrderedDict()
-            for uri in batch_op.saved_items():
-                save_data = self.qworkflows[wfname].wf.get_data_from_uri(uri)
-                save_dict = self.wfman.uri_to_embedded_dict(uri,save_data) 
-                saved_items_dict = self.wfman.update_embedded_dict(saved_items_dict,save_dict)
-            batch_op.output_list()[i] = saved_items_dict
-            self.qworkflows[wfname].set_item(batch_op_tag,batch_op)
+            if self.wf_running[wfname]:
+                input_dict = batch_op.input_list()[i]
+                for uri,val in input_dict.items():
+                    self.qworkflows[wfname].set_op_input_at_uri(uri,val)
+                self.wfman.write_log( 'BATCH EXECUTION {} / {}'.format(i+1,n_batch) )
+                for batch_lst in batch_stk:
+                    self.execute_serial(wfname,batch_lst)
+                saved_items_dict = OrderedDict()
+                for uri in batch_op.saved_items():
+                    save_data = self.qworkflows[wfname].wf.get_data_from_uri(uri)
+                    save_dict = self.wfman.uri_to_embedded_dict(uri,save_data) 
+                    saved_items_dict = self.wfman.update_embedded_dict(saved_items_dict,save_dict)
+                batch_op.output_list()[i] = saved_items_dict
+                self.qworkflows[wfname].set_item(batch_op_tag,batch_op)
+            else:
+                raise pawstools.WorkflowAborted('[{}] {} was signaled to stop.'
+                .format(__name__,wfname)) 
 
     def execute_realtime(self,wfname,rt_op_tag,rt_stk):
         pass

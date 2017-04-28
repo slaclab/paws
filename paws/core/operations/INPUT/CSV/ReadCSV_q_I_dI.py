@@ -1,7 +1,7 @@
 import numpy as np
 
 from ...Operation import Operation
-from ... import optools
+from ...import optools
 
 class ReadCSV_q_I_dI(Operation):
     """
