@@ -2,7 +2,7 @@ import numpy as np
 
 from scipy.optimize import curve_fit
 
-from ...operation import Operation
+from ...Operation import Operation
 from ... import optools
 
 
