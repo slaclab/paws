@@ -26,6 +26,8 @@ class CSVToXYData(Operation):
         y = np.loadtxt(path, dtype=float, delimiter=',', usecols=[1])
         self.outputs['x'] = x
         self.outputs['y'] = y
-        self.outputs['x_y'] = np.array([x,y])
+        x_y = np.array([x,y]).T
+        self.outputs['x_y'] = x_y 
+        
 
 
