@@ -93,20 +93,36 @@ class QTreeModel(QtCore.QAbstractItemModel):
             parent_idx = self.root_index()
         parent_itm = self.get_from_index(parent_idx)
         parent_uri = self.get_uri_of_index(parent_idx)
-        itm_uri = parent_uri+'.'+itm_tag
+        if parent_uri:
+            itm_uri = parent_uri+'.'+itm_tag
+        else:
+            itm_uri = itm_tag
+
         # add TreeItems to index the new model content:
         # have to implement this differently than TreeModel
         # to inject calls to beginInsertRows and endInsertRows.        
         self.tree_update(parent_idx,itm_tag,self._tree.build_tree(itm_data))
+
         # store the data:
         # self._tree.tree_update() will be called with no effect. 
         self._tree.set_item(itm_uri,itm_data)
+
         # signal dataChanged down the tree
         child_keys = [c.tag for c in parent_itm.children]
         itm_idx = self.index(child_keys.index(itm_tag),0,parent_idx)
         self.tree_dataChanged(itm_idx) 
 
-    def tree_update(self,parent_idx,itm_tag,itm_data):
+    def tree_update_at_uri(self,itm_uri,itm_data):
+        if '.' in itm_uri:
+            parent_uri = itm_uri[:itm_uri.rfind('.')]
+            parent_idx = self.get_index_of_uri(parent_uri)
+            itm_tag = itm_uri[itm_uri.rfind('.')+1:]
+        else:
+            parent_idx = self.root_index()
+            itm_tag = itm_uri
+        self.tree_update(parent_idx,itm_tag,self._tree.build_tree(itm_data))        
+
+    def tree_update(self,parent_idx,itm_tag,itm_tree):
         parent_itm = self.get_from_index(parent_idx)
         child_keys = [c.tag for c in parent_itm.children]
         if itm_tag in child_keys:
@@ -116,9 +132,9 @@ class QTreeModel(QtCore.QAbstractItemModel):
             idx = self.index(itm_row,0,parent_idx)
             # Remove any children that do not represent the new data
             #itm_child_keys = [c.tag for c in itm.children]
-            if isinstance(itm_data,dict):
+            if isinstance(itm_tree,dict):
                 for grandchild_itm in itm.children:
-                    if not grandchild_itm.tag in itm_data.keys():
+                    if not grandchild_itm.tag in itm_tree.keys():
                         rm_row = [gc.tag for gc in itm.children].index(grandchild_itm.tag)
                         self.beginRemoveRows(idx,rm_row,rm_row)
                         itm.children.pop(rm_row) 
@@ -131,9 +147,9 @@ class QTreeModel(QtCore.QAbstractItemModel):
             parent_itm.children.insert(itm_row,itm)
             self.endInsertRows()
         # If needed, get the index of the new item and recurse 
-        if isinstance(itm_data,dict):
+        if isinstance(itm_tree,dict):
             itm_idx = self.index(itm_row,0,parent_idx)
-            for tag,val in itm_data.items():
+            for tag,val in itm_tree.items():
                 #self.tree_update(itm_idx,tag,self._tree.build_tree(val))
                 self.tree_update(itm_idx,tag,val)
 

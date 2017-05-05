@@ -100,7 +100,7 @@ class WfUiManager(QtCore.QObject):
     def create_op(self,op):
         """Instantiate op, call self.set_op()"""
         new_op = op()
-        new_op_tag = self.current_wf().wf.make_unique_uri(type(new_op).__name__)
+        new_op_tag = self.current_wf()._tree.make_unique_uri(type(new_op).__name__)
         new_op.load_defaults()
         self.set_op(new_op,new_op_tag)
 
@@ -111,7 +111,7 @@ class WfUiManager(QtCore.QObject):
         idx = self.ui.wf_browser.currentIndex()
         if idx.isValid():
             itm = self.current_wf().get_from_index(idx) 
-            while not itm.parent == self.current_wf().wf._root_item:
+            while not itm.parent == self.current_wf()._tree._root_item:
                 itm = itm.parent
             self.current_wf().remove_item(itm.tag)
             self.qwfman.wf_updated.emit(self.current_wfname())
@@ -124,17 +124,18 @@ class WfUiManager(QtCore.QObject):
         for name in self.op.inputs.keys():
             self.set_input(name)
         tag = str(self.ui.tag_entry.text())
-        if self.current_wf().wf.is_tag_valid(tag):
+        if self.current_wf()._tree.is_tag_valid(tag):
             self.current_wf().set_item(tag,self.op)
-            self.qwfman.wf_updated.emit(self.current_wfname())
+            #import pdb; pdb.set_trace()
         else:
             # Request a different tag 
             msg_ui = uitools.message_ui(self.ui)
             msg_ui.setWindowTitle("Tag Error")
-            msg_ui.message_box.setPlainText(self.current_wf().wf.tag_error(tag))
+            msg_ui.message_box.setPlainText(self.current_wf()._tree.tag_error(tag))
             msg_ui.show()
         self.op = None
         self.clear_io()
+        self.qwfman.wf_updated.emit(self.current_wfname())
         #replace_op_flag = self.current_wf().wf.contains_uri(tag)
         #if replace_op_flag: 
         #    self.current_wf().update_op(tag,self.op)

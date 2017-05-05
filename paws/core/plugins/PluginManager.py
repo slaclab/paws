@@ -2,6 +2,7 @@ import importlib
 from collections import OrderedDict
 
 from ..operations.Operation import Operation
+from ..workflow.Workflow import Workflow
 from ..operations import optools
 from ..models.TreeModel import TreeModel
 from .. import plugins as pgns
@@ -64,16 +65,22 @@ class PluginManager(TreeModel):
         """
         Reimplemented TreeModel.build_tree() 
         so that TreeItems are built from PawsPlugins
-        as well as Operations.
+        and Workflows and Operations.
         """
+
+        #print 'EXAMINE x'
+        #import pdb; pdb.set_trace()
+
         if isinstance(x,PawsPlugin):
-            d = x.content()
-            for k,v in d.items():
+            #d = x.content()
+            d = OrderedDict()
+            for k,v in x.content().items():
                 d[k] = self.build_tree(v)
-            #OrderedDict()
-            #d[optools.inputs_tag] = self.build_tree(x.inputs)
-            #for k,v in x.content().items():
-            #    d[k] = self.build_tree(v)
+        elif isinstance(x,Workflow):
+            #d = x.op_dict()
+            d = OrderedDict()
+            for k,v in x.op_dict().items():
+                d[k] = self.build_tree(v)
         elif isinstance(x,Operation):
             d = OrderedDict()
             d[optools.inputs_tag] = self.build_tree(x.inputs)

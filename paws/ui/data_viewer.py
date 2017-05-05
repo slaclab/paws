@@ -3,9 +3,9 @@ from PySide import QtCore, QtGui
 from matplotlib.figure import Figure
 from pypif.obj import System
 
-from ..core.operations.Operation import Operation 
+from ..core.operations.Operation import Operation
+from ..core.workflow.Workflow import Workflow 
 from ..core.plugins.PawsPlugin import PawsPlugin
-from ..core.plugins.WorkflowPlugin import WorkflowPlugin
 from . import uitools
 from .widgets.OpWidget import OpWidget
 from .widgets.PifWidget import PifWidget
@@ -24,29 +24,31 @@ def display_item(itm,qlayout,logmethod=None):
     # Loop through the layout, last to first, clear the frame
     n_widgets = qlayout.count()
     for i in range(n_widgets-1,-1,-1):
+        #import pdb; pdb.set_trace()
         # QLayout.takeAt returns a LayoutItem
         widg = qlayout.takeAt(i)
         # get the QWidget of that LayoutItem and set it to deleteLater()
-        widg.widget().deleteLater()
+        widg.widget().close()
+        if widg.widget() is not None:
+            widg.widget().deleteLater()
 
     pif_widget = None
     if isinstance(itm,System):
         pif_widget = PifWidget(itm)
 
+    wf_widget = None
+    if isinstance(itm,Workflow):
+        w = WorkflowGraphView(itm)
+        wf_widget = w 
+
     pgin_widget = None
     if isinstance(itm,PawsPlugin):
-        if isinstance(itm,WorkflowPlugin):
-            w = WorkflowGraphView(itm.wf)
-            #textbox = QtGui.QTextEdit(scroll_area)
-            #textbox.setText('selected plugin is a WorkflowPlugin.')
-            pgin_widget = w 
-        else:
-            w = QtGui.QTextEdit()
-            msg = str('selected plugin is a {}. '.format(type(itm).__name__)
-                    + 'No display widgets exist for this plugin. '
-                    + 'Add a display method to {} to view this plugin.'.format(__name__))
-            w.setText(msg)
-            pgin_widget = w 
+        w = QtGui.QTextEdit()
+        msg = str('selected plugin is a {}. '.format(type(itm).__name__)
+                + 'There are no display methods associated with this plugin. '
+                + 'Add a display method to {} to view this plugin.'.format(__name__))
+        w.setText(msg)
+        pgin_widget = w 
 
     op_widget = None
     if isinstance(itm,Operation):
@@ -68,6 +70,8 @@ def display_item(itm,qlayout,logmethod=None):
     # Assemble whatever widgets were produced, add them to the layout    
     if op_widget:
         qlayout.addWidget(op_widget,0,0,1,1) 
+    elif wf_widget:
+        qlayout.addWidget(wf_widget,0,0,1,1) 
     elif pif_widget:
         qlayout.addWidget(pif_widget,0,0,1,1) 
     elif pgin_widget:
@@ -75,7 +79,6 @@ def display_item(itm,qlayout,logmethod=None):
     elif plot_widget:
         qlayout.addWidget(plot_widget,0,0,1,1) 
     elif text_widget:
-        # TODO: Anything else for displaying text, other than plopping it down in the center?
         qlayout.addWidget(text_widget,0,0,1,1) 
     else:
         msg = str('[{}]: selected item ({}) has no display method'.format(__name__,type(itm).__name__)

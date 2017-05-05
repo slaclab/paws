@@ -87,7 +87,8 @@ class BatchFromFiles(Batch):
         else:
             return [self.inputs['saved_items']]
 
-
+    def batch_outputs_tag(self):
+        return 'batch_outputs'
 
 
 

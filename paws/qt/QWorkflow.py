@@ -14,27 +14,31 @@ class QWorkflow(QTreeSelectionModel):
         flag_dict['select'] = False
         flag_dict['enable'] = False
         super(QWorkflow,self).__init__(flag_dict,wf)
-        self.wf = wf
+        #self._tree references wf after QTreeModel.__init__()
+        #self.wf = wf
 
     def headerData(self,section,orientation,data_role):
         if (data_role == QtCore.Qt.DisplayRole and section == 0):
-            return "{} operation(s) loaded".format(self.wf._root_item.n_children())
+            return "{} operation(s) loaded".format(self._tree._root_item.n_children())
         else:
             return super(QWorkflow,self).headerData(section,orientation,data_role)    
+
+    wf_updated = QtCore.Signal()
 
     def remove_op(self,op_tag):
         """
         Remove an Operation from the workflow tree.
         """
         self.remove_item(op_tag)
-        #self.wf_updated.emit() 
+        self.wf_updated.emit() 
 
     def set_op(self,op_tag,new_op):
         """
         Set workflow tree data at op_tag to new_op.
         """
         self.set_item(op_tag,new_op)
-        #self.wf_updated.emit() 
+        #import pdb; pdb.set_trace()
+        self.wf_updated.emit() 
 
     def set_op_input_at_uri(self,uri,val):
         self.set_item_at_uri(uri,val)
@@ -43,6 +47,7 @@ class QWorkflow(QTreeSelectionModel):
         inputname = uri[uri.rfind('.')+1:]
         op = self._tree.get_data_from_uri(opname)
         op.input_locator[inputname].data = val
+        #self.wf_updated.emit() 
 
     #def update_op(self,op_tag,new_op):
     #    """Update given uri op_tag to Operation new_op."""

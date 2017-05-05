@@ -19,11 +19,13 @@ class QPluginManager(QTreeSelectionModel):
         flag_dict = OrderedDict()
         flag_dict['select'] = False
         super(QPluginManager,self).__init__(flag_dict,plugman)
-        self.plugman = plugman
+        # plugman is accessible by self._tree after QTreeModel.__init__()
+        #self.plugman = plugman
+        
 
     def headerData(self,section,orientation,data_role):
         if (data_role == QtCore.Qt.DisplayRole and section == 0):
-            return "{} plugin(s) loaded".format(self.plugman._root_item.n_children())
+            return "{} plugin(s) loaded".format(self._tree._root_item.n_children())
         else:
             return super(QPluginManager,self).headerData(section,orientation,data_role)    
 
@@ -36,8 +38,8 @@ class QPluginManager(QTreeSelectionModel):
 
     @QtCore.Slot(str)
     def update_plugin(self,pgin_name):
-        if pgin_name in self.plugman.list_child_tags():
-            self.set_item(pgin_name,self.plugman.get_data_from_uri(pgin_name))
+        #import pdb; pdb.set_trace()
+        self.set_item(pgin_name,self._tree.get_data_from_uri(pgin_name))
 
     def load_from_dict(self,plugin_dict):
         """
@@ -45,10 +47,10 @@ class QPluginManager(QTreeSelectionModel):
         """
         for tag, pgin_spec in plugin_dict.items():
             pgin_uri = pgin_spec['plugin_module']
-            pgin = self.plugman.get_plugin(pgin_uri)
+            pgin = self._tree.get_plugin(pgin_uri)
             if pgin is not None:
                 if not issubclass(pgin,PawsPlugin):
-                    self.plugman.write_log('Did not find Plugin {} - skipping.'.format(pgin_uri))
+                    self._tree.write_log('Did not find Plugin {} - skipping.'.format(pgin_uri))
                     return 
             pgin = pgin()
             for name in pgin.inputs.keys():

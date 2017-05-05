@@ -89,12 +89,17 @@ class DictTree(object):
     def get_from_uri(self,uri=''):
         """
         Return the data stored at uri.
+        Each data item in the lineage of the uri
+        must implement __getitem__() with support for
+        string-like keys, unless it is a list,
+        in which case the key is cast as int(key)
+        before using it as an index in the list.
         """
         try:
             path = uri.split('.')
             itm = self._root 
             for k in path[:-1]:
-                # TODO: Handle list item retrieval better
+                # TODO: Is there a more graceful way to handle lists?
                 if isinstance(itm,list):
                     itm = itm[int(k)]
                 else:

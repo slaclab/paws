@@ -1,12 +1,10 @@
-#import abc
+import abc
 import re
 from collections import OrderedDict
 
 import optools
 
 class Operation(object):
-#    __metaclass__ = abc.ABCMeta
-#    Abstract class template for implementing paws operations.
     """
     Class template for implementing paws operations.
     """
@@ -41,6 +39,12 @@ class Operation(object):
         for name in output_names: 
             self.outputs[name] = None
             self.output_doc[name] = None
+        # Set flags so that Batch and Realtime Operations
+        # can be identified without having to import them.
+        # Override these flags in Batch and Realtime,
+        # and access them in optools
+        self._batch_flag = False
+        self._realtime_flag = False
 
     def __getitem__(self,key):
         if key == optools.inputs_tag:
@@ -73,7 +77,6 @@ class Operation(object):
             # defaults are now packaged in InputLocators, so can be dereferenced from self.inputs. 
             self.inputs[name] = None
 
-#    @abc.abstractmethod
     def run(self):
         """
         Operation.run() should use all of the items in Operation.inputs
@@ -124,16 +127,18 @@ class Operation(object):
         return a
                 
 class Batch(Operation):
-#    __metaclass__ = abc.ABCMeta
-#    Abstract class template for implementing batch execution operations.
+    __metaclass__ = abc.ABCMeta
     """
     Class template for implementing batch execution operations.
     """
     def __init__(self,input_names,output_names):
         super(Batch,self).__init__(input_names,output_names)
+        # Override Operation._realtime_flag
+        # so Batch can be identified without importing
+        self._batch_flag = True
 
 
-#    @abc.abstractmethod
+    @abc.abstractmethod
     def output_list(self):
         """
         Produce a list of OrderedDicts representing the outputs for each batch input.
@@ -141,7 +146,7 @@ class Batch(Operation):
         """
         pass
 
-#    @abc.abstractmethod
+    @abc.abstractmethod
     def input_list(self):
         """
         Produce a list of OrderedDicts representing each set of inputs for the Batch to run.
@@ -149,7 +154,7 @@ class Batch(Operation):
         """
         pass
 
-#    @abc.abstractmethod
+    @abc.abstractmethod
     def input_routes(self):
         """
         Produce a list of the input routes used by the Batch,
@@ -158,32 +163,41 @@ class Batch(Operation):
         """
         pass
 
-#    @abc.abstractmethod
+    @abc.abstractmethod
     def saved_items(self):
         """
         Return a list of items to be saved after each execution.
         """
         pass 
 
-#    @abc.abstractmethod
+    @abc.abstractmethod
     def batch_ops(self):
         """
         Return a list of operation uris to be included in the Batch execution stack.
         """
         pass
 
+    @abc.abstractmethod
+    def batch_outputs_tag(self):
+        """
+        Return the output name (one of the self.outputs.keys()) 
+        that indicates where the batch outputs should be stored. 
+        """
+        pass
 
 
 class Realtime(Operation):
-#    __metaclass__ = abc.ABCMeta
-#    Abstract class template for implementing realtime execution as an Operation.
+    __metaclass__ = abc.ABCMeta
     """
     Class template for implementing realtime execution as an Operation.
     """
     def __init__(self,input_names,output_names):
         super(Realtime,self).__init__(input_names,output_names)
+        # Override Operation._realtime_flag
+        # so realtime Operation can be identified without importing
+        self._realtime_flag = True
 
-#    @abc.abstractmethod
+    @abc.abstractmethod
     def output_list(self):
         """
         Produce a list of OrderedDicts representing the outputs for each realtime input.
@@ -191,7 +205,7 @@ class Realtime(Operation):
         """
         pass
 
-#    @abc.abstractmethod
+    @abc.abstractmethod
     def input_iter(self):
         """
         Produce an iterator over OrderedDicts representing each set of inputs to run.
@@ -200,7 +214,7 @@ class Realtime(Operation):
         """
         pass
 
-#    @abc.abstractmethod
+    @abc.abstractmethod
     def input_routes(self):
         """
         Produce a list of [input_uri] routes 
@@ -209,14 +223,14 @@ class Realtime(Operation):
         """
         pass
 
-#    @abc.abstractmethod
+    @abc.abstractmethod
     def saved_items(self):
         """
         Return a list of item uris to be saved after each execution.
         """
         pass 
 
-#    @abc.abstractmethod
+    @abc.abstractmethod
     def realtime_ops(self):
         """
         Return a list of operation uris to be included in the Realtime execution stack.

@@ -12,7 +12,7 @@ from .WfUiManager import WfUiManager
 from .OpUiManager import OpUiManager
 from .PluginUiManager import PluginUiManager
 from ..core.models.ListModel import ListModel
-from ..core.plugins.WorkflowPlugin import WorkflowPlugin
+from ..core.plugins.WfManagerPlugin import WfManagerPlugin
 from ..qt.QWfManager import QWfManager
 from ..qt.QOpManager import QOpManager
 from ..qt.QPluginManager import QPluginManager
@@ -35,9 +35,13 @@ class UiManager(QtCore.QObject):
         paws_api._plugin_manager.logmethod = self.msg_board_log
         self.qplugman = QPluginManager(paws_api._plugin_manager)
         self.qopman = QOpManager(paws_api._op_manager)
-        self.qwfman = QWfManager(paws_api._wf_manager,self.qplugman,app)
+        self.qwfman = QWfManager(paws_api._wf_manager,app)
         self.make_title()
         self.build()
+
+    @QtCore.Slot(str)
+    def update_wfman_plugin(self,wfname):
+        self.qplugman.update_plugin('wf_manager')
 
     #requestStopWorkflow = QtCore.Signal(str)
     #requestRunWorkflow = QtCore.Signal(str)
@@ -77,6 +81,7 @@ class UiManager(QtCore.QObject):
         Set up QObjects and model views 
         for communicating with paws objects 
         """
+        self.qwfman.wf_updated.connect( partial(self.update_wfman_plugin) )
         self.qwfman.wfdone.connect(self.update_run_wf_button)
         #self.requestRunWorkflow.connect(self.qwfman.runWorkflow)
         #self.requestStopWorkflow.connect(self.qwfman.stopWorkflow)
@@ -292,9 +297,7 @@ class UiManager(QtCore.QObject):
         pgin_dict = OrderedDict() 
         for pgin_name in self.qplugman.plugman.list_child_tags():
             pgin = self.qplugman.plugman.get_data_from_uri(pgin_name)
-            if isinstance(pgin,WorkflowPlugin):
-                self.msg_board_log('--- skipping WorkflowPlugin {} ---'.format(pgin_name))
-            else:
+            if not isinstance(pgin,WfManagerPlugin):
                 pgin_dict[pgin_name] = self.qplugman.plugman.plugin_setup_dict(pgin)
         d['PLUGINS'] = pgin_dict
         pawstools.update_file(fname,d)
@@ -319,8 +322,8 @@ class UiManager(QtCore.QObject):
         self.msg_board_log( 'dumping current state to {}'.format(fname) )
         d = {} 
         wf_dict = OrderedDict() 
-        for opname in self.current_wf().wf.list_child_tags():
-            op = self.current_wf().wf.get_data_from_uri(opname)
+        for opname in self.current_wf()._tree.list_child_tags():
+            op = self.current_wf()._tree.get_data_from_uri(opname)
             wf_dict[opname] = self.qwfman.wfman.op_setup_dict(op)
         d['WORKFLOW'] = wf_dict
         pawstools.update_file(fname,d)

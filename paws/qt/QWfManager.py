@@ -9,7 +9,6 @@ from .QWorkflow import QWorkflow
 from ..core import pawstools
 from ..core.operations import optools
 from ..core.workflow.Workflow import Workflow
-from ..core.plugins.WorkflowPlugin import WorkflowPlugin
 from ..core.operations.Operation import Operation, Batch, Realtime
 
 
@@ -21,17 +20,15 @@ class QWfManager(QtCore.QObject):
     calling on the methods of the WfManager.
     """
 
-    def __init__(self,wfman,qplugman,app):
+    def __init__(self,wfman,app):
         super(QWfManager,self).__init__()
         self.wfman = wfman
-        self.qplugman = qplugman
         self.app = app 
         self._n_threads = QtCore.QThread.idealThreadCount()
         self._n_wf_threads = 1
         self._wf_threads = dict.fromkeys(range(self._n_threads)[:self._n_wf_threads]) 
         self.qworkflows = OrderedDict() 
         self.wf_running = OrderedDict()
-        self.wf_updated.connect( self.qplugman.update_plugin )
 
     def add_wf(self,wfname):
         """
@@ -39,19 +36,21 @@ class QWfManager(QtCore.QObject):
         If wfname is not unique (i.e. a workflow with that name already exists),
         this method will overwrite the existing workflow with a new one.
         """
-        wf = Workflow(self.wfman)
+        wf = Workflow()
         self.wfman.workflows[wfname] = wf
         self.qworkflows[wfname] = QWorkflow(wf)
         self.wf_running[wfname] = False
+        #import pdb; pdb.set_trace()
+        self.wf_updated.emit(wfname)
         #wf.exec_finished.connect( partial(self.finish_wf,wfname) )
         #wf.setParent(self)
         #self.workflows[wfname] = wf
         # for every new workflow, add a plugin 
         #self.workflows[wfname] 
-        wf_pgin = WorkflowPlugin()
-        wf_pgin.inputs['workflow'] = wf
-        wf_pgin.start()
-        self.qplugman.add_plugin(wfname,wf_pgin)
+        #wf_pgin = WorkflowPlugin()
+        #wf_pgin.inputs['workflow'] = wf
+        #wf_pgin.start()
+        #self.qplugman.add_plugin(wfname,wf_pgin)
 
     def load_from_dict(self,wfname,opman,opdict):
         """
@@ -95,16 +94,16 @@ class QWfManager(QtCore.QObject):
         self.wfdone.emit(wfname)
 
     def get_op(self,wfname,opname):
-        return self.qworkflows[wfname].wf.get_data_from_uri(opname)
+        return self.wfman.workflows[wfname].get_data_from_uri(opname)
 
     def run_wf(self,wfname):
         """
         Serially execute the operations of QWfManager.qworkflows[wfname].
-        Uses Workflow.execution_stack() to determine execution order,
+        Uses optools.execution_stack() to determine execution order,
         and executes operations away from the main gui thread. 
         """
         self.wf_running[wfname] = True
-        stk,diag = self.qworkflows[wfname].wf.execution_stack()
+        stk,diag = optools.execution_stack(self.wfman.workflows[wfname],self.wfman.plugman)
         for lst in stk:
             first_op = self.get_op(wfname,lst[0])
             batch_flag = isinstance(first_op,Batch)
@@ -125,7 +124,7 @@ class QWfManager(QtCore.QObject):
         .format(thd_idx,wfname,op_list))
         ops = [self.get_op(wfname,opname) for opname in op_list]
         for op in ops:
-            optools.load_inputs(op,self.qworkflows[wfname].wf)
+            optools.load_inputs(op,self.wfman.workflows[wfname],self.wfman.plugman)
         op_dict = OrderedDict(zip(op_list,ops))
         # Copy op_dict so that it can be thread-mobile
         op_dict = copy.deepcopy(op_dict)
@@ -147,8 +146,9 @@ class QWfManager(QtCore.QObject):
         self.wf_updated.emit(wfname)
 
     def execute_batch(self,wfname,batch_op_tag,batch_stk):
-        batch_op = self.qworkflows[wfname].wf.get_data_from_uri(batch_op_tag) 
-        optools.load_inputs(batch_op,self.qworkflows[wfname].wf)
+        # TODO: run this under a timer, take measures to speed it up
+        batch_op = self.wfman.workflows[wfname].get_data_from_uri(batch_op_tag) 
+        optools.load_inputs(batch_op,self.wfman.workflows[wfname],self.wfman.plugman)
         batch_op.run()
         self.qworkflows[wfname].set_item(batch_op_tag,batch_op)
         n_batch = len(batch_op.input_list())
@@ -162,32 +162,42 @@ class QWfManager(QtCore.QObject):
                     self.execute_serial(wfname,batch_lst)
                 saved_items_dict = OrderedDict()
                 for uri in batch_op.saved_items():
-                    save_data = self.qworkflows[wfname].wf.get_data_from_uri(uri)
+                    save_data = self.wfman.workflows[wfname].get_data_from_uri(uri)
                     save_dict = self.wfman.uri_to_embedded_dict(uri,save_data) 
                     saved_items_dict = self.wfman.update_embedded_dict(saved_items_dict,save_dict)
                 batch_op.output_list()[i] = saved_items_dict
-                self.qworkflows[wfname].set_item(batch_op_tag,batch_op)
+                
+                #self.qworkflows[wfname].set_item(batch_op_tag,batch_op)
+                # Rather than re-setting the entire batch_op,
+                # try just updating the outputs subtree for this iteration.
+                batch_output_uri = str(batch_op_tag+'.'+optools.outputs_tag
+                +'.'+batch_op.batch_outputs_tag()+'.'+str(i))
+                self.qworkflows[wfname].tree_update_at_uri(batch_output_uri,saved_items_dict)
             else:
                 raise pawstools.WorkflowAborted('[{}] {} was signaled to stop.'
                 .format(__name__,wfname)) 
 
     def execute_realtime(self,wfname,rt_op_tag,rt_stk):
-        pass
+        print 'REALTIME EXEUCTION NOT YET IMPLEMENTED IN {}'.format(__name__)
 
     @QtCore.Slot(str,str,Operation)
     def updateOperation(self,wfname,tag,op):
         self.qworkflows[wfname].set_item(tag,op)
-        # processEvents() after updating an operation
-        # so that the application can execute anything 
-        # that was queued in the main event loop during the update,
-        # such as updating views in the GUI.
+        # processEvents() to kickstart the main event loop 
+        # after finishing the update.
+        # Application may freeze under some conditions
+        # if this processEvents() is left out.
         self.app.processEvents()
 
     def finish_thread(self,th_idx,wfname):
         #print 'finishing thread {}'.format(th_idx)
-        self.app.processEvents()
         self._wf_threads[th_idx] = None
         self.wf_updated.emit(wfname)
+        # processEvents() to kickstart the main event loop 
+        # after finishing the update.
+        # Application may freeze under some conditions
+        # if this processEvents() is left out.
+        self.app.processEvents()
 
     def register_thread(self,thread_idx,thread):
         self._wf_threads[thread_idx] = thread
@@ -199,8 +209,7 @@ class QWfManager(QtCore.QObject):
         """Wait for the thread at self._wf_threads[th_idx] to be finished"""
         #print 'waiting for thread {}'.format(th_idx)
         # when waiting for a thread to execute something,
-        # best processEvents() to ensure that the application has a chance
-        # to prepare the thing that will be executed
+        # processEvents() to ensure main event loop is current.
         self.app.processEvents()
         done = False
         interval = 1
@@ -249,178 +258,4 @@ class QWfManager(QtCore.QObject):
         # processEvents() to continue the main event loop while waiting.
         self.app.processEvents()
 
-        # the wf_updated signal for this workflow is expected 
-        # to be connected to the plugin manager at this point.
-        # See WfManager.add_wf(). 
-        #self.workflows[wfname].wf_updated.emit()
 
-
-
-    # signal to emit when this workflow finishes execution.
-    # connects to workflow manager's finish_wf slot.
-    # which in turn emits workflow manager's wfdone signal. 
-    #exec_finished = QtCore.Signal()
-
-    # Signal to emit when the state of this Workflow changes.
-    # WfManager connects this to PluginManager
-    # so that PluginManager can update the associated WorkflowPlugin
-    # whenever this Workflow is updated.
-    #wf_updated = QtCore.Signal()
-
-
-    #@QtCore.Slot(str)
-    #def run_wf(self,wfname):
-    #    self.workflows[wfname].run_wf()
-
-    #@QtCore.Slot(str)
-    #def finish_wf(self,wfname):
-    #    self.wfdone.emit(wfname)
-
-#    def run_wf(self):
-#        self._running = True
-#        stk = self.execution_stack()
-#        msg = 'STARTING EXECUTION\n----\nexecution stack: \n'
-#        msg += self.print_stack(stk)
-#        msg += '\n----'
-#        self.wfman.write_log(msg)
-#        batch_flags = [isinstance(self.get_data_from_uri(lst[0]),Batch) for lst in stk]
-#        rt_flags = [isinstance(self.get_data_from_uri(lst[0]),Realtime) for lst in stk]
-#        layers_done = 0
-#        while not layers_done == len(stk): 
-#            # check if we are at a batch or rt op
-#            if batch_flags[layers_done]:
-#                self.run_wf_batch(stk[layers_done][0],stk[layers_done][1])
-#                layers_done += 1
-#            elif rt_flags[layers_done]:
-#                self.run_wf_realtime(stk[layers_done][0],stk[layers_done][1])
-#                layers_done += 1
-#            else:
-#                # get the portion of the stack from here to the next batch or rt op
-#                if (True in batch_flags[layers_done:]):
-#                    substk = stk[layers_done:layers_done+batch_flags[layers_done:].index(True)]
-#                elif (True in rt_flags[layers_done:]):
-#                    substk = stk[layers_done:layers_done+rt_flags[layers_done:].index(True)]
-#                else:
-#                    substk = stk[layers_done:]
-#                self.run_wf_serial(substk)
-#                layers_done += len(substk)
-#        # if not yet interrupted, wait for all threads to finish, then signal done
-#        if self.is_running():
-#            self.wfman.wait_for_threads()
-#            self.wfman.write_log('EXECUTION FINISHED')
-#            self.exec_finished.emit()
-#
-#    def run_wf_serial(self,stk,thd_idx=None):
-#        """
-#        Serially execute the operations indicated by input stack stk.
-#        """
-#        if thd_idx is None:
-#            thd_idx = self.wfman.next_available_thread()
-#        for lst in stk:
-#            self.wfman.wait_for_thread(thd_idx)
-#            op_dict = OrderedDict() 
-#            for op_tag in lst: 
-#                op = self.get_data_from_uri(op_tag) 
-#                optools.load_inputs(op,self)
-#                op_dict[op_tag] = op
-#            # Copy op_dict so that it can be thread-mobile
-#            op_dict = copy.deepcopy(op_dict)
-#            # Make a new Worker, give None parent so that it can be thread-mobile
-#            wf_wkr = WfWorker(op_dict,None)
-#            wf_wkr.opDone.connect(self.updateOperation)
-#            wf_thread = QtCore.QThread(self)
-#            wf_wkr.moveToThread(wf_thread)
-#            self.wfman.register_thread(thd_idx,wf_thread)
-#            wf_thread.started.connect(wf_wkr.work)
-#            wf_thread.finished.connect( partial(self.wfman.finish_thread,thd_idx) )
-#            wf_thread.finished.connect(wf_thread.deleteLater)
-#            wf_thread.finished.connect(wf_wkr.deleteLater)
-#            wf_thread.start()
-#            msg = 'running {} in thread {}'.format(lst,thd_idx)
-#            self.wfman.write_log(msg)
-#            # TODO: Figure out how to remove this wait_for_thread(). 
-#            # It should be handled in Workflow.run_wf() 
-#            self.wfman.wait_for_thread(thd_idx)
-#
-#    def run_wf_realtime(self,rt_op_tag,rt_stk):
-#        """
-#        Execute the operations indicated by stack rt_stk in real time
-#        under the control of the Realtime Operation indicated by rt_op_tag.
-#        """
-#        # TODO: Ensure rt execution runs smoothly on an initially empty input_iter().
-#        # TODO: Add a way to stop a realtime execution without stopping the whole workflow.
-#        # TODO: when calling update_op(rt_op), update only the new/changed children of the rt op
-#        rt_op = self.get_data_from_uri(rt_op_tag) 
-#        optools.load_inputs(rt_op,self)
-#        rt_op.run()
-#        self.update_op(rt_op_tag,rt_op)
-#        nx = 0
-#        wait_flag = False
-#        while self._running:
-#            # After rt_op.run(), it is expected that rt_op.input_iter()
-#            # will generate lists of input values that should be routed to rt_op.input_routes(),
-#            # unless there are no new inputs to run, in which case it will iterate None. 
-#            vals = rt_op.input_iter().next()
-#            if not None in vals:
-#                wait_flag = False
-#                inp_dict = OrderedDict( zip(rt_op.input_routes(), vals) )
-#                nx += 1
-#                for uri,val in inp_dict.items():
-#                    self.set_op_input_at_uri(uri,val)
-#                thd_idx = self.wfman.next_available_thread()
-#                #thd_idx = 0
-#                self.wfman.write_log( 'REALTIME EXECUTION {} in thread {}'.format(nx,thd))
-#                self.run_wf_serial(rt_stk,thd_idx)
-#                # wait for thread to finish before saving results
-#                self.wfman.wait_for_thread(thd_idx)
-#                saved_items_dict = OrderedDict()
-#                for uri in rt_op.saved_items():
-#                    save_data = self.get_data_from_uri(uri)
-#                    save_dict = self.uri_to_embedded_dict(uri,save_data) 
-#                    saved_items_dict = self.update_embedded_dict(saved_items_dict,save_dict)
-#                rt_op.output_list().append(saved_items_dict)
-#                self.update_op(rt_op_tag,rt_op)
-#            else:
-#                if not wait_flag:
-#                    self.wfman.write_log( 'Waiting for new inputs...' )
-#                    wait_flag = True
-#                self.wfman.loopwait(rt_op.delay())
-#        self.wfman.write_log( 'REALTIME EXECUTION TERMINATED' )
-#        return
-#
-#    def run_wf_batch(self,batch_op_tag,batch_stk):
-#        """
-#        Batch-execute the items indicated by stack batch_stk 
-#        under the control of the Batch Operation indicated by batch_op_tag.
-#        """
-#        # TODO: when calling update_op(batch_op), update only the new/changed children of the batch op
-#        batch_op = self.get_data_from_uri(batch_op_tag) 
-#        optools.load_inputs(batch_op,self)
-#        batch_op.run()
-#        self.update_op(batch_op_tag,batch_op)
-#        # After batch_op.run(), it is expected that batch_op.input_list() will refer to a list of dicts,
-#        # where each dict has the form [workflow tree uri:input value]. 
-#        for i in range(len(batch_op.input_list())):
-#            if self._running:
-#                input_dict = batch_op.input_list()[i]
-#                for uri,val in input_dict.items():
-#                    self.set_op_input_at_uri(uri,val)
-#                thd_idx = self.wfman.next_available_thread()
-#                #thd_idx = 0
-#                self.wfman.write_log( 'BATCH EXECUTION {} / {} in thread {}'.format(i+1,len(batch_op.input_list()),thd_idx) )
-#                self.run_wf_serial(batch_stk,thd_idx)
-#                # wait for thread to finish before saving results
-#                self.wfman.wait_for_thread(thd_idx)
-#                saved_items_dict = OrderedDict()
-#                for uri in batch_op.saved_items():
-#                    save_data = self.get_data_from_uri(uri)
-#                    save_dict = self.uri_to_embedded_dict(uri,save_data) 
-#                    saved_items_dict = self.update_embedded_dict(saved_items_dict,save_dict)
-#                batch_op.output_list()[i] = saved_items_dict
-#                self.update_op(batch_op_tag,batch_op)
-#            else:
-#                self.wfman.write_log( 'BATCH EXECUTION TERMINATED' )
-#                return
-#        self.wfman.write_log( 'BATCH EXECUTION FINISHED' )
-#
-#

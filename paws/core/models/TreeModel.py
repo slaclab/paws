@@ -42,8 +42,15 @@ class TreeModel(object):
         else:
             parent_itm = self._root_item
             itm_tag = itm_uri
+
+
+        #if itm_uri == 'wf_manager':
+        #    import pdb; pdb.set_trace()
+
+
         # add TreeItems to index the new TreeModel content 
         self.tree_update(parent_itm,itm_tag,self.build_tree(itm_data))
+
         # store the data 
         self._tree.set_uri(itm_uri,itm_data)
 
@@ -59,8 +66,8 @@ class TreeModel(object):
     def tree_update(self,parent_itm,itm_tag,itm_data):
         """
         Update the tree structure around parent_itm.children[itm_tag],
-        such that TreeItems get built to index
-        all of the items in itm_data 
+        such that TreeItems get built 
+        to index all of the items in itm_data 
         that are supported by self.build_tree().
         """
         child_keys = [c.tag for c in parent_itm.children]
@@ -83,7 +90,7 @@ class TreeModel(object):
     def build_tree(self,x):
         """
         TreeModel.build_tree is called on some object x
-        before x is assigned an index in the tree.
+        before x is stored in the tree.
         For subclasses of TreeModel to build tree data
         for data types other than dicts and lists,
         build_tree should be reimplemented.
@@ -141,7 +148,6 @@ class TreeModel(object):
         return self._tree.make_unique_uri(prefix)
 
     def contains_uri(self,uri):
-        import pdb; pdb.set_trace()
         return self._tree.contains_uri(uri)
 
     def list_uris(self,root_uri=''):

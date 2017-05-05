@@ -1,7 +1,7 @@
 from collections import OrderedDict
 import copy
 
-from ..plugins.WorkflowPlugin import WorkflowPlugin
+#from ..plugins.WorkflowPlugin import WorkflowPlugin
 from .Workflow import Workflow
 from ..operations.Operation import Operation, Batch, Realtime        
 from ..operations import optools        
@@ -11,6 +11,8 @@ class WfManager(object):
     Manager for paws Workflows. 
     Stores a list of Workflow objects, 
     performs operations on them.
+    Keeps a reference to a PluginManager
+    for access to PawsPlugins.
     """
 
     def __init__(self,plugin_manager):
@@ -18,6 +20,13 @@ class WfManager(object):
         self.workflows = OrderedDict() 
         self.plugman = plugin_manager
         self.logmethod = None
+
+    #def __getitem__(self,key):
+    #    if key in self.workflows.keys():
+    #        return self.workflows[key]
+    #    else:
+    #        raise KeyError('[{}] WfManager does not recognize workflow name {}.'
+    #        .format(__name__,key))
 
     def n_wf(self):
         return len(self.workflows)
@@ -36,19 +45,14 @@ class WfManager(object):
         """
         wf = Workflow(self)
         self.workflows[wfname] = wf
-        # for every new workflow, add a plugin 
-        wf_pgin = WorkflowPlugin()
-        wf_pgin.inputs['workflow'] = self.workflows[wfname] 
-        wf_pgin.start()
-        self.plugman.set_item(wfname,wf_pgin)
 
     def run_wf(self,wfname):
         """
         Serially execute the operations of WfManager.workflows[wfname].
-        Uses Workflow.execution_stack() to determine execution order,
+        Uses optools.execution_stack() to determine execution order,
         and performs all operations in serial.
         """
-        stk,diag = self.workflows[wfname].execution_stack()
+        stk,diag = optools.execution_stack(self.workflows[wfname],self.plugman)
         for lst in stk:
             batch_flag = isinstance(self.workflows[wfname].get_data_from_uri(lst[0]),Batch)
             rt_flag = isinstance(self.workflows[wfname].get_data_from_uri(lst[0]),Realtime)
@@ -61,7 +65,7 @@ class WfManager(object):
 
     def execute_batch(self,wfname,batch_op_tag,batch_stk):
         batch_op = self.workflows[wfname].get_data_from_uri(batch_op_tag) 
-        optools.load_inputs(batch_op,self.workflows[wfname])
+        optools.load_inputs(batch_op,self.workflows[wfname],self.plugman)
         batch_op.run()
         self.workflows[wfname].set_item(batch_op_tag,batch_op)
         n_batch = len(batch_op.input_list())
@@ -82,7 +86,7 @@ class WfManager(object):
 
     def execute_realtime(self,wfname,rt_op_tag,rt_stk):
         rt_op = self.workflows[wfname].get_data_from_uri(rt_op_tag) 
-        optools.load_inputs(rt_op,self.workflows[wfname])
+        optools.load_inputs(rt_op,self.workflows[wfname],self.plugman)
         rt_op.run()
         self.workflows[wfname].set_item(rt_op_tag,rt_op)
         keep_running = True
@@ -119,7 +123,7 @@ class WfManager(object):
         self.write_log('workflow {} running {}'.format(wfname,op_list))
         for op_tag in op_list: 
             op = self.workflows[wfname].get_data_from_uri(op_tag) 
-            optools.load_inputs(op,self.workflows[wfname])
+            optools.load_inputs(op,self.workflows[wfname],self.plugman)
             op.run() 
             self.workflows[wfname].set_item(op_tag,op)
 
