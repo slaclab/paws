@@ -87,6 +87,9 @@ def get_uri_from_dict(uri,d):
     keys = uri.split('.')
     itm = d
     for k in keys:
+        if not isinstance(itm,dict):
+            msg = 'something in {} is not a dict'.format(uri)
+            raise KeyError(msg)
         if not k in itm.keys():
             msg = 'did not find uri {} in dict'.format(uri)
             raise KeyError(msg)

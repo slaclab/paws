@@ -51,7 +51,7 @@ class XYDataFromBatch(Operation):
         self.outputs['x_y'] = np.array(zip(x_all,y_all))
         #self.outputs['x_y_sorted'] = np.sort(np.array(zip(x_all,y_all)),0)
         x_sort = np.sort(x_all)
-        y_xsort = np.array([y_all[i] for i in np.argsort(x_all)])
+        y_xsort = y_all[np.argsort(x_all)]
         self.outputs['x_y_sorted'] = np.array(zip(x_sort,y_xsort))
 
 
