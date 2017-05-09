@@ -141,7 +141,13 @@ class QWfManager(QtCore.QObject):
         wf_thread.finished.connect( partial(self.finish_thread,thd_idx,wfname) )
         wf_thread.finished.connect(wf_thread.deleteLater)
         wf_thread.finished.connect(wf_wkr.deleteLater)
-        wf_thread.start()
+        try:
+            wf_thread.start()
+        except Exception as ex:
+            wf_wkr.deleteLater()
+            wf_thread.quit()
+            wf_thread.deleteLater()
+            raise ex
         self.wait_for_thread(thd_idx)
         self.wf_updated.emit(wfname)
 

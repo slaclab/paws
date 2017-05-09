@@ -43,7 +43,7 @@ class WfManager(object):
         If wfname is not unique (i.e. a workflow with that name already exists),
         this method will overwrite the existing workflow with a new one.
         """
-        wf = Workflow(self)
+        wf = Workflow()
         self.workflows[wfname] = wf
 
     def run_wf(self,wfname):
@@ -116,7 +116,7 @@ class WfManager(object):
                 wait_iter += 1 
                 time.sleep(float(rt_op.delay())/1000.0)
             if wait_iter > 1000:
-                self.write_log( 'Waited 1000 loops of {}ms. Exiting...'.format(rt_op.delay()) )
+                self.write_log('Waited too long. Exiting...')
                 keep_running = False
 
     def execute_serial(self,wfname,op_list):
@@ -124,7 +124,11 @@ class WfManager(object):
         for op_tag in op_list: 
             op = self.workflows[wfname].get_data_from_uri(op_tag) 
             optools.load_inputs(op,self.workflows[wfname],self.plugman)
-            op.run() 
+            try:
+                op.run() 
+            except Exception as ex:
+                print str('Operation {} of {} threw an error. Message: {}'
+                .format(op_tag,wfname,ex.message))
             self.workflows[wfname].set_item(op_tag,op)
 
     def uri_to_embedded_dict(self,uri,data=None):

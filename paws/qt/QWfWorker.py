@@ -25,7 +25,6 @@ class QWfWorker(QtCore.QObject):
                     self.opDone.emit(op_tag,op)
                 #except Exception as ex:
                 #    print '[{}] crashed with {}'.format(__name__,ex.message)
-            self.wfDone.emit()
         except Exception as ex:
             # TODO: Deliver this exception to the user gracefully 
             tb = traceback.format_exc()
@@ -33,6 +32,7 @@ class QWfWorker(QtCore.QObject):
                 + 'Error message: {} \n'.format(ex.message) 
                 + 'Stack trace: {}'.format(tb)) 
             print msg
-            raise ex
+            #raise ex
+        self.wfDone.emit()
 
 
