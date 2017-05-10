@@ -35,15 +35,21 @@ class Workflow(TreeModel):
         op_dict = OrderedDict(zip(op_names,[self.get_data_from_uri(nm) for nm in op_names]))
         return op_dict
 
-    def set_op_input(self,opname,inputname,val):
+    def set_op_input_at_uri(self,uri,val):
         """
-        Set an op input to provided value val.
-        The uri built from op_name.inputs.input_name
-        must be a valid uri in the TreeModel.
+        Set an op input at uri to provided value val.
+        The uri must be a valid uri in the TreeModel,
+        of the form opname.inputs.inpname.
         """
-        #op = self.get_data_from_uri(opname)
-        #op.inputs[inputname] = val
-        #op.input_locator[inputname].data = val
-        uri = opname+'.'+optools.inputs_tag+'.'+inputname
+        path = uri.split('.')
+        opname = path[0]
+        if not path[1] == optools.inputs_tag:
+            msg = '[{}] uri {} does not point to an input'.format(__name__,uri)
+            raise ValueError(msg)
+        inpname = path[2]
+        uri = opname+'.'+optools.inputs_tag+'.'+inpname
+        op = self.get_data_from_uri(opname)
+        op.input_locator[inpname].data = val
         self.set_item(uri,val)
+
 

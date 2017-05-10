@@ -79,3 +79,14 @@ class RealtimeFromFiles(Realtime):
         """Amount of time to wait between execution attempts, in milliseconds"""
         return 1000
 
+    def set_batch_ops(self,wf=None):
+        data = optools.locate_input(self.input_locator['batch_ops'],wf)
+        self.input_locator['realtime_ops'].data = data 
+        self.inputs['realtime_ops'] = data
+
+    def set_input_routes(self,wf=None):
+        data = optools.locate_input(self.input_locator['input_route'],wf)
+        self.input_locator['input_route'].data = data 
+        self.inputs['input_route'] = data
+
+

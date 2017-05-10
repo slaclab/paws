@@ -103,7 +103,7 @@ class QWfManager(QtCore.QObject):
         and executes operations away from the main gui thread. 
         """
         self.wf_running[wfname] = True
-        stk,diag = optools.execution_stack(self.wfman.workflows[wfname],self.wfman.plugman)
+        stk,diag = optools.execution_stack(self.wfman.workflows[wfname])
         for lst in stk:
             first_op = self.get_op(wfname,lst[0])
             batch_flag = isinstance(first_op,Batch)
@@ -148,8 +148,13 @@ class QWfManager(QtCore.QObject):
             wf_thread.quit()
             wf_thread.deleteLater()
             raise ex
+        # Putting a processEvents() here as a shot in the dark
+        # to address an intermittent freezing problem...
+        self.app.processEvents()
         self.wait_for_thread(thd_idx)
         self.wf_updated.emit(wfname)
+        # and another one here.
+        self.app.processEvents()
 
     def execute_batch(self,wfname,batch_op_tag,batch_stk):
         # TODO: run this under a timer, take measures to speed it up

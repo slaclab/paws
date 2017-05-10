@@ -141,6 +141,7 @@ def locate_input(il,wf=None,plugin_manager=None):
         return None
     elif il.src == batch_input:
         # Expect this input to have been set by Workflow Manager.
+        il.tp = auto_type
         return il.data 
     elif il.src == text_input: 
         if isinstance(il.val,list):
@@ -255,12 +256,12 @@ def print_stack(stk):
             stktxt += ('{}'+opt_newline).format(lst)
     return stktxt
 
-def is_op_ready(wf,plugin_manager,op_tag,valid_wf_inputs,batch_routes=[]):
+def is_op_ready(wf,op_tag,valid_wf_inputs,batch_routes=[]):
     op = wf.get_data_from_uri(op_tag)
     if op._batch_flag: 
-        b_stk,op_rdy,diagnostics = batch_op_stack(wf,plugin_manager,op_tag,valid_wf_inputs)
+        b_stk,op_rdy,diagnostics = batch_op_stack(wf,op_tag,valid_wf_inputs)
     elif op._realtime_flag: 
-        rt_stk,op_rdy,diagnostics = batch_op_stack(wf,plugin_manager,op_tag,valid_wf_inputs)
+        rt_stk,op_rdy,diagnostics = batch_op_stack(wf,op_tag,valid_wf_inputs)
     else:
         inputs_rdy = []
         diagnostics = {} 
@@ -286,20 +287,24 @@ def is_op_ready(wf,plugin_manager,op_tag,valid_wf_inputs,batch_routes=[]):
             op_rdy = False
     return op_rdy,diagnostics 
 
-def batch_op_stack(wf,plugin_manager,batch_op_tag,valid_wf_inputs):
+def batch_op_stack(wf,batch_op_tag,valid_wf_inputs):
     """
     Use batch_op.batch_ops() and a list of valid_wf_inputs 
     to build a stack (list) of lists of operations suitable for serial execution.
     """
     batch_op = wf.get_data_from_uri(batch_op_tag)
-    # Batch and Realtime execution operations expect to have their inputs loaded
-    # by load_inputs() before calling realtime_ops() or batch_ops()
-    load_inputs(batch_op,wf,plugin_manager)
-    op_tags = []
-    if batch_op._realtime_flag: 
-        op_tags = batch_op.realtime_ops()
-    elif batch_op._batch_flag: 
-        op_tags = batch_op.batch_ops()
+    # Batch and Realtime execution operations 
+    # expect to have two inputs loaded by internal methods 
+    # before calling batch_op.batch_ops() and batch_op.input_routes()
+    batch_op.set_batch_ops(wf)
+    batch_op.set_input_routes(wf)
+    op_tags = batch_op.batch_ops()
+    #load_inputs(batch_op,wf,plugin_manager)
+    #op_tags = []
+    #if batch_op._realtime_flag: 
+    #    op_tags = batch_op.realtime_ops()
+    #elif batch_op._batch_flag: 
+    #    op_tags = batch_op.batch_ops()
     # make a copy of valid_wf_inputs
     # so that the existing valid_wf_inputs list is not mutated 
     valid_batch_inputs = copy.copy(valid_wf_inputs)
@@ -310,7 +315,7 @@ def batch_op_stack(wf,plugin_manager,batch_op_tag,valid_wf_inputs):
     layer = []
     diagnostics = {}
     for op_tag in op_tags:
-        op_rdy,op_diag = is_op_ready(wf,plugin_manager,op_tag,valid_batch_inputs,batch_op.input_routes())
+        op_rdy,op_diag = is_op_ready(wf,op_tag,valid_batch_inputs,batch_op.input_routes())
         diagnostics.update(op_diag)
         if op_rdy:
             layer.append(op_tag)
@@ -321,7 +326,7 @@ def batch_op_stack(wf,plugin_manager,batch_op_tag,valid_wf_inputs):
             valid_batch_inputs += get_valid_wf_inputs(op_tag,op)
         layer = []
         for op_tag in op_tags:
-            op_rdy,op_diag = is_op_ready(wf,plugin_manager,op_tag,valid_batch_inputs,batch_op.input_routes())
+            op_rdy,op_diag = is_op_ready(wf,op_tag,valid_batch_inputs,batch_op.input_routes())
             diagnostics.update(op_diag)
             if op_rdy and not stack_contains(op_tag,b_stk):
                 layer.append(op_tag)
@@ -337,7 +342,7 @@ def check_wf(wf):
     """
     pass
 
-def execution_stack(wf,plugin_manager):
+def execution_stack(wf):
     """
     Build a stack (list) of lists of Operation uris,
     such that each list indicates a set of Operations
@@ -356,7 +361,7 @@ def execution_stack(wf,plugin_manager):
         ops_not_rdy = []
         for itm in wf._root_item.children:
             if not stack_contains(itm.tag,stk):
-                op_rdy,op_diag = is_op_ready(wf,plugin_manager,itm.tag,valid_wf_inputs)
+                op_rdy,op_diag = is_op_ready(wf,itm.tag,valid_wf_inputs)
                 diagnostics.update(op_diag)
                 if op_rdy:
                     ops_rdy.append(itm.tag)
@@ -381,7 +386,7 @@ def execution_stack(wf,plugin_manager):
                 ops_rdy = [batch_tag]
                 batch_op = wf.get_data_from_uri(batch_tag)
                 batch_stk,batch_rdy,batch_diag = batch_op_stack(
-                        wf,plugin_manager,batch_tag,valid_wf_inputs)
+                wf,batch_tag,valid_wf_inputs)
                 diagnostics.update(batch_diag)
                 stk.append([batch_tag,batch_stk])
                 valid_wf_inputs += get_valid_wf_inputs(batch_tag,batch_op)

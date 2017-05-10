@@ -25,6 +25,7 @@ class WorkflowGraphWidget(QtGui.QWidget):
 
     def __init__(self,wf,parent=None):
         super(WorkflowGraphWidget,self).__init__(parent)        
+        self.wf = wf
         # rendering scale:
         self._scale = float(1)
         # geometrical factors responsive to self._scale:
@@ -37,7 +38,6 @@ class WorkflowGraphWidget(QtGui.QWidget):
         self.lheight = 24 
         # letter point size?
         self.lptsize = 12 
-        self.wf = wf
         #self.wf.dataChanged.connect(self.update_region_by_idx) 
         self.op_coords = {}
         self.inp_coords = {}

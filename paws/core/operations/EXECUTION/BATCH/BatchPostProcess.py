@@ -91,6 +91,16 @@ class BatchPostProcess(Batch):
     def batch_outputs_tag(self):
         return 'batch_outputs'
 
+    def set_batch_ops(self,wf=None):
+        data = optools.locate_input(self.input_locator['batch_ops'],wf)
+        self.input_locator['batch_ops'].data = data 
+        self.inputs['batch_ops'] = data
+
+    def set_input_routes(self,wf=None):
+        data = optools.locate_input(self.input_locator['input_routes'],wf)
+        self.input_locator['input_routes'].data = data 
+        self.inputs['input_routes'] = data
+
 
 
 

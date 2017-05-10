@@ -48,18 +48,23 @@ class SphericalNormalHeuristics(Operation):
         #try:
         q, I, dI = self.inputs['q'], self.inputs['I'], self.inputs['dI']
         self.outputs['return_code'] = -1
-        low_q_idxs = (q < 0.04)
-        if not any(low_q_idxs):
-            low_q_idxs = (q < q[0]+0.1*(q[-1]-q[0]))
+        #low_q_idxs = (q < 0.04)
+        #if not any(low_q_idxs):
+        low_q_idxs = (q < q[0]+0.1*(q[-1]-q[0]))
         high_q_idxs = (q > 0.9 * q[-1])
         n_low_q = np.sum(np.array(low_q_idxs))
         # If the maximum intensity is not somewhere up front, throw the flag.
-        if not np.argmax(I) in range(n_low_q):
+        if not np.argmax(I) in range(2*n_low_q):
             ok_flag = False
-            flag_msg = 'Maximum intensity does not seem to occur at low q' 
-        elif not np.mean(I[low_q_idxs]) > 100*np.mean(I[high_q_idxs]):
+            flag_msg = 'There may be large diffraction peaks in the high-q region' 
+        # If there is a sharp maximum up front, throw the flag
+        if np.max(I[low_q_idxs]) > 100*np.mean(I[low_q_idxs]):
             ok_flag = False
-            flag_msg = 'Low-q region does not have at least 100 times the intensity of the high-q region'
+            flag_msg = 'There may be dominant sharp peaks in the low-q region' 
+        # If low-q intensity does not dominate, throw flag
+        elif not np.mean(I[low_q_idxs]) > 10*np.mean(I[high_q_idxs]):
+            ok_flag = False
+            flag_msg = 'Low-q region does not have at least 10 times the intensity of the high-q region'
         else:
             ok_flag = True
         # TODO: flag poor low-q sampling (i.e. flag if minimum q is quite high) 

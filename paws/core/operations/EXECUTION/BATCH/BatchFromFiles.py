@@ -90,5 +90,12 @@ class BatchFromFiles(Batch):
     def batch_outputs_tag(self):
         return 'batch_outputs'
 
+    def set_batch_ops(self,wf=None):
+        self.inputs['batch_ops'] = optools.locate_input(self.input_locator['batch_ops'],wf)
+
+    def set_input_routes(self,wf=None):
+        self.inputs['input_route'] = optools.locate_input(self.input_locator['input_route'],wf)
+
+
 
 

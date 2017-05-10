@@ -164,29 +164,45 @@ class Batch(Operation):
         pass
 
     @abc.abstractmethod
-    def saved_items(self):
-        """
-        Return a list of items to be saved after each execution.
-        """
-        pass 
-
-    @abc.abstractmethod
-    def batch_ops(self):
-        """
-        Return a list of operation uris to be included in the Batch execution stack.
-        """
-        pass
-
-    @abc.abstractmethod
     def batch_outputs_tag(self):
         """
         Return the output name (one of the self.outputs.keys()) 
         that indicates where the batch outputs should be stored. 
         """
         pass
+    
+    @abc.abstractmethod
+    def saved_items(self):
+        """
+        Return a list of items (as workflow uris) 
+        to be saved after each execution.
+        """
+        pass 
+
+    @abc.abstractmethod
+    def set_batch_ops(self,wf=None):
+        """
+        Set enough information in this Operation's inputs
+        so that self.batch_ops() returns the correct
+        list of operations to be run under the batch.
+        Takes a Workflow as optional second argument,
+        so that it can be used to call optools.locate_input()
+        """
+        pass
+
+    @abc.abstractmethod
+    def set_input_routes(self,wf=None):
+        """
+        Set enough information in this Operation's inputs
+        so that self.input_routes() returns the correct
+        list of workflow uris where the batch will set its inputs 
+        Takes a Workflow as optional second argument,
+        so that it can be used to call optools.locate_input()
+        """
+        pass
 
 
-class Realtime(Operation):
+class Realtime(Batch):
     __metaclass__ = abc.ABCMeta
     """
     Class template for implementing realtime execution as an Operation.
@@ -195,15 +211,8 @@ class Realtime(Operation):
         super(Realtime,self).__init__(input_names,output_names)
         # Override Operation._realtime_flag
         # so realtime Operation can be identified without importing
+        self._batch_flag = False
         self._realtime_flag = True
-
-    @abc.abstractmethod
-    def output_list(self):
-        """
-        Produce a list of OrderedDicts representing the outputs for each realtime input.
-        Each OrderedDict should be populated with [input_uri:input_value] pairs.
-        """
-        pass
 
     @abc.abstractmethod
     def input_iter(self):
@@ -211,29 +220,6 @@ class Realtime(Operation):
         Produce an iterator over OrderedDicts representing each set of inputs to run.
         Each dict should be populated with [input_uri:input_value] pairs.
         When there is no new set of inputs to run, should return None.
-        """
-        pass
-
-    @abc.abstractmethod
-    def input_routes(self):
-        """
-        Produce a list of [input_uri] routes 
-        in the same order as the OrderedDicts 
-        produced by Realtime.input_iter()
-        """
-        pass
-
-    @abc.abstractmethod
-    def saved_items(self):
-        """
-        Return a list of item uris to be saved after each execution.
-        """
-        pass 
-
-    @abc.abstractmethod
-    def realtime_ops(self):
-        """
-        Return a list of operation uris to be included in the Realtime execution stack.
         """
         pass
 
