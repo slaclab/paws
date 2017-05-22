@@ -12,15 +12,20 @@ class SphericalNormalHeuristics(Operation):
     under the assumption of spherical nanoparticles
     with a Normal size distribution.
     TODO: document the algorithm here.
-    Output the mean and standard deviation of particle radius,
-    and the scattered intensity at q=0.
 
-    Assumes the data have already been background subtracted, 
-    smoothed, and otherwise cleaned.
+    Output a return code and diagnostics as needed,
+    and a dictionary of the extracted heuristics.
+    In case of success, report the size distribution parameters
+    and the approximate scattered intensity at q=0.
+    Also return the corresponding theoretical result for I(q),
+    alongside a renormalized measured spectrum, for visual comparison.
+
+    This Operation is somewhat robust for noisy data,
+    but any preprocessing (background subtraction, smoothing, or other cleaning)
+    should be performed beforehand. 
     """
 
     def __init__(self):
-        # TODO: deprecate debug_info
         input_names = ['q', 'I', 'dI']
         output_names = ['return_code','results','q_I_norm','q_I_guess','heuristics']
         super(SphericalNormalHeuristics, self).__init__(input_names, output_names)
@@ -32,7 +37,10 @@ class SphericalNormalHeuristics(Operation):
         + 'Possible values: -1=error, 0=not fittable, 1=fittable')
         self.output_doc['results'] = str('dictionary containing guesses for '
         + 'the mean size, standard deviation, and I(q=0). '
-        + 'Dict keys (strings): "r_mean", "sigma_r", "I_at_0". Units: Angstrom, Angstrom, counts.')
+        + 'Also includes the coefficient of determination '
+        + 'between the logarithms of the measured and guessed spectra. '
+        + 'Dict keys (strings): "r_mean", "sigma_r", "I_at_0", "R2_log". '
+        + 'Units: Angstrom, Angstrom, counts, unitless.')
         self.output_doc['q_I_norm'] = 'The input q,I(q) spectrum normalized so that I(q=0) is near 1.'
         self.output_doc['q_I_guess'] = str('n-by-2 array of q and the ideal intensity spectrum '
         + 'for the r_mean, sigma_r, and I_at_0 values in the results output') 
@@ -74,7 +82,7 @@ class SphericalNormalHeuristics(Operation):
         #######
         if not ok_flag: 
             self.outputs['return_code'] = 0
-            self.outputs['results'] = {'r_mean':0,'sigma_r':0,'I_at_0':0,'message':flag_msg} 
+            self.outputs['results'] = {'r_mean':0,'sigma_r':0,'I_at_0':0,'R2_log':0,'message':flag_msg} 
             self.outputs['heuristics'] = {} 
             self.outputs['q_I_norm'] = np.array([])
             self.outputs['q_I_guess'] = np.array([])
@@ -83,11 +91,11 @@ class SphericalNormalHeuristics(Operation):
                 d_h = self.saxs_heuristics(q,I,dI)
             except Exception as ex:
                 self.outputs['return_code'] = -1
-                self.outputs['results'] = {'r_mean':0,'sigma_r':0,'I_at_0':0,'message':d_h['message']} 
+                self.outputs['results'] = {'r_mean':0,'sigma_r':0,'I_at_0':0,'R2_log':0,'message':d_h['message']} 
                 raise ex
             if not all([x in d_h.keys() for x in ['pI_qwidth','q_at_Iqqqq_min1','I_at_Iqqqq_min1','I_at_0']]):
                 self.outputs['return_code'] = 0
-                self.outputs['results'] = {'r_mean':0,'sigma_r':0,'I_at_0':0,'message':'heuristic extraction did not finish'} 
+                self.outputs['results'] = {'r_mean':0,'sigma_r':0,'I_at_0':0,'R2_log':0,'message':'heuristic extraction did not finish'} 
                 raise Exception('Heuristics can not continue because spectrum feature extraction did not finish')
             width_metric = d_h['pI_qwidth']/d_h['q_at_Iqqqq_min1']
             intensity_metric = d_h['I_at_Iqqqq_min1']/d_h['I_at_0']
@@ -125,11 +133,18 @@ class SphericalNormalHeuristics(Operation):
                 r0 = qr0_focus/d_h['q_at_Iqqqq_min1']
                 sigma_r = sigma_over_r * r0 
                 I_guess = self.compute_saxs(q,r0,sigma_r) 
-                I_near_0 = self.compute_saxs(np.array([0.001]),r0,sigma_r) 
-                q_I_guess = np.array([q,I_guess/I_near_0[0]]).T
+                I_guess_at_0 = self.compute_saxs(np.array([0]),r0,sigma_r) 
+                q_I_guess = np.array([q,I_guess/I_guess_at_0[0]]).T
                 q_I_norm = np.array([q,I/I_at_0]).T
+
+                I_norm_nz = np.invert( (q_I_norm[:,1]==0) )
+                logI_norm = np.log(q_I_norm[I_norm_nz,1])
+                logI_guess = np.log(q_I_guess[I_norm_nz,1])
+                sum_logvar = np.sum( (logI_norm-np.mean(logI_norm))**2 )
+                sum_logres = np.sum( (logI_guess-logI_norm)**2 ) 
+                R2_log = float(1)-float(sum_logres)/sum_logvar
  
-                self.outputs['results'] = {'r_mean':r0,'sigma_r':sigma_over_r*r0,'I_at_0':I_at_0} 
+                self.outputs['results'] = {'r_mean':r0,'sigma_r':sigma_over_r*r0,'I_at_0':I_at_0,'R2_log':R2_log} 
                 self.outputs['heuristics'] = d_h
                 self.outputs['q_I_norm'] = q_I_norm 
                 self.outputs['q_I_guess'] = q_I_guess 
@@ -239,18 +254,21 @@ class SphericalNormalHeuristics(Operation):
             return d
         except Exception as ex:
             #import pdb; pdb.set_trace()
-            d['message'] = d['message'] + '\n' + ex.message
+            d['message'] = ex.message
             return d
 
     @staticmethod
     def compute_saxs(q,r0,sigma_r):
-        # TODO: renormalize this so that I(q=0) = 1
+        # TODO: provide a sane answer for q=0 
+        q_zero = (q == 0)
+        q_nz = np.invert(q_zero) 
+        I = np.zeros(q.shape)
         if sigma_r == 0:
             x = q*r0
             V_r0 = float(4)/3*np.pi*r0**3
-            I = V_r0**2 * (3.*(np.sin(x)-x*np.cos(x))*x**-3)**2
+            I[q_nz] = V_r0**2 * (3.*(np.sin(x[q_nz])-x[q_nz]*np.cos(x[q_nz]))*x[q_nz]**-3)**2
+            I[q_zero] = V_r0**2 
         else:
-            I = np.zeros(q.shape)
             dr = sigma_r*0.02
             rmin = np.max([r0-5*sigma_r,dr])
             rmax = r0+5*sigma_r
@@ -259,7 +277,8 @@ class SphericalNormalHeuristics(Operation):
                 V_ri = float(4)/3*np.pi*ri**3
                 # The normal-distributed density of particles with radius r_i:
                 rhoi = 1./(np.sqrt(2*np.pi)*sigma_r)*np.exp(-1*(r0-ri)**2/(2*sigma_r**2))
-                I += V_ri**2 * rhoi*dr*(3.*(np.sin(xi)-xi*np.cos(xi))*xi**-3)**2
+                I[q_nz] += V_ri**2 * rhoi*dr*(3.*(np.sin(xi[q_nz])-xi[q_nz]*np.cos(xi[q_nz]))*xi[q_nz]**-3)**2
+                I[q_zero] += V_ri**2 * rhoi*dr
         return I
 
         # more checks
