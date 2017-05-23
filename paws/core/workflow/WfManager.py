@@ -1,5 +1,6 @@
 from collections import OrderedDict
 import copy
+import traceback
 
 #from ..plugins.WorkflowPlugin import WorkflowPlugin
 from .Workflow import Workflow
@@ -130,8 +131,9 @@ class WfManager(object):
             try:
                 op.run() 
             except Exception as ex:
-                print str('Operation {} of {} threw an error. Message: {}'
-                .format(op_tag,wfname,ex.message))
+                tb = traceback.format_exc()
+                self.write_log(str('Operation {} of workflow {} threw an error. '
+                + '\nMessage: {} \nTrace: {}').format(op_tag,wfname,ex.message,tb)) 
             self.workflows[wfname].set_item(op_tag,op)
 
     def uri_to_embedded_dict(self,uri,data=None):
