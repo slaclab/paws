@@ -30,7 +30,7 @@ class SphericalNormalHeuristics(Operation):
         input_names = ['q', 'I', 'dI']
         output_names = ['return_code','results','q_I_norm','q_I_guess','heuristics']
         super(SphericalNormalHeuristics, self).__init__(input_names, output_names)
-        # Documentation
+        
         self.input_doc['q'] = '1d array of wave vector values in 1/Angstrom units'
         self.input_doc['I'] = '1d array of intensity values I(q)'
         self.input_doc['dI'] = '1d array of error estimates of intensity values (optional- input None to ignore)'
@@ -46,7 +46,7 @@ class SphericalNormalHeuristics(Operation):
         self.output_doc['q_I_guess'] = str('n-by-2 array of q and the ideal intensity spectrum '
         + 'for the r_mean, sigma_r, and I_at_0 values in the results output') 
         self.output_doc['heuristics'] = 'dict of heuristics taken from the input spectrum' 
-        # Source and type
+       
         self.input_src['q'] = optools.wf_input
         self.input_src['I'] = optools.wf_input
         self.input_src['dI'] = optools.no_input
@@ -89,7 +89,7 @@ class SphericalNormalHeuristics(Operation):
             self.outputs['q_I_guess'] = np.array([])
         else:
             try:
-                d_h = saxstools.saxs_heuristics(q,I,dI)
+                d_h = saxstools.saxs_spherical_normal_heuristics(q,I,dI)
             except Exception as ex:
                 self.outputs['return_code'] = -1
                 self.outputs['results'] = {'r_mean':0,'sigma_r':0,'I_at_0':0,'R2_log':0,'message':d_h['message']} 
@@ -136,8 +136,8 @@ class SphericalNormalHeuristics(Operation):
                 # qr0_focus = x1  ==>  r0 = x1 / q1
                 r0 = qr0_focus/d_h['q_at_Iqqqq_min1']
                 sigma_r = sigma_over_r * r0 
-                I_guess = saxstools.compute_saxs(q,r0,sigma_r) 
-                I_guess_at_0 = saxstools.compute_saxs(np.array([0]),r0,sigma_r) 
+                I_guess = saxstools.compute_spherical_normal_saxs(q,r0,sigma_r) 
+                I_guess_at_0 = saxstools.compute_spherical_normal_saxs(np.array([0]),r0,sigma_r) 
                 q_I_guess = np.array([q,I_guess/I_guess_at_0[0]]).T
                 q_I_norm = np.array([q,I/I_at_0]).T
 

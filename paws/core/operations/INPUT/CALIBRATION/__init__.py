@@ -73,8 +73,8 @@ Fit2D dict keys and definitions:
 - 'centerY': vertical position on the detector plan where the beam intersects, in px
 - 'pixelX': horizontal size of pixel, in um 
 - 'pixelY': vertical size of pixel, in um 
-- 'tilt': detector tilt in degrees
-- 'tiltPlanRotation': detector rotation in degrees = 360 minus WXDIFF alpha 
+- 'tilt': detector tilt in degrees (TODO:clarify)
+- 'tiltPlanRotation': detector rotation in degrees = 360 minus WXDIFF alpha (TODO:clarify)
 - 'splineFile' optional spline file describing detector distortion
 
 
@@ -87,19 +87,19 @@ I hope it can be cleanly documented here over time.
 Detector plane origin is the bottom left corner of the detector. 
 
 .calib file lines (and notes): 
-- imagetype=uncorrected-q         TODO: describe this field 
-- dtype=uint16                    img data type = unsigned 16-bit integers
-- horsize=___                     horizontal extent of image, in pixels
-- versize=___                     vertical extent of image, in pixels
-- region_ulc_x=___                TODO: describe this field  
-- region_ulc_y=___                TODO: describe this field  
-- bcenter_x=___                   horizontal coordinate where the beam axis intersects the detector plane 
-- bcenter_y=___                   vertical coordinate where the beam axis intersects the detector plane 
-- detect_dist=___                 direct distance from the sample to the detector plane intersection, along the beam axis, in pixels
-- detect_tilt_alpha=___           TODO: clarify this- rotation of detector tilt axis in radians
-- detect_tilt_delta=___           TODO: clarify this - detector tilt in radians 
-- wavelenght=___                  the typo 'wavelenght' is built into wxdiff, and it is reported in angstroms
-- Qconv_const=0.000725200948528   TODO: fill in this field  
+- imagetype=uncorrected-q           TODO: describe 
+- dtype=uint16                      img data type = unsigned 16-bit integers
+- horsize=___                       horizontal extent of image, in pixels
+- versize=___                       vertical extent of image, in pixels
+- region_ulc_x=___                  TODO: describe  
+- region_ulc_y=___                  TODO: describe  
+- bcenter_x=___                     horizontal coordinate where the beam axis intersects the detector plane 
+- bcenter_y=___                     vertical coordinate where the beam axis intersects the detector plane 
+- detect_dist=___                   direct distance from the sample to the detector plane intersection, along the beam axis, in pixels
+- detect_tilt_alpha=___             rotation of detector tilt axis plane in radians = 360 minus Fit2D tiltPlanRotation
+- detect_tilt_delta=___             detector tilt in radians (TODO:clarify)
+- wavelenght=___                    the typo 'wavelenght' is built into wxdiff, and it is reported in angstroms
+- Qconv_const=___                   TODO: describe 
 """
 
 

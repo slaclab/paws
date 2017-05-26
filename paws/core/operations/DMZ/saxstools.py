@@ -1,14 +1,23 @@
 import numpy as np
+from scipy.optimize import minimize as scipimin
 
-def compute_saxs(q,r0,sigma_r):
+def compute_spherical_normal_saxs(q,r0,sigma_r):
+    """
+    Given q, a mean radius r0, and a standard deviation of radius sigma_r,
+    compute the saxs spectrum assuming spherical particles 
+    with normal size distribution.
+    The returned intensity is normalized 
+    such that I(q=0) is equal to 1.
+    """
     q_zero = (q == 0)
     q_nz = np.invert(q_zero) 
     I = np.zeros(q.shape)
+    I_zero = 0
     if sigma_r == 0:
         x = q*r0
         V_r0 = float(4)/3*np.pi*r0**3
         I[q_nz] = V_r0**2 * (3.*(np.sin(x[q_nz])-x[q_nz]*np.cos(x[q_nz]))*x[q_nz]**-3)**2
-        I[q_zero] = V_r0**2 
+        I_zero = V_r0**2 
     else:
         dr = sigma_r*0.02
         rmin = np.max([r0-5*sigma_r,dr])
@@ -18,11 +27,14 @@ def compute_saxs(q,r0,sigma_r):
             V_ri = float(4)/3*np.pi*ri**3
             # The normal-distributed density of particles with radius r_i:
             rhoi = 1./(np.sqrt(2*np.pi)*sigma_r)*np.exp(-1*(r0-ri)**2/(2*sigma_r**2))
+            I_zero += V_ri**2 * rhoi*dr
             I[q_nz] += V_ri**2 * rhoi*dr*(3.*(np.sin(xi[q_nz])-xi[q_nz]*np.cos(xi[q_nz]))*xi[q_nz]**-3)**2
-            I[q_zero] += V_ri**2 * rhoi*dr
+    if any(q_zero):
+        I[q_zero] = I_zero
+    I = I/I_zero 
     return I
 
-def saxs_heuristics(q,I,dI=None):
+def saxs_spherical_normal_heuristics(q,I,dI=None):
     try:
         # Save computed heuristics in a dict.
         d = {}
@@ -120,6 +132,83 @@ def saxs_heuristics(q,I,dI=None):
         d['message'] = ex.message
         return d
 
+def saxs_spherical_normal_fit(q,I,I_at_0,method,x_init,dI=None):
+    """
+    Fit a saxs spectrum (I(q) vs q) to the theoretical spectrum 
+    for dilute spherical nanoparticles with normal size distribution.
+    Fit parameters are average radius (r_mean), 
+    and standard deviation of radius (sigma_r). 
+    The intensity at q=0 (I_at_0) is held fixed.
+    The initial estimate of x (x_init) should be 
+    an array of the form [r_mean, sigma_r].
+
+    Supported methods (input as strings): 
+    full_spectrum_chi2- least squares fit to entire spectrum
+    full_spectrum_chi2log- least squares fit to logarithm of entire spectrum
+    """
+    try:
+        d = {}
+        d['message'] = ''
+        if not dI:
+            # uniform weights
+            wt = np.ones(q.shape)   
+        else:
+            # inverse error weights, 1/dI, 
+            # appropriate if dI represents
+            # Gaussian uncertainty with sigma=dI
+            wt = 1./dI
+        if method == 'full_spectrum_chi2':
+            fit_obj = lambda x: np.sum( (compute_spherical_normal_saxs(q,x[0],x[1]) - I/I_at_0)**2 )
+        elif method == 'low_q_chi2':
+            fit_obj = lambda x: np.sum( (compute_spherical_normal_saxs(q[:len(q)/2],x[0],x[1]) - I[:len(q)/2]/I_at_0)**2 )
+        elif method == 'pearson':
+            fit_obj = lambda x: -1*compute_pearson( I, compute_spherical_normal_saxs(q,x[0],x[1]) ) 
+        elif method == 'low_q_pearson':
+            fit_obj = lambda x: -1*compute_pearson( I[:len(q)/2], compute_spherical_normal_saxs(q[:len(q)/2],x[0],x[1]) ) 
+        elif method == 'full_spectrum_chi2log':
+            I_nz = np.invert((I==0))
+            fit_obj = lambda x: np.sum( (np.log(compute_spherical_normal_saxs(q[I_nz],x[0],x[1])) - np.log(I[I_nz]/I_at_0))**2 )
+        elif method == 'low_q_chi2log':
+            I_nz = np.invert((I==0)) 
+            fit_obj = lambda x: np.sum( (np.log(compute_spherical_normal_saxs(q[I_nz][:len(q)/2],x[0],x[1])) - np.log(I[I_nz][:len(q)/2]/I_at_0))**2 )
+        elif method == 'pearson_log':
+            I_nz = np.invert((I==0)) 
+            fit_obj = lambda x: -1*compute_pearson( np.log(I[I_nz]), np.log(compute_spherical_normal_saxs(q[I_nz],x[0],x[1])) ) 
+        elif method == 'low_q_pearson_log':
+            I_nz = np.invert((I==0)) 
+            fit_obj = lambda x: -1*compute_pearson( np.log(I[I_nz][:len(q)/2]), np.log(compute_spherical_normal_saxs(q[I_nz][:len(q)/2],x[0],x[1])) ) 
+        else:
+            d['return_code'] = 0
+            d['message'] = 'fitting method {} not supported'.format(method)
+            return d
+        #print 'init: {}'.format(fit_obj(x_init))
+        res = scipimin(fit_obj,x_init)
+        x_opt = res.x
+        #print 'opt: {}'.format(fit_obj(x_opt))
+
+        I_opt = I_at_0*compute_spherical_normal_saxs(q,x_opt[0],x_opt[1])
+        I_init = I_at_0*compute_spherical_normal_saxs(q,x_init[0],x_init[1])
+        from matplotlib import pyplot as plt
+        plt.figure(3)
+        plt.semilogy(q,I)
+        plt.semilogy(q,I_init,'r')
+        plt.semilogy(q,I_opt,'g:')
+        plt.show()
+
+        d['return_code'] == 1
+        return d
+    except Exception as ex:
+        d['return_code'] = -1
+        d['message'] = ex.message
+        return d
+
+def compute_pearson(y1,y2):
+    y1mean = np.mean(y1)
+    y2mean = np.mean(y2)
+    y1std = np.std(y1)
+    y2std = np.std(y2)
+    return np.sum((y1-y1mean)*(y2-y2mean))/(np.sqrt(np.sum((y1-y1mean)**2))*np.sqrt(np.sum((y2-y2mean)**2)))
+
 def fit_lowq_spectrum(qs,Is,qs_0,order,weights=None):
     """
     Perform a polynomial fitting of the low-q region of the scattering spectrum.
@@ -167,7 +256,7 @@ def generate_heuristics():
         q = np.arange(0.001/r0,float(10)/r0,0.001/r0)       #1/Angstrom
         sigma_r_vals = np.arange(0*r0,0.21*r0,0.01*r0)      #Angstrom
         for isig,sigma_r in zip(range(len(sigma_r_vals)),sigma_r_vals):
-            I = compute_saxs(q,r0,sigma_r) 
+            I = compute_spherical_normal_saxs(q,r0,sigma_r) 
             d = saxs_heuristics(q,I)
             sigma_over_r.append(float(sigma_r)/r0)
             qr0_focus.append(d['q_at_Iqqqq_min1']*r0)
