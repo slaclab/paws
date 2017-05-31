@@ -60,20 +60,33 @@ class SphericalNormalHeuristics(Operation):
         #low_q_idxs = (q < 0.04)
         #if not any(low_q_idxs):
         low_q_idxs = (q < q[0]+0.1*(q[-1]-q[0]))
-        high_q_idxs = (q > 0.9 * q[-1])
+        high_q_idxs = (q > q[0]+0.9*(q[-1]-q[0]))
         n_low_q = np.sum(np.array(low_q_idxs))
-        # If the maximum intensity is not somewhere up front, throw the flag.
+        n_high_q = np.sum(np.array(high_q_idxs))
+        # If the max intensity is outside the low-q region, throw flag
         if not np.argmax(I) in range(2*n_low_q):
             ok_flag = False
-            flag_msg = 'There may be large diffraction peaks in the high-q region' 
-        # If there is a sharp maximum up front, throw the flag
-        if np.max(I[low_q_idxs]) > 100*np.mean(I[low_q_idxs]):
+            flag_msg = str('The peak intensity '
+            + '({} at q={}) '.format(np.max(I),q[np.argmax(I)])
+            + 'is outside the lower 20% of the q-range '
+            + '({} to {}).'.format(q[0],q[2*n_low_q]))
+        # If there is a huge maximum somewhere, throw the flag
+        elif np.max(I) > 10*np.mean(I[low_q_idxs]):
             ok_flag = False
-            flag_msg = 'There may be dominant sharp peaks in the low-q region' 
-        # If low-q intensity does not dominate, throw flag
-        elif not np.mean(I[low_q_idxs]) > 10*np.mean(I[high_q_idxs]):
+            flag_msg = str('The peak intensity '
+            + '({} at q={}) '.format(np.max(I),q[np.argmax(I)])
+            + 'is greater than 10x the integrated intensity '
+            + 'of the lower 10% of the q-range '
+            + '({} from {} to {}).'
+            .format(np.mean(I[low_q_idxs]),q[0],q[n_low_q]))
+        # If high-q intensity not significantly smaller than low-q, throw flag
+        elif not np.mean(I[:2*n_low_q]) > 10*np.mean(I[-2*n_high_q:]):
             ok_flag = False
-            flag_msg = 'Low-q region does not have at least 10 times the intensity of the high-q region'
+            flag_msg = str('The lower 20% of the q-range '
+            + '({} to {}) '.format(q[0],q[2*n_low_q])
+            + 'has less than 10 times the intensity '
+            + 'of the upper 20% of the q-range '
+            + '({} to {}).'.format(q[-2*n_high_q],q[-1]))
         else:
             ok_flag = True
         # TODO: flag poor low-q sampling (i.e. flag if minimum q is quite high) 

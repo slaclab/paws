@@ -67,15 +67,17 @@ class WXDToPONI(Operation):
             if kv[0] == 'detect_tilt_alpha':    
                 rot_rad = float(kv[1])      # WXDIFF alpha is tilt plane rotation in rad 
                                             # Fit2D tiltPlanRotation  = 360-rot_rad*180/pi 
-                rot_deg = rot_rad*float(180)/np.pi
-                rot_fit2d = float(360)-rot_deg
             if kv[0] == 'detect_tilt_delta':
                 tilt_rad = float(kv[1])     # WXDIFF delta is the tilt in rad
-                tilt_deg = tilt_rad*float(180)/np.pi
             if kv[0] == 'wavelenght':
                 wl_A = float(kv[1])         # WXDIFF 'wavelenght' is in Angstroms
         # get wavelength in m 
         wl_m = wl_A*1E-10
+        # Mapping between Fit2D and WXDIFF originally contributed by Fang Ren. 
+        # TODO: Verify this mapping
+        rot_deg = rot_rad*float(180)/np.pi
+        rot_fit2d = float(360)-rot_deg
+        tilt_deg = tilt_rad*float(180)/np.pi
         # use a pyFAI.AzimuthalIntegrator() to do the conversion
         p = pyFAI.AzimuthalIntegrator(wavelength = wl_m) 
         p.setFit2D(d_mm,bcx_px,bcy_px,tilt_deg,rot_fit2d,pxsz_um,pxsz_um)

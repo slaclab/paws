@@ -1,3 +1,4 @@
+from __future__ import print_function
 from collections import OrderedDict
 from functools import partial
 import copy
@@ -189,7 +190,8 @@ class QWfManager(QtCore.QObject):
                 .format(__name__,wfname)) 
 
     def execute_realtime(self,wfname,rt_op_tag,rt_stk):
-        print 'REALTIME EXEUCTION NOT YET IMPLEMENTED IN {}'.format(__name__)
+        msg = 'REALTIME EXEUCTION NOT YET IMPLEMENTED IN {}'.format(__name__)
+        raise NotImplementedError(msg)
 
     @QtCore.Slot(str,str,Operation)
     def updateOperation(self,wfname,tag,op):

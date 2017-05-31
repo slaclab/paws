@@ -36,6 +36,7 @@ class UiManager(QtCore.QObject):
         self.qplugman = QPluginManager(paws_api._plugin_manager)
         self.qopman = QOpManager(paws_api._op_manager)
         self.qwfman = QWfManager(paws_api._wf_manager,app)
+        self.paw = paws_api
         self.make_title()
         self.build()
 
@@ -127,6 +128,7 @@ class UiManager(QtCore.QObject):
 
     def set_wf(self,wf_selector_idx):
         wfname = self.ui.wf_selector.model().list_data()[wf_selector_idx]
+        self.paw.select_wf(wfname)
         self.ui.wf_tree.setModel(self.qwfman.qworkflows[wfname])
         self.ui.wf_tree.setRootIndex(self.qwfman.qworkflows[wfname].root_index())
         self.update_run_wf_button()
@@ -315,18 +317,11 @@ class UiManager(QtCore.QObject):
         ui.close()
 
     def finish_save_wf(self,ui):
-        # TODO: A saved workflow should change its name in ui.wf_selector and in plugman.
+        # TODO: Should a saved workflow change its name?
+        # Would have to update ui.wf_selector
+        # and the WfManager or QWfManager 
         fname = ui.filename.text()
-        if not os.path.splitext(fname)[1] == '.wfl':
-            fname = fname + '.wfl'
-        self.msg_board_log( 'dumping current state to {}'.format(fname) )
-        d = {} 
-        wf_dict = OrderedDict() 
-        for opname in self.current_wf()._tree.list_child_tags():
-            op = self.current_wf()._tree.get_data_from_uri(opname)
-            wf_dict[opname] = self.qwfman.wfman.op_setup_dict(op)
-        d['WORKFLOW'] = wf_dict
-        pawstools.update_file(fname,d)
+        self.paw.save_workflow(fname)
         ui.close()
 
     def finish_load_wf(self,ui):

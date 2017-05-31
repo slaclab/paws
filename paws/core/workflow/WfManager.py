@@ -1,3 +1,4 @@
+from __future__ import print_function
 from collections import OrderedDict
 import copy
 import traceback
@@ -21,7 +22,7 @@ class WfManager(object):
         #super(WfManager,self).__init__()
         self.workflows = OrderedDict() 
         self.plugman = plugin_manager
-        self.logmethod = None
+        self.logmethod = print 
 
     #def __getitem__(self,key):
     #    if key in self.workflows.keys():
@@ -34,10 +35,10 @@ class WfManager(object):
         return len(self.workflows)
 
     def write_log(self,msg):
-        if self.logmethod:
-            self.logmethod(msg)
-        else:
-            print('- '+pawstools.timestr()+': '+msg)
+        self.logmethod(msg)
+        #if self.logmethod:
+        #else:
+        #    print('- '+pawstools.timestr()+': '+msg)
 
     def add_wf(self,wfname):
         """
@@ -88,7 +89,7 @@ class WfManager(object):
             self.workflows[wfname].set_item(batch_op_tag,batch_op)
 
     def execute_realtime(self,wfname,rt_op_tag,rt_stk):
-        print '[{}] realtime execution needs review'.format(__name__)
+        print('[{}] realtime execution needs review'.format(__name__))
         #rt_op = self.workflows[wfname].get_data_from_uri(rt_op_tag) 
         #optools.load_inputs(rt_op,self.workflows[wfname],self.plugman)
         #rt_op.run()

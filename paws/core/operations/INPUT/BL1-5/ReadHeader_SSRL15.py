@@ -40,7 +40,9 @@ class ReadHeader_SSRL15(Operation):
                         for kv in kvs:
                             kv_arr = kv.split('=')
                             d[kv_arr[0].strip()] = float(kv_arr[1].strip())
-            except e:
+                self.outputs['header_dict'] = d
+            except Exception as e:
                 d['ERROR'] = e.message
-        self.outputs['header_dict'] = d
+                self.outputs['header_dict'] = d
+                raise e
 

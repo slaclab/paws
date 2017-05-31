@@ -1,3 +1,4 @@
+from __future__ import print_function
 import inspect
 from functools import partial
 
@@ -199,7 +200,7 @@ class OpUiManager(QtCore.QObject):
             self.set_edit_mode() 
 
     def attempt_save(self):
-        print 'save op'
+        print('save op')
         ####
         # SAVE
         ####
@@ -207,7 +208,7 @@ class OpUiManager(QtCore.QObject):
         return saved
 
     def set_read_mode(self):
-        print 'setting to read mode'
+        print('setting to read mode')
         self._edit_mode = False
         #self.ui.op_name.setReadOnly(True)
         for widg in self.import_widgets:
@@ -215,12 +216,12 @@ class OpUiManager(QtCore.QObject):
         self.ui.edit_save_button.setText("&Edit operation")
 
     def set_edit_mode(self):
-        print 'setting to edit mode'
+        print('setting to edit mode')
         self._edit_mode = True
         self.ui.edit_save_button.setText("&Save operation")
 
     def enable_ops(self):
-        print 'enable ops'
+        print('enable ops')
 
     def setup_ui(self):
         self.ui.setWindowTitle("operation setup")

@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 from pypif import pif
 from citrination_client import CitrinationClient 
 
@@ -63,7 +65,7 @@ class CitrinationPlugin(PawsPlugin):
                 #print 'NOT SHIPPING {} (this is a test)'.format(json_file)
                 self.return_codes[p.uid]=1
                 # delete dataset json
-                print 'deleting file {}'.format(json_file)
+                #print 'deleting file {}'.format(json_file)
                 os.remove(json_file) 
             except:
                 # TODO: Pass along some return code from the server?

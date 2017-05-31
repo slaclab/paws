@@ -1,3 +1,4 @@
+from __future__ import print_function
 import numpy as np
 from scipy.optimize import minimize as scipimin
 
@@ -181,10 +182,10 @@ def saxs_spherical_normal_fit(q,I,I_at_0,method,x_init,dI=None):
             d['return_code'] = 0
             d['message'] = 'fitting method {} not supported'.format(method)
             return d
-        #print 'init: {}'.format(fit_obj(x_init))
+        print('init: {}'.format(fit_obj(x_init)))
         res = scipimin(fit_obj,x_init)
         x_opt = res.x
-        #print 'opt: {}'.format(fit_obj(x_opt))
+        print('opt: {}'.format(fit_obj(x_opt)))
 
         I_opt = I_at_0*compute_spherical_normal_saxs(q,x_opt[0],x_opt[1])
         I_init = I_at_0*compute_spherical_normal_saxs(q,x_init[0],x_init[1])
@@ -266,9 +267,9 @@ def generate_heuristics():
     p_qr0_focus = np.polyfit(sigma_over_r,qr0_focus,2,None,False,None,False)
     p_w = np.polyfit(sigma_over_r,width_metric,2,None,False,None,False)
     p_I = np.polyfit(sigma_over_r,intensity_metric,3,None,False,None,False)
-    print 'polynomial for qr0 focus (wrt sigma_r/r0): {}x^2 + {}x + {}'.format(p_qr0_focus[0],p_qr0_focus[1],p_qr0_focus[2])
-    print 'polynomial for width metric (wrt sigma_r/r0): {}x^2 + {}x + {}'.format(p_w[0],p_w[1],p_w[2])
-    print 'polynomial for intensity metric (wrt sigma_r/r0): {}^3 + {}x^2 + {}x + {}'.format(p_I[0],p_I[1],p_I[2],p_I[3])
+    print('polynomial for qr0 focus (wrt sigma_r/r0): {}x^2 + {}x + {}'.format(p_qr0_focus[0],p_qr0_focus[1],p_qr0_focus[2]))
+    print('polynomial for width metric (wrt sigma_r/r0): {}x^2 + {}x + {}'.format(p_w[0],p_w[1],p_w[2]))
+    print('polynomial for intensity metric (wrt sigma_r/r0): {}^3 + {}x^2 + {}x + {}'.format(p_I[0],p_I[1],p_I[2],p_I[3]))
     plot = False
     if plot: 
         from matplotlib import pyplot as plt

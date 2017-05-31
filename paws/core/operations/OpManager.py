@@ -1,3 +1,4 @@
+from __future__ import print_function
 from .. import operations as ops
 from ..operations import optools
 from ..models.TreeModel import TreeModel
@@ -9,7 +10,10 @@ class OpManager(TreeModel):
 
     def __init__(self):
         super(OpManager,self).__init__()
-        self.logmethod = None
+        self.logmethod = print 
+
+    def write_log(self,msg):
+        self.logmethod(msg)
 
     def load_cats(self,cat_list):
         for cat in cat_list:

@@ -1,3 +1,4 @@
+from __future__ import print_function
 import importlib
 from collections import OrderedDict
 
@@ -15,13 +16,13 @@ class PluginManager(TreeModel):
 
     def __init__(self,**kwargs):
         super(PluginManager,self).__init__()
-        self.logmethod = None
+        self.logmethod = print 
 
     def write_log(self,msg):
-        if self.logmethod:
-            self.logmethod(msg)
-        else:
-            print(msg)
+        self.logmethod(msg)
+        #if self.logmethod:
+        #else:
+        #    print(msg)
 
     def plugin_setup_dict(self,pgin):
         pgin_mod = pgin.__module__[pgin.__module__.find('plugins'):]

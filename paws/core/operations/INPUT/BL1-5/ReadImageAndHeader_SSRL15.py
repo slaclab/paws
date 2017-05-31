@@ -47,7 +47,9 @@ class ReadImageAndHeader_SSRL15(Operation):
                         for kv in kvs:
                             kv_arr = kv.split('=')
                             d[kv_arr[0].strip()] = float(kv_arr[1].strip())
-            except e:
+                self.outputs['image_header'] = d
+            except Exception as e:
                 d['ERROR'] = e.message
-        self.outputs['image_header'] = d
+                self.outputs['image_header'] = d
+                raise e
 

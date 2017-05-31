@@ -67,19 +67,18 @@ class NikaToPONI(Operation):
                 bcy_px = float(kv[1])       # same as beam_center_x_pix but for y 
             if kv[0] == 'horizontal_tilt_deg':    
                 htilt_deg = float(kv[1])    # Nika reports the horizontal tilt in degrees...
-                                            # TODO: figure out how Fit2D angles correspond to Nika angles
             if kv[0] == 'vertical_tilt_deg':
                 vtilt_deg = float(kv[1])    # Nika reports the vertical tilt in degrees...
-                                            # TODO: figure out how Fit2D angles correspond to Nika angles 
             if kv[0] == 'wavelength_A':
                 wl_A = float(kv[1])         # Nika reports wavelength is in Angstroms
         # get wavelength in m 
         wl_m = wl_A*1E-10
         pxsz_x_um = pxsz_x_mm * 1000
         pxsz_y_um = pxsz_y_mm * 1000
-        # TODO: Verify this mapping!!!
-        tilt_deg = vtilt_deg
-        rot_fit2d = htilt_deg
+        # TODO: figure out how Fit2D angles correspond to Nika angles:
+        # cannot use this for tilted geometries until this is done.
+        tilt_deg = 0
+        rot_fit2d = 0
         # use a pyFAI.AzimuthalIntegrator() to do the conversion
         p = pyFAI.AzimuthalIntegrator(wavelength = wl_m) 
         p.setFit2D(d_mm,bcx_px,bcy_px,tilt_deg,rot_fit2d,pxsz_x_um,pxsz_y_um)

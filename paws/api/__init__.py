@@ -1,13 +1,30 @@
-"""This module presents an object encompassing an API for paws"""
+"""This module defines a class that presents an API for paws."""
 
+import os
 from functools import partial
+from collections import OrderedDict
 
+from ..core import pawstools
+from ..core import operations as ops
+from ..core.operations import optools
 from ..core.operations.OpManager import OpManager 
 from ..core.workflow.WfManager import WfManager 
 from ..core.plugins.PluginManager import PluginManager 
 from ..core.plugins.WfManagerPlugin import WfManagerPlugin
-from ..core import operations as ops
-from ..core.operations import optools
+
+def start(app_args=[]):
+    """
+    Instantiate and return a PawsAPI object. 
+
+    paws.api.start() calls the PawsAPI constructor.
+
+    :param app_args: arguments to pass to the 
+    QApplication constructor within the PawsAPI constructor
+    :type app_args: sequence
+    :returns: a PawsAPI object
+    :return type: paws.api.PawsAPI 
+    """
+    return PawsAPI(app_args)
 
 class PawsAPI(object):
     """
@@ -28,6 +45,10 @@ class PawsAPI(object):
         wfman_pgin.start()
         self._plugin_manager.set_item('wf_manager',wfman_pgin)
     
+    def enable_ops(self,*args):
+        # TODO: operation enable/disable functionality
+        pass
+
     def add_wf(self,wfname):
         self._wf_manager.add_wf(wfname)
         if not self._current_wf_name:
@@ -47,20 +68,17 @@ class PawsAPI(object):
         else:
             return None
 
-    def get_wf(self,wfname=None):
+    def _get_wf(self,wfname=None):
         if wfname is None:
             return self.current_wf()
         else:
             return self._wf_manager.workflows[wfname]
 
-    def enable_ops(self,*args):
-        # TODO: operation enable/disable functionality
-        pass
-        #for opname in args:
-        #    print 'enable {}'.format(opname)
+    def _get_op(self,opname,wfname=None):
+        return self._get_wf(wfname).get_data_from_uri(opname) 
 
     def add_op(self,op_tag,op_spec,wfname=None):
-        wf = self.get_wf(wfname)
+        wf = self._get_wf(wfname)
         # get the op referred to by op_spec
         op = self._op_manager.get_data_from_uri(op_spec)
         # instantiate with default inputs
@@ -69,22 +87,11 @@ class PawsAPI(object):
         wf.set_item(op_tag,op)
 
     def remove_op(self,op_tag,wfname=None):
-        wf = self.get_wf(wfname)
+        wf = self._get_wf(wfname)
         wf.remove_item(op_tag)
-        #print 'remove {}'.format(op_tag)
-        #rm_idx = wf.get_index_of_uri(op_tag)
-        #self._app.processEvents()
-        #print self.inspect_objects()
-
-    def get_op(self,opname,wfname=None):
-        return self.get_wf(wfname).get_data_from_uri(opname) 
-
-    def get_output(self,opname,output_name,wfname=None):
-        op = self.get_op(opname,wfname)
-        return op.outputs[output_name]
 
     def set_input(self,opname,input_name,wfname=None,**kwargs):
-        op = self.get_op(opname,wfname) 
+        op = self._get_op(opname,wfname) 
         src = op.input_locator[input_name].src
         tp = op.input_locator[input_name].tp
         val = op.input_locator[input_name].val
@@ -104,58 +111,36 @@ class PawsAPI(object):
             val = kwargs['val']
         il = optools.InputLocator(src,tp,val)
         op.input_locator[input_name] = il
-        #print 'set input {} of {} to src: {}, tp: {}, val: {}'.format(
-        #input_name,opname,src,tp,val)
-        
-    def save_config(self):
-        ops.save_config()
+
+    def get_output(self,opname,output_name,wfname=None):
+        op = self._get_op(opname,wfname)
+        return op.outputs[output_name]
 
     def execute(self,wfname=None):
         if wfname is None:
             wfname = self._current_wf_name
         self._wf_manager.run_wf(wfname)
+        
+    def save_config(self):
+        ops.save_config()
 
-def start(app_args=[]):
-    """
-    Instantiate and return a PawsAPI object. 
-
-    paws.api.start() calls the PawsAPI constructor.
-
-    :param app_args: arguments to pass to the 
-    QApplication constructor within the PawsAPI constructor
-    :type args: sequence
-    :returns: a PawsAPI object
-    :return type: paws.api.PawsAPI 
-    """
-    return PawsAPI(app_args)
-
-
-        #if wfname is None:
-        #    wfname = self._current_wf_name
-        #wf.exec_finished.connect(self._app.quit)
-
-        #l = QtCore.QEventLoop()
-        #t = QtCore.QTimer()
-        #t.setSingleShot(True)
-        #t.timeout.connect( partial(self.wf_exec_requested,wfname) )
-        #t.start(0)
-        #self._app.exec_()
-        #l.exec_()
-        # processEvents() to continue the main event loop while waiting.
-        #self._wf_manager.wfdone.connect(self._app.quit)
-
-        #self.wf_exec_requested.emit(self._current_wf_name)
-        # self._app provides a QEventLoop to update data structures while workflow runs
-
-        #self._wf_manager.run_wf(self._current_wf_name)
-        #self.current_wf().run_wf()
-        # set the application start signal to execute the workflow
-        # set the workflow finished signal to quit the app
-
-    #def stop(self):
-    #    self._app.quit()
-
-        #self._op_manager.save_config()
+    def save_workflow(self,wfl_filename):
+        """
+        Save the current workflow to a .wfl file,
+        as specified by wfl_filename.
+        If the given filename does not have the .wfl extension,
+        it will be appended.
+        """
+        if not os.path.splitext(wfl_filename)[1] == '.wfl':
+            wfl_filename = wfl_filename + '.wfl'
+        self._wf_manager.logmethod( 'dumping workflow {} to {}'.format(self._current_wf_name,wfl_filename) )
+        d = {} 
+        wf_dict = OrderedDict() 
+        for opname in self.current_wf().list_child_tags():
+            op = self.current_wf().get_data_from_uri(opname)
+            wf_dict[opname] = self._wf_manager.op_setup_dict(op)
+        d['WORKFLOW'] = wf_dict
+        pawstools.update_file(wfl_filename,d)
 
     #def inspect_objects(self):
     #    """
@@ -175,8 +160,6 @@ def start(app_args=[]):
     #        rpt += '\tworkflow {}: {}\n\t{}\n'.format(wfname,len(wf_children),wf_children)
     #    return rpt
         
-
-
 #def core_app(app_args=[]):
 #    """
 #    Return a reference to a new QCoreApplication or a currently running QApplication.

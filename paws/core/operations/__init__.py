@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os
 import pkgutil
 import importlib
@@ -79,7 +80,7 @@ def load_ops_from_path(path_,pkg,cat_root=''):
                 + '\nTo load an Operation subclass, '
                 + 'ensure the Operation subclass '
                 + 'has the same name as its .py module file')
-                print msg
+                print(msg)
             ops.append( (cat_root,op) )
             if not cat_root in cats:
                 cats.append(cat_root)

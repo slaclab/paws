@@ -1,3 +1,4 @@
+from __future__ import print_function
 import traceback
 from PySide import QtCore
 
@@ -31,7 +32,7 @@ class QWfWorker(QtCore.QObject):
             msg = str('Error encountered during execution. \n'
                 + 'Error message: {} \n'.format(ex.message) 
                 + 'Stack trace: {}'.format(tb)) 
-            print msg
+            print(msg)
             #raise ex
         self.wfDone.emit()
 

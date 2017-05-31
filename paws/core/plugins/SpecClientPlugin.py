@@ -1,3 +1,4 @@
+from __future__ import print_function
 import socket 
 
 from .PawsPlugin import PawsPlugin
@@ -24,11 +25,11 @@ class SpecClientPlugin(PawsPlugin):
             self.sock = socket.create_connection((self.host, self.port)) 
         except:
             self.sock = None
-            print "Spec info server connection problem: ", socket.error
+            print("Spec info server connection problem: {}".format(socket.error))
             pass
 
     def stop(self):
-        print "PawsSpecClient stop"
+        print("PawsSpecClient stop")
         self.sock.close()
         # TODO: Anything else for cleaning up the connections.
 
@@ -48,7 +49,7 @@ class SpecClientPlugin(PawsPlugin):
         try:
             len = self.sock.recv_into(buffer) 
         except:
-            print "Spec info server connection problem: %s" % socket.error
+            print("Spec info server connection problem: {}".format(socket.error))
             return "ERRCOMM"
 
         buffer = buffer.strip(' ')
@@ -58,7 +59,7 @@ class SpecClientPlugin(PawsPlugin):
         try:
             self.sock.sendall(bytearray(line))
         except:
-            print "Spec info server connection problem: %s" % socket.error
+            print("Spec info server connection problem: {}".format(socket.error))
             self.history.append('NO CONNECTION TO SPEC INFO SERVER')
 
     def sendCmd(self, cmd):
