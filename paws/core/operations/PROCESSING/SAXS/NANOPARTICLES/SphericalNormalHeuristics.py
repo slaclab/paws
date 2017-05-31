@@ -8,6 +8,8 @@ from ....DMZ import saxstools
 
 class SphericalNormalHeuristics(Operation):
     """
+    The algorithm employed here was developed by Amanda Fournier.    
+
     Use a SAXS spectrum (I(q) vs. q) to 
     guess the mean and standard deviation of particle sizes
     under the assumption of spherical nanoparticles

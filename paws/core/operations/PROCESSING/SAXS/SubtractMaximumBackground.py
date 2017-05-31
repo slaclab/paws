@@ -5,6 +5,8 @@ from ... import optools
 
 class SubtractMaximumBackground(Operation):
     """
+    Originally contributed by Amanda Fournier.
+
     Subtract a background from a foreground, with scaling to prevent over-subtraction.
     Has optional arguments for error vectors (default None).
     """

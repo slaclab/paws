@@ -5,6 +5,8 @@ from ... import optools
 
 class BgSubtractByTemperature(Operation):
     """
+    Originally contributed by Amanda Fournier.  
+
     Find a background spectrum from a batch of background spectra,
     where the temperature of the background spectrum is as close as possible
     to the (input) temperature of the measured spectrum.
