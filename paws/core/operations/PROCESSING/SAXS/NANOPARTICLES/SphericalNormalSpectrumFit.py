@@ -50,7 +50,7 @@ class SphericalNormalSpectrumFit(Operation):
         + 'This is useful for skipping the optimization based on the results of previous operations.')
         self.input_doc['dI'] = '1d array of error estimates of intensity values (optional- input None to ignore)'
         self.output_doc['return_code'] = str('integer indicating whether or not the spectrum was found to be fittable. '
-        + 'Possible values: -1=error, 0=not fittable, 1=fittable')
+        + 'Possible values: 0=success, 1=error, 2=warning')
         self.output_doc['results'] = str('dictionary containing results '
         + 'for mean size, standard deviation, and I(q=0). '
         + 'Dict keys (strings): "r_mean", "sigma_r", "I_at_0". '
@@ -74,33 +74,30 @@ class SphericalNormalSpectrumFit(Operation):
         #self.inputs['method'] = 'full_spectrum_chi2log' 
 
     def run(self):
-        self.outputs['return_code'] = -1
+        # Set return code to 1 (error) by default;
+        # if execution finishes, set it to 0
+        self.outputs['return_code'] = 1
         if self.inputs['ok_flag']:
             q, I, dI = self.inputs['q'], self.inputs['I'], self.inputs['dI']
             m = self.inputs['method']
             params = self.inputs['fit_params']
             x_init = [params['r_mean'],params['sigma_r']]
-            if m in ['full_spectrum_chi2','full_spectrum_chi2log','low_q_chi2','low_q_chi2log','pearson','pearson_log','low_q_pearson','low_q_pearson_log']:
-                try:
-                    d_opt = saxstools.saxs_spherical_normal_fit(q,I,params['I_at_0'],m,x_init,dI)
-                except Exception as ex:
-                    self.outputs['return_code'] = -1
-                    self.outputs['results'] = {'r_mean':0,'sigma_r':0,'I_at_0':0,'message':d_opt['message']} 
-                    raise ex
-            else:
-                raise ValueError('Chosen optimization method {} is not supported.'.format(m))
-            if not d_opt['return_code'] == 1:
-                self.outputs['return_code'] = 0 
-                msg = '[{}] feature optimization by {} failed. message: {}'.format(__name__,m,d_opt['message'])
-                self.outputs['results'] = {'message':msg}
-            else:        
-                r0 = d_opt['r_mean']
-                sigma_r = d_opt['sigma_r']
-                I_at_0 = d_opt['I_at_0']
-                self.outputs['results'] = {'r_mean':r0,'sigma_r':sigma_r,'I_at_0':I_at_0} 
-                self.outputs['q_I_norm'] = q_I_norm 
-                self.outputs['q_I_guess'] = q_I_guess 
+            try:
+                d_opt = saxstools.saxs_spherical_normal_fit(q,I,params['I_at_0'],m,x_init,dI)
+            except Exception as ex:
                 self.outputs['return_code'] = 1
+                msg = str('[{}] optimization by {} failed '
+                + 'while attempting to fit spectrum. message: '
+                + '{}'.format(__name__,m,ex.message))
+                self.outputs['results'] = {'r_mean':0,'sigma_r':0,'I_at_0':0,'message':ex.message} 
+                raise ex
+            r0 = d_opt['r_mean']
+            sigma_r = d_opt['sigma_r']
+            I_at_0 = d_opt['I_at_0']
+            self.outputs['results'] = {'r_mean':r0,'sigma_r':sigma_r,'I_at_0':I_at_0} 
+            self.outputs['q_I_norm'] = q_I_norm 
+            self.outputs['q_I_guess'] = q_I_guess 
+            self.outputs['return_code'] = 1
         else:        
             self.outputs['results'] = {'r_mean':0,'sigma_r':0,'I_at_0':0,'message':'ok_flag was set to False- optimization skipped'} 
 

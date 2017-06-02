@@ -15,9 +15,9 @@ class WriteArrayCSV(Operation):
         self.input_doc['array'] = 'any 2d array'
         self.input_doc['headers'] = 'list of headers (optional)- one header for each column of array'
         self.input_doc['dir_path'] = 'the path to the destination directory'
-        self.input_doc['filename'] = 'the name of the file to be saved- .csv will be appended if not provided'
-        self.input_doc['filetag'] = 'tag appended to filename'
-        self.output_doc['csv_path'] = 'the path to the finished csv file'
+        self.input_doc['filename'] = 'the name of the file to be saved- no extension is expected'
+        self.input_doc['filetag'] = 'tag appended to filename- no extension is expected'
+        self.output_doc['csv_path'] = 'the path to the finished csv file: dir_path+filename+filetag+.csv'
         self.input_src['array'] = optools.wf_input
         self.input_src['headers'] = optools.text_input
         self.input_src['dir_path'] = optools.fs_input
@@ -37,7 +37,7 @@ class WriteArrayCSV(Operation):
         tag = ''
         if self.inputs['filetag']:
             tag = self.inputs['filetag']
-        csv_path = splitext(self.inputs['dir_path']+'/'+self.inputs['filename'])[0]+tag+'.csv'
+        csv_path = self.inputs['dir_path']+'/'+self.inputs['filename']+tag+'.csv'
         self.outputs['csv_path'] = csv_path
         if h is not None:
             h_str = ''
