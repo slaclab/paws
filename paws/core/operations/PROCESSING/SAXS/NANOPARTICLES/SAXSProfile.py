@@ -4,21 +4,20 @@ from scipy.optimize import minimize
 
 from ....Operation import Operation
 from .... import optools
-from ....DMZ import saxstools
+from .. import saxstools
 
 class SAXSProfile(Operation):
     """
     This operation profiles a SAXS spectrum (I(q) vs. q)
     to determine some characteristics of the sample.
     Based on some measures of the overall shape of the spectrum,
-    it is determined whether the spectrum is likely to exhibit
-    scattering from precursors 
+    the spectrum is tested for scattering from precursors 
     (approximated as small dilute monodisperse spheres),
     scattering from spherical nanoparticles 
     (dilute spheres with a normal size distribution),
     diffraction peaks
-    (crystalline arrangements),
-    or any combination of the three.
+    (Voigt-like profiles due to crystalline arrangements),
+    or some combination of the three.
     TODO: document algorithm here.
 
     Output a return code

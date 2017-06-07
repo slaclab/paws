@@ -77,7 +77,7 @@ def load_ops_from_path(path_,pkg,cat_root=''):
             except AttributeError as ex:
                 msg = str('Failed to load Operation subclass {} '.format(modname)
                 + 'from module of the same name. Error message: '+ ex.message
-                + '\nTo load an Operation subclass, '
+                + '\nTo load an Operation, '
                 + 'ensure the Operation subclass '
                 + 'has the same name as its .py module file')
                 print(msg)
