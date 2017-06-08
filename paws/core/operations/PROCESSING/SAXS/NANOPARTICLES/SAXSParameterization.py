@@ -249,6 +249,37 @@ class SAXSParameterization(Operation):
                     self.outputs['q_I_norm'] = q_I_norm 
                     self.outputs['q_I_guess'] = q_I_guess 
                     self.outputs['return_code'] = 0
+        #precursor_flag = (cos_corr > 0.6 or cos_corr > 0.9*invq_corr)
+        #spherical_np_flag = (invq_corr > 0.9 or invq_corr > cos_corr)
+        #diffraction_flag = False
+        #ok_flag = True
+        #if climb_corr > 0.2:
+        #    ok_flag = False
+        #    flag_msg = str('Spectrum is excessively flat or increasing in q.')
+        #elif not any([precursor_flag,spherical_np_flag,diffraction_flag]):
+        #    ok_flag = False
+        #    flag_msg = str('Spectrum has unfamiliar characteristics.')
+        #######
+        # Any other up-front filters should be added here.
+        #######
+        #if not ok_flag: 
+        #    self.outputs['return_code'] = 2
+        #    d_r.update({'message':flag_msg})
+        #    self.outputs['results'] = d_r
+        #else:
+        #    precursor_strength = 0
+        #    spherical_np_strength = 0
+        #    diffraction_strength = 0
+        #    if precursor_flag:
+        #        pre_str = np.min([0,2*(cos_corr-0.5)])
+        #    if spherical_np_flag:
+        #        sph_str = np.min([0,invq_corr])
+        #    if diffraction_flag:
+        #        diff_str = 1                  
+        #    total_strength = pre_str + sph_str + diff_str
+        #    d_r.update({'precursor_strength':pre_str/total_strength})
+        #    d_r.update({'spherical_np_strength':sph_str/total_strength})
+        #    d_r.update({'diffraction_strength':diff_str/total_strength})
 
     def generate_heuristics():
         sigma_over_r = []

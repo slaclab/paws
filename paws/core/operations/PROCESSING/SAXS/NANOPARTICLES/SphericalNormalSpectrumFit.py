@@ -4,7 +4,7 @@ from scipy.optimize import curve_fit
 
 from ....Operation import Operation
 from .... import optools
-from ....DMZ import saxstools
+from .. import saxstools
 
 class SphericalNormalSpectrumFit(Operation):
     """
