@@ -34,6 +34,10 @@ class TreeModel(object):
     def list_child_tags(self,parent_uri=''):
         return self._tree.list_child_tags(parent_uri)
 
+    def n_children(self,parent_uri=''):
+        itm = self.get_from_uri(parent_uri)
+        return itm.n_children()
+
     def set_item(self,itm_uri,itm_data=None):
         if '.' in itm_uri:
             parent_uri = itm_uri[:itm_uri.rfind('.')]

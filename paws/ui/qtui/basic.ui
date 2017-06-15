@@ -80,7 +80,7 @@
         </property>
         <layout class="QGridLayout" name="gridLayout_2">
          <item row="0" column="0">
-          <layout class="QGridLayout" name="data_viewer"/>
+          <layout class="QGridLayout" name="viewer_layout"/>
          </item>
         </layout>
        </widget>

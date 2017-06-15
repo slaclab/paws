@@ -6,7 +6,7 @@ from PySide import QtGui, QtCore, QtUiTools
 import yaml
 
 from . import uitools
-from . import data_viewer
+from . import widgets 
 from ..core import pawstools
 from .WfUiManager import WfUiManager
 from .OpUiManager import OpUiManager
@@ -73,7 +73,7 @@ class UiManager(QtCore.QObject):
         textitem.setDefaultTextColor(qwhite)
         logo_view = QtGui.QGraphicsView()
         logo_view.setScene(scene)
-        self.ui.data_viewer.addWidget(logo_view,0,0,1,1)
+        self.ui.viewer_layout.addWidget(logo_view,0,0,1,1)
         self.ui.setWindowTitle("paws v{}".format(pawstools.version))
         self.ui.setWindowIcon(pixmap)
 
@@ -150,19 +150,33 @@ class UiManager(QtCore.QObject):
 
     def display_plugin_item(self,idx):
         """
-        Display selected item from the plugin tree in data_viewer 
+        Display selected item from the plugin tree in viewer layout 
         """
         if idx.isValid(): 
             itm_data = self.qplugman.get_data_from_index(idx)
-            data_viewer.display_item(itm_data,self.ui.data_viewer,None)
+            widg = widgets.make_widget(itm_data)
+            self.display_widget(widg)
 
     def display_wf_item(self,idx):
         """
-        Display selected item from the workflow tree in data_viewer 
+        Display selected item from the workflow tree in viewer layout 
         """
         if idx.isValid(): 
             itm_data = self.current_wf().get_data_from_index(idx)
-            data_viewer.display_item(itm_data,self.ui.data_viewer,None)
+            widg = widgets.make_widget(itm_data)
+            self.display_widget(widg)
+
+    def display_widget(self,widg):
+        # Loop through the viewer layout, last to first, clear the frame
+        n_widgets = self.ui.viewer_layout.count()
+        for i in range(n_widgets-1,-1,-1):
+            # QLayout.takeAt returns a LayoutItem
+            itm = self.ui.viewer_layout.takeAt(i)
+            # get the QWidget of that LayoutItem and close it 
+            itm.widget().close()
+            #if itm.widget() is not None:
+            #    itm.widget().deleteLater()
+        self.ui.viewer_layout.addWidget(widg,0,0,1,1) 
 
     def current_wf(self):
         wfname = self.current_wfname()

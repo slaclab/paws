@@ -37,6 +37,8 @@ class PawsAPI(object):
         self._op_manager = OpManager()
         self._plugin_manager = PluginManager()
         self._wf_manager = WfManager(self._plugin_manager)
+        # TODO: load_cats and load_ops should happen outside the api.__init__
+        # so that different api instances can have different operations loaded
         self._op_manager.load_cats(ops.cat_list) 
         self._op_manager.load_ops(ops.cat_op_list)
         self._current_wf_name = None 
@@ -68,17 +70,17 @@ class PawsAPI(object):
         else:
             return None
 
-    def _get_wf(self,wfname=None):
+    def get_wf(self,wfname=None):
         if wfname is None:
             return self.current_wf()
         else:
             return self._wf_manager.workflows[wfname]
 
-    def _get_op(self,opname,wfname=None):
-        return self._get_wf(wfname).get_data_from_uri(opname) 
+    def get_op(self,opname,wfname=None):
+        return self.get_wf(wfname).get_data_from_uri(opname) 
 
     def add_op(self,op_tag,op_spec,wfname=None):
-        wf = self._get_wf(wfname)
+        wf = self.get_wf(wfname)
         # get the op referred to by op_spec
         op = self._op_manager.get_data_from_uri(op_spec)
         # instantiate with default inputs
@@ -87,11 +89,11 @@ class PawsAPI(object):
         wf.set_item(op_tag,op)
 
     def remove_op(self,op_tag,wfname=None):
-        wf = self._get_wf(wfname)
+        wf = self.get_wf(wfname)
         wf.remove_item(op_tag)
 
     def set_input(self,opname,input_name,wfname=None,**kwargs):
-        op = self._get_op(opname,wfname) 
+        op = self.get_op(opname,wfname) 
         src = op.input_locator[input_name].src
         tp = op.input_locator[input_name].tp
         val = op.input_locator[input_name].val
@@ -113,7 +115,7 @@ class PawsAPI(object):
         op.input_locator[input_name] = il
 
     def get_output(self,opname,output_name,wfname=None):
-        op = self._get_op(opname,wfname)
+        op = self.get_op(opname,wfname)
         return op.outputs[output_name]
 
     def execute(self,wfname=None):
@@ -141,6 +143,16 @@ class PawsAPI(object):
             wf_dict[opname] = self._wf_manager.op_setup_dict(op)
         d['WORKFLOW'] = wf_dict
         pawstools.update_file(wfl_filename,d)
+
+    def op_count(self,wfname=None):
+        if wfname is None:
+            wfname = self._current_wf_name
+        return self._wf_manager.workflows[wfname].n_children()
+
+    def list_op_tags(self,wfname=None):
+        if wfname is None:
+            wfname = self._current_wf_name
+        return self._wf_manager.workflows[wfname].list_child_tags()
 
     #def inspect_objects(self):
     #    """

@@ -2,9 +2,9 @@ import numpy as np
 from scipy import interp
 from scipy.optimize import minimize
 
-from ....Operation import Operation
-from .... import optools
-from .. import saxstools
+from ...Operation import Operation
+from ... import optools
+from . import saxstools
 
 class SAXSProfile(Operation):
     """

@@ -25,7 +25,7 @@ class LoadTif(Operation):
     def run(self):
         p = self.inputs['path']
         file_nopath = os.path.split(p)[1]
-        file_noext = os.path.split(file_nopath)[0]
+        file_noext = os.path.splitext(file_nopath)[0]
         self.outputs['filename'] = file_noext 
         try:
             self.outputs['image_data'] = tifffile.imread(p)

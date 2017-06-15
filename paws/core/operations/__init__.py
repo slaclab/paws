@@ -6,8 +6,12 @@ from collections import OrderedDict
 
 import yaml
 
-#from Operation import Operation
 from .. import pawstools
+
+# TODO: Deprecate ops.cfg configuration file.
+# By default, inspect entire environment, 
+# inventory all Operations, import none of them.
+# Add operation environment specification to .wfl files.
 
 # check for an ops.cfg file
 cfg_file = pawstools.sourcedir+'/core/operations/ops.cfg'

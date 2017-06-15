@@ -21,12 +21,11 @@ coordinate axes: x1 vertical, x2 and x3 horizontal, x3 along beam.
 detector axes: with zero rotations, d1 vertical, d2 horizontal, d3 along beam.
 axes defined on C format, first dimension is vertical, second dimension is horizontal.
 the first dimension (vertical) is fast, the second dimension (horizontal) is slow. 
-when poni=0 and rot=0, d = x 
 
 PONI dict keys and definitions:
 - 'dist': distance in meters from sample to PONI on detector plane
-- 'poni1': vertical coordinate of PONIon detector axes where poni intersects detector plane 
-- 'poni2': horizontal coordinate on detector axes where poni intersects detector plane 
+- 'poni1': vertical coordinate of PONI on detector axes, in meters
+- 'poni2': horizontal coordinate of PONI on detector axes, in meters
 - 'rot1': rotation of detector body about x1, applied first, radians
 - 'rot2': rotation of detector body about x2, applied second, radians
 - 'rot3': rotation of detector body about beam axis x3, applied third, radians

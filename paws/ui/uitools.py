@@ -106,16 +106,19 @@ def name_widget(name):
     name_widget.setSizePolicy(QtGui.QSizePolicy.Minimum,QtGui.QSizePolicy.Fixed)
     return name_widget
 
-def bigtext_widget(text):
+def bigtext_widget(text=None):
     #trunc_limit = 200
     #if len(text) > trunc_limit:
     #    text = text[:trunc_limit]+'...'
+    if text is None:
+        text = ''
     widg = QtGui.QLineEdit(text)
     widg.setReadOnly(True)
     widg.setAlignment(QtCore.Qt.AlignLeft)
     ht = widg.sizeHint().height()
     widg.sizeHint = lambda: QtCore.QSize(20*len(text),ht)
-    widg.setSizePolicy(QtGui.QSizePolicy.Maximum,QtGui.QSizePolicy.Fixed)
+    #widg.setSizePolicy(QtGui.QSizePolicy.Maximum,QtGui.QSizePolicy.Fixed)
+    widg.setSizePolicy(QtGui.QSizePolicy.Expanding,QtGui.QSizePolicy.Fixed)
     return widg
 
 def start_save_ui(parent,fspath=None):
