@@ -68,10 +68,6 @@ class PluginManager(TreeModel):
         so that TreeItems are built from PawsPlugins
         and Workflows and Operations.
         """
-
-        #print 'EXAMINE x'
-        #import pdb; pdb.set_trace()
-
         if isinstance(x,PawsPlugin):
             #d = x.content()
             d = OrderedDict()

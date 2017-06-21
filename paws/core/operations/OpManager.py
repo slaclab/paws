@@ -21,21 +21,21 @@ class OpManager(TreeModel):
         return self._n_ops
 
     def load_cats(self,cat_list):
-        for cat in cat_list:
-            itm = self._root_item
-            cat_tags = cat.split('.')
-            cat_uri = cat_tags[0]
-            if not self.contains_uri(cat_uri):
-                self.set_item(cat_uri,{})
-                self._n_cats += 1
-            if len(cat_tags) > 1:
-                for cat_tag in cat_tags[1:]:
-                    #if not cat_tag in self.list_child_tags(cat_uri):
-                    cat_uri = cat_uri+'.'+cat_tag
-                    if not self.contains_uri(cat_uri):
-                        self.set_item(cat_uri,{})
-                        self._n_cats += 1
-                    cat_uri = cat_uri+'.'+cat_tag
+            for cat in cat_list:
+                itm = self._root_item
+                cat_tags = cat.split('.')
+                cat_uri = cat_tags[0]
+                if not self.contains_uri(cat_uri):
+                    self.set_item(cat_uri,{})
+                    self._n_cats += 1
+                if len(cat_tags) > 1:
+                    for cat_tag in cat_tags[1:]:
+                        #if not cat_tag in self.list_child_tags(cat_uri):
+                        cat_uri = cat_uri+'.'+cat_tag
+                        if not self.contains_uri(cat_uri):
+                            #print('set cat {}'.format(cat_uri))
+                            self.set_item(cat_uri,{})
+                            self._n_cats += 1
 
     def load_ops(self,cat_op_list):
         """

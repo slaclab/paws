@@ -27,8 +27,17 @@ class PawsPlugin(object):
         if key in d.keys():
             return d[key]
         else:
-            raise KeyError('[{}] {}.__getitem__ can only return values for keys {}'
+            raise KeyError('[{}] {}.__getitem__ only recognizes keys {}'
             .format(__name__,type(self).__name__,d.keys()))
+    def __setitem__(self,key,data):
+        d = self.content()
+        if key in d.keys():
+            d[key] = data
+        else:
+            raise KeyError('[{}] {}.__getitem__ only recognizes keys {}'
+            .format(__name__,type(self).__name__,d.keys()))
+    def keys(self):
+        return self.content().keys() 
 
     def start(self):
         """

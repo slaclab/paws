@@ -14,7 +14,7 @@ class DictTree(object):
     can be anything.
     Parent items, in order to index their children,
     must be either lists, dicts, or objects implementing
-    __getitem__(key) and __setitem__(key,value).
+    keys(), __getitem__(key) and __setitem__(key,value).
     """
 
     def __init__(self,data={}):
@@ -97,21 +97,22 @@ class DictTree(object):
             itm = self._root
             if '.' in uri:
                 parent_uri = uri[:uri.rfind('.')]
-                if parent_uri in self._all_uris:
-                    itm = self.get_from_uri(parent_uri)
-                else:
-                    itm = self.build_to_uri(parent_uri)
+                #if parent_uri in self._all_uris:
+                itm = self.get_from_uri(parent_uri)
+                #else:
+                #    itm = self.build_to_uri(parent_uri)
             k = uri.split('.')[-1]
             # TODO: Is there a more graceful way to handle lists?
             if k:
                 if isinstance(itm,list):
                     itm[int(k)] = val
-                    self._all_uris.append(uri)
                 else:
                     # Note- parent items must implement __setitem__
                     itm[k] = val
+                if not uri in self._all_uris:
                     self._all_uris.append(uri)
         except Exception as ex:
+            #import pdb; pdb.set_trace()
             msg = str('\n[{}] Encountered an error while trying to set uri {} to val {}: \n'
             .format(__name__,uri,val)) + ex.message
             raise KeyError(msg)
@@ -128,55 +129,71 @@ class DictTree(object):
         try:
             path = uri.split('.')
             itm = self._root 
-            for k in path[:-1]:
+            #for k in path[:-1]:
+            while any(path):
+                k = path.pop(0)
                 # TODO: Is there a more graceful way to handle lists?
                 if isinstance(itm,list):
                     itm = itm[int(k)]
                 else:
-                    # Note- parent items must implement __getitem__
-                    itm = itm[k]
-            k = path[-1]
-            if k == '':
-                # terminal 
-                return itm 
-            elif k is not None:
-                if isinstance(itm,list):
-                    return itm[int(k)]
-                else:
-                    # Note- parent items must implement __getitem__
-                    return itm[k]
+                    # Note- parent items must implement __getitem__ and keys()
+                    if k in itm.keys():
+                        itm = itm[k]
+                    else:
+                        # this could be a dict with a key containing a '.'
+                        found = False
+                        while not found:
+                            k = k+'.'+path.pop(0)                        
+                            if k in itm.keys():
+                                itm = itm[k]
+                                found = True 
+                            elif k+'.' in itm.keys():
+                                itm = itm[k+'.']
+                                found = True           
+            return itm
+            #k = uri.split('.')[-1]
+            #if k == '':
+            #    # uri ended with a '.' 
+            #    return itm 
+            #elif k is not None:
+            #    if isinstance(itm,list):
+            #        return itm[int(k)]
+            #    else:
+            #        # Note- parent items must implement __getitem__
+            #        return itm[k]
         except Exception as ex:
-            import pdb; pdb.set_trace()
+            #import pdb; pdb.set_trace()
             msg = str('[{}] Encountered an error while fetching uri {}: \n'
             .format(__name__,uri) + ex.message)
             raise KeyError(msg) 
 
-    def build_to_uri(self,uri=''):
-        """ 
-        If the tree does not contain the input uri,
-        Fill the tree out with dicts
-        until an empty dict exists at the given uri. 
-        """
-        try:
-            itm = self._root 
-            if '.' in uri:
-                parent_uri = uri[:uri.rfind('.')]
-                if parent_uri in self._all_uris:
-                    itm = self.get_from_uri(parent_uri)
-                else:
-                    itm = self.build_to_uri(parent_uri)
-            k = uri.split('.')[-1]
-            if k == '':
-                return itm 
-            elif k is not None:
-                # Note- parent items must implement __setitem__
-                self._all_uris.append(uri)
-                itm[k] = OrderedDict()
-                return itm[k]
-        except Exception as ex:
-            msg = str('[{}] Encountered an error while trying to build uri {}: \n'
-            .format(__name__,uri) + ex.message)
-            raise KeyError(msg) 
+    #def build_to_uri(self,uri=''):
+    #    """ 
+    #    If the tree does not contain the input uri,
+    #    Fill the tree out with dicts
+    #    until an empty dict exists at the given uri. 
+    #    """
+    #    try:
+    #        itm = self._root 
+    #        if '.' in uri:
+    #            parent_uri = uri[:uri.rfind('.')]
+    #            if parent_uri in self._all_uris:
+    #                itm = self.get_from_uri(parent_uri)
+    #            else:
+    #                itm = self.build_to_uri(parent_uri)
+    #        k = uri.split('.')[-1]
+    #        if k == '':
+    #            return itm 
+    #        elif k is not None:
+    #            # Note- parent items must implement __setitem__
+    #            if not uri in self._all_uris:
+    #                self._all_uris.append(uri)
+    #            itm[k] = OrderedDict()
+    #            return itm[k]
+    #    except Exception as ex:
+    #        msg = str('[{}] Encountered an error while trying to build uri {}: \n'
+    #        .format(__name__,uri) + ex.message)
+    #        raise KeyError(msg) 
         
     #def list_child_tags(self,parent_uri=''):
     #    if parent_uri:

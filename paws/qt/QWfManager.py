@@ -162,16 +162,16 @@ class QWfManager(QtCore.QObject):
         batch_op = self.wfman.workflows[wfname].get_data_from_uri(batch_op_tag) 
         optools.load_inputs(batch_op,self.wfman.workflows[wfname],self.wfman.plugman)
         batch_op.run()
-        self.qworkflows[wfname].set_item(batch_op_tag,batch_op)
+        self.qworkflows[wfname].set_op(batch_op_tag,batch_op)
         n_batch = len(batch_op.input_list())
         for i in range(n_batch):
             if self.wf_running[wfname]:
                 input_dict = batch_op.input_list()[i]
                 for uri,val in input_dict.items():
+                    #import pdb; pdb.set_trace()
                     self.qworkflows[wfname].set_op_input_at_uri(uri,val)
                 self.wfman.write_log( 'BATCH EXECUTION {} / {}'.format(i+1,n_batch) )
                 for batch_lst in batch_stk:
-                    #import pdb; pdb.set_trace()
                     self.execute_serial(wfname,batch_lst)
                 saved_items_dict = OrderedDict()
                 for uri in batch_op.saved_items():

@@ -52,7 +52,7 @@ class QWorkflow(QTreeSelectionModel):
             msg = '[{}] uri {} does not point to an input'.format(__name__,uri)
             raise ValueError(msg)
         inpname = path[2]
-        uri = opname+'.'+optools.inputs_tag+'.'+inpname
+        #inp_uri = opname+'.'+optools.inputs_tag+'.'+inpname
         op = self._tree.get_data_from_uri(opname)
         op.input_locator[inpname].data = val
         self.set_item_at_uri(uri,val)

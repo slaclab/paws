@@ -81,12 +81,31 @@ class QTreeModel(QtCore.QAbstractItemModel):
     def set_item_at_uri(self,itm_uri,itm_data):
         if '.' in itm_uri:
             parent_uri = itm_uri[:itm_uri.rfind('.')]
+            #if self._tree.contains_uri(parent_uri):
             parent_idx = self.get_index_of_uri(parent_uri)
+            #else:
+            #    parent_idx = self.build_to_uri(parent_uri)
+            #parent_idx = self.get_index_of_uri(parent_uri)
             itm_tag = itm_uri[itm_uri.rfind('.')+1:]
         else:
             parent_idx = self.root_index()
             itm_tag = itm_uri
         self.set_item(itm_tag,itm_data,parent_idx)        
+
+    #def build_to_uri(self,uri=''):
+    #    idx = self.root_index()
+    #    if '.' in uri:
+    #        parent_uri = uri[:uri.rfind('.')]
+    #        if self._tree.contains_uri(parent_uri):
+    #            idx = self.get_index_of_uri(parent_uri)
+    #        else:
+    #            idx = self.build_to_uri(parent_uri)
+    #        k = uri.split('.')[-1]
+    #        if k == '':
+    #            return idx 
+    #        elif k is not None:
+    #            self.set_item(k,None,idx)
+    #            return self.get_index_of_uri(uri) 
 
     def set_item(self,itm_tag,itm_data=None,parent_idx=None):
         if parent_idx is None:
@@ -97,16 +116,25 @@ class QTreeModel(QtCore.QAbstractItemModel):
             itm_uri = parent_uri+'.'+itm_tag
         else:
             itm_uri = itm_tag
-
         # add TreeItems to index the new model content:
         # have to implement this differently than TreeModel
         # to inject calls to beginInsertRows and endInsertRows.        
-        self.tree_update(parent_idx,itm_tag,self._tree.build_tree(itm_data))
-
+        treedata = self._tree.build_tree(itm_data)
+        self.tree_update(parent_idx,itm_tag,treedata)
         # store the data:
         # self._tree.tree_update() will be called with no effect. 
         self._tree.set_item(itm_uri,itm_data)
-
+        #if isinstance(treedata,dict):
+        #    itm_idx = self.get_index_of_uri(itm_uri)
+        #    # also store any children
+        #    for k,val in treedata.items():
+        #        child_uri = itm_uri+'.'+k
+        #        if not self._tree.contains_uri(child_uri):
+        #            if isinstance(itm_data,list):
+        #                self.set_item(k,itm_data[int(k)],itm_idx)
+        #            else:
+        #                # Note- parent item data needs to implement __getitem__
+        #                self.set_item(k,itm_data[k],itm_idx) 
         # signal dataChanged down the tree
         child_keys = [c.tag for c in parent_itm.children]
         itm_idx = self.index(child_keys.index(itm_tag),0,parent_idx)
