@@ -78,16 +78,17 @@ def load_ops_from_path(path_,pkg,cat_root=''):
             # assume Operation name is same as module name
             try:
                 op = getattr(mod,modname)
+                ops.append( (cat_root,op) )
+                if not cat_root in cats:
+                    cats.append(cat_root)
             except AttributeError as ex:
-                msg = str('Failed to load Operation subclass {} '.format(modname)
-                + 'from module of the same name. Error message: '+ ex.message
-                + '\nTo load an Operation, '
-                + 'ensure the Operation subclass '
-                + 'has the same name as its .py module file')
-                print(msg)
-            ops.append( (cat_root,op) )
-            if not cat_root in cats:
-                cats.append(cat_root)
+                pass
+            #    msg = str('Failed to load Operation subclass {} '.format(modname)
+            #    + 'from module of the same name. Error message: '+ ex.message
+            #    + '\nTo load an Operation, '
+            #    + 'ensure the Operation subclass '
+            #    + 'has the same name as its .py module file')
+            #    print(msg)
     return ops, cats
 
 def disable_ops(disable_root):

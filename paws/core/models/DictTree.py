@@ -5,9 +5,16 @@ from collections import OrderedDict
 class DictTree(object):
     """
     A tree as an ordered dictionary (root), 
-    extended by embedding other ordered dictionaries.
-    Fetches an item by a uri string that is a sequence 
+    extended by embedding other objects 
+    that are amenable to tree storage.
+    Fetches items by a uri string that is a sequence 
     of dict keys, connected by '.'s.
+
+    Child items (end nodes of the tree)
+    can be anything.
+    Parent items, in order to index their children,
+    must be either lists, dicts, or objects implementing
+    __getitem__(key) and __setitem__(key,value).
     """
 
     def __init__(self,data={}):
@@ -20,6 +27,7 @@ class DictTree(object):
         self.bad_chars = self.bad_chars.replace('-','')
         self.bad_chars = self.bad_chars.replace('.','')
         self.space_chars = [' ','\t','\n',os.linesep]
+        self._all_uris = []
 
     def __getitem__(self,uri):
         return self.get_from_uri(uri)
@@ -27,33 +35,40 @@ class DictTree(object):
     def __setitem__(self,uri,val):
         self.set_uri(uri,val)
 
-    def __len__(self):
-        return self.n_items()
- 
-    def n_items(self,root_uri=''):
-        """
-        Get the total number of data items in the tree.
-        Only nodes containing data (i.e. end nodes) are counted.
-        Nodes referencing containers, for example, are not counted. 
-        """
-        if root_uri:
-            itm = self.get_from_uri(root_uri)
-            prefix = root_uri + '.'
-        else:
-            itm = self._root
-            prefix = ''
-        #elif isinstance(itm,list):
-        #    return sum([self.n_items(root_uri+'.'+str(i)) for i in range(len(itm))])
-        if isinstance(itm,dict):
-            return sum([self.n_items(prefix+k) for k in itm.keys()])
-        else:
-            # terminal node: return 1
-            return 1 
+    def root_keys(self):
+        return self._root.keys()
+
+    #def __len__(self):
+    #    return self.n_items()
+    #
+    #def n_items(self,root_uri=''):
+    #    """
+    #    Get the total number of data items in the tree.
+    #    Only nodes containing data (i.e. end nodes) are counted.
+    #    Nodes referencing containers, for example, are not counted. 
+    #    """
+    #    if root_uri:
+    #        itm = self.get_from_uri(root_uri)
+    #        prefix = root_uri + '.'
+    #    else:
+    #        itm = self._root
+    #        prefix = ''
+    #    if isinstance(itm,list):
+    #        return sum([self.n_items(prefix+str(i)) for i in range(len(itm))])
+    #    elif isinstance(itm,dict):
+    #        return sum([self.n_items(prefix+k) for k in itm.keys()])
+    #    else:
+    #        # BUG: lacks a solution for simultaneously serving 
+    #        # non-dict non-list and non-parent items.
+    #        # terminal node: return 1
+    #        return 1 
 
     def delete_uri(self,uri=''):
         """
         Delete the given uri, i.e., 
         remove the corresponding key from the embedded dict.
+        This should not be relied on to be fast.
+        It has to go through all of the uris to remove children.
         """
         try:
             itm = self._root
@@ -62,7 +77,12 @@ class DictTree(object):
             path = uri.split('.')
             k = path[-1]
             if k:
-                itm.pop(k)
+                # Note- parent items must implement __getitem__
+                del itm[k]
+                #itm.pop(k)
+                for i,testuri in zip(len(self._all_uris)[::-1],self._all_uris[::-1]):
+                    if uri in testuri:
+                        self._all_uris.pop[i]
         except Exception as ex:
             msg = str('\n[{}] Encountered an error while trying to delete uri {}: \n'
             .format(__name__,uri))
@@ -76,15 +96,25 @@ class DictTree(object):
         try:
             itm = self._root
             if '.' in uri:
-                itm = self.get_from_uri(uri[:uri.rfind('.')])
+                parent_uri = uri[:uri.rfind('.')]
+                if parent_uri in self._all_uris:
+                    itm = self.get_from_uri(parent_uri)
+                else:
+                    itm = self.build_to_uri(parent_uri)
             k = uri.split('.')[-1]
+            # TODO: Is there a more graceful way to handle lists?
             if k:
-                itm[k] = val
+                if isinstance(itm,list):
+                    itm[int(k)] = val
+                    self._all_uris.append(uri)
+                else:
+                    # Note- parent items must implement __setitem__
+                    itm[k] = val
+                    self._all_uris.append(uri)
         except Exception as ex:
             msg = str('\n[{}] Encountered an error while trying to set uri {} to val {}: \n'
-            .format(__name__,uri,val))
-            ex.message = msg + ex.message
-            raise ex
+            .format(__name__,uri,val)) + ex.message
+            raise KeyError(msg)
 
     def get_from_uri(self,uri=''):
         """
@@ -103,41 +133,88 @@ class DictTree(object):
                 if isinstance(itm,list):
                     itm = itm[int(k)]
                 else:
+                    # Note- parent items must implement __getitem__
                     itm = itm[k]
             k = path[-1]
             if k == '':
+                # terminal 
                 return itm 
             elif k is not None:
                 if isinstance(itm,list):
                     return itm[int(k)]
                 else:
+                    # Note- parent items must implement __getitem__
                     return itm[k]
         except Exception as ex:
+            import pdb; pdb.set_trace()
             msg = str('[{}] Encountered an error while fetching uri {}: \n'
             .format(__name__,uri) + ex.message)
             raise KeyError(msg) 
 
-    def list_child_tags(self,parent_uri=''):
-        if parent_uri:
-            p_itm = self.get_from_uri(parent_uri)
-        else:
-            p_itm = self._root
-        if isinstance(p_itm,dict):
-            return p_itm.keys()
+    def build_to_uri(self,uri=''):
+        """ 
+        If the tree does not contain the input uri,
+        Fill the tree out with dicts
+        until an empty dict exists at the given uri. 
+        """
+        try:
+            itm = self._root 
+            if '.' in uri:
+                parent_uri = uri[:uri.rfind('.')]
+                if parent_uri in self._all_uris:
+                    itm = self.get_from_uri(parent_uri)
+                else:
+                    itm = self.build_to_uri(parent_uri)
+            k = uri.split('.')[-1]
+            if k == '':
+                return itm 
+            elif k is not None:
+                # Note- parent items must implement __setitem__
+                self._all_uris.append(uri)
+                itm[k] = OrderedDict()
+                return itm[k]
+        except Exception as ex:
+            msg = str('[{}] Encountered an error while trying to build uri {}: \n'
+            .format(__name__,uri) + ex.message)
+            raise KeyError(msg) 
+        
+    #def list_child_tags(self,parent_uri=''):
+    #    if parent_uri:
+    #        p_itm = self.get_from_uri(parent_uri)
+    #    else:
+    #        p_itm = self._root
+    #    try:
+    #        # TODO: Is there a more graceful way to handle lists?
+    #        if isinstance(p_itm,list):
+    #            return [str(i) for i in range(len(p_itm))]
+    #        elif isinstance(p_itm,dict):
+    #            return p_itm.keys()
+    #        # BUG: lacks a solution for simultaneously serving 
+    #        # non-dict non-list and non-parent items.
+    #    except Exception as ex:
+    #        msg = str('[{}] Encountered an error while trying to get child tags from parent uri {}: \n'
+    #        .format(__name__,parent_uri) + ex.message)
+    #        raise KeyError(msg) 
 
-    def list_uris(self,root_uri=''):
-        if root_uri:
-            itm = self.get_from_uri(root_uri)
-            l = [root_uri]
-            prefix = root_uri+'.'
-        else:
-            itm = self._root
-            l = []
-            prefix = ''
-        if isinstance(itm,dict):
-            for k,x in itm.items():
-                l = l + self.list_uris(prefix+k)
-        return l
+    #def list_uris(self,root_uri=''):
+    #    if root_uri:
+    #        itm = self.get_from_uri(root_uri)
+    #        l = [root_uri]
+    #        prefix = root_uri+'.'
+    #    else:
+    #        itm = self._root
+    #        l = []
+    #        prefix = ''
+    #    # TODO: Is there a more graceful way to handle lists?
+    #    if isinstance(itm,list):
+    #        for i in range(len(itm)):
+    #            l = l + self.list_uris(prefix+str(i))
+    #    elif isinstance(itm,dict):
+    #        for k in itm.keys():
+    #            l = l + self.list_uris(prefix+k)
+    #        # BUG: lacks a solution for simultaneously serving 
+    #        # non-dict non-list and non-parent items.
+    #    return l
             
     def is_uri_valid(self,uri):
         """
@@ -170,12 +247,13 @@ class DictTree(object):
         """
         Check for uniqueness of a uri. 
         """
+        return uri not in self._all_uris
         #if parent is None:
         #    parent = self.root_index()
-        if uri in self.list_uris():
-            return False 
-        else:
-            return True 
+        #if uri in self._all_uris:
+        #    return False 
+        #else:
+        #    return True 
 
     def uri_error(self,uri):
         """Provide a human-readable error message for bad uris."""
@@ -198,7 +276,7 @@ class DictTree(object):
 
     def contains_uri(self,uri):
         """Returns whether or not input uri points to an item in this tree."""
-        return uri in self.list_uris()
+        return uri in self._all_uris
         #if not uri:
         #    return False
         #path = uri.split('.')
@@ -219,7 +297,7 @@ class DictTree(object):
         """
         suffix = 0
         gooduri = False
-        urilist = self.list_uris()
+        urilist = self._all_uris
         while not gooduri:
             testuri = prefix+'_{}'.format(suffix)
             if not testuri in urilist: 
@@ -238,11 +316,11 @@ class DictTree(object):
             for k,x in itm.items():
                 x_tree = self.print_tree(rowprefix+'\t',root_uri+'.'+k)
                 tree_string = tree_string+rowprefix+'{}: {}\n'.format(k,x_tree)
-        #elif isinstance(itm,list):
-        #    tree_string = '\n'
-        #    for i,x in zip(range(len(itm)),itm):
-        #        x_tree = self.print_tree(rowprefix+'\t',root_uri+'.'+str(i))
-        #        tree_string = tree_string+rowprefix+'{}: {}\n'.format(i,x_tree)
+        elif isinstance(itm,list):
+            tree_string = '\n'
+            for i,x in zip(range(len(itm)),itm):
+                x_tree = self.print_tree(rowprefix+'\t',root_uri+'.'+str(i))
+                tree_string = tree_string+rowprefix+'{}: {}\n'.format(i,x_tree)
         else:
             return '{}'.format(itm)
         return tree_string

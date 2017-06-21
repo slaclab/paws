@@ -107,7 +107,7 @@ class PluginManager(TreeModel):
             return None
 
     def list_plugins(self):
-        return self.list_child_tags()
+        return self.root_tags()
         #r = self.get_from_idx(self.root_index())
         #return [itm.tag for itm in r.children]
 

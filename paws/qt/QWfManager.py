@@ -41,7 +41,6 @@ class QWfManager(QtCore.QObject):
         self.wfman.workflows[wfname] = wf
         self.qworkflows[wfname] = QWorkflow(wf)
         self.wf_running[wfname] = False
-        #import pdb; pdb.set_trace()
         self.wf_updated.emit(wfname)
         #wf.exec_finished.connect( partial(self.finish_wf,wfname) )
         #wf.setParent(self)
@@ -123,6 +122,7 @@ class QWfManager(QtCore.QObject):
         thd_idx = self.next_available_thread()
         self.wfman.write_log('[{}] workflow {} running {}'
         .format(thd_idx,wfname,op_list))
+        #for op_tag in op_list: 
         ops = [self.get_op(wfname,opname) for opname in op_list]
         for op in ops:
             optools.load_inputs(op,self.wfman.workflows[wfname],self.wfman.plugman)
@@ -171,19 +171,20 @@ class QWfManager(QtCore.QObject):
                     self.qworkflows[wfname].set_op_input_at_uri(uri,val)
                 self.wfman.write_log( 'BATCH EXECUTION {} / {}'.format(i+1,n_batch) )
                 for batch_lst in batch_stk:
+                    #import pdb; pdb.set_trace()
                     self.execute_serial(wfname,batch_lst)
                 saved_items_dict = OrderedDict()
                 for uri in batch_op.saved_items():
+                    # TODO # BUG: there is the chance for infinite recursion here
+                    # if the batch is asked to save an upstream item?
                     save_data = self.wfman.workflows[wfname].get_data_from_uri(uri)
                     save_dict = self.wfman.uri_to_embedded_dict(uri,save_data) 
                     saved_items_dict = self.wfman.update_embedded_dict(saved_items_dict,save_dict)
                 batch_op.output_list()[i] = saved_items_dict
-                
                 #self.qworkflows[wfname].set_item(batch_op_tag,batch_op)
                 # Rather than re-setting the entire batch_op,
                 # try just updating the outputs subtree for this iteration.
-                batch_output_uri = str(batch_op_tag+'.'+optools.outputs_tag
-                +'.'+batch_op.batch_outputs_tag()+'.'+str(i))
+                batch_output_uri = batch_op_tag+'.'+optools.outputs_tag+'.'+batch_op.batch_outputs_tag()+'.'+str(i)
                 self.qworkflows[wfname].tree_update_at_uri(batch_output_uri,saved_items_dict)
             else:
                 raise pawstools.WorkflowAborted('[{}] {} was signaled to stop.'

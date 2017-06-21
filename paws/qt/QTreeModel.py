@@ -4,7 +4,7 @@ from ..core.models.TreeModel import TreeModel
 
 class QTreeModel(QtCore.QAbstractItemModel):
     """
-    A Qt Model-View container for a TreeModel.
+    A Qt Model-View interface for a TreeModel.
     Required virtual methods: index(), parent(), rowCount(), columnCount(), and data().
     Resizeable TreeModels should implement
     insertRows(), removeRows(), insertColumns(), and removeColumns().
@@ -15,7 +15,7 @@ class QTreeModel(QtCore.QAbstractItemModel):
         super(QTreeModel,self).__init__()
         self._tree=TreeModel()
         if isinstance(trmod,TreeModel):
-            for c_tag in trmod.list_child_tags():
+            for c_tag in trmod.root_tags():
                 self.set_item(c_tag,trmod[c_tag])
             self._tree=trmod
 

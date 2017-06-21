@@ -100,6 +100,13 @@ class PawsAPI(object):
         if 'src' in kwargs:
             if kwargs['src'] in optools.input_sources:
                 src = optools.valid_sources[ optools.input_sources.index(kwargs['src']) ]
+                # Any default type setting can go here.
+                if src == optools.batch_input:
+                    tp = optools.auto_type
+                if src == optools.fs_input:
+                    tp = optools.path_type
+                if src == optools.wf_input:
+                    tp = optools.ref_type
             else:
                 #TODO: error? warning?
                 src = optools.no_input
@@ -138,7 +145,7 @@ class PawsAPI(object):
         self._wf_manager.logmethod( 'dumping workflow {} to {}'.format(self._current_wf_name,wfl_filename) )
         d = {} 
         wf_dict = OrderedDict() 
-        for opname in self.current_wf().list_child_tags():
+        for opname in self.current_wf().list_op_tags():
             op = self.current_wf().get_data_from_uri(opname)
             wf_dict[opname] = self._wf_manager.op_setup_dict(op)
         d['WORKFLOW'] = wf_dict
@@ -152,7 +159,7 @@ class PawsAPI(object):
     def list_op_tags(self,wfname=None):
         if wfname is None:
             wfname = self._current_wf_name
-        return self._wf_manager.workflows[wfname].list_child_tags()
+        return self._wf_manager.workflows[wfname].list_op_tags()
 
     #def inspect_objects(self):
     #    """

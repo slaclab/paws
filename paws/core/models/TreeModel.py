@@ -27,12 +27,12 @@ class TreeModel(object):
 
     def __setitem__(self,uri,val):
         self._tree.set_uri(uri,val)
-
-    def __len__(self):
-        return self._tree.n_items()
+    
+    #def __len__(self):
+    #    return self.n_items()
  
-    def list_child_tags(self,parent_uri=''):
-        return self._tree.list_child_tags(parent_uri)
+    #def list_child_tags(self,parent_uri=''):
+    #    return self._tree.list_child_tags(parent_uri)
 
     def n_children(self,parent_uri=''):
         itm = self.get_from_uri(parent_uri)
@@ -40,21 +40,19 @@ class TreeModel(object):
 
     def set_item(self,itm_uri,itm_data=None):
         if '.' in itm_uri:
+            #parent_uri = itm_uri[:itm_uri.rfind('.')]
             parent_uri = itm_uri[:itm_uri.rfind('.')]
-            parent_itm = self.get_from_uri(parent_uri)
-            itm_tag = itm_uri[itm_uri.rfind('.')+1:]
+            if self.contains_uri(parent_uri):
+                parent_itm = self.get_from_uri(parent_uri)
+            else:
+                parent_itm = self.build_to_uri(parent_uri)
+            itm_tag = itm_uri.split('.')[-1]
         else:
             parent_itm = self._root_item
             itm_tag = itm_uri
-
-
-        #if itm_uri == 'wf_manager':
-        #    import pdb; pdb.set_trace()
-
-
         # add TreeItems to index the new TreeModel content 
-        self.tree_update(parent_itm,itm_tag,self.build_tree(itm_data))
-
+        treedata = self.build_tree(itm_data)
+        self.tree_update(parent_itm,itm_tag,treedata)
         # store the data 
         self._tree.set_uri(itm_uri,itm_data)
 
@@ -83,10 +81,10 @@ class TreeModel(object):
             # Else, put a new TreeItem at the end row
             itm_row = parent_itm.n_children()
             itm = self.create_tree_item(parent_itm,itm_tag)
-            #self.beginInsertRows(parent_idx,itm_row,itm_row)
             parent_itm.children.insert(itm_row,itm)
-            #self.endInsertRows()
         # If needed, recurse on itm_data
+        # Assume build_tree was called on itm_data,
+        # so only need to check for dict.
         if isinstance(itm_data,dict):
             for tag,val in itm_data.items():
                 self.tree_update(itm,tag,val)
@@ -115,6 +113,32 @@ class TreeModel(object):
         else:
             return x
 
+    def build_to_uri(self,uri=''):
+        """ 
+        If the tree does not contain the input uri,
+        Fill the tree out with empty TreeItems 
+        until an empty TreeItem exists at the given uri. 
+        """
+        try:
+            itm = self._root_item 
+            if '.' in uri:
+                parent_uri = uri[:uri.rfind('.')]
+                if self.contains_uri(parent_uri):
+                    itm = self.get_from_uri(parent_uri)
+                else:
+                    itm = self.build_to_uri(parent_uri)
+            k = uri.split('.')[-1]
+            if k == '':
+                return itm 
+            elif k is not None:
+                newdict = OrderedDict()
+                self.tree_update(itm,k,newdict)
+                return self.get_from_uri(uri) 
+        except Exception as ex:
+            msg = str('[{}] Encountered an error while trying to build uri {}: \n'
+            .format(__name__,uri) + ex.message)
+            raise KeyError(msg) 
+
     def get_from_uri(self,uri):
         try:
             path = uri.split('.')
@@ -136,8 +160,11 @@ class TreeModel(object):
     def get_data_from_uri(self,uri):
         return self._tree.get_from_uri(uri)
 
-    def n_items(self):
-        return self._tree.n_items()
+    #def n_items(self):
+    #    return self._tree.n_items()
+
+    def root_tags(self):
+        return self._tree.root_keys()
 
     def tag_error(self,tag):
         return self._tree.tag_error(tag)

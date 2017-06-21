@@ -10,8 +10,6 @@ class Workflow(TreeModel):
     """
     Tree structure for a Workflow built from paws Operations.
     """
-    #Keeps a reference to its Workflow Manager,
-    #which is specified as an initialization argument.
 
     def __init__(self):
         super(Workflow,self).__init__()
@@ -31,9 +29,15 @@ class Workflow(TreeModel):
             return super(Workflow,self).build_tree(x) 
 
     def op_dict(self):
-        op_names = self.list_child_tags() 
-        op_dict = OrderedDict(zip(op_names,[self.get_data_from_uri(nm) for nm in op_names]))
+        optags = self.list_op_tags() 
+        op_dict = OrderedDict(zip(optags,[self.get_data_from_uri(nm) for nm in optags]))
         return op_dict
+
+    def list_op_tags(self):
+        return self.root_tags()
+
+    def n_ops(self):
+        return self.n_children()
 
     def set_op_input_at_uri(self,uri,val):
         """

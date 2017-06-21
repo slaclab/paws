@@ -141,7 +141,6 @@ def locate_input(il,wf=None,plugin_manager=None):
         return None
     elif il.src == batch_input:
         # Expect this input to have been set by Workflow Manager.
-        il.tp = auto_type
         return il.data 
     elif il.src == text_input: 
         if isinstance(il.val,list):
@@ -356,7 +355,7 @@ def execution_stack(wf):
     valid_wf_inputs = []
     diagnostics = {}
     continue_flag = True
-    while not stack_size(stk) == wf.n_items() and continue_flag:
+    while not stack_size(stk) == wf.n_ops() and continue_flag:
         ops_rdy = []
         ops_not_rdy = []
         for itm in wf._root_item.children:

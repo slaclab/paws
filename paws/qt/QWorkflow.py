@@ -3,6 +3,7 @@ from collections import OrderedDict
 from PySide import QtCore
 
 from .QTreeSelectionModel import QTreeSelectionModel
+from ..core.operations import optools
 
 class QWorkflow(QTreeSelectionModel):
     """
@@ -37,16 +38,30 @@ class QWorkflow(QTreeSelectionModel):
         Set workflow tree data at op_tag to new_op.
         """
         self.set_item(op_tag,new_op)
-        #import pdb; pdb.set_trace()
         self.wf_updated.emit() 
 
     def set_op_input_at_uri(self,uri,val):
-        self.set_item_at_uri(uri,val)
-        # Additionally, set the op.input_locator[name].data to val.
-        opname = uri[:uri.find('.')]
-        inputname = uri[uri.rfind('.')+1:]
+        """
+        Set an op input at uri to provided value val.
+        The uri must be a valid uri in the QTreeModel,
+        of the form opname.inputs.inpname.
+        """
+        path = uri.split('.')
+        opname = path[0]
+        if not path[1] == optools.inputs_tag:
+            msg = '[{}] uri {} does not point to an input'.format(__name__,uri)
+            raise ValueError(msg)
+        inpname = path[2]
+        uri = opname+'.'+optools.inputs_tag+'.'+inpname
         op = self._tree.get_data_from_uri(opname)
-        op.input_locator[inputname].data = val
+        op.input_locator[inpname].data = val
+        self.set_item_at_uri(uri,val)
+
+        # Additionally, set the op.input_locator[name].data to val.
+        #opname = uri[:uri.find('.')]
+        #inputname = uri[uri.rfind('.')+1:]
+        #op = self._tree.get_data_from_uri(opname)
+        #op.input_locator[inputname].data = val
         #self.wf_updated.emit() 
 
     #def update_op(self,op_tag,new_op):

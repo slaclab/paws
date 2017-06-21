@@ -17,7 +17,7 @@ class QOpManager(QTreeSelectionModel):
 
     def headerData(self,section,orientation,data_role):
         if (data_role == QtCore.Qt.DisplayRole and section == 0):
-            return "{} operations available".format(self._tree.n_items())
+            return "{} operations available".format(self.opman.n_ops())
         else:
             return super(QOpManager,self).headerData(section,orientation,data_role) 
 

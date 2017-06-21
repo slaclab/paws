@@ -52,8 +52,18 @@ class Operation(object):
         elif key == optools.outputs_tag:
             return self.outputs
         else:
-            raise KeyError('[{}] Operation.__getitem__ can only return values for keys {} and {}'
-            .format(__name__,optools.inputs_tag,optools.outputs_tag))
+            raise KeyError('[{}] Operation only recognizes keys {}'
+            .format(__name__,self.keys()))
+    def __setitem__(self,key,data):
+        if key == optools.inputs_tag:
+            self.inputs = data
+        elif key == optools.outputs_tag:
+            self.outputs = data
+        else:
+            raise KeyError('[{}] Operation only recognizes keys {}'
+            .format(__name__,self.keys()))
+    def keys(self):
+        return [optools.inputs_tag,optools.outputs_tag]
 
     def load_defaults(self):
         for name in self.inputs.keys():
