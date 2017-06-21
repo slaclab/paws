@@ -30,7 +30,7 @@ class ReadCSV_q_I_dI(Operation):
         elif ncols == 3:
             q, I, dI = np.loadtxt(path, dtype=float, delimiter=',', unpack=True, skiprows=1)
         #elif ncols == 4:
-        #    q, I, dI, dq = np.loadtxt(path, dtype=float, delimiter=',', unpack=True)
+        #    col1, col2, col3, col4 = np.loadtxt(path, dtype=float, delimiter=',', unpack=True)
         else:
             raise ValueError("Input file has the wrong number of columns.  I don't know what to do with this.")
         self.outputs['q'] = q
