@@ -2,6 +2,49 @@ from __future__ import print_function
 import numpy as np
 from scipy.optimize import minimize as scipimin
 
+def compute_saxs(q,params):
+    """
+    Given q and a dict of parameters,
+    compute the saxs spectrum.
+    Supported parameters are the same as 
+    SaxsParameterization Operation outputs:
+    I0: Intensity at q=0, by fitting a polynomial to the low-q region with dI/dq(q=0)=0. 
+    r0_pre: precursor term radius (Angstrom). 
+    I0_pre: precursor intensity scaling factor. 
+    r0_sphere: mean radius (Angstrom) of sphere population. 
+    sigma_sphere: standard deviation (Angstroms) of sphere population radii. 
+    I0_sphere: spherical population intensity scaling factor. 
+    q_pk0: q value (1/Angstrom) for location of fundamental (lowest-q) diffraction peak. 
+    sigma_pk: width parameter for Pseudo-Voigt diffraction peak profile. 
+    I0_pk: diffraction intensity scaling factor.
+
+    TODO: Document the equation.
+    """
+    if params.keys() == ['I_at_0']:
+        return params['I_at_0']*np.ones(len(q))
+    else:
+        if 'r0_sphere' in params and 'sigma_sphere' in params:
+            I_sphere = compute_spherical_normal_saxs(q,params['r0_sphere'],params['sigma_sphere'])
+            I0_sphere = params['I0_sphere']
+        else:
+            I_sphere = np.zeros(len(q))
+            I0_sphere = 0
+        if 'r0_pre' in params:
+            I_pre = compute_spherical_normal_saxs(q,params['r0_pre'],0)
+            I0_pre = params['I0_pre']
+        else:
+            I_pre = np.zeros(len(q))
+            I0_pre = 0
+        #if 'q_pk0' in params and 'sigma_pk' in params and 'I0_pk' in params:
+        #    I_pk = compute_fcc_peaks()
+        #    I0_pk = params['I0_pk']
+        #else:
+        #    I_pk = np.zeros(len(q))
+        #    I0_pk = 0
+        I_pk = np.zeros(len(q))
+        I0_pk = 0
+        return params['I_at_0']*(I0_pre*I_pre + I0_sphere*I_sphere + I0_pk*I_pk)
+
 def compute_spherical_normal_saxs(q,r0,sigma_r):
     """
     Given q, a mean radius r0, and a standard deviation of radius sigma_r,
@@ -13,7 +56,6 @@ def compute_spherical_normal_saxs(q,r0,sigma_r):
     q_zero = (q == 0)
     q_nz = np.invert(q_zero) 
     I = np.zeros(q.shape)
-    I_zero = 0
     if sigma_r == 0:
         x = q*r0
         V_r0 = float(4)/3*np.pi*r0**3
@@ -23,6 +65,7 @@ def compute_spherical_normal_saxs(q,r0,sigma_r):
         dr = sigma_r*0.02
         rmin = np.max([r0-5*sigma_r,dr])
         rmax = r0+5*sigma_r
+        I_zero = 0
         for ri in np.arange(rmin,rmax,dr):
             xi = q*ri
             V_ri = float(4)/3*np.pi*ri**3
@@ -35,28 +78,43 @@ def compute_spherical_normal_saxs(q,r0,sigma_r):
     I = I/I_zero 
     return I
 
-def saxs_spherical_normal_heuristics(q,I,dI=None):
+def saxs_Iq4_metrics(q,I):
     """
     This algorithm was developed and 
     originally contributed by Amanda Fournier.    
 
-    Assuming the input spectrum resembles the SAXS spectrum
-    of a dilute solution of spherical nanoparticles
-    with a normal (Gaussian) size distribution,
-    this operation uses characteristics of the spectrum
-    to infer the mean and standard deviation of particle radius. 
+    From an input spectrum q and I(q),
+    compute several properties of the I(q)*q^4 curve.
+    This was designed for spectra that are 
+    dominated by a dilute form factor term.
+    The metrics extracted by this Operation
+    were originally intended as an intermediate step
+    for estimating size distribution parameters 
+    for a population of dilute spherical scatterers.
+
+    Returns a dict of metrics.
+    Dict keys and meanings:
+    q_at_Iqqqq_min1: q value at first minimum of I*q^4
+    I_at_Iqqqq_min1: I value at first minimum of I*q^4
+    Iqqqq_min1: I*q^4 value at first minimum of I*q^4
+    pIqqqq_qwidth: Focal q-width of polynomial fit to I*q^4 near first minimum of I*q^4 
+    pIqqqq_Iqqqqfocus: Focal point of polynomial fit to I*q^4 near first minimum of I*q^4
+    pI_qvertex: q value of vertex of polynomial fit to I(q) near first minimum of I*q^4  
+    pI_Ivertex: I(q) at vertex of polynomial fit to I(q) near first minimum of I*q^4
+    pI_qwidth: Focal q-width of polynomial fit to I(q) near first minimum of I*q^4
+    pI_Iforcus: Focal point of polynomial fit to I(q) near first minimum of I*q^4
 
     TODO: document the algorithm here.
     """
     d = {}
-    if not dI:
-        # uniform weights
-        wt = np.ones(q.shape)   
-    else:
-        # inverse error weights, 1/dI, 
-        # appropriate if dI represents
-        # Gaussian uncertainty with sigma=dI
-        wt = 1./dI
+    #if not dI:
+    #    # uniform weights
+    #    wt = np.ones(q.shape)   
+    #else:
+    #    # inverse error weights, 1/dI, 
+    #    # appropriate if dI represents
+    #    # Gaussian uncertainty with sigma=dI
+    #    wt = 1./dI
     #######
     # Heuristics step 1: Find the first local max
     # and subsequent local minimum of I*q**4 
@@ -90,8 +148,7 @@ def saxs_spherical_normal_heuristics(q,I,dI=None):
     Iqqqq_min1_mean = np.mean(Iqqqq[idx_around_min1])
     Iqqqq_min1_std = np.std(Iqqqq[idx_around_min1])
     Iqqqq_min1_s = (Iqqqq[idx_around_min1]-Iqqqq_min1_mean)/Iqqqq_min1_std
-    p_min1 = np.polyfit(q_min1_s,Iqqqq_min1_s,2,None,False,
-        wt[idx_around_min1]/(q[idx_around_min1]**4),False)
+    p_min1 = np.polyfit(q_min1_s,Iqqqq_min1_s,2,None,False,np.ones(len(q_min1_s)),False)
     # polynomial vertex horizontal coord is -b/2a
     qs_at_min1 = -1*p_min1[1]/(2*p_min1[0])
     d['q_at_Iqqqq_min1'] = qs_at_min1*q_min1_std+q_min1_mean
@@ -110,8 +167,7 @@ def saxs_spherical_normal_heuristics(q,I,dI=None):
     I_min1_mean = np.mean(I[idx_around_min1])
     I_min1_std = np.std(I[idx_around_min1])
     I_min1_s = (I[idx_around_min1]-I_min1_mean)/I_min1_std
-    pI_min1 = np.polyfit(q_min1_s,I_min1_s,
-        2,None,False,wt[idx_around_min1],False)
+    pI_min1 = np.polyfit(q_min1_s,I_min1_s,2,None,False,np.ones(len(q_min1_s)),False)
     # polynomial vertex horizontal coord is -b/2a
     qs_vertex = -1*pI_min1[1]/(2*pI_min1[0])
     d['pI_qvertex'] = qs_vertex*q_min1_std+q_min1_mean
@@ -125,24 +181,9 @@ def saxs_spherical_normal_heuristics(q,I,dI=None):
     pI_fpoint = Is_vertex+float(1)/(4*pI_min1[0])
     d['pI_Ifocus'] = pI_fpoint*I_min1_std+I_min1_mean
     #######
-    # Heuristics 3: Estimate I(q=0) by polynomial fitting,
-    # in the region below the first max of I*q^4.
-    idx_lowq = range(idxmax1)
-    I_lowq_mean = np.mean(I[idx_lowq])
-    I_lowq_std = np.std(I[idx_lowq])
-    lowq_mean = np.mean(q[idx_lowq])
-    lowq_std = np.std(q[idx_lowq])
-    I_lowq_s = (I[idx_lowq]-I_lowq_mean)/I_lowq_std
-    lowq_s = (q[idx_lowq]-lowq_mean)/lowq_std
-    #p_lowq = np.polyfit(lowq_s,I_lowq_s,2,None,False,wt[idx_lowq],False) 
-    p_lowq = fit_lowq_spectrum(lowq_s,I_lowq_s,-1*lowq_mean/lowq_std,4,wt[idx_lowq]) 
-    d['I_at_0'] = np.polyval(p_lowq,-1*lowq_mean/lowq_std)*I_lowq_std+I_lowq_mean
     return d
-    #except Exception as ex:
-    #    d['message'] = ex.message
-    #    return d
 
-def saxs_spherical_normal_fit(q,I,I_at_0,method,x_init,dI=None):
+def saxs_spherical_normal_fit(q,I,I_at_0,method,x_init):
     """
     Fit a saxs spectrum (I(q) vs q) to the theoretical spectrum 
     for dilute spherical nanoparticles with normal size distribution.
@@ -159,14 +200,6 @@ def saxs_spherical_normal_fit(q,I,I_at_0,method,x_init,dI=None):
     #try:
     d = {}
     d['message'] = ''
-    if not dI:
-        # uniform weights
-        wt = np.ones(q.shape)   
-    else:
-        # inverse error weights, 1/dI, 
-        # appropriate if dI represents
-        # Gaussian uncertainty with sigma=dI
-        wt = 1./dI
     if method == 'full_spectrum_chi2':
         fit_obj = lambda x: np.sum( (compute_spherical_normal_saxs(q,x[0],x[1]) - I/I_at_0)**2 )
     elif method == 'low_q_chi2':
@@ -217,13 +250,32 @@ def compute_pearson(y1,y2):
     y2std = np.std(y2)
     return np.sum((y1-y1mean)*(y2-y2mean))/(np.sqrt(np.sum((y1-y1mean)**2))*np.sqrt(np.sum((y2-y2mean)**2)))
 
-def fit_lowq_spectrum(qs,Is,qs_0,order,weights=None):
+def fit_I0(q,I,qmax_fit):
     """
-    Perform a polynomial fitting of the low-q region of the scattering spectrum.
-    Constraints are imposed to guarantee sane behavior at q=0.
-    Specifically, dI/dq(q=0) is constrained to be zero.
-    This is performed by forming a Lagrangian in polynomial coefficient space,
-    from a quadratic cost function and the constraint function(s).
+    Find an estimate for I(q=0) by polynomial fitting.
+    Inputs q and I are the spectrum,
+    qmax_fit is the upper boundary of the fitting region.
+    """
+    idx_lowq = (q<qmax_fit)
+    I_lowq_mean = np.mean(I[idx_lowq])
+    I_lowq_std = np.std(I[idx_lowq])
+    lowq_mean = np.mean(q[idx_lowq])
+    lowq_std = np.std(q[idx_lowq])
+    I_lowq_s = (I[idx_lowq]-I_lowq_mean)/I_lowq_std
+    lowq_s = (q[idx_lowq]-lowq_mean)/lowq_std
+    p_lowq = lowq_spectrum_polyfit(lowq_s,I_lowq_s,-1*lowq_mean/lowq_std,4) 
+    I_at_0 = np.polyval(p_lowq,-1*lowq_mean/lowq_std)*I_lowq_std+I_lowq_mean
+    return I_at_0
+
+def lowq_spectrum_polyfit(qs,Is,qs_0,order,weights=None):
+    """
+    Perform a polynomial fitting 
+    of the low-q region of the spectrum
+    with dI/dq(q=0) constrained to be zero.
+    This is performed by forming a Lagrangian 
+    from a quadratic cost function 
+    and the Lagrange-multiplied constraint function.
+    
     TODO: Explicitly document cost function, constraints, Lagrangian.
 
     Inputs qs and Is are not standardized in this function,
@@ -243,7 +295,7 @@ def fit_lowq_spectrum(qs,Is,qs_0,order,weights=None):
         Ap[order,j] = j*qs_0**(j-1)
         b[j] = np.sum(Is*qs**j)
     p_fit = np.linalg.solve(Ap,b) 
-    p_fit = p_fit[:-1]  # throw away constraint term
+    p_fit = p_fit[:-1]  # throw away Lagrange multiplier term 
     p_fit = p_fit[::-1] # reverse coefs to get np.polyfit format
     #from matplotlib import pyplot as plt
     #plt.figure(3)
