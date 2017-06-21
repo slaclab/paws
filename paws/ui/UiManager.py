@@ -311,7 +311,7 @@ class UiManager(QtCore.QObject):
         self.msg_board_log( 'dumping current set of plugins to {}'.format(fname) )
         d = {} 
         pgin_dict = OrderedDict() 
-        for pgin_name in self.qplugman.plugman.list_child_tags():
+        for pgin_name in self.qplugman.plugman.list_plugins():
             pgin = self.qplugman.plugman.get_data_from_uri(pgin_name)
             if not isinstance(pgin,WfManagerPlugin):
                 pgin_dict[pgin_name] = self.qplugman.plugman.plugin_setup_dict(pgin)

@@ -33,13 +33,14 @@ def display_text(itm,indent=unit_indent):
     
 def display_text_fast(itm,indent=unit_indent):
     # TODO: Make ndarrays display truncated but without importing numpy?
+    row_limit = 10
     if type(itm).__name__ in ['str','unicode']:
         t = '(str) <br>' + indent + '{}'.format(itm)
     elif isinstance(itm,dict):
         t = '(dict)'
-        if len(itm) > 4:
+        if len(itm) > row_limit:
             suffix = '<br>'+indent+'ETC ...'
-            ndisp = 4
+            ndisp = row_limit 
         else:
             suffix = ''
             ndisp = len(itm)
@@ -48,9 +49,9 @@ def display_text_fast(itm,indent=unit_indent):
         t += suffix 
     elif isinstance(itm,list):
         t = '(list)'
-        if len(itm) > 4:
+        if len(itm) > row_limit:
             suffix = '<br>'+indent+'ETC ...'
-            ndisp = 4
+            ndisp = row_limit 
         else:
             suffix = ''
             ndisp = len(itm)

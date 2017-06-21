@@ -106,7 +106,7 @@ class PipelineWidget(QtGui.QWidget):
             op_idx = ui.op_list.currentIndex()
         op_name = self.ops.keys()[op_idx.row()]
         op_tag = op_name
-        if op_tag in self.paw.get_wf(self._wfname).list_child_tags():
+        if op_tag in self.paw.get_wf(self._wfname).list_op_tags():
             op_tag = self.paw.get_wf(self._wfname).make_unique_uri(op_name)
         op_uri = self.ops[op_name]
         # Add the op to the workflow
