@@ -113,8 +113,8 @@ class SpectrumParameterization(Operation):
             I_error = lambda x: np.sum( (I_at_0*(x*I_pre+(1.-x)*I_sphere)-I)**2 )
             x_res = minimize(I_error,[0.1],bounds=[(0.0,1.0)]) 
             x_fit = x_res.x[0]
-            I0_pre = x_fit/I_at_0
-            I0_sphere = (1.-x_fit)/I_at_0
+            I0_pre = x_fit
+            I0_sphere = (1.-x_fit)
             p['I0_pre'] = I0_pre 
             p['I0_sphere'] = I0_sphere 
         elif pre_flag:
@@ -128,11 +128,11 @@ class SpectrumParameterization(Operation):
         #    p['sigma_pk'] = 0
         #    p['I0_pk'] = 0
         I_guess = saxstools.compute_saxs(q,p)
-        I_guess_at_0 = saxstools.compute_saxs(np.array([0]),p)
+        I_guess_at_0 = saxstools.compute_saxs(np.array([float(0)]),p)
         q_I_guess = np.array([q,I_guess/I_guess_at_0[0]]).T
         q_I_norm = np.array([q,I/I_at_0]).T
         #### Get logarithmic coef of determination to assess fit quality:
-        I_norm_nz = np.invert( (q_I_norm[:,1]==0) )
+        I_norm_nz = np.invert( (q_I_norm[:,1]<=0) )
         #import pdb; pdb.set_trace()
         logI_norm = np.log(q_I_norm[I_norm_nz,1])
         logI_guess = np.log(q_I_guess[I_norm_nz,1])

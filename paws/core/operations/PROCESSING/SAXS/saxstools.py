@@ -13,22 +13,28 @@ def compute_saxs(q,params):
 
     TODO: Document the equation.
     """
-    I = np.zeros(len(q))
-    if params['precursor_flag']:
-        I0_pre = params['I0_pre']
-        r0_pre = params['r0_pre']
-        I_pre = compute_spherical_normal_saxs(q,r0_pre,0)
-        I += I0_pre * I_pre
-    if params['form_flag']:
-        I0_sph = params['I0_sphere']
-        r0_sph = params['r0_sphere']
-        sigma_sph = params['sigma_sphere']
-        I_sph = compute_spherical_normal_saxs(q,r0_sph,sigma_sph)
-        I += I0_sph * I_sph
-    #if params['structure_flag']:
-    #    I0_pk = params['I0_pk']
-    #    I_pk = compute_peaks()
-    return params['I_at_0'] * I
+    pre_flag = params['precursor_flag']
+    f_flag = params['form_flag']
+    s_flag = params['structure_flag']
+    if not any([pre_flag,f_flag,s_flag]):
+        I = np.ones(len(q))*params['I_at_0']
+    else:
+        I = np.zeros(len(q))
+        if params['precursor_flag']:
+            I0_pre = params['I0_pre']
+            r0_pre = params['r0_pre']
+            I_pre = compute_spherical_normal_saxs(q,r0_pre,0)
+            I = I + params['I_at_0']*I0_pre*I_pre
+        if params['form_flag']:
+            I0_sph = params['I0_sphere']
+            r0_sph = params['r0_sphere']
+            sigma_sph = params['sigma_sphere']
+            I_sph = compute_spherical_normal_saxs(q,r0_sph,sigma_sph)
+            I = I + params['I_at_0']*I0_sph*I_sph
+        #if params['structure_flag']:
+        #    I0_pk = params['I0_pk']
+        #    I_pk = compute_peaks()
+    return I
 
 def compute_spherical_normal_saxs(q,r0,sigma_r):
     """

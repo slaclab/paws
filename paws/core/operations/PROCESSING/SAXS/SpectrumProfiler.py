@@ -80,7 +80,7 @@ class SpectrumProfiler(Operation):
         cos2q_corr = saxstools.compute_pearson(I,np.cos(q*np.pi/(2*q[-1]))**2)
         invq_corr = saxstools.compute_pearson(I,q**-1)
         # correlations on log intensity
-        idx_nz = np.invert(I == 0)
+        idx_nz = np.invert(I <= 0)# | np.isnan(I))
         q_logcorr = saxstools.compute_pearson( np.log(I[idx_nz]) , np.linspace(0,1,n_q)[idx_nz] )
         qsquared_logcorr = saxstools.compute_pearson( np.log(I[idx_nz]) , (np.linspace(0,1,n_q)[idx_nz])**2 )
         cosq_logcorr = saxstools.compute_pearson( np.log(I[idx_nz]) , np.cos(q*np.pi/(2*q[-1]))[idx_nz] )
@@ -109,11 +109,11 @@ class SpectrumProfiler(Operation):
             bin_strengths[i] = np.sum(Ii * dqi) / (qmaxi-qmini)
         Imax_over_Ilowq = float(Imax)/bin_strengths[0]
         # Flagging form factor: These tend to correlate with 1/q
-        form_flag = invq_logcorr > 0.7 or invq_corr > 0.3 
+        form_flag = invq_logcorr > 0.7 #or invq_corr > 0.3 
         # Flagging precursors: Only flag if there is also a form term.
         # (Assume fitting precursors alone is boring).
-        precursor_flag = form_flag and ( any([cosq_corr > 0.6, cos2q_corr > 0.6])
-                        or all([cosq_logcorr>0.4,cos2q_logcorr>0.4,cosq_corr>0.5,cos2q_corr>0.5]) )
+        precursor_flag = all([cosq_corr > 0.5, cos2q_corr > 0.5, cosq_logcorr > 0.5, cos2q_logcorr > 0.5]) 
+        #cosq_logcorr>0.4,cos2q_logcorr>0.4,cosq_corr>0.5,cos2q_corr>0.5]) 
         # Flagging structure: look for large values away from q=0.
         # TODO: more detailed structure factor evaluation. 
         structure_flag = Imax_over_Ilowq > 1.2 and Imax_over_Imean > 4 and q_Imax > 0.05

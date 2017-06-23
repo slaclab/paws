@@ -58,9 +58,21 @@ class BgSubtractByTemperature(Operation):
         #    msg = 'SPECTRUM AND BACKGROUND ON DIFFERENT q DOMAINS'
         #    raise ValueError(msg)
         bad_data = (q_I_meas[:,1] <= 0) | (I_bg <= 0) | np.isnan(q_I_meas[:,1]) | np.isnan(I_bg)
-        bg_factor = np.min(q_I_meas[:,1][~bad_data] / I_bg[~bad_data])
+        I_floor = 0 
+        #I_floor = 1E-6 * np.max(q_I_meas[:,1])
+        bg_factor = np.min((q_I_meas[:,1][~bad_data]-I_floor) / I_bg[~bad_data])
         #print 'bg factor is {}'.format(bg_factor)
         q_I_bgsub[:,1] = q_I_meas[:,1] - bg_factor * I_bg
+
+        #from matplotlib import pyplot as plt
+        #plt.figure(1)
+        #plt.semilogy(q_I_meas[:,0],q_I_meas[:,1])
+        #plt.semilogy(q_I_meas[:,0],I_bg,'r')
+        #plt.semilogy(q_I_bgsub[:,0],q_I_bgsub[:,1],'g')
+        #plt.legend(['sample','bg','(sample - bg)'],loc=4)
+        #print bg_factor
+        #plt.show()
+
         self.outputs['q_I_bgsub'] = q_I_bgsub
         self.outputs['T_bg'] = T_bg 
         self.outputs['bg_factor'] = bg_factor
