@@ -32,12 +32,22 @@ class EasyZingers1D(Operation):
         stop_idx = len(q)-w-1
         test_range = iter(range(w,stop_idx))
         idx = test_range.next()
-        Is = (I - np.mean(I))/np.std(I) 
+        #Is = (I - np.mean(I))/np.std(I) 
         while idx < stop_idx-1:
-            # TODO: this is f'd up?
-            I_ratio = float(Is[idx])/np.mean( list(Is[idx-w:idx])+list(Is[idx+1:idx+w+1]) )
-            print '{}: {}'.format(q[idx],I_ratio)
-            if float(Is[idx])/np.mean( np.vstack([Is[idx-w:idx],Is[idx+1:idx+w+1]]) ) > I_ratio_limit:
+            Ii_l = I[idx-w:idx+1]
+            Ii_r = I[idx:idx+w+1]
+            #Ii = np.vstack( Iileft,Iiright )
+            #Iimin = np.min(Ii)
+            #Ii = Ii - Iimin 
+            #I_ratio = float(I[idx]-Iimin)/np.mean( Ii )
+            Iimin_l = np.min(Ii_l)
+            Iimin_r = np.min(Ii_r)
+            Ii_l = Ii_l - Iimin_l
+            Ii_r = Ii_r - Iimin_r
+            I_ratio_l = Ii_l[-1]/np.mean(Ii_l[:-1]) 
+            I_ratio_r = Ii_r[0]/np.mean(Ii_r[1:]) 
+            print '{}: {}, {}'.format(q[idx],I_ratio_l,I_ratio_r)
+            if I_ratio_l > I_ratio_limit or I_ratio_r > I_ratio_limit:
                 idx_z.append(idx)
                 I_z.append(I[idx])
             idx = test_range.next() 
