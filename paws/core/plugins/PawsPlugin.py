@@ -34,7 +34,7 @@ class PawsPlugin(object):
         if key in d.keys():
             d[key] = data
         else:
-            raise KeyError('[{}] {}.__getitem__ only recognizes keys {}'
+            raise KeyError('[{}] {}.__setitem__ only recognizes keys {}'
             .format(__name__,type(self).__name__,d.keys()))
     def keys(self):
         return self.content().keys() 

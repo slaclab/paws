@@ -7,43 +7,28 @@ def compute_saxs(q,params):
     Given q and a dict of parameters,
     compute the saxs spectrum.
     Supported parameters are the same as 
-    SaxsParameterization Operation outputs:
-    I0: Intensity at q=0, by fitting a polynomial to the low-q region with dI/dq(q=0)=0. 
-    r0_pre: precursor term radius (Angstrom). 
-    I0_pre: precursor intensity scaling factor. 
-    r0_sphere: mean radius (Angstrom) of sphere population. 
-    sigma_sphere: standard deviation (Angstroms) of sphere population radii. 
-    I0_sphere: spherical population intensity scaling factor. 
-    q_pk0: q value (1/Angstrom) for location of fundamental (lowest-q) diffraction peak. 
-    sigma_pk: width parameter for Pseudo-Voigt diffraction peak profile. 
-    I0_pk: diffraction intensity scaling factor.
+    SaxsParameterization Operation outputs,
+    and should include at least the following keys:
+    I_at_0, precursor_flag, form_flag, structure_flag.
 
     TODO: Document the equation.
     """
-    if params.keys() == ['I_at_0']:
-        return params['I_at_0']*np.ones(len(q))
-    else:
-        if 'r0_sphere' in params and 'sigma_sphere' in params:
-            I_sphere = compute_spherical_normal_saxs(q,params['r0_sphere'],params['sigma_sphere'])
-            I0_sphere = params['I0_sphere']
-        else:
-            I_sphere = np.zeros(len(q))
-            I0_sphere = 0
-        if 'r0_pre' in params:
-            I_pre = compute_spherical_normal_saxs(q,params['r0_pre'],0)
-            I0_pre = params['I0_pre']
-        else:
-            I_pre = np.zeros(len(q))
-            I0_pre = 0
-        #if 'q_pk0' in params and 'sigma_pk' in params and 'I0_pk' in params:
-        #    I_pk = compute_fcc_peaks()
-        #    I0_pk = params['I0_pk']
-        #else:
-        #    I_pk = np.zeros(len(q))
-        #    I0_pk = 0
-        I_pk = np.zeros(len(q))
-        I0_pk = 0
-        return params['I_at_0']*(I0_pre*I_pre + I0_sphere*I_sphere + I0_pk*I_pk)
+    I = np.zeros(len(q))
+    if params['precursor_flag']:
+        I0_pre = params['I0_pre']
+        r0_pre = params['r0_pre']
+        I_pre = compute_spherical_normal_saxs(q,r0_pre,0)
+        I += I0_pre * I_pre
+    if params['form_flag']:
+        I0_sph = params['I0_sphere']
+        r0_sph = params['r0_sphere']
+        sigma_sph = params['sigma_sphere']
+        I_sph = compute_spherical_normal_saxs(q,r0_sph,sigma_sph)
+        I += I0_sph * I_sph
+    #if params['structure_flag']:
+    #    I0_pk = params['I0_pk']
+    #    I_pk = compute_peaks()
+    return params['I_at_0'] * I
 
 def compute_spherical_normal_saxs(q,r0,sigma_r):
     """
@@ -78,11 +63,63 @@ def compute_spherical_normal_saxs(q,r0,sigma_r):
     I = I/I_zero 
     return I
 
-def saxs_Iq4_metrics(q,I):
+def spherical_normal_heuristics(q,I,I_at_0=None):
     """
     This algorithm was developed and 
     originally contributed by Amanda Fournier.    
 
+    Performs some heuristic measurements on the input spectrum,
+    in order to make educated guesses 
+    for the parameters of a size distribution
+    (mean and standard deviation of radius)
+    for a population of spherical scatterers.
+
+    TODO: Document algorithm here.
+    """
+    if I_at_0 is None:
+        I_at_0 = fit_I0(q,I)
+    m = saxs_Iq4_metrics(q,I)
+    width_metric = m['pI_qwidth']/m['q_at_Iqqqq_min1']
+    intensity_metric = m['I_at_Iqqqq_min1']/I_at_0
+    #######
+    #
+    # POLYNOMIALS FITTED FOR q0+/-10%,
+    # where q0 is the argmin of a parabola
+    # that is fit around the first minimum of I*q**4.
+    # The function spherical_normal_heuristics_setup()
+    # (in this same module) can be used to generate these polynomials.
+    # polynomial for qr0 focus (with x=sigma_r/r0):
+    # -8.05459639763x^2 + -0.470989868709x + 4.50108683096
+    p_qr0_focus = [-8.05459639763,-0.470989868709,4.50108683096]
+    # polynomial for width metric (with x=sigma_r/r0):
+    # 3.12889797288x^2 + -0.0645231661487x + 0.0576604958693
+    p_w = [3.12889797288,-0.0645231661487,0.0576604958693]
+    # polynomial for intensity metric (with x=sigma_r/r0):
+    # -1.33327411025x^3 + 0.432533640102x^2 + 0.00263776123775x + -1.27646761062e-05
+    p_I = [-1.33327411025,0.432533640102,0.00263776123775,-1.27646761062e-05]
+    #
+    #######
+    # Now find the sigma_r/r0 value that gets the extracted metrics
+    # as close as possible to p_I and p_w.
+    width_error = lambda x: (np.polyval(p_w,x)-width_metric)**2
+    intensity_error = lambda x: (np.polyval(p_I,x)-intensity_metric)**2
+    # TODO: make the objective function weight all errors equally
+    heuristics_error = lambda x: width_error(x) + intensity_error(x)
+    res = scipimin(heuristics_error,[0.1],bounds=[(0,0.3)]) 
+    if not res.success:
+        self.outputs['return_code'] = 2 
+        msg = str('[{}] function minimization failed during '
+        + 'form factor parameter extraction.'.format(__name__))
+        self.outputs['features']['message'] = msg
+    sigma_over_r = res.x[0]
+    qr0_focus = np.polyval(p_qr0_focus,sigma_over_r)
+    # qr0_focus = x1  ==>  r0 = x1 / q1
+    r0 = qr0_focus/m['q_at_Iqqqq_min1']
+    sigma_r = sigma_over_r * r0 
+    return r0,sigma_r
+
+def saxs_Iq4_metrics(q,I):
+    """
     From an input spectrum q and I(q),
     compute several properties of the I(q)*q^4 curve.
     This was designed for spectra that are 
@@ -124,9 +161,9 @@ def saxs_Iq4_metrics(q,I):
     # A greater value of w filters out smaller extrema.
     w = 10
     idxmax1, idxmin1 = 0,0
-    test_range = iter(range(w,len(q)-w-1))
-    idx = test_range.next() 
     stop_idx = len(q)-w-1
+    test_range = iter(range(w,stop_idx))
+    idx = test_range.next() 
     while any([idxmax1==0,idxmin1==0]) and idx < stop_idx-1:
         if np.argmax(Iqqqq[idx-w:idx+w+1]) == w and idxmax1 == 0:
             idxmax1 = idx
@@ -250,12 +287,13 @@ def compute_pearson(y1,y2):
     y2std = np.std(y2)
     return np.sum((y1-y1mean)*(y2-y2mean))/(np.sqrt(np.sum((y1-y1mean)**2))*np.sqrt(np.sum((y2-y2mean)**2)))
 
-def fit_I0(q,I,qmax_fit):
+def fit_I0(q,I):
     """
     Find an estimate for I(q=0) by polynomial fitting.
-    Inputs q and I are the spectrum,
-    qmax_fit is the upper boundary of the fitting region.
+    Inputs q and I are the spectrum.
+    Fitting is performed on the lowest 10% of the q-domain.
     """
+    qmax_fit = q[0]+float(q[-1]-q[0])*0.1
     idx_lowq = (q<qmax_fit)
     I_lowq_mean = np.mean(I[idx_lowq])
     I_lowq_std = np.std(I[idx_lowq])
@@ -306,6 +344,47 @@ def lowq_spectrum_polyfit(qs,Is,qs_0,order,weights=None):
     #plt.show()
     return p_fit
  
+def spherical_normal_heuristics_setup():
+    sigma_over_r = []
+    width_metric = []
+    intensity_metric = []
+    qr0_focus = []
+    # TODO: generate heuristics on a 1-d grid of sigma/r
+    # instead of the 2-d grid being used here now.
+    r0_vals = np.arange(10,41,10,dtype=float)              #Angstrom
+    for ir,r0 in zip(range(len(r0_vals)),r0_vals):
+        q = np.arange(0.001/r0,float(10)/r0,0.001/r0)       #1/Angstrom
+        sigma_r_vals = np.arange(0*r0,0.21*r0,0.01*r0)      #Angstrom
+        for isig,sigma_r in zip(range(len(sigma_r_vals)),sigma_r_vals):
+            I = compute_spherical_normal_saxs(q,r0,sigma_r) 
+            I_at_0 = compute_spherical_normal_saxs(0,r0,sigma_r) 
+            d = saxs_spherical_normal_heuristics(q,I)
+            sigma_over_r.append(float(sigma_r)/r0)
+            qr0_focus.append(d['q_at_Iqqqq_min1']*r0)
+            width_metric.append(d['pI_qwidth']/d['q_at_Iqqqq_min1'])
+            intensity_metric.append(d['I_at_Iqqqq_min1']/I_at_0)
+    # TODO: standardize before fitting, then revert after
+    p_qr0_focus = np.polyfit(sigma_over_r,qr0_focus,2,None,False,None,False)
+    p_w = np.polyfit(sigma_over_r,width_metric,2,None,False,None,False)
+    p_I = np.polyfit(sigma_over_r,intensity_metric,3,None,False,None,False)
+    print('polynomial for qr0 focus (with x=sigma_r/r0): {}x^2 + {}x + {}'.format(p_qr0_focus[0],p_qr0_focus[1],p_qr0_focus[2]))
+    print('polynomial for width metric (with x=sigma_r/r0): {}x^2 + {}x + {}'.format(p_w[0],p_w[1],p_w[2]))
+    print('polynomial for intensity metric (with x=sigma_r/r0): {}x^3 + {}x^2 + {}x + {}'.format(p_I[0],p_I[1],p_I[2],p_I[3]))
+    plot = True
+    if plot: 
+        from matplotlib import pyplot as plt
+        plt.figure(1)
+        plt.scatter(sigma_over_r,width_metric)
+        plt.plot(sigma_over_r,np.polyval(p_w,sigma_over_r))
+        plt.figure(2)
+        plt.scatter(sigma_over_r,intensity_metric)
+        plt.plot(sigma_over_r,np.polyval(p_I,sigma_over_r))
+        plt.figure(3)
+        plt.scatter(sigma_over_r,qr0_focus)
+        plt.plot(sigma_over_r,np.polyval(p_qr0_focus,sigma_over_r))
+        plt.figure(4)
+        plt.scatter(width_metric,intensity_metric) 
+        plt.show()
 
 def local_maxima_detector(y):
     """ 

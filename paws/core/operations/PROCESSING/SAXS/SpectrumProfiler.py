@@ -1,6 +1,4 @@
 import numpy as np
-from scipy import interp
-from scipy.optimize import minimize
 
 from ...Operation import Operation
 from ... import optools
@@ -30,7 +28,7 @@ class SpectrumProfiler(Operation):
 
     def __init__(self):
         input_names = ['q', 'I', 'dI']
-        output_names = ['return_code','precursor_flag','form_flag','structure_flag','metrics']
+        output_names = ['return_code','features']
         super(SpectrumProfiler, self).__init__(input_names, output_names)
         self.input_doc['q'] = '1d array of wave vector values in 1/Angstrom units'
         self.input_doc['I'] = '1d array of intensity values I(q)'
@@ -39,12 +37,14 @@ class SpectrumProfiler(Operation):
         + 'whether or not the profiling finished. '
         + 'Possible values: 0=success, 1=error (raised an Exception), '
         + '2=warning (input data has unexpected characteristics).')
-        self.output_doc['precursor_flag'] = 'Boolean indicating presence of precursor terms. '
-        self.output_doc['form_flag'] = 'Boolean indicating presence of form factor terms. '
-        self.output_doc['structure_flag'] = 'Boolean indicating presence of structure factor terms. '
-        self.output_doc['metrics'] = str('dict profiling the input spectrum '
-        + 'with various numerical measures of the overall spectral profile. '
+        self.output_doc['features'] = str('dict profiling the input spectrum. '
         + 'Dict keys and descriptions: \n'
+        + 'WARNING_MESSAGE: warning message, only added if return_code==2. \n'
+        + 'precursor_flag: Boolean indicating presence of precursor terms. \n'
+        + 'form_flag: Boolean indicating presence of form factor terms. \n'
+        + 'structure_flag: Boolean indicating presence of structure factor terms. \n'
+        + 'structure_id: Structure identity, e.g. fcc, hcp, bcc, etc. \n'
+        + 'form_id: Form factor identity, e.g. sphere, cube, rod, etc. \n'
         + 'bin_strengths: Integrated intensity in 10 evenly spaced q-bins. \n'
         + 'Imax_over_Imean: maximum intensity divided by mean intensity. \n'
         + 'Imax_over_Ilowq: maximum intensity divided by average intensity over lowest 10% of q domain. \n'
@@ -102,6 +102,8 @@ class SpectrumProfiler(Operation):
             qmini, qmaxi = qmin+i*qrange/10,qmin+(i+1)*qrange/10
             idxi = list((q>=qmini) & (q<qmaxi))
             idxi_shift = [False]+idxi[:-1]
+            idxi = np.array(idxi,dtype=bool)
+            idxi_shift = np.array(idxi_shift,dtype=bool)
             dqi = q[ idxi ] - q[ idxi_shift ]
             Ii = I[ idxi ]
             bin_strengths[i] = np.sum(Ii * dqi) / (qmaxi-qmini)
@@ -131,32 +133,34 @@ class SpectrumProfiler(Operation):
         #    flag_msg = ''
         #######
         d_r = {}
-        d_r.update({'bin_strengths':bin_strengths})
-        d_r.update({'Imax_over_Imean':Imax_over_Imean})
-        d_r.update({'Imax_over_Ilowq':Imax_over_Ilowq})
-        d_r.update({'q_Imax':q_Imax})
-        d_r.update({'q_logcorr':q_logcorr})
-        d_r.update({'qsquared_logcorr':qsquared_logcorr})
-        d_r.update({'cos2q_logcorr':cos2q_logcorr})
-        d_r.update({'cosq_logcorr':cosq_logcorr})
-        d_r.update({'invq_logcorr':invq_logcorr})
-        d_r.update({'q_corr':q_corr})
-        d_r.update({'qsquared_corr':qsquared_corr})
-        d_r.update({'cos2q_corr':cos2q_corr})
-        d_r.update({'cosq_corr':cosq_corr})
-        d_r.update({'invq_corr':invq_corr})
-        self.outputs['metrics'] = d_r 
+        d_r['bin_strengths'] = bin_strengths
+        d_r['Imax_over_Imean'] = Imax_over_Imean
+        d_r['Imax_over_Ilowq'] = Imax_over_Ilowq
+        d_r['q_Imax'] = q_Imax
+        d_r['q_logcorr'] = q_logcorr
+        d_r['qsquared_logcorr'] = qsquared_logcorr
+        d_r['cos2q_logcorr'] = cos2q_logcorr
+        d_r['cosq_logcorr'] = cosq_logcorr
+        d_r['invq_logcorr'] = invq_logcorr
+        d_r['q_corr'] = q_corr
+        d_r['qsquared_corr'] = qsquared_corr
+        d_r['cos2q_corr'] = cos2q_corr
+        d_r['cosq_corr'] = cosq_corr
+        d_r['invq_corr'] = invq_corr
         if not ok_flag:
             d_r['WARNING_MESSAGE'] = flag_msg
-            self.outputs['precursor_flag'] = False 
-            self.outputs['form_flag'] = False 
-            self.outputs['structure_flag'] = False
+            d_r['precursor_flag'] = False 
+            d_r['form_flag'] = False 
+            d_r['structure_flag'] = False
             self.outputs['return_code'] = 1
         else:
-            self.outputs['precursor_flag'] = precursor_flag
-            self.outputs['form_flag'] = form_flag
-            self.outputs['structure_flag'] = structure_flag
+            d_r['precursor_flag'] = precursor_flag
+            d_r['form_flag'] = form_flag
+            d_r['structure_flag'] = structure_flag
             self.outputs['return_code'] = 0
+        self.outputs['structure_id'] = 'not_implemented'
+        self.outputs['form_id'] = 'not_implemented'
+        self.outputs['features'] = d_r 
 
         #low_q_idxs = (q < q[0]+0.1*(q[-1]-q[0]))
         #high_q_idxs = (q > q[0]+0.9*(q[-1]-q[0]))
