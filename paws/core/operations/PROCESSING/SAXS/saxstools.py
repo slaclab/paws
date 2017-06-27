@@ -1,6 +1,7 @@
 from __future__ import print_function
 import numpy as np
 from scipy.optimize import minimize as scipimin
+from collections import OrderedDict
 
 def compute_saxs(q,params):
     """
@@ -226,51 +227,98 @@ def saxs_Iq4_metrics(q,I):
     #######
     return d
 
-def saxs_spherical_normal_fit(q,I,I_at_0,method,x_init):
+def saxs_fit(q,I,method,features,x_keys):
     """
     Fit a saxs spectrum (I(q) vs q) to the theoretical spectrum 
-    for dilute spherical nanoparticles with normal size distribution.
-    Fit parameters are average radius (r_mean), 
-    and standard deviation of radius (sigma_r). 
-    The intensity at q=0 (I_at_0) is held fixed.
-    The initial estimate of x (x_init) should be 
-    an array of the form [r_mean, sigma_r].
+    for one or several scattering populations.
+    Input features (dict) describes spectrum and scatterer populations.
+    Input x_keys (list of strings) should all be keys in the features dict.
+    These x_keys indicate which variables in the features dict should be optimized.
+    TODO: document the objective functions, etc.
 
     Supported methods (input as strings): 
     full_spectrum_chi2- least squares fit to entire spectrum
     full_spectrum_chi2log- least squares fit to logarithm of entire spectrum
     """
-    #try:
-    d = {}
-    d['message'] = ''
+    pre_flag = features['precursor_flag']
+    form_flag = features['form_flag']
+    structure_flag = features['structure_flag']
+    n_q = len(q)
+    precursor_saxs = lambda q,x: return np.zeros(len(q))
+    form_saxs = lambda q,x: return np.zeros(len(q))
+    #structure_saxs = lambda q,x: return np.zeros(len(q))
+    xdict = OrderedDict()
+    ndim_pre = 0
+    ndim_form = 0
+    #ndim_structure = 0
+    if pre_flag:
+        if 'r0_pre' in x_keys:
+            xdict['r0_pre'] = features['r0_pre']
+            ndim_pre = 1
+            precursor_saxs = lambda q,x: return compute_spherical_normal_saxs(q,x[0],0)
+        else:
+            ndim_pre = 0
+            precursor_saxs = lambda q,x: return compute_spherical_normal_saxs(q,features['r0_pre'],0)
+    if form_flag:
+        if 'r0_sphere' in x_keys and 'sigma_r_sphere' in x_keys:
+            xdict['r0_sphere'] = features['r0_sphere']
+            xdict['sigma_r_sphere'] = features['sigma_r_sphere']
+            ndim_form = 2
+            form_saxs = lambda q,x: return compute_spherical_normal_saxs(q,x[1],x[2])
+        elif 'r0_sphere' in x_keys:
+            xdict['r0_sphere'] = features['r0_sphere']
+            ndim_form = 1
+            form_saxs = lambda q,x: return compute_spherical_normal_saxs(q,x[0],features['sigma_r_sphere'])
+        elif 'sigma_r_sphere' in x_keys:
+            xdict['sigma_r_sphere'] = features['sigma_r_sphere']
+            ndim_form = 1
+            form_saxs = lambda q,x: return compute_spherical_normal_saxs(q,features['r0_sphere'],x[0])
+        else:
+            ndim_form = 0
+            form_saxs = lambda q,x: return compute_spherical_normal_saxs(q,features['r0_sphere'],features['sigma_r_sphere'])
+    if 'I0_pre' in x_keys and :
+        xdict['I0_pre'] = features['I0_pre']
+    else:
+        xdict['I0_pre'] = 1 
+    if 'I0_sphere' in x_keys:
+        xdict['I0_sphere'] = features['I0_sphere']
+    else:
+        xdict['I0_sphere'] = 1 
+    x_init = xdict.values()
+    full_saxs = lambda q,x: I_at_0 * (
+    (x[-2]/np.sum(x[-2:]))*precursor_saxs(q,x[:ndim_pre]) + 
+    (x[-1]/np.sum(x[-2:]))*form_saxs(q,ndim_pre:ndim_pre+ndim_form) )
+
     if method == 'full_spectrum_chi2':
-        fit_obj = lambda x: np.sum( (compute_spherical_normal_saxs(q,x[0],x[1]) - I/I_at_0)**2 )
+        fit_obj = lambda x: np.sum( (full_saxs(q,x) - I)**2 )
     elif method == 'low_q_chi2':
-        fit_obj = lambda x: np.sum( (compute_spherical_normal_saxs(q[:len(q)/2],x[0],x[1]) - I[:len(q)/2]/I_at_0)**2 )
+        fit_obj = lambda x: np.sum( (full_saxs(q[:n_q/2],x) - I[:n_q/2])**2 )
     elif method == 'pearson':
-        fit_obj = lambda x: -1*compute_pearson( I, compute_spherical_normal_saxs(q,x[0],x[1]) ) 
+        fit_obj = lambda x: -1*compute_pearson(full_saxs(q,x), I)
     elif method == 'low_q_pearson':
-        fit_obj = lambda x: -1*compute_pearson( I[:len(q)/2], compute_spherical_normal_saxs(q[:len(q)/2],x[0],x[1]) ) 
+        fit_obj = lambda x: -1*compute_pearson(full_saxs(q[:n_q/2],x), I[:n_q/2]) 
     elif method == 'full_spectrum_chi2log':
         I_nz = np.invert((I==0))
-        fit_obj = lambda x: np.sum( (np.log(compute_spherical_normal_saxs(q[I_nz],x[0],x[1])) - np.log(I[I_nz]/I_at_0))**2 )
+        fit_obj = lambda x: np.sum( (np.log(full_saxs(q[I_nz],x)) - np.log(I[I_nz]))**2 )
     elif method == 'low_q_chi2log':
         I_nz = np.invert((I==0)) 
-        fit_obj = lambda x: np.sum( (np.log(compute_spherical_normal_saxs(q[I_nz][:len(q)/2],x[0],x[1])) - np.log(I[I_nz][:len(q)/2]/I_at_0))**2 )
+        fit_obj = lambda x: np.sum( (np.log(full_saxs(q[I_nz][:n_q/2],x)) - np.log(I[I_nz][:n_q/2]))**2 )
     elif method == 'pearson_log':
         I_nz = np.invert((I==0)) 
-        fit_obj = lambda x: -1*compute_pearson( np.log(I[I_nz]), np.log(compute_spherical_normal_saxs(q[I_nz],x[0],x[1])) ) 
+        fit_obj = lambda x: -1*compute_pearson(np.log(full_saxs(q[I_nz],x)), np.log(I[I_nz])) 
     elif method == 'low_q_pearson_log':
         I_nz = np.invert((I==0)) 
-        fit_obj = lambda x: -1*compute_pearson( np.log(I[I_nz][:len(q)/2]), np.log(compute_spherical_normal_saxs(q[I_nz][:len(q)/2],x[0],x[1])) ) 
+        fit_obj = lambda x: -1*compute_pearson(np.log(full_saxs(q[I_nz][n_q/2],x)), np.log(I[I_nz][:n_q/2])) 
     else:
         msg = 'fitting method {} not supported'.format(method)
         raise ValueError(msg)
     res = scipimin(fit_obj,x_init)
     x_opt = res.x
-    d['r_mean'] = x_opt[0]
-    d['sigma_r'] = x_opt[1]
-    return d
+    d_opt = OrderedDict()
+    for k,xk in zip(xdict.keys(),x_opt):
+        d_opt[k] = xk
+    return d_opt    
+    
     #print('init: {}'.format(fit_obj(x_init)))
     #print('opt: {}'.format(fit_obj(x_opt)))
     #I_opt = I_at_0*compute_spherical_normal_saxs(q,x_opt[0],x_opt[1])

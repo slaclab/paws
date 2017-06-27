@@ -29,8 +29,7 @@ class SpectrumParameterization(Operation):
     a sum of pseudo-Voigt peaks.
 
     Outputs a return code and heuristic guesses for SAXS model parameters. 
-    Also outputs the theoretical result for I(q)
-    and a renormalized measured spectrum, for visual comparison.
+    Also outputs the theoretical result for I(q) with the guessed parameters.
 
     This Operation is somewhat robust for noisy data,
     but any preprocessing (background subtraction, smoothing, or other cleaning)
@@ -39,7 +38,7 @@ class SpectrumParameterization(Operation):
 
     def __init__(self):
         input_names = ['q', 'I', 'features']
-        output_names = ['return_code','features','q_I_norm','q_I_guess']
+        output_names = ['return_code','features','q_I_guess']
         super(SpectrumParameterization, self).__init__(input_names, output_names)
         self.input_doc['q'] = '1d array of wave vector values in 1/Angstrom units'
         self.input_doc['I'] = '1d array of intensity values I(q)'
@@ -58,6 +57,7 @@ class SpectrumParameterization(Operation):
         + '(options: currently none, eventually sphere, cube, rod, etc). \n'
         + 'structure_id: string indicating the structure to use in setting the diffraction peaks '
         + '(options: currently none, eventually fcc, hcp, bcc, etc).')
+
         self.output_doc['return_code'] = str('integer indicating whether or not '
         + 'the spectrum was successfully parameterized for the given flags. '
         + 'Possible values: 0=success, 1=error (raised an Exception), '
@@ -74,9 +74,9 @@ class SpectrumParameterization(Operation):
         #+ 'q_pk0: q value (1/Angstrom) for location of fundamental structure factor peak. \n' 
         #+ 'sigma_pk: width parameter for Pseudo-Voigt diffraction peak profile. \n' 
         #+ 'I0_pk: structure factor intensity scaling factor.')
-        self.output_doc['q_I_norm'] = 'The input spectrum normalized so that I(q=0) is near 1.'
-        self.output_doc['q_I_guess'] = str('n-by-2 array of q and the modeled intensity spectrum '
-        + 'for the parameters given in the params output') 
+        self.output_doc['q_I_guess'] = str('n-by-2 array of q and the intensity spectrum '
+        + 'corresponding to the population parameters in the features dict.')
+
         self.input_src['q'] = optools.wf_input
         self.input_src['I'] = optools.wf_input
         self.input_src['features'] = optools.wf_input
@@ -128,20 +128,17 @@ class SpectrumParameterization(Operation):
         #    p['sigma_pk'] = 0
         #    p['I0_pk'] = 0
         I_guess = saxstools.compute_saxs(q,p)
-        I_guess_at_0 = saxstools.compute_saxs(np.array([float(0)]),p)
-        q_I_guess = np.array([q,I_guess/I_guess_at_0[0]]).T
-        q_I_norm = np.array([q,I/I_at_0]).T
+        q_I_guess = np.array([q,I_guess]).T
         #### Get logarithmic coef of determination to assess fit quality:
-        I_norm_nz = np.invert( (q_I_norm[:,1]<=0) )
+        #I_norm_nz = np.invert( (q_I_norm[:,1]<=0) )
         #import pdb; pdb.set_trace()
-        logI_norm = np.log(q_I_norm[I_norm_nz,1])
-        logI_guess = np.log(q_I_guess[I_norm_nz,1])
-        sum_logvar = np.sum( (logI_norm-np.mean(logI_norm))**2 )
-        sum_logres = np.sum( (logI_guess-logI_norm)**2 ) 
-        R2_log = float(1)-float(sum_logres)/sum_logvar
-        p['R2_log'] = R2_log
+        #logI_norm = np.log(q_I_norm[I_norm_nz,1])
+        #logI_guess = np.log(q_I_guess[I_norm_nz,1])
+        #sum_logvar = np.sum( (logI_norm-np.mean(logI_norm))**2 )
+        #sum_logres = np.sum( (logI_guess-logI_norm)**2 ) 
+        #R2_log = float(1)-float(sum_logres)/sum_logvar
+        #p['R2_log'] = R2_log
         ####
-        self.outputs['q_I_norm'] = q_I_norm 
         self.outputs['q_I_guess'] = q_I_guess 
         self.outputs['features'] = p 
         self.outputs['return_code'] = 0
