@@ -69,7 +69,7 @@ class SpectrumParameterization(Operation):
         + 'r0_pre: precursor term radius (Angstrom). \n'
         + 'I0_pre: precursor intensity scaling factor. \n'
         + 'r0_sphere: mean radius (Angstrom) of sphere population. \n'
-        + 'sigma_sphere: standard deviation (Angstroms) of sphere population radii. \n'
+        + 'sigma_sphere: standard deviation of sphere radii (unitless fraction of r0_sphere) \n'
         + 'I0_sphere: spherical population intensity scaling factor. ')
         #+ 'q_pk0: q value (1/Angstrom) for location of fundamental structure factor peak. \n' 
         #+ 'sigma_pk: width parameter for Pseudo-Voigt diffraction peak profile. \n' 
@@ -101,15 +101,16 @@ class SpectrumParameterization(Operation):
         if pre_flag:
             # Assume the first dip of the precursor form factor occurs around the max of our q range.
             # First dip = qmax*r_pre ~ 4.5
-            r0_pre = 4.5/q[-1] 
+            #r0_pre = 4.5/q[-1] 
+            r0_pre = saxstools.precursor_heuristics(q,I,I_at_0=I_at_0)
             p['r0_pre'] = r0_pre 
         if f_flag:
-            r0_sphere, sigma_r_sphere = saxstools.spherical_normal_heuristics(q,I,I_at_0=I_at_0)
+            r0_sphere, sigma_sphere = saxstools.spherical_normal_heuristics(q,I,I_at_0=I_at_0)
             p['r0_sphere'] = r0_sphere
-            p['sigma_sphere'] = sigma_r_sphere
+            p['sigma_sphere'] = sigma_sphere
         if pre_flag and f_flag:
             I_pre = saxstools.compute_spherical_normal_saxs(q,r0_pre,0)
-            I_sphere = saxstools.compute_spherical_normal_saxs(q,r0_sphere,sigma_r_sphere)
+            I_sphere = saxstools.compute_spherical_normal_saxs(q,r0_sphere,sigma_sphere)
             I_error = lambda x: np.sum( (I_at_0*(x*I_pre+(1.-x)*I_sphere)-I)**2 )
             x_res = minimize(I_error,[0.1],bounds=[(0.0,1.0)]) 
             x_fit = x_res.x[0]
@@ -119,8 +120,10 @@ class SpectrumParameterization(Operation):
             p['I0_sphere'] = I0_sphere 
         elif pre_flag:
             p['I0_pre'] = 1.0 
+            p['I0_sphere'] = 0.0 
         elif f_flag:
             p['I0_sphere'] = 1.0 
+            p['I0_pre'] = 0.0 
         # TODO: process diffraction pk parameters.
         # For now, skip.
         #if self.inputs['structure_flag']:
@@ -131,7 +134,6 @@ class SpectrumParameterization(Operation):
         q_I_guess = np.array([q,I_guess]).T
         #### Get logarithmic coef of determination to assess fit quality:
         #I_norm_nz = np.invert( (q_I_norm[:,1]<=0) )
-        #import pdb; pdb.set_trace()
         #logI_norm = np.log(q_I_norm[I_norm_nz,1])
         #logI_guess = np.log(q_I_guess[I_norm_nz,1])
         #sum_logvar = np.sum( (logI_norm-np.mean(logI_norm))**2 )

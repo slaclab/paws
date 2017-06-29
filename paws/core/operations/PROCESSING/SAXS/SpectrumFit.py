@@ -1,4 +1,5 @@
 import numpy as np
+import copy
 
 from scipy.optimize import curve_fit
 
@@ -80,16 +81,16 @@ class SpectrumFit(Operation):
         m = self.inputs['method']
         p = self.inputs['fit_params']
         f = copy.deepcopy(self.inputs['features'])
-        try:
-            d_opt = saxstools.saxs_fit(q,I,m,f,p)
-            f.update(d_opt)
+        #try:
+        d_opt = saxstools.saxs_fit(q,I,m,f,p)
+        f.update(d_opt)
             #for k in p:
             #    f[k] = d_opt[k]
-        except Exception as ex:
-            msg = str('[{}] optimization by {} failed '
-            + 'while attempting to fit spectrum. message: '
-            + '{}'.format(__name__,m,ex.message))
-            raise ex
+        #except Exception as ex:
+        #    msg = str('[{}] optimization by {} failed '
+        #    + 'while attempting to fit spectrum. message: '
+        #    + '{}'.format(__name__,m,ex.message))
+        #    raise ex
 
         I_opt = saxstools.compute_saxs(q,f)
         q_I_opt = np.array([q,I_opt]).T

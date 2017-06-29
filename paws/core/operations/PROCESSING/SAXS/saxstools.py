@@ -37,9 +37,10 @@ def compute_saxs(q,params):
         #    I_pk = compute_peaks()
     return I
 
-def compute_spherical_normal_saxs(q,r0,sigma_r):
+def compute_spherical_normal_saxs(q,r0,sigma):
     """
-    Given q, a mean radius r0, and a standard deviation of radius sigma_r,
+    Given q, a mean radius r0, 
+    and the fractional standard deviation of radius sigma,
     compute the saxs spectrum assuming spherical particles 
     with normal size distribution.
     The returned intensity is normalized 
@@ -48,12 +49,13 @@ def compute_spherical_normal_saxs(q,r0,sigma_r):
     q_zero = (q == 0)
     q_nz = np.invert(q_zero) 
     I = np.zeros(q.shape)
-    if sigma_r == 0:
+    if sigma == 0:
         x = q*r0
         V_r0 = float(4)/3*np.pi*r0**3
         I[q_nz] = V_r0**2 * (3.*(np.sin(x[q_nz])-x[q_nz]*np.cos(x[q_nz]))*x[q_nz]**-3)**2
         I_zero = V_r0**2 
     else:
+        sigma_r = sigma*r0
         dr = sigma_r*0.02
         rmin = np.max([r0-5*sigma_r,dr])
         rmax = r0+5*sigma_r
@@ -69,6 +71,18 @@ def compute_spherical_normal_saxs(q,r0,sigma_r):
         I[q_zero] = I_zero
     I = I/I_zero 
     return I
+
+def precursor_heuristics(q,I,I_at_0=None):
+    """
+    Makes an educated guess as to the 'radius' of a small scatterer
+    that would produce the input q, I(q).
+    """
+    n_q = len(q)
+    # optimize the pearson correlation in the upper half of the q domain
+    fit_obj = lambda r: -1*compute_pearson(compute_spherical_normal_saxs(q[n_q/2:],r,0),I[n_q/2:])
+    res = scipimin(heuristics_error,[0.1],bounds=[(0,0.3)]) 
+    r_opt = scipimin(fit_obj,[5],bounds=[(0,10)])
+    return r_opt
 
 def spherical_normal_heuristics(q,I,I_at_0=None):
     """
@@ -122,8 +136,8 @@ def spherical_normal_heuristics(q,I,I_at_0=None):
     qr0_focus = np.polyval(p_qr0_focus,sigma_over_r)
     # qr0_focus = x1  ==>  r0 = x1 / q1
     r0 = qr0_focus/m['q_at_Iqqqq_min1']
-    sigma_r = sigma_over_r * r0 
-    return r0,sigma_r
+    #sigma_r = sigma_over_r * r0 
+    return r0,sigma_over_r
 
 def saxs_Iq4_metrics(q,I):
     """
@@ -239,56 +253,82 @@ def saxs_fit(q,I,method,features,x_keys):
     Supported methods (input as strings): 
     full_spectrum_chi2- least squares fit to entire spectrum
     full_spectrum_chi2log- least squares fit to logarithm of entire spectrum
+    TODO: fill in rest of objective options
     """
     pre_flag = features['precursor_flag']
     form_flag = features['form_flag']
     structure_flag = features['structure_flag']
     n_q = len(q)
-    precursor_saxs = lambda q,x: return np.zeros(len(q))
-    form_saxs = lambda q,x: return np.zeros(len(q))
-    #structure_saxs = lambda q,x: return np.zeros(len(q))
+    precursor_saxs = lambda q,x: np.zeros(len(q))
+    form_saxs = lambda q,x: np.zeros(len(q))
+    #structure_saxs = lambda q,x: np.zeros(len(q))
     xdict = OrderedDict()
+    bdict = OrderedDict()
     ndim_pre = 0
     ndim_form = 0
-    #ndim_structure = 0
     if pre_flag:
         if 'r0_pre' in x_keys:
             xdict['r0_pre'] = features['r0_pre']
+            bdict['r0_pre'] = [0,None] 
             ndim_pre = 1
-            precursor_saxs = lambda q,x: return compute_spherical_normal_saxs(q,x[0],0)
+            precursor_saxs = lambda q,x: compute_spherical_normal_saxs(q,x[0],0)
         else:
-            ndim_pre = 0
-            precursor_saxs = lambda q,x: return compute_spherical_normal_saxs(q,features['r0_pre'],0)
+            precursor_saxs = lambda q,x: compute_spherical_normal_saxs(q,features['r0_pre'],0)
     if form_flag:
-        if 'r0_sphere' in x_keys and 'sigma_r_sphere' in x_keys:
+        if 'r0_sphere' in x_keys and 'sigma_sphere' in x_keys:
             xdict['r0_sphere'] = features['r0_sphere']
-            xdict['sigma_r_sphere'] = features['sigma_r_sphere']
+            xdict['sigma_sphere'] = features['sigma_sphere']
+            bdict['r0_sphere'] = [0.0,None] 
+            bdict['sigma_sphere'] = [0.0,0.3] 
             ndim_form = 2
-            form_saxs = lambda q,x: return compute_spherical_normal_saxs(q,x[1],x[2])
+            form_saxs = lambda q,x: compute_spherical_normal_saxs(q,x[0],x[1])
         elif 'r0_sphere' in x_keys:
             xdict['r0_sphere'] = features['r0_sphere']
+            bdict['r0_sphere'] = [0.0,None] 
             ndim_form = 1
-            form_saxs = lambda q,x: return compute_spherical_normal_saxs(q,x[0],features['sigma_r_sphere'])
-        elif 'sigma_r_sphere' in x_keys:
-            xdict['sigma_r_sphere'] = features['sigma_r_sphere']
+            form_saxs = lambda q,x: compute_spherical_normal_saxs(q,x[0],features['sigma_sphere'])
+        elif 'sigma_sphere' in x_keys:
+            xdict['sigma_sphere'] = features['sigma_sphere']
+            bdict['sigma_sphere'] = [0.0,0.3] 
             ndim_form = 1
-            form_saxs = lambda q,x: return compute_spherical_normal_saxs(q,features['r0_sphere'],x[0])
+            form_saxs = lambda q,x: compute_spherical_normal_saxs(q,features['r0_sphere'],x[0])
         else:
-            ndim_form = 0
-            form_saxs = lambda q,x: return compute_spherical_normal_saxs(q,features['r0_sphere'],features['sigma_r_sphere'])
-    if 'I0_pre' in x_keys and :
+            form_saxs = lambda q,x: compute_spherical_normal_saxs(q,features['r0_sphere'],features['sigma_sphere'])
+    I_at_0 = features['I_at_0']
+    if ( (pre_flag and 'I0_pre' in x_keys) 
+    and (form_flag and 'I0_sphere' in x_keys) ):
         xdict['I0_pre'] = features['I0_pre']
-    else:
-        xdict['I0_pre'] = 1 
-    if 'I0_sphere' in x_keys:
         xdict['I0_sphere'] = features['I0_sphere']
+        bdict['I0_pre'] = [0.0,1.0]
+        bdict['I0_sphere'] = [0.0,1.0] 
+        # objective function with I(q=0) fixed:
+        full_saxs = lambda q,x: I_at_0 * (
+        (x[-2]/np.sum(x[-2:]))*precursor_saxs(q,x[:ndim_pre]) + 
+        (x[-1]/np.sum(x[-2:]))*form_saxs(q,x[ndim_pre:ndim_pre+ndim_form]) )
+    elif pre_flag and 'I0_pre' in x_keys:
+        xdict['I0_pre'] = features['I0_pre']
+        bdict['I0_pre'] = [0.0,1.0] 
+        # objective function with I(q=0) variable:
+        full_saxs = lambda q,x: I_at_0 * (
+        x[-1]*precursor_saxs(q,x[:ndim_pre]) + 
+        features['I0_sphere']*form_saxs(q,x[ndim_pre:ndim_pre+ndim_form]) )
+    elif form_flag and 'I0_sphere' in x_keys:
+        xdict['I0_sphere'] = features['I0_sphere']
+        bdict['I0_sphere'] = [0.0,1.0] 
+        # objective function with I(q=0) fixed:
+        full_saxs = lambda q,x: I_at_0 * (
+        (features['I0_pre']/(x[-1]+features['I0_pre']))*precursor_saxs(q,x[:ndim_pre]) + 
+        (x[-1]/(x[-1]+features['I0_pre']))*form_saxs(q,x[ndim_pre:ndim_pre+ndim_form]) )
     else:
-        xdict['I0_sphere'] = 1 
+        # objective function with all intensity terms fixed:
+        full_saxs = lambda q,x: I_at_0 * (
+        (x[-2]/np.sum(x[-2:]))*precursor_saxs(q,x[:ndim_pre]) + 
+        (x[-1]/np.sum(x[-2:]))*form_saxs(q,x[ndim_pre:ndim_pre+ndim_form]) )
+    
     x_init = xdict.values()
-    full_saxs = lambda q,x: I_at_0 * (
-    (x[-2]/np.sum(x[-2:]))*precursor_saxs(q,x[:ndim_pre]) + 
-    (x[-1]/np.sum(x[-2:]))*form_saxs(q,ndim_pre:ndim_pre+ndim_form) )
-
+    x_bounds = bdict.values()
+    
+    I_nz = (I>0)
     if method == 'full_spectrum_chi2':
         fit_obj = lambda x: np.sum( (full_saxs(q,x) - I)**2 )
     elif method == 'low_q_chi2':
@@ -298,27 +338,25 @@ def saxs_fit(q,I,method,features,x_keys):
     elif method == 'low_q_pearson':
         fit_obj = lambda x: -1*compute_pearson(full_saxs(q[:n_q/2],x), I[:n_q/2]) 
     elif method == 'full_spectrum_chi2log':
-        I_nz = np.invert((I==0))
         fit_obj = lambda x: np.sum( (np.log(full_saxs(q[I_nz],x)) - np.log(I[I_nz]))**2 )
     elif method == 'low_q_chi2log':
-        I_nz = np.invert((I==0)) 
         fit_obj = lambda x: np.sum( (np.log(full_saxs(q[I_nz][:n_q/2],x)) - np.log(I[I_nz][:n_q/2]))**2 )
     elif method == 'pearson_log':
-        I_nz = np.invert((I==0)) 
         fit_obj = lambda x: -1*compute_pearson(np.log(full_saxs(q[I_nz],x)), np.log(I[I_nz])) 
     elif method == 'low_q_pearson_log':
-        I_nz = np.invert((I==0)) 
         fit_obj = lambda x: -1*compute_pearson(np.log(full_saxs(q[I_nz][n_q/2],x)), np.log(I[I_nz][:n_q/2])) 
     else:
         msg = 'fitting method {} not supported'.format(method)
         raise ValueError(msg)
-    res = scipimin(fit_obj,x_init)
+    res = scipimin(fit_obj,x_init,bounds=x_bounds)
     x_opt = res.x
+    #import pdb; pdb.set_trace()
     d_opt = OrderedDict()
     for k,xk in zip(xdict.keys(),x_opt):
         d_opt[k] = xk
+    d_opt['objective_before'] = fit_obj(x_init)
+    d_opt['objective_after'] = fit_obj(x_opt)
     return d_opt    
-    
     #print('init: {}'.format(fit_obj(x_init)))
     #print('opt: {}'.format(fit_obj(x_opt)))
     #I_opt = I_at_0*compute_spherical_normal_saxs(q,x_opt[0],x_opt[1])
@@ -410,8 +448,8 @@ def spherical_normal_heuristics_setup():
         q = np.arange(0.001/r0,float(10)/r0,0.001/r0)       #1/Angstrom
         sigma_r_vals = np.arange(0*r0,0.21*r0,0.01*r0)      #Angstrom
         for isig,sigma_r in zip(range(len(sigma_r_vals)),sigma_r_vals):
-            I = compute_spherical_normal_saxs(q,r0,sigma_r) 
-            I_at_0 = compute_spherical_normal_saxs(0,r0,sigma_r) 
+            I = compute_spherical_normal_saxs(q,r0,sigma_r/r0) 
+            I_at_0 = compute_spherical_normal_saxs(0,r0,sigma_r/r0) 
             d = saxs_spherical_normal_heuristics(q,I)
             sigma_over_r.append(float(sigma_r)/r0)
             qr0_focus.append(d['q_at_Iqqqq_min1']*r0)
