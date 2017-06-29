@@ -27,18 +27,22 @@ class SpectrumFit(Operation):
     SpectrumProfiler and SpectrumParameterization outputs.
 
     Outputs a return code and the features dict,
-    with entries added for the optimized parameters.
+    with entries updated for the optimized parameters.
     Also returns the theoretical result for I(q),
     and a renormalized measured spectrum for visual comparison.
     """
 
     def __init__(self):
-        input_names = ['q','I','method','fit_params','features']
+        input_names = ['q','I','features','fit_params','method']
         output_names = ['return_code','features','q_I_opt']
         super(SpectrumFit, self).__init__(input_names, output_names)
 
         self.input_doc['q'] = '1d array of wave vector values in 1/Angstrom units'
         self.input_doc['I'] = '1d array of intensity values I(q)'
+        self.input_doc['features'] = str('dict of features describing the input spectrum and scatterer populations. '
+        + 'Keys of this dict are the same as the SpectrumParameterization.outputs.features dict.')
+        self.input_doc['fit_params'] = str('List of strings indicating which parameters to optimize. '
+        + 'Each of these strings should also be a key of the input features dict.')
         self.input_doc['method'] = str('String indicating choice of optimization method. Options: '
         + '(1) full_spectrum_chi2- sum of difference squared across entire q range. '
         + '(2) full_spectrum_chi2log- sum of difference of logarithm, squared, across entire q range. '
@@ -48,10 +52,6 @@ class SpectrumFit(Operation):
         + '(6) pearson_log- pearson correlation between logarithms of measured and modeled spectra.'
         + '(7) low_q_pearson- pearson correlation between measured and modeled spectra. '
         + '(8) low_q_pearson_log- pearson correlation between logarithms of measured and modeled spectra.') 
-        self.input_doc['fit_params'] = str('List of strings indicating which parameters to optimize. '
-        + 'Each of these strings should also be a key of the input features dict.')
-        self.input_doc['features'] = str('dict of features describing the input spectrum and scatterer populations. '
-        + 'Keys of this dict are the same as the SpectrumParameterization.outputs.features dict.')
 
         self.output_doc['return_code'] = str('integer indicating whether or not the spectrum was found to be fittable. '
         + 'Possible values: 0=success, 1=error, 2=warning')

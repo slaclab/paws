@@ -38,7 +38,7 @@ class SpectrumParameterization(Operation):
 
     def __init__(self):
         input_names = ['q', 'I', 'features']
-        output_names = ['return_code','features','q_I_guess']
+        output_names = ['return_code','features','q_I_guess','fixed_params','fixed_param_values']
         super(SpectrumParameterization, self).__init__(input_names, output_names)
         self.input_doc['q'] = '1d array of wave vector values in 1/Angstrom units'
         self.input_doc['I'] = '1d array of intensity values I(q)'
@@ -57,6 +57,9 @@ class SpectrumParameterization(Operation):
         + '(options: currently none, eventually sphere, cube, rod, etc). \n'
         + 'structure_id: string indicating the structure to use in setting the diffraction peaks '
         + '(options: currently none, eventually fcc, hcp, bcc, etc).')
+        self.input_doc['fixed_params'] = str('list of strings indicating which parameters '
+        + 'should be fixed to specified values- these correspond one-to-one with fixed_param_values.')
+        self.input_doc['fixed_param_values'] = 'list of values to which the corresponding fixed_params will be set.'
 
         self.output_doc['return_code'] = str('integer indicating whether or not '
         + 'the spectrum was successfully parameterized for the given flags. '
@@ -95,8 +98,14 @@ class SpectrumParameterization(Operation):
         p = self.inputs['features'] 
         
         # Perform a low-q spectrum fit to get I(q=0).
-        # Use the lower 10% of the q range.
-        I_at_0 = saxstools.fit_I0(q,I)
+        # If there are form or structure factor terms,
+        # use the lower 10% of the q range.
+        if f_flag or s_flag:
+            qmax_fit = q[0]+float(q[-1]-q[0])*0.1
+            idx_lowq = (q<qmax_fit)
+            I_at_0 = saxstools.fit_I0(q[idx_lowq],I[idx_lowq])
+        else:
+            I_at_0 = saxstools.fit_I0(q,I)
         p['I_at_0'] = I_at_0
         if pre_flag:
             # Assume the first dip of the precursor form factor occurs around the max of our q range.
