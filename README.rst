@@ -11,56 +11,43 @@ workflow manager for image-like data.
 
 `paws` provides machinery 
 to build and execute data processing workflows,
-including an ever-growing library of pre-loaded Operations 
-and an interface for developing new ones.
-The user loads a set of Operations
-and connects their inputs and outputs 
-to form a workflow that is something like a directed graph
-with structured nodes.
+including an ever-growing library of Operations 
+that connect together to form a workflow 
+with somewhat of a directed graph structure.
 
 The core modules of `paws` 
 are pure Python and have very few dependencies.
-The package currently exposes a simple API
+`paws` exposes a simple API
 that interacts with these core modules,
 for users to write scripts based on `paws`,
 or to import the `paws` API to perform
 back-end computations for other applications or widgets.
+The current state of `paws` is alpha-
+nothing has been tested, 
+and even less has been optimized.
 
 The `paws` package also includes a graphical application 
 built on the `PySide` `Qt` bindings.
-Its GUI is similar to the interface for `Xi-cam`.
 Through this GUI, users can build and configure workflows, 
 examine existing `paws` Operations,
 develop new `paws` Operations,
 and visualize the outputs of their workflows.
-Note that this graphical application
-was built to exist "on top" of `paws`,
-not as an integral part of the package.
-As such, there is plenty of potential to develop
-improved or simplified graphical applications or widgets,
-with `paws` workflows running in the back end.
-
-Each Operation is a self-contained object,
-so that after its inputs are loaded, 
-the Operation can be moved to another host and executed remotely, 
-as long as the host environment 
-fulfills the dependencies of the Operation. 
-A `paws` Operation may depend on any number of other packages
-(many of them depend on `numpy` or `scipy` for example),
-but Operations are not imported until they are enabled,
-so the user's platform is only required to fulfill dependencies
-for the Operations they actually want to use
-(TODO: this import functionality is not yet implemented). 
+Various simplified GUIs are currently in development
+for interacting with specific workflows. 
 
 
 Example
 -------
 
-TODO: Get the docs online, link to them here.
-TODO: link to Nika, PyFAI, and matplotlib here.
-
 Here is an example of how to use `paws` 
 to write a data processing script.
+Note: at the time this was written, 
+the example does not display in github.
+Open the source file for this README
+to see the example.
+Complete instructions are included in the user manual. 
+See the `doc` directory of this repository.
+
 This script performs a common diffraction data processing workflow:
 it reads some calibration parameters (in Nika format),
 converts them to PONI (PyFAI) format,
@@ -121,9 +108,6 @@ and plotted using matplotlib.
     plt.semilogy(q_I_out[:,0],q_I_out[:,1])
     plt.show()
 
-Complete instructions are included in the user manual. 
-See the `doc` directory of this repository.
-
 
 Installation
 ------------
@@ -131,17 +115,15 @@ Installation
 TODO: put instructions here on how to install paws from PyPI.
 The core modules, being pure Python, 
 will be very easy to install from PyPI (not yet implemented).
-
-The installation instructions from source, for a variety of platforms, 
-will be continually added to the main documentation.
-Willing users are encouraged to contribute platform-specific documentation at will.
-
+Because they depend on PySide,
+installing the gui modules will be somewhat more complex, 
+for those who wish to use the gui.
 
 Contribution
 ------------
 
 Contribution to `paws` is encouraged and appreciated.
-Whether you are a researcher looking to contribute a processing routine to the `paws` library,
+Whether you are a researcher looking to contribute operations to the `paws` library,
 or a software developer looking to contribute to the platform itself,
 the `paws` development team would love to hear from you.
 
