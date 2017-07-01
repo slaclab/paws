@@ -43,15 +43,8 @@ class SpectrumFit(Operation):
         + 'Keys of this dict are the same as the SpectrumParameterization.outputs.features dict.')
         self.input_doc['fit_params'] = str('List of strings indicating which parameters to optimize. '
         + 'Each of these strings should also be a key of the input features dict.')
-        self.input_doc['method'] = str('String indicating choice of optimization method. Options: '
-        + '(1) full_spectrum_chi2- sum of difference squared across entire q range. '
-        + '(2) full_spectrum_chi2log- sum of difference of logarithm, squared, across entire q range. '
-        + '(3) low_q_chi2- sum of difference squared in only the lowest half of measured q range. '
-        + '(4) low_q_chi2log- sum of difference of logarithm, squared, in lowest half of measured q range. '
-        + '(5) pearson- pearson correlation between measured and modeled spectra. '
-        + '(6) pearson_log- pearson correlation between logarithms of measured and modeled spectra.'
-        + '(7) low_q_pearson- pearson correlation between measured and modeled spectra. '
-        + '(8) low_q_pearson_log- pearson correlation between logarithms of measured and modeled spectra.') 
+        self.input_doc['method'] = str('String indicating choice of optimization method. '
+        + 'See documentation of saxstools.fit_saxs() for full documentation.')
 
         self.output_doc['return_code'] = str('integer indicating whether or not the spectrum was found to be fittable. '
         + 'Possible values: 0=success, 1=error, 2=warning')
@@ -71,7 +64,7 @@ class SpectrumFit(Operation):
         self.input_type['fit_params'] = optools.str_type
         self.input_type['features'] = optools.ref_type
         # TODO: establish a good default here.
-        self.inputs['method'] = 'full_spectrum_chi2log' 
+        self.inputs['method'] = 'full_spectrum_chi2' 
 
     def run(self):
         # Set return code to 1 (error) by default;
@@ -82,8 +75,10 @@ class SpectrumFit(Operation):
         p = self.inputs['fit_params']
         f = copy.deepcopy(self.inputs['features'])
         #try:
+        print f
         d_opt = saxstools.saxs_fit(q,I,m,f,p)
         f.update(d_opt)
+        print d_opt
             #for k in p:
             #    f[k] = d_opt[k]
         #except Exception as ex:

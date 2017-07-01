@@ -37,8 +37,8 @@ class SpectrumParameterization(Operation):
     """
 
     def __init__(self):
-        input_names = ['q', 'I', 'features']
-        output_names = ['return_code','features','q_I_guess','fixed_params','fixed_param_values']
+        input_names = ['q', 'I', 'features', 'fixed_params', 'fixed_param_values']
+        output_names = ['return_code','features','q_I_guess']
         super(SpectrumParameterization, self).__init__(input_names, output_names)
         self.input_doc['q'] = '1d array of wave vector values in 1/Angstrom units'
         self.input_doc['I'] = '1d array of intensity values I(q)'
@@ -92,55 +92,104 @@ class SpectrumParameterization(Operation):
         pre_flag = self.inputs['features']['precursor_flag']
         f_flag = self.inputs['features']['form_flag']
         s_flag = self.inputs['features']['structure_flag']
+        fix_keys = self.inputs['fixed_params']
+        fix_vals = self.inputs['fixed_param_values']
+        fixed_params = {} 
+        for k,v in zip(fix_keys,fix_vals):
+            fixed_params[k] = v
         # Set return code to 1 (error) by default;
         # if execution finishes, set it to 0
         self.outputs['return_code'] = 1
         p = self.inputs['features'] 
+
+        # Check for overconstrained system
+        if 'I_at_0' in fix_keys and 'I0_sphere' in fix_keys and 'I0_pre' in fix_keys:
+            val1 = fixed_params['I_at_0']
+            val2 = fixed_params['I0_sphere'] + fixed_params['I0_pre'] 
+            if not val1 == val2:
+                msg = str('Spectrum intensity is overconstrained. '
+                + 'I_at_0 is constrained to {}, '
+                + 'but I0_sphere + I0_pre = {}. '.format(val1,val2))
+                raise ValueError(msg)
         
-        # Perform a low-q spectrum fit to get I(q=0).
-        # If there are form or structure factor terms,
-        # use the lower 10% of the q range.
-        if f_flag or s_flag:
-            qmax_fit = q[0]+float(q[-1]-q[0])*0.1
-            idx_lowq = (q<qmax_fit)
-            I_at_0 = saxstools.fit_I0(q[idx_lowq],I[idx_lowq])
+        if 'I_at_0' in fix_keys:
+            I_at_0 = fixed_params['I_at_0']
+        elif 'I0_sphere' in fix_keys and 'I0_pre' in fix_keys:
+            I_at_0 = fixed_params['I0_pre'] + fixed_params['I0_sphere']
         else:
-            I_at_0 = saxstools.fit_I0(q,I)
+            # Perform a low-q spectrum fit to get I(q=0).
+            # If there are form or structure factor terms,
+            # use the lower 10% of the q range.
+            if f_flag or s_flag:
+                qmax_fit = q[0]+float(q[-1]-q[0])*0.1
+                idx_lowq = (q<qmax_fit)
+                I_at_0 = saxstools.fit_I0(q[idx_lowq],I[idx_lowq])
+            else:
+                I_at_0 = saxstools.fit_I0(q,I)
         p['I_at_0'] = I_at_0
+
         if pre_flag:
-            # Assume the first dip of the precursor form factor occurs around the max of our q range.
-            # First dip = qmax*r_pre ~ 4.5
-            #r0_pre = 4.5/q[-1] 
-            r0_pre = saxstools.precursor_heuristics(q,I,I_at_0=I_at_0)
+            if 'r0_pre' in fix_keys:
+                r0_pre = fixed_params['r0_pre']
+            else:
+                r0_pre = saxstools.precursor_heuristics(q,I,I_at_0=I_at_0)
             p['r0_pre'] = r0_pre 
+
         if f_flag:
-            r0_sphere, sigma_sphere = saxstools.spherical_normal_heuristics(q,I,I_at_0=I_at_0)
+            if ('r0_sphere' in fix_keys and 'sigma_sphere' in fix_keys):
+                r0_sphere = fixed_params['r0_sphere']
+                sigma_sphere = fixed_params['sigma_sphere']
+            else:
+                r0_sphere, sigma_sphere = saxstools.spherical_normal_heuristics(q,I,I_at_0=I_at_0)
+                if 'r0_sphere' in fix_keys:
+                    r0_sphere = fixed_params['r0_sphere']
+                if 'sigma_sphere' in fix_keys:
+                    sigma_sphere = fixed_params['sigma_sphere']
             p['r0_sphere'] = r0_sphere
             p['sigma_sphere'] = sigma_sphere
+
         if pre_flag and f_flag:
-            I_pre = saxstools.compute_spherical_normal_saxs(q,r0_pre,0)
-            I_sphere = saxstools.compute_spherical_normal_saxs(q,r0_sphere,sigma_sphere)
-            I_error = lambda x: np.sum( (I_at_0*(x*I_pre+(1.-x)*I_sphere)-I)**2 )
-            x_res = minimize(I_error,[0.1],bounds=[(0.0,1.0)]) 
-            x_fit = x_res.x[0]
-            I0_pre = x_fit
-            I0_sphere = (1.-x_fit)
+            if 'I0_pre' in fix_keys and 'I0_sphere' in fix_keys:
+                I0_pre = fixed_params['I0_pre']
+                I0_sphere = fixed_params['I0_sphere']
+            elif 'I0_pre' in fix_keys:
+                I0_pre = fixed_params['I0_pre']
+                I0_sphere = I_at_0 - I0_pre
+            elif 'I0_sphere' in fix_keys:
+                I0_sphere = fixed_params['I0_sphere']
+                I0_pre = I_at_0 - I0_sphere
+            else:
+                I_pre = saxstools.compute_spherical_normal_saxs(q,r0_pre,0)
+                I_sphere = saxstools.compute_spherical_normal_saxs(q,r0_sphere,sigma_sphere)
+                I_error = lambda x: np.sum( (I_at_0*(x*I_pre+(1.-x)*I_sphere)-I)**2 )
+                x_res = minimize(I_error,[0.1],bounds=[(0.0,1.0)]) 
+                x_fit = x_res.x[0]
+                I0_sphere = (1.-x_fit)*I_at_0
+                I0_pre = x_fit*I_at_0
             p['I0_pre'] = I0_pre 
             p['I0_sphere'] = I0_sphere 
+
         elif pre_flag:
-            p['I0_pre'] = 1.0 
-            p['I0_sphere'] = 0.0 
+            if 'I0_pre' in fix_keys:
+                p['I0_pre'] = fixed_params['I0_pre']
+            else:
+                p['I0_pre'] = I_at_0 
+
         elif f_flag:
-            p['I0_sphere'] = 1.0 
-            p['I0_pre'] = 0.0 
-        # TODO: process diffraction pk parameters.
-        # For now, skip.
-        #if self.inputs['structure_flag']:
-        #    p['q_pk0'] = 0
-        #    p['sigma_pk'] = 0
-        #    p['I0_pk'] = 0
+            if 'I0_sphere' in fix_keys:
+                p['I0_sphere'] = fixed_params['I0_sphere'] 
+            else:
+                p['I0_sphere'] = I_at_0 
+
+        #if s_flag:
+        #   ..... 
+
         I_guess = saxstools.compute_saxs(q,p)
         q_I_guess = np.array([q,I_guess]).T
+        self.outputs['q_I_guess'] = q_I_guess 
+        self.outputs['features'] = p 
+        self.outputs['return_code'] = 0
+
         #### Get logarithmic coef of determination to assess fit quality:
         #I_norm_nz = np.invert( (q_I_norm[:,1]<=0) )
         #logI_norm = np.log(q_I_norm[I_norm_nz,1])
@@ -150,9 +199,6 @@ class SpectrumParameterization(Operation):
         #R2_log = float(1)-float(sum_logres)/sum_logvar
         #p['R2_log'] = R2_log
         ####
-        self.outputs['q_I_guess'] = q_I_guess 
-        self.outputs['features'] = p 
-        self.outputs['return_code'] = 0
 
         #from matplotlib import pyplot as plt
         #print self.outputs['features']

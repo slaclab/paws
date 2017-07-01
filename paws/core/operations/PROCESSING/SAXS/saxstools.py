@@ -17,39 +17,56 @@ def compute_saxs(q,params):
     pre_flag = params['precursor_flag']
     f_flag = params['form_flag']
     s_flag = params['structure_flag']
-    if not any([pre_flag,f_flag,s_flag]):
-        I = np.ones(len(q))*params['I_at_0']
+    I_at_0 = params['I_at_0']
+    if not any([pre_flag,f_flag]):
+        return np.ones(len(q))*I_at_0
     else:
-        # if form or structure factor scatterers exist, 
-        # normalize intensity factors such that I_at_0 is fixed.
-        Ifactor_sum = 0
-        if not s_flag and not f_flag:
-            # No form or structure factor terms expected: allow I(q=0) to vary
-            Ifactor_sum = 1 
-        elif pre_flag:
-            Ifactor_sum += params['I0_pre']
-        if f_flag:
-            Ifactor_sum += params['I0_sphere']
-        if s_flag:
-            Ifactor_sum += params['I0_sphere']
-        #if s_flag:
-        #    Ifactor_sum += params['I0_pks']
         I = np.zeros(len(q))
         if pre_flag:
             I0_pre = params['I0_pre']
             r0_pre = params['r0_pre']
             I_pre = compute_spherical_normal_saxs(q,r0_pre,0)
-            I = I + params['I_at_0']*(I0_pre/Ifactor_sum)*I_pre
+            I += I0_pre*I_pre
         if f_flag: 
             I0_sph = params['I0_sphere']
             r0_sph = params['r0_sphere']
             sigma_sph = params['sigma_sphere']
             I_sph = compute_spherical_normal_saxs(q,r0_sph,sigma_sph)
-            I = I + params['I_at_0']*(I0_sph/Ifactor_sum)*I_sph
+            I += I0_sph*I_sph
         #if s_flag:
         #    I0_pk = params['I0_pk']
         #    I_pk = compute_peaks()
     return I
+        # if form or structure factor scatterers exist, 
+        # normalize all finite intensity factors by their sum,
+        # such that I_at_0 remains fixed.
+        #Ifactor_sum = 0
+        #if pre_flag and not s_flag and not f_flag:
+        #    # prefactor term only: allow I(q=0) to vary
+        #    Ifactor_sum = 1
+        #elif pre_flag and s_flag and f_flag:
+        #    if params['I0_pk'] == 0 and params['I0_sphere'] == 0:
+        #        # effectively prefactor term only
+        #        Ifactor_sum = 1
+        #elif pre_flag and s_flag:
+        #    if params['I0_pk'] == 0:
+        #        # effectively prefactor term only
+        #        Ifactor_sum = 1
+        #elif pre_flag and f_flag:
+        #    if params['I0_sphere'] == 0:
+        #        # effectively prefactor term only
+        #        Ifactor_sum = 1
+        #elif pre_flag:
+        #    # prefactor term and some other finite term(s):
+        #    # set up a normalization factor.
+        #    Ifactor_sum += params['I0_pre']
+        #if f_flag:
+        #    Ifactor_sum += params['I0_sphere']
+        #if s_flag:
+        #    Ifactor_sum += params['I0_pk']
+        # Finite scattering expected:
+        # should only be here if one or more population flags are set
+        # and their respective intensity factors are nonzero
 
 def compute_spherical_normal_saxs(q,r0,sigma):
     """
@@ -90,6 +107,7 @@ def precursor_heuristics(q,I,I_at_0=None):
     """
     Makes an educated guess for the radius of a small scatterer
     that would produce the input q, I(q).
+    Result is bounded between 0 and 10 Angstroms.
     """
     n_q = len(q)
     # optimize the pearson correlation in the upper half of the q domain
@@ -98,6 +116,9 @@ def precursor_heuristics(q,I,I_at_0=None):
     res = scipimin(fit_obj,[5],bounds=[(0,10)])
     r_opt = res.x[0]
     return r_opt
+    # Assume the first dip of the precursor form factor occurs around the max of our q range.
+    # First dip = qmax*r_pre ~ 4.5
+    #r0_pre = 4.5/q[-1] 
 
 def spherical_normal_heuristics(q,I,I_at_0=None):
     """
@@ -279,10 +300,16 @@ def saxs_fit(q,I,method,features,x_keys):
     These x_keys indicate which variables in the features dict should be optimized.
     TODO: document the objective functions, etc.
 
-    Supported methods (input as strings): 
-    full_spectrum_chi2- least squares fit to entire spectrum
-    full_spectrum_chi2log- least squares fit to logarithm of entire spectrum
-    TODO: fill in rest of objective options
+    Supported methods (string arguments): 
+    (1) 'full_spectrum_chi2'- sum of difference squared across entire q range. 
+    (2) 'full_spectrum_chi2log'- sum of difference of logarithm, squared, across entire q range. 
+    (3) 'full_spectrum_chi2norm'- sum of difference divided by measured value, squared, aross entire q range. 
+    (4) 'low_q_chi2'- sum of difference squared in only the lowest half of measured q range. 
+    (5) 'low_q_chi2log'- sum of difference of logarithm, squared, in lowest half of measured q range. 
+    (6) 'pearson'- pearson correlation between measured and modeled spectra. 
+    (7) 'pearson_log'- pearson correlation between logarithms of measured and modeled spectra.
+    (8) 'low_q_pearson'- pearson correlation between measured and modeled spectra. 
+    (9) 'low_q_pearson_log'- pearson correlation between logarithms of measured and modeled spectra. 
     """
     pre_flag = features['precursor_flag']
     form_flag = features['form_flag']
@@ -295,12 +322,10 @@ def saxs_fit(q,I,method,features,x_keys):
     for k in x_keys:
         if k in features.keys():
             x_init.append(features[k])
-            if k in ['r0_pre','r0_sphere']:
+            if k in ['r0_pre','r0_sphere','I0_pre','I0_sphere']:
                 x_bounds.append((0,None))
             elif k in ['sigma_sphere']:
                 x_bounds.append((0.0,0.3))
-            elif k in ['I0_pre','I0_sphere']:
-                x_bounds.append((0.0,1.0))
     #print(fdict)
     #import pdb; pdb.set_trace()
     #full_saxs = fdict[fdict.keys()[-1]]
@@ -309,14 +334,16 @@ def saxs_fit(q,I,method,features,x_keys):
     n_q = len(q)
     if method == 'full_spectrum_chi2':
         fit_obj = lambda x: np.sum( (saxs_fun(q,x,features) - I)**2 )
+    elif method == 'full_spectrum_chi2log':
+        fit_obj = lambda x: np.sum( (np.log(saxs_fun(q[I_nz],x,features)) - np.log(I[I_nz]))**2 )
+    elif method == 'full_spectrum_chi2norm':
+        fit_obj = lambda x: np.sum( ((saxs_fun(q[I_nz],x,features) - I[I_nz])/I[I_nz])**2 )
     elif method == 'low_q_chi2':
         fit_obj = lambda x: np.sum( (saxs_fun(q[:n_q/2],x,features) - I[:n_q/2])**2 )
     elif method == 'pearson':
         fit_obj = lambda x: -1*compute_pearson(saxs_fun(q,x,features), I)
     elif method == 'low_q_pearson':
         fit_obj = lambda x: -1*compute_pearson(saxs_fun(q[:n_q/2],x,features), I[:n_q/2]) 
-    elif method == 'full_spectrum_chi2log':
-        fit_obj = lambda x: np.sum( (np.log(saxs_fun(q[I_nz],x,features)) - np.log(I[I_nz]))**2 )
     elif method == 'low_q_chi2log':
         fit_obj = lambda x: np.sum( (np.log(saxs_fun(q[I_nz][:n_q/2],x,features)) - np.log(I[I_nz][:n_q/2]))**2 )
     elif method == 'pearson_log':
@@ -473,13 +500,13 @@ def fit_with_slope_constraint(q,I,q_cons,dIdq_cons,order,weights=None):
     p_fit = np.linalg.solve(Ap,b) 
     p_fit = p_fit[:-1]  # throw away Lagrange multiplier term 
     p_fit = p_fit[::-1] # reverse coefs to get np.polyfit format
-    from matplotlib import pyplot as plt
-    plt.figure(3)
-    plt.plot(q,I)
-    plt.plot(q,np.polyval(p_fit,q))
-    plt.plot(np.arange(q_cons,q[-1],q[-1]/100),np.polyval(p_fit,np.arange(q_cons,q[-1],q[-1]/100)))
-    plt.plot(q_cons,np.polyval(p_fit,q_cons),'ro')
-    plt.show()
+    #from matplotlib import pyplot as plt
+    #plt.figure(3)
+    #plt.plot(q,I)
+    #plt.plot(q,np.polyval(p_fit,q))
+    #plt.plot(np.arange(q_cons,q[-1],q[-1]/100),np.polyval(p_fit,np.arange(q_cons,q[-1],q[-1]/100)))
+    #plt.plot(q_cons,np.polyval(p_fit,q_cons),'ro')
+    #plt.show()
     return p_fit
  
 def spherical_normal_heuristics_setup():
