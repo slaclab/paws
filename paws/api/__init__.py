@@ -88,6 +88,12 @@ class PawsAPI(object):
         op.load_defaults()
         wf.set_item(op_tag,op)
 
+    def add_plugin(self,pgin_tag,pgin_name):
+        pgin = self._plugin_manager.get_plugin(pgin_name)
+        # instantiate with default inputs
+        pgin = pgin()
+        self._plugin_manager.set_item(pgin_tag,pgin)
+
     def remove_op(self,op_tag,wfname=None):
         wf = self.get_wf(wfname)
         wf.remove_item(op_tag)

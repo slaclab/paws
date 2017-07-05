@@ -51,35 +51,36 @@ class PifNPSynth(Operation):
         c = self.inputs['composition']
         f = self.inputs['features']
         # Subsystems for solution ingredients
-        colloid_sys = pifobj.ChemicalSystem(uid_pre+'_pd_colloid',['colloidal Pd nanoparticles'],None,None,None,'Pd') 
-        acid_sys = pifobj.ChemicalSystem(uid_pre+'_oleic_acid',['oleic acid'],None,None,None,'C18H34O2') 
-        amine_sys = pifobj.ChemicalSystem(uid_pre+'_oleylamine',['oleylamine'],None,None,None,'C18H35NH2') 
-        TOP_sys = pifobj.ChemicalSystem(uid_pre+'_trioctylphosphine',['trioctylphosphine'],None,None,None,'P(C8H17)3')
-        subsys = [colloid_sys,acid_sys,amine_sys,TOP_sys]
+        #colloid_sys = pifobj.ChemicalSystem(uid_pre+'_pd_colloid',['colloidal Pd nanoparticles'],None,None,None,'Pd') 
+        #acid_sys = pifobj.ChemicalSystem(uid_pre+'_oleic_acid',['oleic acid'],None,None,None,'C18H34O2') 
+        #amine_sys = pifobj.ChemicalSystem(uid_pre+'_oleylamine',['oleylamine'],None,None,None,'C18H35NH2') 
+        #TOP_sys = pifobj.ChemicalSystem(uid_pre+'_trioctylphosphine',['trioctylphosphine'],None,None,None,'P(C8H17)3')
+        #subsys = [colloid_sys,acid_sys,amine_sys,TOP_sys]
         # TODO: Quantity information for subsystems
         main_sys = pifobj.ChemicalSystem()
         main_sys.uid = uid_full
-        main_sys.sub_systems = subsys
-        main_sys.properties = self.saxs_to_pif_properties(q_I,T_C)
+        #main_sys.sub_systems = subsys
+        if q_I is not None and temp_C is not None:
+            main_sys.properties = self.saxs_to_pif_properties(q_I,temp_C)
         main_sys.tags = ['reaction id: '+uid_pre,'date: '+t_str,'utc: '+str(int(t_utc))]
         self.outputs['pif'] = main_sys
 
-    def saxs_to_pif_properties(self,q_I,T_C):
+    def saxs_to_pif_properties(self,q_I,temp_C):
         #props = []
         #for i in range(len(q)):
-        pq = pifobj.Property()
-        n_qpoints = q_I.shape[0]
+        #pq = pifobj.Property()
         ### property: scattered intensity
         pI = pifobj.Property()
         pI.name = 'SAXS intensity'
+        n_qpoints = q_I.shape[0]
         pI.scalars = [pifobj.Scalar(q_I[i,1]) for i in range(n_qpoints)]
         pI.units = 'counts'
         pI.conditions = []
         pI.conditions.append( pifobj.Value('SAXS scattering vector', 
                             [pifobj.Scalar(q_I[i,0]) for i in range(n_qpoints)],
-                            None,None,'1/Angstrom') )
-        pI.conditions.append(pifobj.Value('temperature',[pifobj.Scalar(T_C)],None,None,'degrees Celsius'))
-        return [pq,pI] 
+                            None,None,None,'1/Angstrom') )
+        pI.conditions.append(pifobj.Value('temperature',[pifobj.Scalar(temp_C)],None,None,None,'degrees Celsius'))
+        return [pI] 
         
 #    def make_piftemperature(self,t):
 #        v = pifobj.Value()
