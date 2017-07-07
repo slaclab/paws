@@ -6,11 +6,13 @@ include
 share
 scratch
 build
+build_dist.x
 dist
 doc/build_scripts
 doc/source
 doc/html
 doc/tex
+*.egg-info
 *.pyc
 *.swp
 *.swo
