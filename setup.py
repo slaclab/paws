@@ -52,7 +52,7 @@ setup(
         #'Development Status :: 5 - Production/Stable',
         #'Development Status :: 6 - Mature',
 
-        'Intended Audience :: Researchers, Developers',
+        'Intended Audience :: Developers',
         'Topic :: Data Analysis',
 
         # Pick your license as you wish (should match "license" above)
