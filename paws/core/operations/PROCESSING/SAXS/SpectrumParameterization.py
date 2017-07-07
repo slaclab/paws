@@ -113,7 +113,15 @@ class SpectrumParameterization(Operation):
                 raise ValueError(msg)
         
         if 'I_at_0' in fix_keys:
-            I_at_0 = fixed_params['I_at_0']
+            if not fixed_params['I_at_0'] == 0:
+                I_at_0 = fixed_params['I_at_0']
+            else:
+                if f_flag or s_flag:
+                    qmax_fit = q[0]+float(q[-1]-q[0])*0.1
+                    idx_lowq = (q<qmax_fit)
+                    I_at_0 = saxstools.fit_I0(q[idx_lowq],I[idx_lowq])
+                else:
+                    I_at_0 = saxstools.fit_I0(q,I)
         elif 'I0_sphere' in fix_keys and 'I0_pre' in fix_keys:
             I_at_0 = fixed_params['I0_pre'] + fixed_params['I0_sphere']
         else:
@@ -128,25 +136,33 @@ class SpectrumParameterization(Operation):
                 I_at_0 = saxstools.fit_I0(q,I)
         p['I_at_0'] = I_at_0
 
-        if pre_flag:
-            if 'r0_pre' in fix_keys:
-                r0_pre = fixed_params['r0_pre']
-            else:
-                r0_pre = saxstools.precursor_heuristics(q,I,I_at_0=I_at_0)
-            p['r0_pre'] = r0_pre 
-
         if f_flag:
             if ('r0_sphere' in fix_keys and 'sigma_sphere' in fix_keys):
                 r0_sphere = fixed_params['r0_sphere']
                 sigma_sphere = fixed_params['sigma_sphere']
             else:
-                r0_sphere, sigma_sphere = saxstools.spherical_normal_heuristics(q,I,I_at_0=I_at_0)
+                try:
+                    r0_sphere, sigma_sphere = saxstools.spherical_normal_heuristics(q,I,I_at_0=I_at_0)
+                except Exception as ex:
+                    # sabotage
+                    p['ERROR_MESSAGE'] = ex.message
+                    p['bad_data_flag'] = True 
+                    self.outputs['features'] = p
+                    self.outputs['return_code'] = 1
+                    raise ex 
                 if 'r0_sphere' in fix_keys:
                     r0_sphere = fixed_params['r0_sphere']
                 if 'sigma_sphere' in fix_keys:
                     sigma_sphere = fixed_params['sigma_sphere']
             p['r0_sphere'] = r0_sphere
             p['sigma_sphere'] = sigma_sphere
+
+        if pre_flag:
+            if 'r0_pre' in fix_keys:
+                r0_pre = fixed_params['r0_pre']
+            else:
+                r0_pre = saxstools.precursor_heuristics(q,I,I_at_0=I_at_0)
+            p['r0_pre'] = r0_pre 
 
         if pre_flag and f_flag:
             if 'I0_pre' in fix_keys and 'I0_sphere' in fix_keys:

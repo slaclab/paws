@@ -75,10 +75,10 @@ class SpectrumFit(Operation):
         p = self.inputs['fit_params']
         f = copy.deepcopy(self.inputs['features'])
         #try:
-        print f
+        #print f
         d_opt = saxstools.saxs_fit(q,I,m,f,p)
         f.update(d_opt)
-        print d_opt
+        #print d_opt
             #for k in p:
             #    f[k] = d_opt[k]
         #except Exception as ex:

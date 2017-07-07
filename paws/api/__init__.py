@@ -90,9 +90,28 @@ class PawsAPI(object):
 
     def add_plugin(self,pgin_tag,pgin_name):
         pgin = self._plugin_manager.get_plugin(pgin_name)
-        # instantiate with default inputs
         pgin = pgin()
         self._plugin_manager.set_item(pgin_tag,pgin)
+
+    def set_plugin_input(self,pgin_tag,input_name,**kwargs):
+        src,tp,val = self._parse_src_tp_val(kwargs)
+        if src is None:
+            src = pgin.input_src[input_name]
+        if tp is None:
+            tp = pgin.input_type[input_name]
+        if val is None:
+            val = pgin.inputs[input_name]
+        if src == optools.text_input:
+            self.pgin.inputs[name] = optools.cast_type_val(tp,val)
+        else:
+            self.pgin.inputs[name] = val 
+
+    def start_plugin(self,pgin_name):
+        pgin = self.get_plugin(pgin_name)
+        pgin.start()
+
+    def get_plugin(self,pgin_name):
+        return self._plugin_manager.get_data_from_uri(pgin_name)
 
     def remove_op(self,op_tag,wfname=None):
         wf = self.get_wf(wfname)
@@ -100,12 +119,24 @@ class PawsAPI(object):
 
     def set_input(self,opname,input_name,wfname=None,**kwargs):
         op = self.get_op(opname,wfname) 
-        src = op.input_locator[input_name].src
-        tp = op.input_locator[input_name].tp
-        val = op.input_locator[input_name].val
-        if 'src' in kwargs:
-            if kwargs['src'] in optools.input_sources:
-                src = optools.valid_sources[ optools.input_sources.index(kwargs['src']) ]
+        src,tp,val = self._parse_src_tp_val(kwargs)
+        if src is None:
+            src = op.input_locator[input_name].src
+        if tp is None:
+            tp = op.input_locator[input_name].tp
+        if val is None:
+            val = op.input_locator[input_name].val
+        il = optools.InputLocator(src,tp,val)
+        op.input_locator[input_name] = il
+
+    @staticmethod
+    def _parse_src_tp_val(kw_dict): 
+        src = None
+        tp = None
+        val = None
+        if 'src' in kw_dict:
+            if kw_dict['src'] in optools.input_sources:
+                src = optools.valid_sources[ optools.input_sources.index(kw_dict['src']) ]
                 # Any default type setting can go here.
                 if src == optools.batch_input:
                     tp = optools.auto_type
@@ -116,16 +147,15 @@ class PawsAPI(object):
             else:
                 #TODO: error? warning?
                 src = optools.no_input
-        if 'tp' in kwargs:
-            if kwargs['tp'] in optools.input_types:
-                tp = optools.valid_types[ optools.input_types.index(kwargs['tp']) ]
+        if 'tp' in kw_dict:
+            if kw_dict['tp'] in optools.input_types:
+                tp = optools.valid_types[ optools.input_types.index(kw_dict['tp']) ]
             else:
                 #TODO: error? warning?
                 tp = optools.none_type
-        if 'val' in kwargs:
-            val = kwargs['val']
-        il = optools.InputLocator(src,tp,val)
-        op.input_locator[input_name] = il
+        if 'val' in kw_dict:
+            val = kw_dict['val']
+        return src,tp,val
 
     def get_output(self,opname,output_name,wfname=None):
         op = self.get_op(opname,wfname)

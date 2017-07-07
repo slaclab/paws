@@ -180,7 +180,7 @@ def saxs_Iq4_metrics(q,I):
     From an input spectrum q and I(q),
     compute several properties of the I(q)*q^4 curve.
     This was designed for spectra that are 
-    dominated by a dilute form factor term.
+    dominated by a dilute spherical form factor term.
     The metrics extracted by this Operation
     were originally intended as an intermediate step
     for estimating size distribution parameters 
@@ -291,6 +291,26 @@ def compute_saxs_with_substitutions(q,d,x_keys,x_vals):
         d_sub[k] = v
     return compute_saxs(q,d_sub)
 
+#def compute_saxs_with_fixed_I0(q,d,x_keys,x_vals):
+#    """
+#    Same thing as compute_saxs_with_substitutions()
+#    but normalizes intensity factors so that I(0) remains fixed.
+#    """
+#    Itot_old = 0
+#    Itot_new = 0
+#    for k,v in zip(x_keys,x_vals):
+#        if k == 'I0_pre' and d['precursor_flag']:
+#            Itot_old += d['I0_pre']
+#            Itot_new += v
+#        if k == 'I0_sphere' and d['form_flag']:
+#            Itot_old += d['I0_sphere']
+#            Itot_new += v
+#    d_sub = d.copy()
+#    for k,v in zip(x_keys,x_vals):
+#        if k == 'I0_pre':
+#            d_sub[k] = float(v)*Itot_old/Itot_new
+#    return compute_saxs(q,d_sub)
+
 def saxs_fit(q,I,method,features,x_keys):
     """
     Fit a saxs spectrum (I(q) vs q) to the theoretical spectrum 
@@ -316,6 +336,7 @@ def saxs_fit(q,I,method,features,x_keys):
     structure_flag = features['structure_flag']
 
     saxs_fun = lambda q,x,d: compute_saxs_with_substitutions(q,d,x_keys,x)
+    #saxs_fun = lambda q,x,d: compute_saxs_with_fixed_I0(q,d,x_keys,x)
     x_init = [] 
     x_bounds = [] 
 
