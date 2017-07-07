@@ -1,6 +1,6 @@
-Metadata-Version: 1.1
+Metadata-Version: 1.2
 Name: pypaws
-Version: 0.6.1
+Version: 0.6.2
 Summary: the Platform for Automated Workflows by SSRL
 Home-page: https://github.com/slaclab/paws/
 Author: Lenson A. Pellouchoud, Amanda Fournier, Fang Ren, Yuriy Kolotovsky, Ronald Pandolfi, Apurva Mehta, Christopher Tassone
@@ -156,3 +156,4 @@ Classifier: Intended Audience :: Science/Research
 Classifier: Topic :: Scientific/Engineering
 Classifier: License :: Public Domain
 Classifier: Programming Language :: Python :: 2.7
+Requires-Python: >=2.6, <3
