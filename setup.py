@@ -1,7 +1,7 @@
 """
 paws setup module
 ---- ----- ------
-See https://packaging.python.org/distributing/
+from https://packaging.python.org/distributing/
 """
 
 #from setuptools import setup, find_packages
@@ -17,9 +17,18 @@ here = path.abspath(path.dirname(__file__))
 with open(path.join(here,'README.rst')) as f:
     long_description = f.read()
 
-# Get the code version from the paws_config.py file, store as __version__
+# Executing paws_config.py defines __version__ 
 with open(path.join(here,'paws_config.py')) as f: 
     exec(f.read())
+
+__authorship__=''
+here = path.abspath(path.dirname(__file__))
+
+with open(path.join(here,'contributors.txt')) as f: 
+    for line in f.readlines():
+        __authorship__ += line.strip()+', '
+__authorship__ = __authorship__[:-2]
+
 
 setup(
     name='paws',
@@ -31,9 +40,9 @@ setup(
     long_description=long_description,
 
     url='https://github.com/slaclab/paws/',
-    author='Lenson A. Pellouchoud, Amanda Fournier, Fang Ren, Yuriy Kolotovsky, Ronald Pandolfi, Apurva Mehta, Christopher Tassone',
+    author=__authorship__,
     author_email='paws-developers@slac.stanford.edu',
-    license='Other/Proprietary License',
+    license='BSD',
 
     # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
@@ -63,7 +72,8 @@ setup(
     # your project is installed. For an analysis of "install_requires" vs pip's
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=['PySide'],
+    install_requires=['pyyaml'],
+    python_requires='>=2.6, <3',
 
     # List additional groups of dependencies here (e.g. development
     # dependencies). You can install these using the following syntax,
@@ -90,6 +100,7 @@ setup(
     # To provide executable scripts, use entry points in preference to the
     # "scripts" keyword. Entry points provide cross-platform support and allow
     # pip to create the appropriate form of executable for the target platform.
+    # TODO: entry point for paws python console
     entry_points={
         'console_scripts': [
             'paws=paws:main',
