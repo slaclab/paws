@@ -82,10 +82,11 @@ class WfManager(object):
             for uri in batch_op.saved_items():
                 # TODO # BUG: there is the chance for infinite recursion here
                 # if the batch is asked to save an upstream item?
-                save_data = self.workflows[wfname].get_data_from_uri(uri)
+                save_data = copy.deepcopy(self.workflows[wfname].get_data_from_uri(uri))
                 save_dict = self.uri_to_embedded_dict(uri,save_data) 
                 saved_items_dict = self.update_embedded_dict(saved_items_dict,save_dict)
-            batch_op.output_list()[i] = copy.deepcopy(saved_items_dict)
+            #batch_op.output_list()[i] = copy.deepcopy(saved_items_dict)
+            batch_op.output_list()[i] = saved_items_dict
             # TODO: set a more specific item here to save some tree update time?
             #self.workflows[wfname].set_item(batch_op_tag,batch_op)
             outputs_uri = batch_op_tag+'.'+optools.outputs_tag+'.'+batch_op.batch_outputs_tag()+'.'+str(i)

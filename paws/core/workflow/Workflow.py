@@ -15,6 +15,24 @@ class Workflow(TreeModel):
         super(Workflow,self).__init__()
         #self.wfman = wfman
 
+    def __getitem__(self,key):
+        optags = self.keys()
+        if key in optags:
+            return self.get_data_from_uri(key) 
+        else:
+            raise KeyError('[{}] {}.__getitem__ only recognizes keys {}'
+            .format(__name__,type(self).__name__,optags))
+    def __setitem__(self,key,data):
+        optags = self.keys() 
+        # TODO: ensure that data is an Operation?
+        if key in optags:
+            self.set_item(key,data)
+        else:
+            raise KeyError('[{}] {}.__setitem__ only recognizes keys {}'
+            .format(__name__,type(self).__name__,optags))
+    def keys(self):
+        return self.list_op_tags() 
+
     def build_tree(self,x):
         """
         Reimplemented TreeModel.build_tree() 
