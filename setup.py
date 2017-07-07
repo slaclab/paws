@@ -18,7 +18,7 @@ with open(path.join(here,'README.rst')) as f:
     long_description = f.read()
 
 # Executing paws_config.py defines __version__ 
-with open(path.join(here,'paws_config.py')) as f: 
+with open(path.join(here,'paws/paws_config.py')) as f: 
     exec(f.read())
 
 __authorship__=''
@@ -72,7 +72,7 @@ setup(
     # your project is installed. For an analysis of "install_requires" vs pip's
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=['pyyaml'],
+    install_requires=['pyyaml','pyside'],
     python_requires='>=2.6, <3',
 
     # List additional groups of dependencies here (e.g. development

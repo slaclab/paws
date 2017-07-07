@@ -2,6 +2,7 @@ README.rst
 setup.cfg
 setup.py
 paws/__init__.py
+paws/paws_config.py
 paws/api/__init__.py
 paws/core/__init__.py
 paws/core/pawstools.py

@@ -14,13 +14,13 @@ d = os.path.dirname(d)
 sourcedir = str(d)
 d = os.path.dirname(d)
 # d = (pawsroot)
-rootdir = str(d)
-scratchdir = os.path.join(rootdir,'scratch')
+#rootdir = str(d)
+scratchdir = os.path.join(os.path.expanduser('~'),'.paws_scratch')
 if not os.path.exists(scratchdir):
     os.mkdir(scratchdir)
 
 # Get the code version from the paws_config.py file, store as __version__
-with open(os.path.join(rootdir,'paws_config.py')) as f: 
+with open(os.path.join(sourcedir,'paws_config.py')) as f: 
     exec(f.read())
 version=__version__
 

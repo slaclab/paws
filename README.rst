@@ -112,12 +112,14 @@ and plotted using matplotlib.
 Installation
 ------------
 
-TODO: put instructions here on how to install paws from PyPI.
-The core modules, being pure Python, 
-will be very easy to install from PyPI (not yet implemented).
-Because they depend on PySide,
-installing the gui modules will be somewhat more complex, 
-for those who wish to use the gui.
+The full `paws` package is now available on PyPI.
+To install in a working Python (>=2.6,<3) environment, invoke `pip`:
+`pip install pypaws`
+
+The dependencies of `paws` are not yet properly declared in the package.
+In a near future version, the core and graphical modules will be distributed in separate PyPI channels,
+and the dependencies of individual Operations will be checked and handled at run time.
+
 
 Contribution
 ------------
@@ -135,6 +137,6 @@ at `paws-developers@slac.stanford.edu`.
 License
 -------
 
-The BSD-like license attached to this software 
+The 3-clause BSD-like license attached to this software 
 can be found in the LICENSE file in the source code root directory.
 

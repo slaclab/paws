@@ -1,6 +1,6 @@
-Metadata-Version: 1.2
+Metadata-Version: 1.1
 Name: pypaws
-Version: 0.6.0
+Version: 0.6.1
 Summary: the Platform for Automated Workflows by SSRL
 Home-page: https://github.com/slaclab/paws/
 Author: Lenson A. Pellouchoud, Amanda Fournier, Fang Ren, Yuriy Kolotovsky, Ronald Pandolfi, Apurva Mehta, Christopher Tassone
@@ -120,12 +120,14 @@ Description: paws: the Platform for Automated Workflows by SSRL
         Installation
         ------------
         
-        TODO: put instructions here on how to install paws from PyPI.
-        The core modules, being pure Python, 
-        will be very easy to install from PyPI (not yet implemented).
-        Because they depend on PySide,
-        installing the gui modules will be somewhat more complex, 
-        for those who wish to use the gui.
+        The full `paws` package is now available on PyPI.
+        To install in a working Python (>=2.6,<3) environment, invoke `pip`:
+        `pip install pypaws`
+        
+        The dependencies of `paws` are not yet properly declared in the package.
+        In a near future version, the core and graphical modules will be distributed in separate PyPI channels,
+        and the dependencies of individual Operations will be checked and handled at run time.
+        
         
         Contribution
         ------------
@@ -143,7 +145,7 @@ Description: paws: the Platform for Automated Workflows by SSRL
         License
         -------
         
-        The BSD-like license attached to this software 
+        The 3-clause BSD-like license attached to this software 
         can be found in the LICENSE file in the source code root directory.
         
         
@@ -154,4 +156,3 @@ Classifier: Intended Audience :: Science/Research
 Classifier: Topic :: Scientific/Engineering
 Classifier: License :: Public Domain
 Classifier: Programming Language :: Python :: 2.7
-Requires-Python: >=2.6, <3
