@@ -12,8 +12,8 @@ class SpectrumProfiler(Operation):
     Based on some measures of the overall shape of the spectrum,
     the spectrum is tested for scattering from precursors 
     (approximated as small dilute monodisperse spheres),
-    scattering from spherical nanoparticles 
-    (dilute spheres with a normal size distribution),
+    scattering from dilute nanoparticles of various form factors 
+    (currently only spheres),
     diffraction peaks
     (Voigt-like profiles due to crystalline arrangements),
     or some combination of the three.
@@ -92,8 +92,6 @@ class SpectrumProfiler(Operation):
         powI = np.abs(fftI)**2
         high_freq_ratio = np.sum(powI[n_q/4:n_q/2])/np.sum(powI[1:n_q/4])
         #high_freq_ratio = np.sum(ampI[n_q/4:n_q/2])/np.sum(ampI[1:n_q/4])
-        # If use amplitude, cutoff should be about 0.24
-        # If use power, cutoff should be about 0.02
 
         ### fluctuation analysis
         fluc = np.sum(np.abs(I[1:]-I[:-1]))
@@ -106,6 +104,7 @@ class SpectrumProfiler(Operation):
         cos2q_corr = saxstools.compute_pearson(I,np.cos(q*np.pi/(2*q[-1]))**2)
         invq_corr = saxstools.compute_pearson(I,q**-1)
         #invq4_corr = saxstools.compute_pearson(I,q**-4)
+
         # correlations on log intensity
         idx_nz = np.invert(I <= 0)
         q_logcorr = saxstools.compute_pearson( np.log(I[idx_nz]) , np.linspace(0,1,n_q)[idx_nz] )
@@ -115,6 +114,7 @@ class SpectrumProfiler(Operation):
         invq_logcorr = saxstools.compute_pearson( np.log(I[idx_nz]) , q[idx_nz]**-1 )
 
         ### bin-integrated intensity analysis
+        # TODO: standardize these bins in q space
         qmin, qmax = q[0], q[-1]
         qrange = qmax-qmin
         bin_strengths = np.zeros(10)
@@ -133,12 +133,13 @@ class SpectrumProfiler(Operation):
         # Bad data have high noise
         # (high fluctuations relative to the mean)
         # or may be increasing-ish in q
-        bad_data_flag = ((fluctuations_over_mean > 50 
+        bad_data_flag = (fluctuations_over_mean > 30 
                         or q_corr > 0.2
-                        or low_q_dominance < 1)
-                        and not any([c>0.7 for c in [cosq_corr,cos2q_corr,cosq_logcorr,cos2q_logcorr]]))
+                        or low_q_dominance < 2)
         Imax_over_Ilowq = float(Imax)/bin_strengths[0]
         Imax_over_Imean = float(Imax)/float(Imean)
+        form_id = None 
+        structure_id = None 
         if bad_data_flag:
             form_flag = False
             precursor_flag = False
@@ -147,15 +148,25 @@ class SpectrumProfiler(Operation):
             # Flagging form factor: These tend to (log-)correlate with 1/q.
             # Spectra with relatively small form factor contribution 
             # tend to linear-correlate strongly with 1/q
-            form_flag = invq_logcorr > 0.7 or invq_corr > 0.95
-                          #and not all([cosq_corr > 0.7,cosq_logcorr > 0.7, cos2q_logcorr > 0.7, cos2q_corr>0.7]))
+            form_flag = ((invq_logcorr > 0.7 or invq_corr > 0.95) 
+                        and low_q_dominance > 5 
+                        and bin_strengths[0] / bin_strengths[-1] > 100)
+            #and not all([cosq_corr > 0.7,cosq_logcorr > 0.7, cos2q_logcorr > 0.7, cos2q_corr>0.7]))
+            if form_flag:
+                # TODO: determine form factor here
+                form_id = 'sphere'
+ 
             # Flagging precursors: 
             # Bin strengths should be decreasing, but not wildly  
-            precursor_flag = low_q_dominance > 1.5 and low_q_dominance < 100 
+            precursor_flag = low_q_dominance > 2 and low_q_dominance < 1000 
+
             # Flagging structure:
             # Largest bin is likely not lowest-q bin 
-            structure_flag = ((Imax_over_Ilowq > 1.2 and q_Imax > 0.05) #and Imax_over_Imean > 4 
-                            or (not np.argmax(bin_strengths) == 0))
+            structure_flag = Imax_over_Ilowq > 1.2 and q_Imax > 0.05 #and Imax_over_Imean > 4 
+            # or (not np.argmax(bin_strengths) == 0))
+            if structure_flag:
+                # TODO: determine structure factor here
+                structure_id = 'fcc'
         #######
         # More good/bad filters could be added here.
         #flag_msg = ''
@@ -179,6 +190,7 @@ class SpectrumProfiler(Operation):
             d_r['bin_strengths'] = bin_strengths
             d_r['Imax_over_Imean'] = Imax_over_Imean
             d_r['Imax_over_Ilowq'] = Imax_over_Ilowq
+            d_r['low_q_dominance'] = low_q_dominance 
             d_r['high_freq_ratio'] = high_freq_ratio 
             d_r['fluctuations_over_mean'] = fluctuations_over_mean 
             d_r['q_Imax'] = q_Imax
@@ -196,8 +208,8 @@ class SpectrumProfiler(Operation):
             d_r['precursor_flag'] = precursor_flag
             d_r['form_flag'] = form_flag
             d_r['structure_flag'] = structure_flag
-            d_r['structure_id'] = 'not_implemented'
-            d_r['form_id'] = 'not_implemented'
+            d_r['structure_id'] = structure_id 
+            d_r['form_id'] = form_id 
         self.outputs['return_code'] = 0
         self.outputs['features'] = d_r 
 

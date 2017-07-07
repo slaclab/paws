@@ -33,7 +33,7 @@ class SpectrumFit(Operation):
     """
 
     def __init__(self):
-        input_names = ['q','I','features','fit_params','method']
+        input_names = ['q','I','features','fit_params','objfun']
         output_names = ['return_code','features','q_I_opt']
         super(SpectrumFit, self).__init__(input_names, output_names)
 
@@ -43,8 +43,10 @@ class SpectrumFit(Operation):
         + 'Keys of this dict are the same as the SpectrumParameterization.outputs.features dict.')
         self.input_doc['fit_params'] = str('List of strings indicating which parameters to optimize. '
         + 'Each of these strings should also be a key of the input features dict.')
-        self.input_doc['method'] = str('String indicating choice of optimization method. '
-        + 'See documentation of saxstools.fit_saxs() for full documentation.')
+        self.input_doc['objfun'] = str('String indicating choice of objective function for optimization. '
+        + 'See documentation of saxstools.saxs_fit() for supported objective functions.')
+        #self.input_doc['constraints'] = str('List of strings indicating optimization constraints. '
+        #+ 'See documentation of saxstools.fit_saxs() for supported constraints.')
 
         self.output_doc['return_code'] = str('integer indicating whether or not the spectrum was found to be fittable. '
         + 'Possible values: 0=success, 1=error, 2=warning')
@@ -55,28 +57,38 @@ class SpectrumFit(Operation):
 
         self.input_src['q'] = optools.wf_input
         self.input_src['I'] = optools.wf_input
-        self.input_src['method'] = optools.text_input
+        self.input_src['objfun'] = optools.text_input
         self.input_src['fit_params'] = optools.text_input
         self.input_src['features'] = optools.wf_input
         self.input_type['q'] = optools.ref_type
         self.input_type['I'] = optools.ref_type
-        self.input_type['method'] = optools.str_type
+        self.input_type['objfun'] = optools.str_type
         self.input_type['fit_params'] = optools.str_type
         self.input_type['features'] = optools.ref_type
         # TODO: establish a good default here.
-        self.inputs['method'] = 'full_spectrum_chi2' 
+        self.inputs['objfun'] = 'full_spectrum_chi2log' 
 
     def run(self):
         # Set return code to 1 (error) by default;
         # if execution finishes, set it to 0
         self.outputs['return_code'] = 1
         q, I = self.inputs['q'], self.inputs['I']
-        m = self.inputs['method']
+        m = self.inputs['objfun']
         p = self.inputs['fit_params']
         f = copy.deepcopy(self.inputs['features'])
+        if f['bad_data_flag']:
+            # sabotage
+            self.outputs['return_code'] = 2
+            f['FIT_ERROR'] = '[{}] found bad_data flag, aborting'.format(__name__)
+            self.outputs['features'] = f
+            return
+        c = []
+        if f['form_flag'] or f['structure_flag']:
+            c = ['fix_I0']
+        #c = self.inputs['constraints'] 
         #try:
         #print f
-        d_opt = saxstools.saxs_fit(q,I,m,f,p)
+        d_opt = saxstools.saxs_fit(q,I,m,f,p,c)
         f.update(d_opt)
         #print d_opt
             #for k in p:
