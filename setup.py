@@ -31,7 +31,7 @@ __authorship__ = __authorship__[:-2]
 
 
 setup(
-    name='paws',
+    name='pypaws',
 
     # Versions should comply with PEP440.  
     version=__version__,
@@ -52,11 +52,11 @@ setup(
         #'Development Status :: 5 - Production/Stable',
         #'Development Status :: 6 - Mature',
 
-        'Intended Audience :: Developers',
-        'Topic :: Data Analysis',
+        'Intended Audience :: Science/Research',
+        'Topic :: Scientific/Engineering',
 
         # Pick your license as you wish (should match "license" above)
-        'License :: Other/Proprietary License',
+        'License :: Public Domain',
 
         # Specify the Python versions you support here. In particular, ensure
         # that you indicate whether you support Python 2, Python 3 or both.
