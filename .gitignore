@@ -11,10 +11,6 @@ doc/build_scripts
 doc/source
 doc/html
 doc/tex
-pypaws.egg-info
-paws.egg-info
-.travis.yml
-travis.log
 *.pyc
 *.swp
 *.swo
