@@ -68,6 +68,8 @@ setup(
     packages=find_packages(exclude=[]),
     #py_modules=["my_module"],
 
+    package_dir={'paws':'paws'},
+
     # List run-time dependencies here.  These will be installed by pip when
     # your project is installed. For an analysis of "install_requires" vs pip's
     # requirements files see:
@@ -88,7 +90,7 @@ setup(
     # installed, specify them here.  If using Python 2.6 or less, then these
     # have to be included in MANIFEST.in as well.
     package_data={
-        'paws': ['paws/ui/graphics/*.png','paws/ui/qtui/*.ui'],
+        'paws': ['ui/graphics/*.png','ui/qtui/*.ui'],
     },
 
     # Although 'package_data' is the preferred approach, in some case you may
