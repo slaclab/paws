@@ -34,7 +34,7 @@ class SpectrumFit(Operation):
 
     def __init__(self):
         input_names = ['q','I','features','fit_params','objfun']
-        output_names = ['return_code','features','q_I_opt']
+        output_names = ['features','q_I_opt']
         super(SpectrumFit, self).__init__(input_names, output_names)
 
         self.input_doc['q'] = '1d array of wave vector values in 1/Angstrom units'
@@ -48,8 +48,6 @@ class SpectrumFit(Operation):
         #self.input_doc['constraints'] = str('List of strings indicating optimization constraints. '
         #+ 'See documentation of saxstools.fit_saxs() for supported constraints.')
 
-        self.output_doc['return_code'] = str('integer indicating whether or not the spectrum was found to be fittable. '
-        + 'Possible values: 0=success, 1=error, 2=warning')
         self.output_doc['features'] = str('dict of features copied from inputs, '
         + 'with entries optimized for all keys specified in fit_params.')
         self.output_doc['q_I_opt'] = str('n-by-2 array of q and the theoretical intensity spectrum, '
@@ -71,38 +69,25 @@ class SpectrumFit(Operation):
     def run(self):
         # Set return code to 1 (error) by default;
         # if execution finishes, set it to 0
-        self.outputs['return_code'] = 1
+        f = copy.deepcopy(self.inputs['features'])
+        if not any([f['precursor_flag'],f['form_flag'],f['structure_flag']]):
+            self.outputs['features'] = f
+            return
         q, I = self.inputs['q'], self.inputs['I']
         m = self.inputs['objfun']
         p = self.inputs['fit_params']
-        f = copy.deepcopy(self.inputs['features'])
-        if f['bad_data_flag']:
-            # sabotage
-            self.outputs['return_code'] = 2
-            f['FIT_ERROR'] = '[{}] found bad_data flag, aborting'.format(__name__)
-            self.outputs['features'] = f
-            return
+
+        # Set up constraints as needed
         c = []
         if f['form_flag'] or f['structure_flag']:
             c = ['fix_I0']
-        #c = self.inputs['constraints'] 
-        #try:
-        #print f
-        d_opt = saxstools.saxs_fit(q,I,m,f,p,c)
-        f.update(d_opt)
-        #print d_opt
-            #for k in p:
-            #    f[k] = d_opt[k]
-        #except Exception as ex:
-        #    msg = str('[{}] optimization by {} failed '
-        #    + 'while attempting to fit spectrum. message: '
-        #    + '{}'.format(__name__,m,ex.message))
-        #    raise ex
 
+        # Fitting happens here
+        d_opt = saxstools.saxs_fit(q,I,m,f,p,c)
+
+        f.update(d_opt)
         I_opt = saxstools.compute_saxs(q,f)
         q_I_opt = np.array([q,I_opt]).T
-
         self.outputs['features'] = f 
         self.outputs['q_I_opt'] = q_I_opt
-        self.outputs['return_code'] = 0
 

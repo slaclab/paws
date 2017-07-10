@@ -38,7 +38,7 @@ class SpectrumParameterization(Operation):
 
     def __init__(self):
         input_names = ['q', 'I', 'features', 'fixed_params', 'fixed_param_values']
-        output_names = ['return_code','features','q_I_guess']
+        output_names = ['features','q_I_guess']
         super(SpectrumParameterization, self).__init__(input_names, output_names)
         self.input_doc['q'] = '1d array of wave vector values in 1/Angstrom units'
         self.input_doc['I'] = '1d array of intensity values I(q)'
@@ -61,10 +61,6 @@ class SpectrumParameterization(Operation):
         + 'should be fixed to specified values- these correspond one-to-one with fixed_param_values.')
         self.input_doc['fixed_param_values'] = 'list of values to which the corresponding fixed_params will be set.'
 
-        self.output_doc['return_code'] = str('integer indicating whether or not '
-        + 'the spectrum was successfully parameterized for the given flags. '
-        + 'Possible values: 0=success, 1=error (raised an Exception), '
-        + '2=warning (spectrum exhibits unexpected features).')
         self.output_doc['features'] = str('dict of features, same as input features, ' 
         + 'but updated with parameters for the flagged populations. ' 
         + 'Dict keys and descriptions: \n' 
@@ -91,12 +87,9 @@ class SpectrumParameterization(Operation):
         q, I = self.inputs['q'], self.inputs['I']
         # Set return code to 1 (error) by default;
         # if execution finishes, set it to 0
-        self.outputs['return_code'] = 1
         p = self.inputs['features'] 
         if p['bad_data_flag']:
-            # sabotage
-            self.outputs['return_code'] = 2
-            p['PARAMETERIZE_ERROR'] = '[{}] found bad_data flag, aborting'.format(__name__)
+            # stop
             self.outputs['features'] = p
             return 
         pre_flag = p['precursor_flag']
@@ -145,14 +138,13 @@ class SpectrumParameterization(Operation):
             else:
                 I_at_0 = saxstools.fit_I0(q,I)
             if I_at_0 > 1.5*I[0] or I_at_0 < 0.5*I[0]:
-                #sabotage 
+                # stop 
                 msg = 'polynomial fit for I(q=0) deviates too far from low-q values' 
                 p['ERROR_MESSAGE'] = msg
                 p['I_at_0'] = I_at_0
                 p['bad_data_flag'] = True 
                 self.outputs['features'] = p
-                self.outputs['return_code'] = 1
-                raise Exception(msg) 
+                return 
         p['I_at_0'] = I_at_0
 
         r0_form = None
@@ -165,11 +157,10 @@ class SpectrumParameterization(Operation):
                 try:
                     r0_form, sigma_form = saxstools.spherical_normal_heuristics(q,I,I_at_0=I_at_0)
                 except Exception as ex:
-                    # sabotage
+                    # stop 
                     p['ERROR_MESSAGE'] = ex.message
                     p['bad_data_flag'] = True 
                     self.outputs['features'] = p
-                    self.outputs['return_code'] = 1
                     raise ex 
                 if 'r0_form' in fix_keys:
                     r0_form = fixed_params['r0_form']
@@ -233,7 +224,6 @@ class SpectrumParameterization(Operation):
         q_I_guess = np.array([q,I_guess]).T
         self.outputs['q_I_guess'] = q_I_guess 
         self.outputs['features'] = p 
-        self.outputs['return_code'] = 0
 
         #### Get logarithmic coef of determination to assess fit quality:
         #I_norm_nz = np.invert( (q_I_norm[:,1]<=0) )
