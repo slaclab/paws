@@ -121,6 +121,29 @@ In a near future version, the core and graphical modules will be distributed in 
 and the dependencies of individual Operations will be checked and handled at run time.
 
 
+Attribution
+-----------
+
+`paws` was written at SSRL by Chris Tassone's research group.
+If you use `paws` in your published research, 
+we will greatly appreciate a citation. 
+
+Before citing `paws`, it is of primary importance that you cite 
+the authors of the original work that produced your results: 
+in most cases this will be separate from the citation for `paws`.
+Citations for your specific operations can be found
+by looking those operations up in the `paws` documentation:
+(TODO: insert readthedocs link here).
+If the documentation is unclear for the operations you need to cite,
+please contact us at `paws-developers@slac.stanford.edu`,
+and we will return the correct citation
+and fix the missing documentation.
+
+A proper citation for `paws` itself can be found 
+at the beginning the `paws` documentation:
+(TODO: insert readthedocs link here.)
+
+
 Contribution
 ------------
 
@@ -129,7 +152,8 @@ Whether you are a researcher looking to contribute operations to the `paws` libr
 or a software developer looking to contribute to the platform itself,
 the `paws` development team would love to hear from you.
 
-See the manual in the `doc` directory for basic instructions on contributing,
+See the documentation (TODO: insert readthedocs link here) 
+for basic instructions on contributing,
 and/or get in touch with the `paws` development team
 at `paws-developers@slac.stanford.edu`.
 

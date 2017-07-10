@@ -46,8 +46,14 @@ class PawsAPI(object):
         wfman_pgin.inputs['wf_manager'] = self._wf_manager 
         wfman_pgin.start()
         self._plugin_manager.set_item('wf_manager',wfman_pgin)
-    
-    def enable_ops(self,*args):
+
+    def info(self):   
+        info_msg = str('PAWS: the Platform for Automated Workflows by SSRL. '
+        + 'Version: {}'.format(pawstools.version))
+        print info_msg
+        return info_msg
+ 
+    def enable_ops(self):
         # TODO: operation enable/disable functionality
         pass
 
