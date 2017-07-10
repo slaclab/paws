@@ -57,25 +57,22 @@ class EasyZingers1D(Operation):
         I_z = [I[i] for i in idx_z]
         newIvals = np.zeros(len(q_z)) 
         for qi,zi in zip(idx_z,range(len(idx_z))):
-        #    from matplotlib import pyplot as plt
-        #    plt.figure(11)
             Idzi = I_dz[qi-w:qi+w+1]
-        #    plt.plot(Idzi)
             Idzi = Idzi[~np.isnan(Idzi)]
             newIvals[zi] = np.mean(Idzi)
-        #    plt.plot([w],np.mean(Idzi),'ro')
-        #    plt.show()
         for i,iq in zip(range(len(idx_z)),idx_z):
             I_dz[iq] = newIvals[i]
         self.outputs['q_I_dz'] = zip(q,I_dz)
         self.outputs['zmask'] = zmask
 
-        #from matplotlib import pyplot as plt
-        #plt.figure(1)
-        #plt.semilogy(q,I)
-        #plt.semilogy(q,I_dz,'g')
-        #for i in idx_z:
-        #    plt.semilogy(q[i],I[i],'ro')
-        #plt.show()
+        #if any(idx_z):
+        #if True:
+        #    from matplotlib import pyplot as plt
+        #    plt.figure(1)
+        #    plt.semilogy(q,I)
+        #    plt.semilogy(q,I_dz,'g')
+        #    for i in idx_z:
+        #        plt.semilogy(q[i],I[i],'ro')
+        #    plt.show()
             
 
