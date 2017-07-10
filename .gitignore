@@ -8,10 +8,6 @@ scratch
 build
 build_dist.sh
 dist
-doc/build_scripts
-doc/source
-doc/html
-doc/tex
 *.egg-info
 *.pyc
 *.swp

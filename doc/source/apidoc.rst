@@ -1,0 +1,13 @@
+.. _ch-apidoc:
+
+API Documentation
+=================
+
+This is the auto-generated documentation of the ``paws`` API,
+build with sphinx-apidoc.
+
+.. toctree::
+
+    apidoc_files/paws
+
+
