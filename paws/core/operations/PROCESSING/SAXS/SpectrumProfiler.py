@@ -40,28 +40,34 @@ class SpectrumProfiler(Operation):
         + 'bad_data_flag: Boolean indicating that the spectrum is unfamiliar or mostly made of noise. \n'
         + 'precursor_flag: Boolean indicating presence of precursor terms. \n'
         + 'form_flag: Boolean indicating presence of form factor terms. \n'
+        + 'form_id: Form factor identity, e.g. sphere, cube, rod, etc. \n'
         + 'structure_flag: Boolean indicating presence of structure factor terms. \n'
         + 'structure_id: Structure identity, e.g. fcc, hcp, bcc, etc. \n'
-        + 'form_id: Form factor identity, e.g. sphere, cube, rod, etc. \n'
+        + 'low_q_ratio: fraction of integrated intensity over q<0.4 '
+        + 'high_q_ratio: fraction of integrated intensity over q>0.4 '
+        + 'low_q_logratio: fraction of total log(I)-min(log(I)) over q<0.4 '
+        + 'high_q_logratio: fraction of total log(I)-min(log(I)) over q>0.4 '
         + 'high_freq_ratio: Ratio of the upper half to the lower half '
         + 'of the power spectrum of the discrete fourier transform of the intensity. \n'
-        + 'fluctuations_over_max: Integrated fluctuation of intensity '
-        + '(sum of absolute value of differences between adjacent points) '
-        + 'divided by the mean intensity. \n'
-        + 'bin_strengths: Integrated intensity in 10 evenly spaced q-bins. \n'
+        + 'fluctuation_strength: Integrated fluctuation of intensity '
+        + '(sum of difference in intensity between adjacent points '
+        + 'taken only where this difference changes sign), '
+        + 'divided by the range (maximum minus minimum) of intensity. \n'
         + 'Imax_over_Imean: maximum intensity divided by mean intensity. \n'
-        + 'Imax_over_Ilowq: maximum intensity divided by average intensity over lowest 10% of q domain. \n'
-        + 'q_Imax: q value of the maximum intensity. \n'
-        + 'q_corr: Pearson correlation between I(q) and q. \n'
-        + 'qsquared_corr: Pearson correlation between I(q) and q^2. \n'
-        + 'cos2q_corr: Pearson correlation between I(q) and (cos(q))^2. \n'
-        + 'cosq_corr: Pearson correlation between I(q) and cos(q). \n'
-        + 'invq_corr: Pearson correlation between I(q) and 1/q. \n'
-        + 'q_logcorr: Same as q_corr, but with log(I(q)). \n'
-        + 'qsquared_logcorr: Same as qsquared_corr, but with log(I(q)). \n'
-        + 'cos2q_logcorr: Same as cos2q_corr, but with log(I(q)). \n'
-        + 'cosq_logcorr: Same as cosq_corr, but with log(I(q)). \n'
-        + 'invq_logcorr: Same as invq_corr, but with log(I(q)).')
+        + 'Imax_over_Ilowq: Maximum intensity divided by mean intensity over q<0.1. \n'
+        + 'low_q_logcurv: Curvature of parabola fit to log(I) versus log(q) for q<0.1. \n'
+        + 'q_Imax: q value of the maximum intensity. ')
+        #+ 'bin_strengths: (not implemented). \n'
+        #+ 'q_corr: Pearson correlation between I(q) and q. \n'
+        #+ 'qsquared_corr: Pearson correlation between I(q) and q^2. \n'
+        #+ 'cos2q_corr: Pearson correlation between I(q) and (cos(q))^2. \n'
+        #+ 'cosq_corr: Pearson correlation between I(q) and cos(q). \n'
+        #+ 'invq_corr: Pearson correlation between I(q) and 1/q. \n'
+        #+ 'q_logcorr: Same as q_corr, but with log(I(q)). \n'
+        #+ 'qsquared_logcorr: Same as qsquared_corr, but with log(I(q)). \n'
+        #+ 'cos2q_logcorr: Same as cos2q_corr, but with log(I(q)). \n'
+        #+ 'cosq_logcorr: Same as cosq_corr, but with log(I(q)). \n'
+        #+ 'invq_logcorr: Same as invq_corr, but with log(I(q)).')
         self.input_src['q'] = optools.wf_input
         self.input_src['I'] = optools.wf_input
         self.input_src['dI'] = optools.no_input
@@ -78,7 +84,14 @@ class SpectrumProfiler(Operation):
         idxmax = np.argmax(I)
         Imax = I[idxmax] 
         q_Imax = q[idxmax]
+        idxmin = np.argmin(I)
+        Imin = I[idxmin]
+        Irange = Imax - Imin
         Imean = np.mean(I)
+        Imax_over_Imean = float(Imax)/float(Imean)
+        idx_around_max = ((q > 0.9*q_Imax) & (q < 1.1*q_Imax))
+        Imean_around_max = np.mean(I[idx_around_max])
+        Imax_over_Imean_local = Imax / Imean_around_max
 
         ### fourier analysis
         n_q = len(q)
@@ -89,8 +102,15 @@ class SpectrumProfiler(Operation):
         #high_freq_ratio = np.sum(ampI[n_q/4:n_q/2])/np.sum(ampI[1:n_q/4])
 
         ### fluctuation analysis
-        fluc = np.sum(np.abs(I[1:]-I[:-1]))
-        fluctuations_over_max = fluc/Imax
+        # array of the difference between neighboring points:
+        nn_diff = I[1:]-I[:-1]
+        # keep indices where the sign of this difference changes.
+        # also keep first index
+        nn_diff_prod = nn_diff[1:]*nn_diff[:-1]
+        idx_keep = np.hstack((np.array([True]),nn_diff_prod<0))
+        fluc = np.sum(np.abs(nn_diff[idx_keep]))
+        #fluctuation_strength = fluc/Irange
+        fluctuation_strength = fluc/Imean
 
 	    # correlations on intensity
         q_corr = saxstools.compute_pearson(I,np.linspace(0,1,n_q))
@@ -110,29 +130,55 @@ class SpectrumProfiler(Operation):
 
         ### bin-integrated intensity analysis
         # TODO: standardize these bins in q space
-        qmin, qmax = q[0], q[-1]
-        qrange = qmax-qmin
-        bin_strengths = np.zeros(10)
-        for i in range(10):
-            qmini, qmaxi = qmin+i*qrange/10,qmin+(i+1)*qrange/10
-            idxi = list((q>=qmini) & (q<qmaxi))
-            idxi_shift = [False]+idxi[:-1]
-            idxi = np.array(idxi,dtype=bool)
-            idxi_shift = np.array(idxi_shift,dtype=bool)
-            dqi = q[ idxi_shift ] - q[ idxi ]
-            Ii = I[ idxi ]
-            bin_strengths[i] = np.sum(Ii * dqi) / (qmaxi-qmini)
-        low_q_dominance = np.sum(bin_strengths[:5])/np.sum(bin_strengths[5:10]) 
+        #qmin, qmax = q[0], q[-1]
+        #qrange = qmax-qmin
+        #bin_strengths = np.zeros(10)
+        #for i in range(10):
+        #    qmini, qmaxi = qmin+i*qrange/10,qmin+(i+1)*qrange/10
+        #    idxi = list((q>=qmini) & (q<qmaxi))
+        #    idxi_shift = [False]+idxi[:-1]
+        #    idxi = np.array(idxi,dtype=bool)
+        #    idxi_shift = np.array(idxi_shift,dtype=bool)
+        #    dqi = q[ idxi_shift ] - q[ idxi ]
+        #    Ii = I[ idxi ]
+        #    bin_strengths[i] = np.sum(Ii * dqi) / (qmaxi-qmini)
+        idx_nz = np.invert((I==0))
+        q_nz = q[idx_nz] 
+        I_nz_log = np.log(I[idx_nz])
+        # make values positive:
+        I_nz_log = I_nz_log-np.min(I_nz_log)
+        I_logsum = np.sum(I_nz_log)
+        low_q_logratio = np.sum(I_nz_log[(q_nz<0.4)])/I_logsum
+        high_q_logratio = np.sum(I_nz_log[(q_nz>=0.4)])/I_logsum
+        I_sum = np.sum(I)
+        low_q_ratio = np.sum(I[(q<0.4)])/I_sum
+        high_q_ratio = np.sum(I[(q>=0.4)])/I_sum
+
+        ### low-q curve shape analysis
+        lowq_idx = q<0.1
+        lowq = q[lowq_idx]
+        I_lowq = I[lowq_idx]
+        I_lowq_mean = np.mean(I_lowq)
+        lowq_mean = np.mean(lowq)
+        lowq_std = np.std(lowq)
+        I_lowq_std = np.std(I_lowq)
+        I_lowq_s = I_lowq/I_lowq_std
+        lowq_s = (lowq - lowq_mean)/lowq_std
+        #p_lowq = saxstools.fit_with_slope_constraint(lowq_s,np.log(I_lowq_s),-1*lowq_mean/lowq_std,0,3) 
+        #p_lowq = saxstools.fit_with_slope_constraint(lowq_s,np.log(I_lowq_s),lowq_s[-1],0,3) 
+        p_lowq = np.polyfit(lowq_s,np.log(I_lowq_s),2)
+        low_q_logcurv = p_lowq[0]
+        Imax_over_Ilowq = float(Imax)/I_lowq_mean
 
         # Flagging bad data: 
-        # Bad data have high noise
-        # (high fluctuations relative to the mean)
-        # or may be increasing-ish in q
-        bad_data_flag = (fluctuations_over_max > 30 
-                        or q_corr > 0.2
-                        or low_q_dominance < 2)
-        Imax_over_Ilowq = float(Imax)/bin_strengths[0]
-        Imax_over_Imean = float(Imax)/float(Imean)
+        # Data with high noise are bad.
+        # Data that are totally flat or increasing in q are bad.
+        # Data that do not have downward curvature at low q are bad.
+        # Any of the above only if there are no characteristics of a scatterer.
+        bad_data_flag = ( fluctuation_strength > 30 
+                        or low_q_ratio/high_q_ratio < 1
+                        or (low_q_logcurv > 0 and fluctuation_strength > 20 and Imax_over_Imean) )
+
         form_id = None 
         structure_id = None 
         if bad_data_flag:
@@ -140,95 +186,56 @@ class SpectrumProfiler(Operation):
             precursor_flag = False
             structure_flag = False
         else:
-            # Flagging form factor: These tend to (log-)correlate with 1/q.
-            # Spectra with relatively small form factor contribution 
-            # tend to linear-correlate strongly with 1/q
-            form_flag = ((invq_logcorr > 0.7 or invq_corr > 0.95) 
-                        and low_q_dominance > 5 
-                        and bin_strengths[0] / bin_strengths[-1] > 100)
-            #and not all([cosq_corr > 0.7,cosq_logcorr > 0.7, cos2q_logcorr > 0.7, cos2q_corr>0.7]))
+            # Flagging form factor:
+            # Intensity should be quite decreasing in q.
+            # Low-q region should be quite flat.
+            # Low-q mean intensity should be much larger than low-q fluctuations.
+            form_flag = low_q_ratio/high_q_ratio > 5 
             if form_flag:
                 # TODO: determine form factor here
                 form_id = 'sphere'
  
             # Flagging precursors: 
-            # Bin strengths should be decreasing, but not wildly  
-            precursor_flag = low_q_dominance > 2 and low_q_dominance < 1000 
+            # Intensity should decrease in q, at least mildly.
+            # Intensity should decrease more sharply at high q.
+            # Low-q region of spectrum should be quite flat.
+            # Noise levels may be high if only precursors are present.
+            # More high-q intensity than form factor alone.
+            precursor_flag = low_q_ratio/high_q_ratio > 2 and high_q_ratio > 1E-3 
 
             # Flagging structure:
-            # Largest bin is likely not lowest-q bin 
-            structure_flag = Imax_over_Ilowq > 1.2 and q_Imax > 0.05 #and Imax_over_Imean > 4 
-            # or (not np.argmax(bin_strengths) == 0))
+            # Structure is present if max intensity occurs outside the low-q region. 
+            # Maximum intensity should be large relative to its 'local' mean intensity. 
+            structure_flag = Imax_over_Imean > 100 
             if structure_flag:
                 # TODO: determine structure factor here
                 structure_id = 'fcc'
         d_r = OrderedDict() 
-        d_r['bin_strengths'] = bin_strengths
-        d_r['Imax_over_Imean'] = Imax_over_Imean
-        d_r['Imax_over_Ilowq'] = Imax_over_Ilowq
-        d_r['low_q_dominance'] = low_q_dominance 
-        d_r['high_freq_ratio'] = high_freq_ratio 
-        d_r['fluctuations_over_max'] = fluctuations_over_max 
-        d_r['q_Imax'] = q_Imax
-        d_r['q_logcorr'] = q_logcorr
-        d_r['qsquared_logcorr'] = qsquared_logcorr
-        d_r['cos2q_logcorr'] = cos2q_logcorr
-        d_r['cosq_logcorr'] = cosq_logcorr
-        d_r['invq_logcorr'] = invq_logcorr
-        d_r['q_corr'] = q_corr
-        d_r['qsquared_corr'] = qsquared_corr
-        d_r['cos2q_corr'] = cos2q_corr
-        d_r['cosq_corr'] = cosq_corr
-        d_r['invq_corr'] = invq_corr
+        #d_r['bin_strengths'] = bin_strengths
+        #d_r['bin_strengths'] = None 
         d_r['bad_data_flag'] = bad_data_flag
         d_r['precursor_flag'] = precursor_flag
         d_r['form_flag'] = form_flag
         d_r['structure_flag'] = structure_flag
         d_r['structure_id'] = structure_id 
         d_r['form_id'] = form_id 
+        d_r['low_q_logcurv'] = low_q_logcurv
+        d_r['Imax_over_Imean'] = Imax_over_Imean
+        d_r['Imax_over_Ilowq'] = Imax_over_Ilowq 
+        d_r['low_q_logratio'] = low_q_logratio 
+        d_r['high_q_logratio'] = high_q_logratio 
+        d_r['high_freq_ratio'] = high_freq_ratio 
+        d_r['fluctuation_strength'] = fluctuation_strength
+        d_r['q_Imax'] = q_Imax
+        #d_r['q_logcorr'] = q_logcorr
+        #d_r['qsquared_logcorr'] = qsquared_logcorr
+        #d_r['cos2q_logcorr'] = cos2q_logcorr
+        #d_r['cosq_logcorr'] = cosq_logcorr
+        #d_r['invq_logcorr'] = invq_logcorr
+        #d_r['q_corr'] = q_corr
+        #d_r['qsquared_corr'] = qsquared_corr
+        #d_r['cos2q_corr'] = cos2q_corr
+        #d_r['cosq_corr'] = cosq_corr
+        #d_r['invq_corr'] = invq_corr
         self.outputs['features'] = d_r 
-
-        #low_q_idxs = (q < q[0]+0.1*(q[-1]-q[0]))
-        #high_q_idxs = (q > q[0]+0.9*(q[-1]-q[0]))
-        #n_low_q = np.sum(np.array(low_q_idxs))
-        #n_high_q = np.sum(np.array(high_q_idxs))
-        # If the max intensity is outside the low-q region, throw flag
-        #if not np.argmax(I) in range(2*n_low_q):
-        #    ok_flag = False
-        #    flag_msg = str('The maximum intensity '
-        #    + '({} at q={}) '.format(np.max(I),q[np.argmax(I)])
-        #    + 'is outside the lower 20% of the q-range '
-        #    + '({} to {}).'.format(q[0],q[2*n_low_q]))
-        # If there is a huge maximum somewhere, throw flag
-        #elif np.max(I) > 10*np.mean(I[:2*n_low_q]):
-        #    ok_flag = False
-        #    flag_msg = str('The maximum intensity '
-        #    + '({} at q={}) '.format(np.max(I),q[np.argmax(I)])
-        #    + 'is greater than 10x the mean intensity '
-        #    + 'of the lower 20% of the q-range '
-        #    + '({} from {} to {}).'
-        #    .format(np.mean(I[low_q_idxs]),q[0],q[n_low_q]))
-        # If high-q intensity not significantly smaller than low-q, throw flag
-        #elif not np.sum(I[:n_low_q]) > 10*np.sum(I[-1*n_high_q:]):
-        #    ok_flag = False
-        #    flag_msg = str('The lower 10% of the q-range '
-        #    + '({} to {}) '.format(q[0],q[n_low_q])
-        #    + 'has less than 10 times the intensity '
-        #    + 'of the upper 10% of the q-range '
-        #    + '({} to {}).'.format(q[-1*n_high_q],q[-1]))
-
-        #######
-        # More good/bad filters could be added here.
-        #flag_msg = ''
-        #if q_corr > 0.2:
-        #    ok_flag = False
-        #flag_msg = str('This algorithm expects spectra that tend to decrease in q. '
-        #+ 'The input spectrum seems to be overall increasing in q.')
-        #if (...) 
-        #    ok_flag = False
-        #    flag_msg = 'This spectrum seems mostly flat.'
-        #elif (...):
-        #    ok_flag = False
-        #    flag_msg = ''
-        #######
 

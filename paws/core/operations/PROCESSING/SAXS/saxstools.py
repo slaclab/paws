@@ -1,7 +1,8 @@
 from __future__ import print_function
+from collections import OrderedDict
+
 import numpy as np
 from scipy.optimize import minimize as scipimin
-from collections import OrderedDict
 
 def compute_saxs(q,params):
     """
@@ -414,6 +415,10 @@ def fit_with_slope_constraint(q,I,q_cons,dIdq_cons,order,weights=None):
     if standardized fitting is desired.
     At the provided constraint point, q_cons, 
     the returned polynomial will have slope dIdq_cons.
+
+    Because of the form of the Lagrangian,
+    this constraint cannot be placed at exactly zero.
+    This would result in indefinite matrix elements.
     """
     Ap = np.zeros( (order+1,order+1),dtype=float )
     b = np.zeros(order+1,dtype=float)

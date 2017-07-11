@@ -137,7 +137,7 @@ class SpectrumParameterization(Operation):
                 I_at_0 = saxstools.fit_I0(q[idx_lowq],I[idx_lowq])
             else:
                 I_at_0 = saxstools.fit_I0(q,I)
-            if I_at_0 > 1.5*I[0] or I_at_0 < 0.5*I[0]:
+            if I_at_0 > 10*I[0] or I_at_0 < 0.1*I[0]:
                 # stop 
                 msg = 'polynomial fit for I(q=0) deviates too far from low-q values' 
                 p['ERROR_MESSAGE'] = msg
