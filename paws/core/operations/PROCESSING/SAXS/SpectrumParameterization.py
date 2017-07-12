@@ -92,6 +92,11 @@ class SpectrumParameterization(Operation):
             # stop
             self.outputs['features'] = p
             return 
+        if p['structure_flag']:
+            # stop
+            p['ERROR_MESSAGE'] = '[{}] structure factor parameterization not yet supported'.format(__name__)
+            self.outputs['features'] = p
+            return 
         pre_flag = p['precursor_flag']
         f_flag = p['form_flag']
         s_flag = p['structure_flag']
@@ -129,14 +134,26 @@ class SpectrumParameterization(Operation):
             I_at_0 = fixed_params['I0_pre'] + fixed_params['I0_form']
         else:
             # Perform a low-q spectrum fit to get I(q=0).
-            # If there are form or structure factor terms,
-            # use the lower 10% of the q range.
-            if f_flag or s_flag:
-                qmax_fit = q[0]+float(q[-1]-q[0])*0.1
-                idx_lowq = (q<qmax_fit)
-                I_at_0 = saxstools.fit_I0(q[idx_lowq],I[idx_lowq])
+            if s_flag:
+                # If structure factor scattering,
+                # expect low-q SNR to be high, use q<0.06,
+                # fit to second order.
+                idx_lowq = (q<0.06)
+                I_at_0 = saxstools.fit_I0(q[idx_lowq],I[idx_lowq],2)
+            elif f_flag:
+                # If form factor scattering, fit 3rd order. 
+                # Use q<0.1 and disregard lowest-q values if they are far from the mean, 
+                # as these points are likely dominated by experimental error.
+                idx_lowq = (q<0.1)
+                Imean_lowq = np.mean(I[idx_lowq])
+                Istd_lowq = np.std(I[idx_lowq])
+                idx_good = ((I[idx_lowq] < Imean_lowq+Istd_lowq) & (I[idx_lowq] > Imean_lowq-Istd_lowq))
+                #dI_lowq = (I[idx_lowq][1:] - I[idx_lowq][:-1])/Imed_lowq
+                #idx_good = np.hstack( ( (abs(dI_lowq)<0.1) , np.array([True]) ) )
+                I_at_0 = saxstools.fit_I0(q[idx_lowq][idx_good],I[idx_lowq][idx_good],3)
             else:
-                I_at_0 = saxstools.fit_I0(q,I)
+                # If only precursor scattering, fit the entire spectrum.
+                I_at_0 = saxstools.fit_I0(q,I,4)
             if I_at_0 > 10*I[0] or I_at_0 < 0.1*I[0]:
                 # stop 
                 msg = 'polynomial fit for I(q=0) deviates too far from low-q values' 

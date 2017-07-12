@@ -43,8 +43,8 @@ class SpectrumProfiler(Operation):
         + 'form_id: Form factor identity, e.g. sphere, cube, rod, etc. \n'
         + 'structure_flag: Boolean indicating presence of structure factor terms. \n'
         + 'structure_id: Structure identity, e.g. fcc, hcp, bcc, etc. \n'
-        + 'low_q_ratio: fraction of integrated intensity over q<0.4 '
-        + 'high_q_ratio: fraction of integrated intensity over q>0.4 '
+        + 'low_q_ratio: fraction of integrated intensity for q<0.4 '
+        + 'high_q_ratio: fraction of integrated intensity for q>0.4 '
         + 'low_q_logratio: fraction of total log(I)-min(log(I)) over q<0.4 '
         + 'high_q_logratio: fraction of total log(I)-min(log(I)) over q>0.4 '
         + 'high_freq_ratio: Ratio of the upper half to the lower half '
@@ -54,7 +54,11 @@ class SpectrumProfiler(Operation):
         + 'taken only where this difference changes sign), '
         + 'divided by the range (maximum minus minimum) of intensity. \n'
         + 'Imax_over_Imean: maximum intensity divided by mean intensity. \n'
+        + 'Imax_over_Imean_local: maximum intensity divided by '
+        + 'mean intensity over q values within 10% of the q value of the maximum. \n'
         + 'Imax_over_Ilowq: Maximum intensity divided by mean intensity over q<0.1. \n'
+        + 'Imax_over_Ihighq: Maximum intensity divided by mean intensity over q>0.4. \n'
+        + 'Ilowq_over_Ihighq: Mean intensity for q<0.1 divided by mean intensity for q>0.4. \n'
         + 'low_q_logcurv: Curvature of parabola fit to log(I) versus log(q) for q<0.1. \n'
         + 'q_Imax: q value of the maximum intensity. ')
         #+ 'bin_strengths: (not implemented). \n'
@@ -154,11 +158,15 @@ class SpectrumProfiler(Operation):
         low_q_ratio = np.sum(I[(q<0.4)])/I_sum
         high_q_ratio = np.sum(I[(q>=0.4)])/I_sum
 
-        ### low-q curve shape analysis
+        ### curve shape analysis
         lowq_idx = q<0.1
+        highq_idx = q>0.4
         lowq = q[lowq_idx]
+        highq = q[highq_idx]
         I_lowq = I[lowq_idx]
+        I_highq = I[highq_idx]
         I_lowq_mean = np.mean(I_lowq)
+        I_highq_mean = np.mean(I_highq)
         lowq_mean = np.mean(lowq)
         lowq_std = np.std(lowq)
         I_lowq_std = np.std(I_lowq)
@@ -169,15 +177,17 @@ class SpectrumProfiler(Operation):
         p_lowq = np.polyfit(lowq_s,np.log(I_lowq_s),2)
         low_q_logcurv = p_lowq[0]
         Imax_over_Ilowq = float(Imax)/I_lowq_mean
+        Imax_over_Ihighq = float(Imax)/I_highq_mean
+        Ilowq_over_Ihighq = I_lowq_mean/I_highq_mean
 
         # Flagging bad data: 
         # Data with high noise are bad.
         # Data that are totally flat or increasing in q are bad.
-        # Data that do not have downward curvature at low q are bad.
-        # Any of the above only if there are no characteristics of a scatterer.
-        bad_data_flag = ( fluctuation_strength > 30 
+        # Data that do not have downward curvature at low q are often bad, but not always.
+        bad_data_flag = ( fluctuation_strength > 20 
                         or low_q_ratio/high_q_ratio < 1
-                        or (low_q_logcurv > 0 and fluctuation_strength > 20 and Imax_over_Imean) )
+                        or Ilowq_over_Ihighq < 10 )
+                        #or (low_q_logcurv > 0 and Ilowq_over_Ihighq < 10))
 
         form_id = None 
         structure_id = None 
@@ -190,7 +200,7 @@ class SpectrumProfiler(Operation):
             # Intensity should be quite decreasing in q.
             # Low-q region should be quite flat.
             # Low-q mean intensity should be much larger than low-q fluctuations.
-            form_flag = low_q_ratio/high_q_ratio > 5 
+            form_flag = low_q_ratio/high_q_ratio > 10 
             if form_flag:
                 # TODO: determine form factor here
                 form_id = 'sphere'
@@ -206,7 +216,7 @@ class SpectrumProfiler(Operation):
             # Flagging structure:
             # Structure is present if max intensity occurs outside the low-q region. 
             # Maximum intensity should be large relative to its 'local' mean intensity. 
-            structure_flag = Imax_over_Imean > 100 
+            structure_flag = Imax_over_Imean_local > 2 
             if structure_flag:
                 # TODO: determine structure factor here
                 structure_id = 'fcc'
@@ -221,9 +231,14 @@ class SpectrumProfiler(Operation):
         d_r['form_id'] = form_id 
         d_r['low_q_logcurv'] = low_q_logcurv
         d_r['Imax_over_Imean'] = Imax_over_Imean
+        d_r['Imax_over_Imean_local'] = Imax_over_Imean_local
         d_r['Imax_over_Ilowq'] = Imax_over_Ilowq 
+        d_r['Imax_over_Ihighq'] = Imax_over_Ihighq 
+        d_r['Ilowq_over_Ihighq'] = Ilowq_over_Ihighq 
         d_r['low_q_logratio'] = low_q_logratio 
         d_r['high_q_logratio'] = high_q_logratio 
+        d_r['low_q_ratio'] = low_q_ratio 
+        d_r['high_q_ratio'] = high_q_ratio 
         d_r['high_freq_ratio'] = high_freq_ratio 
         d_r['fluctuation_strength'] = fluctuation_strength
         d_r['q_Imax'] = q_Imax

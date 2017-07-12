@@ -384,7 +384,7 @@ def compute_pearson(y1,y2):
     y2std = np.std(y2)
     return np.sum((y1-y1mean)*(y2-y2mean))/(np.sqrt(np.sum((y1-y1mean)**2))*np.sqrt(np.sum((y2-y2mean)**2)))
 
-def fit_I0(q,I):
+def fit_I0(q,I,order=4):
     """
     Find an estimate for I(q=0) by polynomial fitting.
     All of the input q, I(q) values are used in the fitting.
@@ -395,7 +395,7 @@ def fit_I0(q,I):
     q_std = np.std(q)
     I_s = (I-I_mean)/I_std
     q_s = (q-q_mean)/q_std
-    p = fit_with_slope_constraint(q_s,I_s,-1*q_mean/q_std,0,4) 
+    p = fit_with_slope_constraint(q_s,I_s,-1*q_mean/q_std,0,order) 
     I_at_0 = np.polyval(p,-1*q_mean/q_std)*I_std+I_mean
     return I_at_0
 
