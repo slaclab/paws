@@ -336,16 +336,20 @@ def saxs_fit(q,I,objfun,features,x_keys,constraints=[]):
     x_init = [] 
     x_bounds = [] 
     for k in x_keys:
-        #if k in features.keys():
-        x_init.append(features[k])
-        if k in ['r0_pre','r0_form','I0_pre','I0_form']:
-            x_bounds.append((0,None))
-        elif k in ['sigma_form']:
-            x_bounds.append((0.0,0.3))
+        # features.keys() may not have the x_key if the relevant population was not flagged.
+        if k in features.keys():
+            x_init.append(features[k])
+            if k in ['r0_pre','r0_form']:
+                x_bounds.append((1E-3,None))
+            elif k in ['I0_pre','I0_form']:
+                x_bounds.append((0,None))
+            elif k in ['sigma_form']:
+                x_bounds.append((0.0,0.3))
 
     saxs_fun = lambda q,x,d: compute_saxs_with_substitutions(q,d,x_keys,x)
     I_nz = (I>0)
     n_q = len(q)
+    idx_lowq = (q<0.4)
     if objfun == 'full_spectrum_chi2':
         fit_obj = lambda x: np.sum( (saxs_fun(q,x,features) - I)**2 )
     elif objfun == 'full_spectrum_chi2log':
@@ -353,22 +357,24 @@ def saxs_fit(q,I,objfun,features,x_keys,constraints=[]):
     elif objfun == 'full_spectrum_chi2norm':
         fit_obj = lambda x: np.sum( ((saxs_fun(q[I_nz],x,features) - I[I_nz])/I[I_nz])**2 )
     elif objfun == 'low_q_chi2':
-        fit_obj = lambda x: np.sum( (saxs_fun(q[:n_q/2],x,features) - I[:n_q/2])**2 )
+        fit_obj = lambda x: np.sum( (saxs_fun(q[idx_lowq],x,features) - I[idx_lowq])**2 )
     elif objfun == 'pearson':
         fit_obj = lambda x: -1*compute_pearson(saxs_fun(q,x,features), I)
     elif objfun == 'low_q_pearson':
-        fit_obj = lambda x: -1*compute_pearson(saxs_fun(q[:n_q/2],x,features), I[:n_q/2]) 
+        fit_obj = lambda x: -1*compute_pearson(saxs_fun(q[idx_lowq],x,features), I[idx_lowq]) 
     elif objfun == 'low_q_chi2log':
-        fit_obj = lambda x: np.sum( (np.log(saxs_fun(q[I_nz][:n_q/2],x,features)) - np.log(I[I_nz][:n_q/2]))**2 )
+        fit_obj = lambda x: np.sum( (np.log(saxs_fun(q[I_nz][idx_lowq[I_nz]],x,features)) - np.log(I[I_nz][idx_lowq[I_nz]]))**2 )
     elif objfun == 'pearson_log':
         fit_obj = lambda x: -1*compute_pearson(np.log(saxs_fun(q[I_nz],x,features)), np.log(I[I_nz])) 
     elif objfun == 'low_q_pearson_log':
-        fit_obj = lambda x: -1*compute_pearson(np.log(saxs_fun(q[I_nz][:n_q/2],x,features)), np.log(I[I_nz][:n_q/2])) 
+        fit_obj = lambda x: -1*compute_pearson(np.log(saxs_fun(q[I_nz][idx_lowq[I_nz]],x,features)), np.log(I[I_nz][idx_lowq[I_nz]])) 
     else:
         msg = 'objective function {} not supported'.format(objfun)
         raise ValueError(msg)
-    res = scipimin(fit_obj,x_init,bounds=x_bounds,constraints=c)
-
+    try:
+        res = scipimin(fit_obj,x_init,bounds=x_bounds,constraints=c)
+    except:
+        import pdb; pdb.set_trace()
     x_opt = res.x
     d_opt = OrderedDict()
     for k,xk in zip(x_keys,x_opt):

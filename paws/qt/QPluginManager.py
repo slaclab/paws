@@ -19,9 +19,7 @@ class QPluginManager(QTreeSelectionModel):
         flag_dict = OrderedDict()
         flag_dict['select'] = False
         super(QPluginManager,self).__init__(flag_dict,plugman)
-        # plugman is accessible by self._tree after QTreeModel.__init__()
-        #self.plugman = plugman
-        
+        self.plugman = plugman
 
     def headerData(self,section,orientation,data_role):
         if (data_role == QtCore.Qt.DisplayRole and section == 0):

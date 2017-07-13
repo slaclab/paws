@@ -6,6 +6,7 @@ from collections import OrderedDict
 
 from ..core import pawstools
 from ..core import operations as ops
+from ..core import plugins 
 from ..core.operations import optools
 from ..core.operations.OpManager import OpManager 
 from ..core.workflow.WfManager import WfManager 
@@ -53,9 +54,25 @@ class PawsAPI(object):
         print info_msg
         return info_msg
  
-    def enable_ops(self):
+    def enable_op(self,op_spec=''):
         # TODO: operation enable/disable functionality
         pass
+
+    def enable_plugin(self,pgin_name=''):
+        """
+        This tests the compatibility between the environment and the named plugin
+        by attempting to import the plugin.
+        If this does not throw an ImportError, 
+        then the environment satisfies the plugin dependencies.
+        """
+        pkg = plugins.__name__
+        #print 'start plugin {} from package {}'.format(pgin_name,pkg)
+        mod = importlib.import_module('.'+pgin_name,pkg)
+        #for nm, itm in mod.__dict__.items():
+        #    if isinstance(itm,type):
+        #        if issubclass(itm,PawsPlugin) and not nm == 'PawsPlugin':
+        #            pgin = getattr(mod,nm)
+        #            return
 
     def add_wf(self,wfname):
         self._wf_manager.add_wf(wfname)
@@ -101,6 +118,7 @@ class PawsAPI(object):
 
     def set_plugin_input(self,pgin_tag,input_name,**kwargs):
         src,tp,val = self._parse_src_tp_val(kwargs)
+        pgin = self._plugin_manager.get_data_from_uri(pgin_tag)
         if src is None:
             src = pgin.input_src[input_name]
         if tp is None:
@@ -108,9 +126,9 @@ class PawsAPI(object):
         if val is None:
             val = pgin.inputs[input_name]
         if src == optools.text_input:
-            self.pgin.inputs[name] = optools.cast_type_val(tp,val)
+            pgin.inputs[input_name] = optools.cast_type_val(tp,val)
         else:
-            self.pgin.inputs[name] = val 
+            pgin.inputs[input_name] = val 
 
     def start_plugin(self,pgin_name):
         pgin = self.get_plugin(pgin_name)
@@ -191,6 +209,25 @@ class PawsAPI(object):
             op = self.current_wf().get_data_from_uri(opname)
             wf_dict[opname] = self._wf_manager.op_setup_dict(op)
         d['WORKFLOW'] = wf_dict
+        pawstools.update_file(wfl_filename,d)
+
+    def save_plugins(self,wfl_filename):
+        """
+        Save the current set of plugins to a .wfl file,
+        as specified by wfl_filename.
+        If the given filename does not have the .wfl extension,
+        it will be appended.
+        """
+        if not os.path.splitext(wfl_filename)[1] == '.wfl':
+            wfl_filename = wfl_filename + '.wfl'
+        self._wf_manager.logmethod( 'dumping plugins to {}'.format(wfl_filename) )
+        d = {} 
+        pgin_dict = OrderedDict() 
+        for pgin_name in self._plugin_manager.root_tags():
+            if not pgin_name == 'wf_manager':
+                pgin = self._plugin_manager.get_data_from_uri(pgin_name)
+                pgin_dict[pgin_name] = self._plugin_manager.plugin_setup_dict(pgin)
+        d['PLUGINS'] = pgin_dict
         pawstools.update_file(wfl_filename,d)
 
     def op_count(self,wfname=None):

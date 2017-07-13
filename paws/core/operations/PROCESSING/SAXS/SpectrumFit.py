@@ -73,6 +73,13 @@ class SpectrumFit(Operation):
         if not any([f['precursor_flag'],f['form_flag'],f['structure_flag']]):
             self.outputs['features'] = f
             return
+        if f['bad_data_flag']: 
+            self.outputs['features'] = f
+            return
+        if f['structure_flag']:
+            f['ERROR_MESSAGE'] = '[{}] structure factor fitting not yet supported'.format(__name__)
+            self.outputs['features'] = f
+            return
         q, I = self.inputs['q'], self.inputs['I']
         m = self.inputs['objfun']
         p = self.inputs['fit_params']

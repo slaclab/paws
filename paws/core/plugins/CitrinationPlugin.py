@@ -24,6 +24,7 @@ class CitrinationPlugin(PawsPlugin):
         self.input_type['address'] = optools.str_type
         self.input_type['api_key_file'] = optools.path_type
         self.inputs['address'] = 'https://slac.citrination.com' 
+        self.ctn_client = None
         self.return_codes = {} 
 
     def start(self):

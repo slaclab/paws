@@ -17,6 +17,7 @@ class CheckDataSet(Operation):
         self.output_doc['status'] = 'Message describing the state of the data set.'
         self.input_src['client'] = optools.plugin_input
         self.input_src['dsid'] = optools.text_input
+        self.input_type['client'] = optools.ref_type
         self.input_type['dsid'] = optools.int_type
 
     def run(self):
@@ -25,11 +26,11 @@ class CheckDataSet(Operation):
         f = True
         try:
             r = c.get_dataset_files(dsid)
-            if 'dataset' in r.keys():
-                s = 'client successfully queried data set {}.'.format(dsid)
+            if 'name' in r.keys():
+                s = 'client successfully queried data set {}: {}. Response: {}'.format(dsid,r['name'],r)
                 f = True
             else:
-                s = 'client queried data set {} but found no dataset in response dict: Response: {}'.format(dsid,r)
+                s = 'client queried data set {}, but was unable to find the data set name. Response: {}'.format(dsid,r)
                 f = True
         except Exception as ex:
             s = 'client failed to query data set number {}. Error message: {}'.format(dsid,ex.message)
