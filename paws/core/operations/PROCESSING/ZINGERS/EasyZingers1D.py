@@ -62,7 +62,7 @@ class EasyZingers1D(Operation):
             newIvals[zi] = np.mean(Idzi)
         for i,iq in zip(range(len(idx_z)),idx_z):
             I_dz[iq] = newIvals[i]
-        self.outputs['q_I_dz'] = zip(q,I_dz)
+        self.outputs['q_I_dz'] = np.array(zip(q,I_dz))
         self.outputs['zmask'] = zmask
 
         #if any(idx_z):

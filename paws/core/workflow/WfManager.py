@@ -2,6 +2,7 @@ from __future__ import print_function
 from collections import OrderedDict
 import copy
 import traceback
+import time
 
 #from ..plugins.WorkflowPlugin import WorkflowPlugin
 from .Workflow import Workflow
@@ -85,7 +86,6 @@ class WfManager(object):
                 save_data = copy.deepcopy(self.workflows[wfname].get_data_from_uri(uri))
                 save_dict = self.uri_to_embedded_dict(uri,save_data) 
                 saved_items_dict = self.update_embedded_dict(saved_items_dict,save_dict)
-            #batch_op.output_list()[i] = copy.deepcopy(saved_items_dict)
             batch_op.output_list()[i] = saved_items_dict
             # TODO: set a more specific item here to save some tree update time?
             #self.workflows[wfname].set_item(batch_op_tag,batch_op)
@@ -93,40 +93,41 @@ class WfManager(object):
             self.workflows[wfname].set_item(outputs_uri,saved_items_dict)
 
     def execute_realtime(self,wfname,rt_op_tag,rt_stk):
-        print('[{}] realtime execution needs review'.format(__name__))
-        #rt_op = self.workflows[wfname].get_data_from_uri(rt_op_tag) 
-        #optools.load_inputs(rt_op,self.workflows[wfname],self.plugman)
-        #rt_op.run()
-        #self.workflows[wfname].set_item(rt_op_tag,rt_op)
-        #keep_running = True
-        #n_exec = 0
-        #while keep_running:
+        rt_op = self.workflows[wfname].get_data_from_uri(rt_op_tag) 
+        optools.load_inputs(rt_op,self.workflows[wfname],self.plugman)
+        rt_op.run()
+        self.workflows[wfname].set_item(rt_op_tag,rt_op)
+        keep_running = True
+        n_exec = 0
+        wait_iter = 0
+        while keep_running:
         ##TODO: ways to control the loop exit condition
-        #    vals = rt_op.input_iter().next()
-        #    if not None in vals:
-        #        n_exec += 1
-        #        wait_iter = 0
-        #        inp_dict = OrderedDict( zip(rt_op.input_routes(), vals) )
-        #        self.write_log( 'REALTIME EXECUTION {}'.format(n_exec))
-        #        for uri,val in inp_dict.items():
-        #            self.workflows[wfname].set_item(uri,val) 
-        #        for rt_lst in rt_stk:
-        #            self.execute_serial(wfname,rt_lst)
-        #        saved_items_dict = OrderedDict()
-        #        for uri in rt_op.saved_items():
-        #            save_data = self.workflows[wfname].get_data_from_uri(uri)
-        #            save_dict = self.uri_to_embedded_dict(uri,save_data) 
-        #            saved_items_dict = self.update_embedded_dict(saved_items_dict,save_dict)
-        #        rt_op.output_list().append(saved_items_dict)
-        #        self.workflows[wfname].set_item(rt_op_tag,rt_op)
-        #    else:
-        #        if wait_iter == 0:
-        #            self.write_log( 'Waiting for new inputs...' )
-        #        wait_iter += 1 
-        #        time.sleep(float(rt_op.delay())/1000.0)
-        #    if wait_iter > 1000:
-        #        self.write_log('Waited too long. Exiting...')
-        #        keep_running = False
+            vals = rt_op.input_iter().next()
+            if not None in vals:
+                n_exec += 1
+                wait_iter = 0
+                inp_dict = OrderedDict( zip(rt_op.input_routes(), vals) )
+                for uri,val in inp_dict.items():
+                    self.workflows[wfname].set_op_input_at_uri(uri,val) 
+                self.write_log( 'REALTIME EXECUTION {}'.format(n_exec))
+                for rt_lst in rt_stk:
+                    self.execute_serial(wfname,rt_lst)
+                saved_items_dict = OrderedDict()
+                for uri in rt_op.saved_items():
+                    save_data = copy.deepcopy(self.workflows[wfname].get_data_from_uri(uri))
+                    save_dict = self.uri_to_embedded_dict(uri,save_data) 
+                    saved_items_dict = self.update_embedded_dict(saved_items_dict,save_dict)
+                rt_op.output_list().append(saved_items_dict)
+                output_uri = rt_op_tag+'.'+optools.outputs_tag+'.'+rt_op.batch_outputs_tag()+'.'+str(i)
+                self.workflows[wfname].set_item(output_uri,saved_items_dict)
+            else:
+                if wait_iter == 0:
+                    self.write_log( 'Waiting for new inputs...' )
+                wait_iter += 1 
+                time.sleep(float(rt_op.delay())/1000.0)
+            if wait_iter > 1000:
+                self.write_log('Waited too long. Exiting...')
+                keep_running = False
 
     def execute_serial(self,wfname,op_list):
         self.write_log('workflow {} running {}'.format(wfname,op_list))

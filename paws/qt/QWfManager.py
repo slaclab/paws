@@ -2,6 +2,7 @@ from __future__ import print_function
 from collections import OrderedDict
 from functools import partial
 import copy
+import time
 
 from PySide import QtCore
 
@@ -122,6 +123,7 @@ class QWfManager(QtCore.QObject):
         thd_idx = self.next_available_thread()
         self.wfman.write_log('[{}] workflow {} running {}'
         .format(thd_idx,wfname,op_list))
+        self.app.processEvents()
         #for op_tag in op_list: 
         ops = [self.get_op(wfname,opname) for opname in op_list]
         for op in ops:
@@ -168,16 +170,16 @@ class QWfManager(QtCore.QObject):
             if self.wf_running[wfname]:
                 input_dict = batch_op.input_list()[i]
                 for uri,val in input_dict.items():
-                    #import pdb; pdb.set_trace()
                     self.qworkflows[wfname].set_op_input_at_uri(uri,val)
                 self.wfman.write_log( 'BATCH EXECUTION {} / {}'.format(i+1,n_batch) )
+                self.app.processEvents()
                 for batch_lst in batch_stk:
                     self.execute_serial(wfname,batch_lst)
                 saved_items_dict = OrderedDict()
                 for uri in batch_op.saved_items():
                     # TODO # BUG: there is the chance for infinite recursion here
                     # if the batch is asked to save an upstream item?
-                    save_data = self.wfman.workflows[wfname].get_data_from_uri(uri)
+                    save_data = copy.deepcopy(self.wfman.workflows[wfname].get_data_from_uri(uri))
                     save_dict = self.wfman.uri_to_embedded_dict(uri,save_data) 
                     saved_items_dict = self.wfman.update_embedded_dict(saved_items_dict,save_dict)
                 batch_op.output_list()[i] = saved_items_dict
@@ -191,8 +193,46 @@ class QWfManager(QtCore.QObject):
                 .format(__name__,wfname)) 
 
     def execute_realtime(self,wfname,rt_op_tag,rt_stk):
-        msg = 'REALTIME EXEUCTION NOT YET IMPLEMENTED IN {}'.format(__name__)
-        raise NotImplementedError(msg)
+        #import pdb; pdb.set_trace()
+        rt_op = self.wfman.workflows[wfname].get_data_from_uri(rt_op_tag) 
+        optools.load_inputs(rt_op,self.wfman.workflows[wfname],self.wfman.plugman)
+        rt_op.run()
+        self.qworkflows[wfname].set_op(rt_op_tag,rt_op)
+        #keep_running = True
+        n_exec = 0
+        wait_iter = 0
+        while self.wf_running[wfname]:
+        #while keep_running:
+            vals = rt_op.input_iter().next()
+            if not None in vals:
+                n_exec += 1
+                wait_iter = 0
+                inp_dict = OrderedDict( zip(rt_op.input_routes(), vals) )
+                for uri,val in inp_dict.items():
+                    self.qworkflows[wfname].set_op_input_at_uri(uri,val) 
+                self.wfman.write_log( 'REALTIME EXECUTION {}'.format(n_exec))
+                self.app.processEvents()
+                for rt_lst in rt_stk:
+                    self.execute_serial(wfname,rt_lst)
+                saved_items_dict = OrderedDict()
+                for uri in rt_op.saved_items():
+                    save_data = copy.deepcopy(self.wfman.workflows[wfname].get_data_from_uri(uri))
+                    save_dict = self.wfman.uri_to_embedded_dict(uri,save_data) 
+                    saved_items_dict = self.wfman.update_embedded_dict(saved_items_dict,save_dict)
+                rt_op.output_list().append(saved_items_dict)
+                output_uri = rt_op_tag+'.'+optools.outputs_tag+'.'+rt_op.batch_outputs_tag()+'.'+str(n_exec)
+                self.qworkflows[wfname].tree_update_at_uri(output_uri,saved_items_dict)
+            else:
+                #if wait_iter == 0:
+                self.wfman.write_log( 'Waiting for new inputs...' )
+                self.app.processEvents()
+                wait_iter += 1 
+                time.sleep(float(rt_op.delay())/1000.0)
+            if wait_iter > 1000:
+                self.wfman.write_log('Waited too long. Exiting...')
+                self.app.processEvents()
+                #keep_running = False
+                self.wf_running[wfname] = False
 
     @QtCore.Slot(str,str,Operation)
     def updateOperation(self,wfname,tag,op):

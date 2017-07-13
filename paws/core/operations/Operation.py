@@ -41,8 +41,7 @@ class Operation(object):
             self.output_doc[name] = None
         # Set flags so that Batch and Realtime Operations
         # can be identified without having to import them.
-        # Override these flags in Batch and Realtime,
-        # and access them in optools
+        # Override these flags in Batch and Realtime.
         self._batch_flag = False
         self._realtime_flag = False
 
@@ -212,7 +211,7 @@ class Batch(Operation):
         pass
 
 
-class Realtime(Batch):
+class Realtime(Operation):
     __metaclass__ = abc.ABCMeta
     """
     Class template for implementing realtime execution as an Operation.
@@ -229,9 +228,42 @@ class Realtime(Batch):
         """
         Produce an iterator over OrderedDicts representing each set of inputs to run.
         Each dict should be populated with [input_uri:input_value] pairs.
-        When there is no new set of inputs to run, should return None.
+        When there is no new set of inputs to run, input_iter().next() should return None.
         """
         pass
+
+    @abc.abstractmethod
+    def input_routes(self):
+        """
+        Produce a list of the input routes used by the Realtime,
+        in the same order as each of the OrderedDicts 
+        provided by Realtime.input_iter().
+        """
+        pass
+
+    @abc.abstractmethod
+    def output_list(self):
+        """
+        Produce a list of OrderedDicts representing the outputs for each Realtime input.
+        Each OrderedDict should be populated with [output_uri:output_value] pairs.
+        """
+        pass
+
+    @abc.abstractmethod
+    def batch_outputs_tag(self):
+        """
+        Return the output name (one of the self.outputs.keys()) 
+        that indicates where the outputs should be stored. 
+        """
+        pass
+
+    @abc.abstractmethod
+    def saved_items(self):
+        """
+        Return a list of items (as workflow uris) 
+        to be saved after each execution.
+        """
+        pass 
 
     def delay(self):
         """

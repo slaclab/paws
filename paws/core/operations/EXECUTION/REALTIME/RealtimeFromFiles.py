@@ -60,7 +60,7 @@ class RealtimeFromFiles(Realtime):
         else:
             return [self.inputs['input_route']]
 
-    def realtime_ops(self):
+    def batch_ops(self):
         """Use the Realtime.input_locator to list uri's of ops to be saved/stored after execution"""
         if isinstance(self.inputs['realtime_ops'],list):
             return self.inputs['realtime_ops']
@@ -74,19 +74,22 @@ class RealtimeFromFiles(Realtime):
         else:
             return [self.inputs['saved_items']]
 
+    def batch_outputs_tag(self):
+        return 'realtime_outputs'
+
     @staticmethod
     def delay():
         """Amount of time to wait between execution attempts, in milliseconds"""
         return 1000
 
     def set_batch_ops(self,wf=None):
-        data = optools.locate_input(self.input_locator['batch_ops'],wf)
-        self.input_locator['realtime_ops'].data = data 
+        data = optools.locate_input(self.input_locator['realtime_ops'],wf)
         self.inputs['realtime_ops'] = data
+        #self.input_locator['realtime_ops'].data = data 
 
     def set_input_routes(self,wf=None):
         data = optools.locate_input(self.input_locator['input_route'],wf)
-        self.input_locator['input_route'].data = data 
         self.inputs['input_route'] = data
+        #self.input_locator['input_route'].data = data 
 
 
