@@ -24,15 +24,18 @@ class RealtimeFromFiles(Realtime):
         self.output_doc['realtime_outputs'] = 'list of dicts of [output_route:output_value]'
         self.input_src['dir_path'] = optools.fs_input
         self.input_src['regex'] = optools.text_input 
+        self.input_src['new_files_only'] = optools.text_input 
         self.input_src['input_route'] = optools.wf_input 
         self.input_src['realtime_ops'] = optools.wf_input 
         self.input_src['saved_items'] = optools.wf_input 
         self.input_type['dir_path'] = optools.path_type
         self.input_type['regex'] = optools.str_type
+        self.input_type['new_files_only'] = optools.str_type
         self.input_type['input_route'] = optools.path_type
         self.input_type['realtime_ops'] = optools.path_type 
         self.input_type['saved_items'] = optools.path_type 
         self.inputs['regex'] = '*.tif' 
+        self.inputs['new_files_only'] = True 
         self.inputs['realtime_ops'] = []
         self.inputs['saved_items'] = []
         
