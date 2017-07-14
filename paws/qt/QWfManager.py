@@ -227,7 +227,8 @@ class QWfManager(QtCore.QObject):
                 self.wfman.write_log( 'Waiting for new inputs...' )
                 self.app.processEvents()
                 wait_iter += 1 
-                time.sleep(float(rt_op.delay())/1000.0)
+                self.loopwait(interval)
+                #time.sleep(float(rt_op.delay())/1000.0)
             if wait_iter > 1000:
                 self.wfman.write_log('Waited too long. Exiting...')
                 self.app.processEvents()

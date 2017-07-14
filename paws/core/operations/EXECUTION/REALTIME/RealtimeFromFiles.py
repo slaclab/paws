@@ -9,11 +9,12 @@ class RealtimeFromFiles(Realtime):
     """
 
     def __init__(self):
-        input_names = ['dir_path','regex','input_route','realtime_ops','saved_items']
+        input_names = ['dir_path','regex','new_files_only','input_route','realtime_ops','saved_items']
         output_names = ['realtime_inputs','realtime_outputs']
         super(RealtimeFromFiles,self).__init__(input_names,output_names)
         self.input_doc['dir_path'] = 'path to directory where files will be written and then used as input'
         self.input_doc['regex'] = 'string with * wildcards used to filter or locate input files'
+        self.input_doc['new_files_only'] = 'if true, ignore existing files and only process new arrivals'
         self.input_doc['input_route'] = 'inputs constructed by the realtime executor are directed to this uri'
         self.input_doc['realtime_ops'] = str('list of ops to be included in the realtime execution- '
         + 'the order of operations in realtime_ops is unimportant, as the proper execution stack is resolved at runtime')
@@ -44,7 +45,8 @@ class RealtimeFromFiles(Realtime):
         dirpath = self.inputs['dir_path']
         rx = self.inputs['regex']
         inproute = self.inputs['input_route']
-        self.outputs['realtime_inputs'] = optools.FileSystemIterator(dirpath,rx)
+        process_existing_files = not self.inputs['new_files_only']
+        self.outputs['realtime_inputs'] = optools.FileSystemIterator(dirpath,rx,process_existing_files)
         self.outputs['realtime_outputs'] = [] 
 
     def input_iter(self):

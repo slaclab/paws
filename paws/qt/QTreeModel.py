@@ -193,7 +193,8 @@ class QTreeModel(QtCore.QAbstractItemModel):
         self.beginRemoveRows(parent_idx,rm_row,rm_row)
         self._tree.remove_item(rm_uri)
         self.endRemoveRows()
-        self.dataChanged.emit(rm_idx,rm_idx)
+        #self.dataChanged.emit(rm_idx,rm_idx)
+        self.tree_dataChanged.emit(parent_idx)
 
     def tree_dataChanged(self,idx):
         itm = idx.internalPointer()

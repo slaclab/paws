@@ -55,10 +55,12 @@ class InputLocator(object):
 
 class FileSystemIterator(Iterator):
 
-    def __init__(self,dirpath,regex):
-        self.paths_done = []
+    def __init__(self,dirpath,regex,include_existing_files=True):
         self.dirpath = dirpath
         self.rx = regex
+        self.paths_done = []
+        if not include_existing_files:
+            self.paths_done = glob.glob(self.dirpath+'/'+self.rx)
         super(FileSystemIterator,self).__init__()
 
     def next(self):
