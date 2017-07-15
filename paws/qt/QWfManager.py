@@ -128,6 +128,7 @@ class QWfManager(QtCore.QObject):
         ops = [self.get_op(wfname,opname) for opname in op_list]
         for op in ops:
             optools.load_inputs(op,self.wfman.workflows[wfname],self.wfman.plugman)
+        self.app.processEvents()
         op_dict = OrderedDict(zip(op_list,ops))
         # Copy op_dict so that it can be thread-mobile
         op_dict = copy.deepcopy(op_dict)
@@ -151,8 +152,6 @@ class QWfManager(QtCore.QObject):
             wf_thread.quit()
             wf_thread.deleteLater()
             raise ex
-        # Putting a processEvents() here as a shot in the dark
-        # to address an intermittent freezing problem...
         self.app.processEvents()
         self.wait_for_thread(thd_idx)
         self.wf_updated.emit(wfname)
@@ -165,6 +164,7 @@ class QWfManager(QtCore.QObject):
         optools.load_inputs(batch_op,self.wfman.workflows[wfname],self.wfman.plugman)
         batch_op.run()
         self.qworkflows[wfname].set_op(batch_op_tag,batch_op)
+        self.app.processEvents()
         n_batch = len(batch_op.input_list())
         for i in range(n_batch):
             if self.wf_running[wfname]:
@@ -188,6 +188,7 @@ class QWfManager(QtCore.QObject):
                 # try just updating the outputs subtree for this iteration.
                 batch_output_uri = batch_op_tag+'.'+optools.outputs_tag+'.'+batch_op.batch_outputs_tag()+'.'+str(i)
                 self.qworkflows[wfname].tree_update_at_uri(batch_output_uri,saved_items_dict)
+                self.app.processEvents()
             else:
                 raise pawstools.WorkflowAborted('[{}] {} was signaled to stop.'
                 .format(__name__,wfname)) 
@@ -198,6 +199,7 @@ class QWfManager(QtCore.QObject):
         optools.load_inputs(rt_op,self.wfman.workflows[wfname],self.wfman.plugman)
         rt_op.run()
         self.qworkflows[wfname].set_op(rt_op_tag,rt_op)
+        self.app.processEvents()
         #keep_running = True
         n_exec = 0
         wait_iter = 0
@@ -222,6 +224,7 @@ class QWfManager(QtCore.QObject):
                 rt_op.output_list().append(saved_items_dict)
                 output_uri = rt_op_tag+'.'+optools.outputs_tag+'.'+rt_op.batch_outputs_tag()+'.'+str(n_exec)
                 self.qworkflows[wfname].tree_update_at_uri(output_uri,saved_items_dict)
+                self.app.processEvents()
             else:
                 #if wait_iter == 0:
                 self.wfman.write_log( 'Waiting for new inputs...' )

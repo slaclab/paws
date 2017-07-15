@@ -161,7 +161,7 @@ class QTreeModel(QtCore.QAbstractItemModel):
             # Remove any children that do not represent the new data
             #itm_child_keys = [c.tag for c in itm.children]
             if isinstance(itm_tree,dict):
-                for grandchild_itm in itm.children:
+                for grandchild_itm in itm.children[::-1]:
                     if not grandchild_itm.tag in itm_tree.keys():
                         rm_row = [gc.tag for gc in itm.children].index(grandchild_itm.tag)
                         self.beginRemoveRows(idx,rm_row,rm_row)
