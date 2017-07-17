@@ -80,9 +80,9 @@ class DictTree(object):
                 # Note- parent items must implement __getitem__
                 del itm[k]
                 #itm.pop(k)
-                for i,testuri in zip(len(self._all_uris)[::-1],self._all_uris[::-1]):
+                for i,testuri in zip(range(len(self._all_uris))[::-1],self._all_uris[::-1]):
                     if uri in testuri:
-                        self._all_uris.pop[i]
+                        self._all_uris.pop(i)
         except Exception as ex:
             msg = str('\n[{}] Encountered an error while trying to delete uri {}: \n'
             .format(__name__,uri))

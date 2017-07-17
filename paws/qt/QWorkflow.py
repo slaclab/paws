@@ -20,7 +20,7 @@ class QWorkflow(QTreeSelectionModel):
 
     def headerData(self,section,orientation,data_role):
         if (data_role == QtCore.Qt.DisplayRole and section == 0):
-            return "{} operation(s) loaded".format(self._tree._root_item.n_children())
+            return "{} operation(s) loaded".format(self.root_item().n_children())
         else:
             return super(QWorkflow,self).headerData(section,orientation,data_role)    
 

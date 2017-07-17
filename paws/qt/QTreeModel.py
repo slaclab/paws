@@ -40,6 +40,9 @@ class QTreeModel(QtCore.QAbstractItemModel):
     def root_index(self):
         return self.createIndex(0,0,self._tree._root_item)
 
+    def root_item(self):
+        return self._tree._root_item
+
     def get_from_index(self,idx=QtCore.QModelIndex()):
         """
         For a valid QModelIndex, return idx.internalPointer().
@@ -158,15 +161,17 @@ class QTreeModel(QtCore.QAbstractItemModel):
             itm_row = child_keys.index(itm_tag)
             itm = parent_itm.children[itm_row]
             idx = self.index(itm_row,0,parent_idx)
-            # Remove any children that do not represent the new data
-            #itm_child_keys = [c.tag for c in itm.children]
+            # Remove any children that do not represent the new itm_tree data
+            new_keys = []
             if isinstance(itm_tree,dict):
-                for grandchild_itm in itm.children[::-1]:
-                    if not grandchild_itm.tag in itm_tree.keys():
-                        rm_row = [gc.tag for gc in itm.children].index(grandchild_itm.tag)
-                        self.beginRemoveRows(idx,rm_row,rm_row)
-                        itm.children.pop(rm_row) 
-                        self.endRemoveRows()
+                new_keys = itm_tree.keys()
+            for gc_row in range(itm.n_children())[::-1]:
+                gc_itm = itm.children[gc_row]
+                if not gc_itm.tag in new_keys:
+                    #rm_row = [gc.tag for gc in itm.children].index(grandchild_itm.tag)
+                    self.beginRemoveRows(idx,gc_row,gc_row)
+                    itm.children.pop(gc_row) 
+                    self.endRemoveRows()
         else:
             # Else, put a new TreeItem at the end row
             itm_row = self.n_children(parent_idx)
@@ -192,9 +197,10 @@ class QTreeModel(QtCore.QAbstractItemModel):
         rm_uri = self._tree.build_uri(rm_itm)
         self.beginRemoveRows(parent_idx,rm_row,rm_row)
         self._tree.remove_item(rm_uri)
+        #parent_itm.children.pop(rm_row)
         self.endRemoveRows()
         #self.dataChanged.emit(rm_idx,rm_idx)
-        self.tree_dataChanged.emit(parent_idx)
+        self.tree_dataChanged(parent_idx)
 
     def tree_dataChanged(self,idx):
         itm = idx.internalPointer()

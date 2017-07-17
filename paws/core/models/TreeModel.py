@@ -73,9 +73,9 @@ class TreeModel(object):
         #                self.set_item(itm_uri+'.'+k,itm_data[k]) 
 
     def remove_item(self,itm_uri):
-        itm = self.get_from_uri(itm_uri)
         self._tree.delete_uri(itm_uri)
         # remove the corresponding subtree or TreeItem.
+        itm = self.get_from_uri(itm_uri)
         parent_itm = itm.parent 
         child_keys = [c.tag for c in parent_itm.children]
         rm_row = child_keys.index(itm.tag)
@@ -83,24 +83,34 @@ class TreeModel(object):
 
     def tree_update(self,parent_itm,itm_tag,itm_data):
         """
-        Update the tree structure around parent_itm.children[itm_tag],
+        Update the tree structure 
+        rooted at parent_itm.children[itm_tag],
         such that TreeItems get built 
         to index all of the items in itm_data 
         that are supported by self.build_tree().
+        Assume build_tree was called on itm_data
+        before passing it as an argument,
+        so only need to recurse if itm_data is a dict.
         """
         child_keys = [c.tag for c in parent_itm.children]
         if itm_tag in child_keys:
             # Find the row of existing itm_tag under parent,
             itm_row = child_keys.index(itm_tag)
             itm = parent_itm.children[itm_row]
+            # Remove any grandchildren that do not represent the new data
+            new_keys = []
+            if isinstance(itm_data,dict):
+                new_keys = itm_data.keys()
+            for gc_row in range(itm.n_children())[::-1]:
+                gc_itm = itm.children[gc_row]
+                if not gc_itm.tag in new_keys:
+                    itm.children.pop(gc_row) 
         else:
-            # Else, put a new TreeItem at the end row
+            # Put a new TreeItem at the end row
             itm_row = parent_itm.n_children()
             itm = self.create_tree_item(parent_itm,itm_tag)
             parent_itm.children.insert(itm_row,itm)
-        # If needed, recurse on itm_data
-        # Assume build_tree was called on itm_data,
-        # so only need to check for dict.
+        # If needed, recurse on itm_data.
         if isinstance(itm_data,dict):
             for tag,val in itm_data.items():
                 self.tree_update(itm,tag,val)

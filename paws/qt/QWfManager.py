@@ -105,6 +105,8 @@ class QWfManager(QtCore.QObject):
         """
         self.wf_running[wfname] = True
         stk,diag = optools.execution_stack(self.wfman.workflows[wfname])
+        self.wfman.write_log('STARTING {} \nEXECUTION STACK: \n'
+        .format(wfname)+optools.print_stack(stk))
         for lst in stk:
             first_op = self.get_op(wfname,lst[0])
             batch_flag = isinstance(first_op,Batch)
