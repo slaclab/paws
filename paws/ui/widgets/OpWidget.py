@@ -1,6 +1,6 @@
 from PySide import QtGui, QtCore
 
-import ...core.operations.Operation as op
+from ...core.operations import Operation as op
 
 class OpWidget(QtGui.QWidget):
     

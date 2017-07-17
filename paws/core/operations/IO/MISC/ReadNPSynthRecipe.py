@@ -1,6 +1,6 @@
 from collections import OrderedDict
 
-import ...Operation as op
+from ... import Operation as op
 from ...Operation import Operation
 
 class ReadNPSynthRecipe(Operation):

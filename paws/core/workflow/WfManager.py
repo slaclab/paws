@@ -5,9 +5,9 @@ import traceback
 import time
 
 from .Workflow import Workflow
-import ..opertaions.Operation as op
+from ..operations import Operation as op
 from ..operations.Operation import Operation, Batch, Realtime        
-from ..operations import ptools
+from ..operations import optools
 from .. import pawstools
 
 class WfManager(object):

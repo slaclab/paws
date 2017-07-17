@@ -1,7 +1,7 @@
 import numpy as np
 from PIL import Image
 
-import ...Operation as op
+from ... import Operation as op
 from ...Operation import Operation
 
 class LoadTif_PIL(Operation):

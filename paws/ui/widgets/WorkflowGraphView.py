@@ -1,6 +1,6 @@
 from PySide import QtCore, QtGui
 
-import ...core.operations.Operation as op
+from ...core.operations import Operation as op
 
 class WorkflowGraphView(QtGui.QScrollArea):
     

@@ -1,7 +1,7 @@
 import numpy as np
 import pypif.obj as pifobj
 
-import ...Operation as op
+from ... import Operation as op
 from ...Operation import Operation
 
 class PifTernary(Operation):

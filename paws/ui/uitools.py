@@ -10,7 +10,7 @@ from functools import partial
 from PySide import QtGui, QtCore, QtUiTools
 import yaml
 
-import ..core.operations.Operation as op
+from ..core.operations import Operation as op
 from ..core import pawstools
 from ..core.models.ListModel import ListModel
 

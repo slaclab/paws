@@ -9,7 +9,7 @@ from PySide import QtCore
 from .QWfWorker import QWfWorker
 from .QWorkflow import QWorkflow
 from ..core import pawstools
-import ..core.operations.Operation as op
+from ..core.operations import Operation as op
 from ..core.operations import optools
 from ..core.workflow.Workflow import Workflow
 from ..core.operations.Operation import Operation, Batch, Realtime

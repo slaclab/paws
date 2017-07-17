@@ -2,7 +2,7 @@ from __future__ import print_function
 import importlib
 from collections import OrderedDict
 
-import ..operations.Operation as op
+from ..operations import Operation as op
 from ..operations.Operation import Operation
 from ..workflow.Workflow import Workflow
 from ..models.TreeModel import TreeModel

@@ -1,7 +1,7 @@
 import abc
 from collections import OrderedDict
 
-import ..operations.Operation as op
+from ..operations import Operation as op
 
 class PawsPlugin(object):
     __metaclass__ = abc.ABCMeta

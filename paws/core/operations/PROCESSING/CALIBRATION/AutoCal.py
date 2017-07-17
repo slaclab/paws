@@ -6,7 +6,7 @@ import numpy as np
 import pyFAI as pf
 import pyFAI.calibrant as pfc
 
-import ...Operation as op
+from ... import Operation as op
 from ...Operation import Operation
 
 class AutoCal(Operation):

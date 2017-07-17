@@ -3,7 +3,7 @@ import os
 from pypif import pif
 import pypif.obj as pifobj 
 
-import ...Operation as op
+from ... import Operation as op
 from ...Operation import Operation
         
 class ShipToDataSet(Operation):

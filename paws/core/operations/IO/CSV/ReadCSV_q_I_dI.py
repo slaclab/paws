@@ -1,6 +1,6 @@
 import numpy as np
 
-import ...Operation as op
+from ... import Operation as op
 from ...Operation import Operation
 
 class ReadCSV_q_I_dI(Operation):

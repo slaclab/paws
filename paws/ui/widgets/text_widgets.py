@@ -1,6 +1,6 @@
 """Widgets for displaying text"""
 
-import ...core.operations.Operation as op
+from ...core.operations import Operation as op
 from ...core.operations.Operation import Operation
 from ...core.operations.optools import FileSystemIterator
 

@@ -4,7 +4,7 @@ from PySide import QtCore
 
 from .QTreeSelectionModel import QTreeSelectionModel
 from ..core.plugins.PawsPlugin import PawsPlugin
-import ..core.operations.Operation as op
+from ..core.operations import Operation as op
 
 class QPluginManager(QTreeSelectionModel):
     """

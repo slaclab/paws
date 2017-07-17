@@ -4,7 +4,7 @@ import numpy as np
 from scipy import interp
 from scipy.optimize import minimize
 
-import ...Operation as op
+from ... import Operation as op
 from ...Operation import Operation
 from . import saxstools
 

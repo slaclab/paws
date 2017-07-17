@@ -2,8 +2,6 @@ import abc
 import re
 from collections import OrderedDict
 
-import optools
-
 # constants used for enumerative types etc
 # tags for inputs and outputs TreeItems    
 inputs_tag = 'inputs'
@@ -45,7 +43,7 @@ class InputLocator(object):
     They contain the information needed to find the relevant input data.
     After the data is loaded, it should be stored in InputLocator.data.
     """
-    def __init__(self,src=op.no_input,tp=op.none_type,val=None):
+    def __init__(self,src=no_input,tp=none_type,val=None):
         self.src = src
         self.tp = tp
         self.val = val 

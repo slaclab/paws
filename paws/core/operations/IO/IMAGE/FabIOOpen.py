@@ -1,6 +1,6 @@
 import fabio
 
-import ...Operation as op
+from ... import Operation as op
 from ...Operation import Operation
 
 class FabIOOpen(Operation):

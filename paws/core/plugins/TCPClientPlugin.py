@@ -4,7 +4,7 @@ from twisted.protocols.basic import LineReceiver
 from twisted.protocols.policies import TimeoutMixin
 
 from .PawsPlugin import PawsPlugin
-import ..operation.Operation as op
+from ..operations import Operation as op
 
 class TCPClientPlugin(PawsPlugin):
 

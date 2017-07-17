@@ -3,7 +3,7 @@ import time
 
 import tzlocal
 
-import ...Operation as op
+from ... import Operation as op
 from ...Operation import Operation
 
 class TimeTempFromHeader(Operation):

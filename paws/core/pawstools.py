@@ -21,9 +21,9 @@ user_homedir = os.path.expanduser("~")
 paws_scratch_dir = os.path.join(user_homedir,'.paws_scratch')
 paws_cfg_dir = os.path.join(user_homedir,'.paws_cfg')
 if not os.path.exists(paws_cfg_dir):
-    os.mkdir(scratchdir)
+    os.mkdir(paws_cfg_dir)
 if not os.path.exists(paws_scratch_dir):
-    os.mkdir(scratchdir)
+    os.mkdir(paws_scratch_dir)
 
 # Get the code version from the paws_config.py file, store as __version__
 with open(os.path.join(sourcedir,'paws_config.py')) as f: 

@@ -2,7 +2,7 @@ from collections import OrderedDict
 
 from PySide import QtCore
 
-import ..core.operations.Operation as op
+from ..core.operations import Operation as op
 from .QTreeSelectionModel import QTreeSelectionModel
 
 class QWorkflow(QTreeSelectionModel):

@@ -1,4 +1,4 @@
-mport ...Operation as op
+from ... import Operation as op
 from ...Operation import Realtime 
 from ... import optools
 

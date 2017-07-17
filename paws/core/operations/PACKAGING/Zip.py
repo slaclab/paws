@@ -1,6 +1,6 @@
 import numpy as np
 
-import ..Operation as op
+from .. import Operation as op
 from ..Operation import Operation
 
 class Zip(Operation):

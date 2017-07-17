@@ -7,7 +7,7 @@ from collections import OrderedDict
 from ..core import pawstools
 from ..core import operations as ops
 from ..core import plugins 
-import ..core.operations.Operation as op
+from ..core.operations import Operation as op
 from ..core.operations import optools
 from ..core.operations.OpManager import OpManager 
 from ..core.workflow.WfManager import WfManager 

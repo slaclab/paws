@@ -6,7 +6,7 @@ from PySide import QtGui, QtCore, QtUiTools
 from .. import uitools
 from .. import widgets
 from ...core import pawstools
-import ...core.operations.Operation as op
+from ...core.operations import Operation as op
 from ...core.models.ListModel import ListModel
 
 class PipelineWidget(QtGui.QWidget):

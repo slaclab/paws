@@ -7,7 +7,7 @@ from ..core.models.ListModel import PluginListModel
 from ..core import plugins 
 from ..core import pawstools
 from ..core.plugins.PawsPlugin import PawsPlugin
-import ..core.operations.Operation as op
+from ..core.operations import Operation as op
 from ..core.operations import optools
 from .InputLoader import InputLoader
 from . import uitools

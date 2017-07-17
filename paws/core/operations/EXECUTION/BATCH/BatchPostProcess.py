@@ -1,7 +1,7 @@
 from collections import OrderedDict
 import glob
 
-import ...Operation as op
+from ... import Operation as op
 from ...Operation import Batch
 from ... import optools
 

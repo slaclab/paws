@@ -5,7 +5,7 @@ from citrination_client import CitrinationClient
 
 from .. import pawstools
 from .PawsPlugin import PawsPlugin
-import ..operations.Operation as op
+from ..operations import Operation as op
 
 class CitrinationPlugin(PawsPlugin):
     """

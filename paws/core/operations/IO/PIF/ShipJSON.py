@@ -1,4 +1,4 @@
-import ...Operation as op
+from ... import Operation as op
 from ...Operation import Operation
 
 class ShipJSON(Operation):

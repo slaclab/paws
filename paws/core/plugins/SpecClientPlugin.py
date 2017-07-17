@@ -2,7 +2,7 @@ from __future__ import print_function
 import socket 
 
 from .PawsPlugin import PawsPlugin
-import ..operations.Operation as op
+from ..operations import Operation as op
 
 class SpecClientPlugin(PawsPlugin):
 

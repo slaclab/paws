@@ -3,7 +3,7 @@ import copy
 from functools import partial
 
 from ..models.TreeModel import TreeModel
-import ..operations.Operation as op
+from ..operations import Operation as op
 from ..operations.Operation import Operation, Batch, Realtime
 
 class Workflow(TreeModel):

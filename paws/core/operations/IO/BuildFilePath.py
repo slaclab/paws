@@ -1,7 +1,7 @@
 import os.path
 
 import ..Operation as op
-from ..Operation import Operation
+from .. import Operation as op
 
 class BuildFilePath(Operation):
     """

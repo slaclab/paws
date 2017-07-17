@@ -3,7 +3,7 @@ import copy
 
 from scipy.optimize import curve_fit
 
-import ...Operation as op
+from ... import Operation as op
 from ...Operation import Operation
 from . import saxstools
 

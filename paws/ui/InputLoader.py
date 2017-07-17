@@ -5,7 +5,7 @@ from PySide import QtCore, QtGui, QtUiTools
 
 from ..core import pawstools
 from ..core.models.ListModel import ListModel
-import ..core.operations.Operation as op
+from ..core.operations import Operation as op
 
 class InputLoader(object):
     """This class controls the input_loader.ui to select inputs from various sources."""
