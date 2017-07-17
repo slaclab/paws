@@ -3,20 +3,26 @@ from datetime import datetime as dt
 
 import yaml
 
-# TODO: Make scratch directory and other cfg'ables into a cfg file
-
 p = os.path.abspath(__file__)
 # p = (pawsroot)/paws/core/pawstools.py
+
 d = os.path.dirname(p)
 # d = (pawsroot)/paws/core/
+
 d = os.path.dirname(d)
 # d = (pawsroot)/paws/
 sourcedir = str(d)
-d = os.path.dirname(d)
+
+# d = os.path.dirname(d)
 # d = (pawsroot)
 #rootdir = str(d)
-scratchdir = os.path.join(os.path.expanduser('~'),'.paws_scratch')
-if not os.path.exists(scratchdir):
+user_homedir = os.path.expanduser("~")
+
+paws_scratch_dir = os.path.join(user_homedir,'.paws_scratch')
+paws_cfg_dir = os.path.join(user_homedir,'.paws_cfg')
+if not os.path.exists(paws_cfg_dir):
+    os.mkdir(scratchdir)
+if not os.path.exists(paws_scratch_dir):
     os.mkdir(scratchdir)
 
 # Get the code version from the paws_config.py file, store as __version__

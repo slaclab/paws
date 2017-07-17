@@ -2,8 +2,8 @@ from os.path import splitext
 from os import linesep
 import numpy as np
 
+import ...Operation as op
 from ...Operation import Operation
-from ... import optools
 
 class WriteCSV_q_I_dI(Operation):
     """Write q, I, and (if available) dI to a csv-formatted file."""
@@ -17,11 +17,10 @@ class WriteCSV_q_I_dI(Operation):
         self.input_doc['I'] = "1d ndarray; dependent variable; same shape as *q*"
         self.input_doc['dI'] = "1d ndarray; error estimate of *I*; same shape as *I*; if unavailable, use *None*"
         # source & type
-        self.input_src['q'] = optools.wf_input
-        self.input_src['I'] = optools.wf_input
-        self.input_src['dI'] = optools.wf_input
-        self.input_src['image_location'] = optools.wf_input
-        self.categories = ['OUTPUT.CSV']
+        self.input_src['q'] = op.wf_input
+        self.input_src['I'] = op.wf_input
+        self.input_src['dI'] = op.wf_input
+        self.input_src['image_location'] = op.wf_input
 
     def run(self):
         csv_location = replace_extension(self.inputs['image_location'], '.csv')

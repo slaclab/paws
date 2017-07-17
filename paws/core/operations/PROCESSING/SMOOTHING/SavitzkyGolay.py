@@ -1,7 +1,7 @@
 import numpy as np
 
+import ...Operation as op
 from ...Operation import Operation
-from ... import optools
 
 class SavitzkyGolay(Operation):
     """
@@ -18,16 +18,16 @@ class SavitzkyGolay(Operation):
         self.input_doc['order'] = 'integer order of polynomial approximation (zero to five)'
         self.input_doc['base'] = '-1, 0, or positive integer; see class docs'
         self.output_doc['smoothdata'] = 'smoothed 1d array for y'
-        self.input_src['x'] = optools.wf_input
-        self.input_src['y'] = optools.wf_input
-        self.input_src['dy'] = optools.wf_input
-        self.input_src['order'] = optools.text_input
-        self.input_src['base'] = optools.text_input
-        self.input_type['x'] = optools.ref_type
-        self.input_type['y'] = optools.ref_type
-        self.input_type['dy'] = optools.ref_type
-        self.input_type['order'] = optools.int_type
-        self.input_type['base'] = optools.int_type
+        self.input_src['x'] = op.wf_input
+        self.input_src['y'] = op.wf_input
+        self.input_src['dy'] = op.wf_input
+        self.input_src['order'] = op.text_input
+        self.input_src['base'] = op.text_input
+        self.input_type['x'] = op.ref_type
+        self.input_type['y'] = op.ref_type
+        self.input_type['dy'] = op.ref_type
+        self.input_type['order'] = op.int_type
+        self.input_type['base'] = op.int_type
 
     def run(self):
         x = self.inputs['x']

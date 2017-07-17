@@ -1,7 +1,7 @@
 import numpy as np
 
+import ..Operation as op
 from ..Operation import Operation
-from .. import optools
 
 class Zip(Operation):
     """
@@ -16,10 +16,10 @@ class Zip(Operation):
         self.input_doc['y'] = '1d array, same size as x'
         self.output_doc['x_y'] = 'n x 2 array containing x and y'
         # source & type
-        self.input_src['x'] = optools.wf_input
-        self.input_src['y'] = optools.wf_input
-        self.input_type['x'] = optools.ref_type
-        self.input_type['y'] = optools.ref_type
+        self.input_src['x'] = op.wf_input
+        self.input_src['y'] = op.wf_input
+        self.input_type['x'] = op.ref_type
+        self.input_type['y'] = op.ref_type
 
     def run(self):
         x = self.inputs['x']

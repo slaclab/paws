@@ -2,8 +2,8 @@ from collections import OrderedDict
 
 from PySide import QtCore
 
+import ..core.operations.Operation as op
 from .QTreeSelectionModel import QTreeSelectionModel
-from ..core.operations import optools
 
 class QWorkflow(QTreeSelectionModel):
     """
@@ -48,11 +48,11 @@ class QWorkflow(QTreeSelectionModel):
         """
         path = uri.split('.')
         opname = path[0]
-        if not path[1] == optools.inputs_tag:
+        if not path[1] == op.inputs_tag:
             msg = '[{}] uri {} does not point to an input'.format(__name__,uri)
             raise ValueError(msg)
         inpname = path[2]
-        #inp_uri = opname+'.'+optools.inputs_tag+'.'+inpname
+        #inp_uri = opname+'.'+op.inputs_tag+'.'+inpname
         op = self._tree.get_data_from_uri(opname)
         op.input_locator[inpname].data = val
         self.set_item_at_uri(uri,val)

@@ -1,7 +1,7 @@
 import pypif.obj as pifobj
 
+import ...Operation as op
 from ...Operation import Operation
-from ... import optools
 
 class EmptyPif(Operation):
     """
@@ -16,12 +16,12 @@ class EmptyPif(Operation):
         self.input_doc['date_time'] = 'string date/time for pif record tags'
         self.input_doc['t_utc'] = 'time of record creation in utc'
         self.output_doc['pif'] = 'an empty pif object'
-        self.input_src['uid_prefix'] = optools.text_input
-        self.input_src['date_time'] = optools.wf_input
-        self.input_src['t_utc'] = optools.wf_input
-        self.input_type['uid_prefix'] = optools.str_type
-        self.input_type['date_time'] = optools.ref_type
-        self.input_type['t_utc'] = optools.ref_type
+        self.input_src['uid_prefix'] = op.text_input
+        self.input_src['date_time'] = op.wf_input
+        self.input_src['t_utc'] = op.wf_input
+        self.input_type['uid_prefix'] = op.str_type
+        self.input_type['date_time'] = op.ref_type
+        self.input_type['t_utc'] = op.ref_type
 
     def run(self):
         uid_pre = self.inputs['uid_prefix']

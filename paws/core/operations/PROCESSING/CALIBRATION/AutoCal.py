@@ -2,14 +2,12 @@
 Operation for automatic discovery of diffraction image calibration parameters. 
 """
 
-import os
-
 import numpy as np
 import pyFAI as pf
 import pyFAI.calibrant as pfc
 
+import ...Operation as op
 from ...Operation import Operation
-from ... import optools
 
 class AutoCal(Operation):
     """
@@ -25,16 +23,16 @@ class AutoCal(Operation):
         self.input_doc['wavelength'] = 'wavelength, in Angstrom'
         self.input_doc['pixel_size'] = 'pixel size in microns'
         self.input_doc['fpolz'] = 'polarization factor'
-        self.input_src['image_data'] = optools.wf_input
-        self.input_src['calibrant'] = optools.text_input 
-        self.input_src['wavelength'] = optools.text_input 
-        self.input_src['pixel_size'] = optools.text_input 
-        self.input_src['fpolz'] = optools.text_input
-        self.input_type['image_data'] = optools.ref_type
-        self.input_type['calibrant'] = optools.str_type
-        self.input_type['wavelength'] = optools.float_type
-        self.input_type['pixel_size'] = optools.float_type
-        self.input_type['fpolz'] = optools.float_type
+        self.input_src['image_data'] = op.wf_input
+        self.input_src['calibrant'] = op.text_input 
+        self.input_src['wavelength'] = op.text_input 
+        self.input_src['pixel_size'] = op.text_input 
+        self.input_src['fpolz'] = op.text_input
+        self.input_type['image_data'] = op.ref_type
+        self.input_type['calibrant'] = op.str_type
+        self.input_type['wavelength'] = op.float_type
+        self.input_type['pixel_size'] = op.float_type
+        self.input_type['fpolz'] = op.float_type
         self.inputs['calibrant'] = 'AgBh' 
         self.inputs['wavelength'] = 0.799898 
         self.inputs['pixel_size'] = 79 

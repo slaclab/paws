@@ -1,6 +1,5 @@
 from __future__ import print_function
 from .. import operations as ops
-from ..operations import optools
 from ..models.TreeModel import TreeModel
 
 class OpManager(TreeModel):

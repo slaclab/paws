@@ -1,7 +1,7 @@
 import numpy as np
 
+import ...Operation as op
 from ...Operation import Operation
-from ...import optools
 
 class CSVToArray(Operation):
     """
@@ -15,8 +15,8 @@ class CSVToArray(Operation):
         self.input_doc['path'] = "path to .csv file"
         self.output_doc['array'] = "numpy array built from csv file contents"
         # source & type
-        self.input_src['path'] = optools.fs_input
-        self.input_type['path'] = optools.path_type
+        self.input_src['path'] = op.fs_input
+        self.input_type['path'] = op.path_type
 
     def run(self):
         path = self.inputs['path']

@@ -1,7 +1,7 @@
 import numpy as np
 
+import ...Operation as op
 from ...Operation import Operation
-from ... import optools
 
 class SubtractMaximumBackground(Operation):
     """
@@ -24,14 +24,14 @@ class SubtractMaximumBackground(Operation):
         self.output_doc['bg_factor'] = str('the factor the background was multiplied by '
         + ' before subraction to ensure positive values for output intensity')
         # source & type
-        self.input_src['q_I'] = optools.wf_input
-        self.input_src['q_I_bg'] = optools.wf_input
-        self.input_src['dI'] = optools.wf_input
-        self.input_src['dI_bg'] = optools.wf_input
-        self.input_type['q_I'] = optools.ref_type
-        self.input_type['q_I_bg'] = optools.ref_type
-        self.input_type['dI'] = optools.none_type
-        self.input_type['dI_bg'] = optools.none_type
+        self.input_src['q_I'] = op.wf_input
+        self.input_src['q_I_bg'] = op.wf_input
+        self.input_src['dI'] = op.wf_input
+        self.input_src['dI_bg'] = op.wf_input
+        self.input_type['q_I'] = op.ref_type
+        self.input_type['q_I_bg'] = op.ref_type
+        self.input_type['dI'] = op.none_type
+        self.input_type['dI_bg'] = op.none_type
 
     def run(self):
         q_I = self.inputs['q_I']

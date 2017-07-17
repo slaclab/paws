@@ -126,7 +126,7 @@ class OpUiManager(QtCore.QObject):
             if self.op.input_src[name] is not None:
                 src = self.op.input_locator[name].src
             else:
-                src = optools.no_input 
+                src = op.no_input 
             src_widget.setCurrentIndex(src)
             inputs_lo.addWidget( src_widget,rowii,2,1,1 )
             # type
@@ -134,7 +134,7 @@ class OpUiManager(QtCore.QObject):
             if self.op.input_type[name] is not None:
                 tp = self.op.input_locator[name].tp
             else:
-                tp = optools.none_type
+                tp = op.none_type
             type_widget.setCurrentIndex(tp)
             inputs_lo.addWidget( type_widget,rowii,3,1,1 )
             # value

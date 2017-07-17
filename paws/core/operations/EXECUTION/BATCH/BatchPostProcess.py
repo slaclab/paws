@@ -1,6 +1,7 @@
 from collections import OrderedDict
 import glob
 
+import ...Operation as op
 from ...Operation import Batch
 from ... import optools
 
@@ -27,16 +28,16 @@ class BatchPostProcess(Batch):
         self.input_doc['saved_items'] = 'list of uris to be saved in the batch_outputs'
         self.output_doc['batch_inputs'] = 'list of dicts of [input_route:input_value] as determined by batch_uris and input_routes'
         self.output_doc['batch_outputs'] = 'list of dicts of [output_route:output_value] for all saved_items '
-        self.input_src['batch_output'] = optools.plugin_input
-        self.input_src['batch_uris'] = optools.wf_input 
-        self.input_src['input_routes'] = optools.wf_input 
-        self.input_src['batch_ops'] = optools.wf_input 
-        self.input_src['saved_items'] = optools.wf_input 
-        self.input_type['batch_output'] = optools.ref_type
-        self.input_type['batch_uris'] = optools.path_type
-        self.input_type['input_routes'] = optools.path_type
-        self.input_type['batch_ops'] = optools.path_type 
-        self.input_type['saved_items'] = optools.path_type 
+        self.input_src['batch_output'] = op.plugin_input
+        self.input_src['batch_uris'] = op.wf_input 
+        self.input_src['input_routes'] = op.wf_input 
+        self.input_src['batch_ops'] = op.wf_input 
+        self.input_src['saved_items'] = op.wf_input 
+        self.input_type['batch_output'] = op.ref_type
+        self.input_type['batch_uris'] = op.path_type
+        self.input_type['input_routes'] = op.path_type
+        self.input_type['batch_ops'] = op.path_type 
+        self.input_type['saved_items'] = op.path_type 
         self.inputs['batch_uris'] = []
         self.inputs['input_routes'] = []
         self.inputs['batch_ops'] = []

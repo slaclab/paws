@@ -7,6 +7,7 @@ from collections import OrderedDict
 from ..core import pawstools
 from ..core import operations as ops
 from ..core import plugins 
+import ..core.operations.Operation as op
 from ..core.operations import optools
 from ..core.operations.OpManager import OpManager 
 from ..core.workflow.WfManager import WfManager 
@@ -125,7 +126,7 @@ class PawsAPI(object):
             tp = pgin.input_type[input_name]
         if val is None:
             val = pgin.inputs[input_name]
-        if src == optools.text_input:
+        if src == op.text_input:
             pgin.inputs[input_name] = optools.cast_type_val(tp,val)
         else:
             pgin.inputs[input_name] = val 
@@ -150,7 +151,7 @@ class PawsAPI(object):
             tp = op.input_locator[input_name].tp
         if val is None:
             val = op.input_locator[input_name].val
-        il = optools.InputLocator(src,tp,val)
+        il = op.InputLocator(src,tp,val)
         op.input_locator[input_name] = il
 
     @staticmethod
@@ -159,24 +160,24 @@ class PawsAPI(object):
         tp = None
         val = None
         if 'src' in kw_dict:
-            if kw_dict['src'] in optools.input_sources:
-                src = optools.valid_sources[ optools.input_sources.index(kw_dict['src']) ]
+            if kw_dict['src'] in op.input_sources:
+                src = op.valid_sources[ op.input_sources.index(kw_dict['src']) ]
                 # Any default type setting can go here.
-                if src == optools.batch_input:
-                    tp = optools.auto_type
-                if src == optools.fs_input:
-                    tp = optools.path_type
-                if src == optools.wf_input:
-                    tp = optools.ref_type
+                if src == op.batch_input:
+                    tp = op.auto_type
+                if src == op.fs_input:
+                    tp = op.path_type
+                if src == op.wf_input:
+                    tp = op.ref_type
             else:
                 #TODO: error? warning?
-                src = optools.no_input
+                src = op.no_input
         if 'tp' in kw_dict:
-            if kw_dict['tp'] in optools.input_types:
-                tp = optools.valid_types[ optools.input_types.index(kw_dict['tp']) ]
+            if kw_dict['tp'] in op.input_types:
+                tp = op.valid_types[ op.input_types.index(kw_dict['tp']) ]
             else:
                 #TODO: error? warning?
-                tp = optools.none_type
+                tp = op.none_type
         if 'val' in kw_dict:
             val = kw_dict['val']
         return src,tp,val

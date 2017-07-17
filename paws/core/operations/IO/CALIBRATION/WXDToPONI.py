@@ -1,10 +1,8 @@
-import os
-
 import numpy as np
 import pyFAI
 
+import ...Operation as op
 from ...Operation import Operation
-from ... import optools
 
 class WXDToPONI(Operation):
     """
@@ -29,12 +27,12 @@ class WXDToPONI(Operation):
         self.input_doc['wxd_file'] = '.calib file produced by WXDIFF calibration'
         self.input_doc['pixel_size_um'] = 'pixel size in microns'
         self.input_doc['fpolz'] = 'polarization factor'
-        self.input_src['wxd_file'] = optools.fs_input
-        self.input_src['pixel_size_um'] = optools.text_input 
-        self.input_src['fpolz'] = optools.text_input
-        self.input_type['wxd_file'] = optools.path_type
-        self.input_type['pixel_size_um'] = optools.float_type
-        self.input_type['fpolz'] = optools.float_type
+        self.input_src['wxd_file'] = op.fs_input
+        self.input_src['pixel_size_um'] = op.text_input 
+        self.input_src['fpolz'] = op.text_input
+        self.input_type['wxd_file'] = op.path_type
+        self.input_type['pixel_size_um'] = op.float_type
+        self.input_type['fpolz'] = op.float_type
         self.inputs['pixel_size_um'] = 79 
         self.inputs['fpolz'] = 0.95 
         self.output_doc['poni_dict'] = 'Dict of pyFAI calibration parameters, as found in a .poni file'

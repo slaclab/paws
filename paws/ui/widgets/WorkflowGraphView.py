@@ -1,7 +1,6 @@
 from PySide import QtCore, QtGui
 
-from ...core.operations.Operation import Operation, Batch, Realtime
-from ...core.operations import optools
+import ...core.operations.Operation as op
 
 class WorkflowGraphView(QtGui.QScrollArea):
     
@@ -83,7 +82,7 @@ class WorkflowGraphWidget(QtGui.QWidget):
         for lst in stk:
             v = self._scale*self.vspace
             first_op = self.wf.get_data_from_uri(lst[0])
-            if isinstance(first_op,Batch) or isinstance(first_op,Realtime):
+            if isinstance(first_op,op.Batch) or isinstance(first_op,op.Realtime):
                 b_coords, b_inp_coords, b_out_coords = self.get_op_coords(lst[1])
                 for name,coords in b_coords.items():
                     topleft = coords[0]
@@ -155,8 +154,8 @@ class WorkflowGraphWidget(QtGui.QWidget):
         #outhdr = QtCore.QRectF(QtCore.QPoint(70,-90),QtCore.QPoint(90,-80))
         #f.setUnderline(True)
         #p.setFont(f)
-        #p.drawText(inphdr,QtCore.Qt.AlignCenter,optools.inputs_tag)
-        #p.drawText(outhdr,QtCore.Qt.AlignCenter,optools.outputs_tag)
+        #p.drawText(inphdr,QtCore.Qt.AlignCenter,op.inputs_tag)
+        #p.drawText(outhdr,QtCore.Qt.AlignCenter,op.outputs_tag)
         #f.setUnderline(False)
         #p.setFont(f)
         # Label the inputs
@@ -171,7 +170,7 @@ class WorkflowGraphWidget(QtGui.QWidget):
         #    p.drawLine(QtCore.QPoint(-1*(recthorz+10),vcrd-10),QtCore.QPoint(-1*(recthorz+10),vcrd+10))
         #    ilrec = QtCore.QRectF(QtCore.QPoint(-100,vcrd-10),QtCore.QPoint(-1*(recthorz+12),vcrd+10))
         #    p.drawText(ilrec,QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter,#|QtCore.Qt.TextWordWrap,
-        #    'source: {} \ntype: {} \nvalue: {}'.format(optools.input_sources[il.src],optools.input_types[il.tp],il.val))
+        #    'source: {} \ntype: {} \nvalue: {}'.format(op.input_sources[il.src],op.input_types[il.tp],il.val))
         #    vcrd += 2*ispc
         ## Label the outputs
         #n_out = len(self.op.outputs)

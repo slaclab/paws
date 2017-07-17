@@ -7,6 +7,7 @@ from ..core.models.ListModel import PluginListModel
 from ..core import plugins 
 from ..core import pawstools
 from ..core.plugins.PawsPlugin import PawsPlugin
+import ..core.operations.Operation as op
 from ..core.operations import optools
 from .InputLoader import InputLoader
 from . import uitools
@@ -36,7 +37,7 @@ class PluginUiManager(QtCore.QObject):
         self.type_col = 3
         self.val_col = 4
         self.btn_col = 5
-        self.invalid_sources = [optools.batch_input,optools.plugin_input,optools.wf_input]
+        self.invalid_sources = [op.batch_input,op.plugin_input,op.wf_input]
 
     def setup_ui(self):
         self.ui.setWindowTitle("plugin setup")
@@ -127,7 +128,7 @@ class PluginUiManager(QtCore.QObject):
                 src_widget.model().set_disabled(s)
             src = self.pgin.input_src[name]
             if src in self.invalid_sources:
-                src = optools.no_input
+                src = op.no_input
             src_widget.setCurrentIndex(src)
             self.ui.input_layout.addWidget( src_widget,i,self.src_col,1,1 )
             self.src_widgets[name] = src_widget 
@@ -146,20 +147,20 @@ class PluginUiManager(QtCore.QObject):
             src = self.src_widgets[name].currentIndex()
         type_widget = uitools.type_selection_widget(src)
         if self.pgin.input_type[name]:
-            if self.pgin.input_type[name] not in optools.invalid_types[src]:
+            if self.pgin.input_type[name] not in op.invalid_types[src]:
                 type_widget.setCurrentIndex(self.pgin.input_type[name])
             else:
                 # set sensible defaults
-                if src == optools.fs_input:
-                    new_type_widget.setCurrentIndex(optools.path_type)
-                elif src == optools.text_input:
-                    new_type_widget.setCurrentIndex(optools.str_type)
-        #if type_widget.currentIndex() in optools.invalid_types[src]:
-        #    type_widget.setCurrentIndex(optools.none_type)
-        #if src in [optools.wf_input,optools.plugin_input]:
-        #    type_widget.setCurrentIndex(optools.ref_type)
-        #if src == optools.fs_input:
-        #    type_widget.setCurrentIndex(optools.path_type)
+                if src == op.fs_input:
+                    new_type_widget.setCurrentIndex(op.path_type)
+                elif src == op.text_input:
+                    new_type_widget.setCurrentIndex(op.str_type)
+        #if type_widget.currentIndex() in op.invalid_types[src]:
+        #    type_widget.setCurrentIndex(op.none_type)
+        #if src in [op.wf_input,op.plugin_input]:
+        #    type_widget.setCurrentIndex(op.ref_type)
+        #if src == op.fs_input:
+        #    type_widget.setCurrentIndex(op.path_type)
         type_widget.currentIndexChanged.connect( partial(self.reset_val_widget,name,row,src) )            
         self.type_widgets[name] = type_widget  
         self.ui.input_layout.addWidget(type_widget,row,self.type_col,1,1)
@@ -184,12 +185,12 @@ class PluginUiManager(QtCore.QObject):
             tp = self.type_widgets[name].currentIndex()
         btn_widget = QtGui.QPushButton()
         val_widget = QtGui.QLineEdit()
-        if src == optools.no_input or tp == optools.none_type: 
+        if src == op.no_input or tp == op.none_type: 
             btn_widget.setText('no input')
             btn_widget.setEnabled(False)
             val_widget.setText('None')
-        #elif src in [optools.wf_input,optools.fs_input,optools.plugin_input,optools.text_input]:
-        elif src in [optools.fs_input,optools.text_input]:
+        #elif src in [op.wf_input,op.fs_input,op.plugin_input,op.text_input]:
+        elif src in [op.fs_input,op.text_input]:
             btn_widget.setText('edit...')
             btn_widget.clicked.connect( partial(self.fetch_data,name) )
             if self.pgin.inputs[name] is not None:
@@ -206,10 +207,10 @@ class PluginUiManager(QtCore.QObject):
                 self.input_loaders[name].ui.close()
                 self.input_loaders[name] = None
         src = self.src_widgets[name].currentIndex()
-        if src == optools.fs_input:
+        if src == op.fs_input:
             trmod = QtGui.QFileSystemModel()
             inp_loader = InputLoader(name,src,trmod,self.ui)
-        elif src == optools.text_input:
+        elif src == op.text_input:
             inp_loader = InputLoader(name,src,None,self.ui)
         if self.pgin.input_src[name] == src and self.pgin.inputs[name] is not None:
             if isinstance(self.pgin.inputs[name],list):
@@ -244,7 +245,7 @@ class PluginUiManager(QtCore.QObject):
             # dereference the ui now that it is closed...
             self.input_loaders[name] = None
             #src_ui.deleteLater()
-        elif src == optools.text_input:
+        elif src == op.text_input:
             val = self.val_widgets[name].text()
             self.pgin.inputs[name] = optools.cast_type_val(tp,val)
 

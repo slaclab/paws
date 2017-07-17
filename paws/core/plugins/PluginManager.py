@@ -2,9 +2,9 @@ from __future__ import print_function
 import importlib
 from collections import OrderedDict
 
+import ..operations.Operation as op
 from ..operations.Operation import Operation
 from ..workflow.Workflow import Workflow
-from ..operations import optools
 from ..models.TreeModel import TreeModel
 from .. import plugins as pgns
 from .PawsPlugin import PawsPlugin
@@ -29,7 +29,7 @@ class PluginManager(TreeModel):
         pgin_mod = pgin_mod[pgin_mod.find('.')+1:]
         dct = OrderedDict() 
         dct['plugin_module'] = pgin_mod
-        dct[optools.inputs_tag] = pgin.inputs 
+        dct[op.inputs_tag] = pgin.inputs 
         return dct
 
     def load_from_dict(self,plugin_dict):
@@ -45,8 +45,8 @@ class PluginManager(TreeModel):
                 else:
                     pgin = pgin()
                     for name in pgin.inputs.keys():
-                        if name in pgin_spec[optools.inputs_tag]:
-                            pgin.inputs[name] = pgin_spec[optools.inputs_tag][name]
+                        if name in pgin_spec[op.inputs_tag]:
+                            pgin.inputs[name] = pgin_spec[op.inputs_tag][name]
                     pgin.start()
                     # if already have this uri, first generate auto_tag
                     #if self.tree_contains_uri(uri):
@@ -80,8 +80,8 @@ class PluginManager(TreeModel):
                 d[k] = self.build_tree(v)
         elif isinstance(x,Operation):
             d = OrderedDict()
-            d[optools.inputs_tag] = self.build_tree(x.inputs)
-            d[optools.outputs_tag] = self.build_tree(x.outputs)
+            d[op.inputs_tag] = self.build_tree(x.inputs)
+            d[op.outputs_tag] = self.build_tree(x.outputs)
         else:
             return super(PluginManager,self).build_tree(x) 
         return d

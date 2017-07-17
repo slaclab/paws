@@ -8,13 +8,10 @@ import yaml
 
 from .. import pawstools
 
-# TODO: Deprecate ops.cfg configuration file.
-# By default, inspect entire environment, 
-# inventory all Operations, import none of them.
-# Add operation environment specification to .wfl files.
+# TODO: Add ops.cfg information to .wfl files.
 
-# check for an ops.cfg file
-cfg_file = pawstools.sourcedir+'/core/operations/ops.cfg'
+# check for an ops.cfg (yaml) file
+cfg_file = os.path.join(pawstools.paws_cfg_dir,'ops.cfg')
 if os.path.exists(cfg_file):
     load_flags = pawstools.load_cfg(cfg_file)
 else:
@@ -33,7 +30,7 @@ def save_config():
 
 # Keep track of keys that get loaded in this run.
 # These keys are used to remove load_flags automatically
-# when Operations or categories are renamed or removed.
+# in case Operations or categories have been renamed or removed.
 load_keys = []
 
 def update_load_flags():
@@ -59,14 +56,13 @@ def load_ops_from_path(path_,pkg,cat_root=''):
             # NOTE: This line determines whether or not 
             # newly arrived modules should be loaded by default.
             load_mod = False
-        # NOTE: Leaving all modules load_flag = True for now...
         #
-        load_mod = True
+        #load_mod = True
         #
         load_flags[mod_root] = load_mod
         # if it is a package, recurse
         if load_mod and ispkg:
-            pkg_path = [path_[0]+'/'+modname]
+            pkg_path = [os.path.join(path_[0],modname)]
             pkg_ops, pkg_cats = load_ops_from_path(pkg_path,pkg+'.'+modname,mod_root)
             pkg_ops = [op for op in pkg_ops if not op in ops]
             pkg_cats = [cat for cat in pkg_cats if not cat in cats]

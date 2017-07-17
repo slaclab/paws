@@ -6,7 +6,7 @@ from PySide import QtGui, QtCore, QtUiTools
 from .. import uitools
 from .. import widgets
 from ...core import pawstools
-from ...core.operations import optools
+import ...core.operations.Operation as op
 from ...core.models.ListModel import ListModel
 
 class PipelineWidget(QtGui.QWidget):
@@ -172,8 +172,8 @@ class PipelineWidget(QtGui.QWidget):
         #    btn_widget = QtGui.QPushButton('browse...')
         #    btn_widget.setMaximumWidth(80)
         #    btn_widget.clicked.connect( partial(self.fetch_data,op_tag,inpnm,op_setup_ui) )
-        #    inpsrc = optools.input_sources[op.input_locator[inpnm].src]
-        #    if inpsrc == optools.text_input:
+        #    inpsrc = op.input_sources[op.input_locator[inpnm].src]
+        #    if inpsrc == op.text_input:
         #        btn_widget.setEnabled(False)
         #    op_setup_ui.inputs_layout.addWidget(btn_widget,inprow,3,1,1)
         #op_setup_ui.finish_button.setText('&OK')
@@ -193,11 +193,11 @@ class PipelineWidget(QtGui.QWidget):
         data_fetch_ui.setWindowTitle('browse for {}.{}'.format(op_tag,input_name))
         op = self.paw.get_op(op_tag)
         src = op.input_locator[input_name].src 
-        if src == optools.wf_input:
+        if src == op.wf_input:
             # TODO: add a workflow selector?
             wf = self.paw.get_wf(self._wfname)
             data_fetch_ui.source_treeview.setModel(wf)
-        elif src == optools.fs_input:
+        elif src == op.fs_input:
             fs_trmod = QtGui.QFileSystemModel()
             data_fetch_ui.source_treeview.setModel(fs_trmod)
             fs_trmod.setRootPath(QtCore.QDir.currentPath())
@@ -222,9 +222,9 @@ class PipelineWidget(QtGui.QWidget):
             idx = src_ui.source_treeview.currentIndex()
         op = self.paw.get_op(op_tag)
         src = op.input_locator[input_name].src 
-        if src == optools.wf_input:
+        if src == op.wf_input:
             v = str(src_ui.source_treeview.model().get_uri_of_index(idx)).strip()
-        elif src == optools.fs_input:
+        elif src == op.fs_input:
             v = str(src_ui.source_treeview.model().filePath(idx)).strip()
         self.paw.set_input(op_tag,input_name,val=v)
         #dest_widget.setText(v)

@@ -4,8 +4,8 @@ import numpy as np
 from scipy import interp
 from scipy.optimize import minimize
 
+import ...Operation as op
 from ...Operation import Operation
-from ... import optools
 from . import saxstools
 
 class SpectrumParameterization(Operation):
@@ -76,12 +76,12 @@ class SpectrumParameterization(Operation):
         self.output_doc['q_I_guess'] = str('n-by-2 array of q and the intensity spectrum '
         + 'corresponding to the population parameters in the features dict.')
 
-        self.input_src['q'] = optools.wf_input
-        self.input_src['I'] = optools.wf_input
-        self.input_src['features'] = optools.wf_input
-        self.input_type['q'] = optools.ref_type
-        self.input_type['I'] = optools.ref_type
-        self.input_type['features'] = optools.ref_type
+        self.input_src['q'] = op.wf_input
+        self.input_src['I'] = op.wf_input
+        self.input_src['features'] = op.wf_input
+        self.input_type['q'] = op.ref_type
+        self.input_type['I'] = op.ref_type
+        self.input_type['features'] = op.ref_type
 
     def run(self):
         q, I = self.inputs['q'], self.inputs['I']

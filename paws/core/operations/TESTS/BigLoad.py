@@ -1,7 +1,7 @@
 import numpy as np
 
+import ..Operation as op
 from ..Operation import Operation
-from .. import optools
 
 class BigLoad(Operation):
     """An Operation testing class, creates and outputs a big array of noise"""
@@ -12,8 +12,8 @@ class BigLoad(Operation):
         super(BigLoad,self).__init__(input_names,output_names) 
         self.input_doc['size'] = 'dimension of big array'
         self.output_doc['big_array'] = 'a big array of noise'
-        self.input_src['size'] = optools.text_input    
-        self.input_type['size'] = optools.int_type
+        self.input_src['size'] = op.text_input    
+        self.input_type['size'] = op.int_type
         self.inputs['size'] = 10000 
     
     def run(self):

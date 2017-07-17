@@ -1,5 +1,6 @@
 import numpy as np
 
+import ...Operation as op
 from ...Operation import Operation
 from ... import optools
 
@@ -31,16 +32,16 @@ class BgSubtractByTemperature(Operation):
         self.output_doc['T_bg'] = 'Temperature of the subtracted background spectrum'
         self.output_doc['bg_factor'] = str('correction factor applied to background '
         + 'before subtraction, to ensure positive intensity values')
-        self.input_src['q_I_meas'] = optools.wf_input
-        self.input_src['T_meas'] = optools.wf_input
-        self.input_src['bg_batch_output'] = optools.wf_input
-        self.input_src['bg_I_uri'] = optools.wf_input
-        self.input_src['bg_T_uri'] = optools.wf_input
-        self.input_type['q_I_meas'] = optools.ref_type
-        self.input_type['T_meas'] = optools.ref_type
-        self.input_type['bg_batch_output'] = optools.ref_type
-        self.input_type['bg_T_uri'] = optools.path_type
-        self.input_type['bg_I_uri'] = optools.path_type
+        self.input_src['q_I_meas'] = op.wf_input
+        self.input_src['T_meas'] = op.wf_input
+        self.input_src['bg_batch_output'] = op.wf_input
+        self.input_src['bg_I_uri'] = op.wf_input
+        self.input_src['bg_T_uri'] = op.wf_input
+        self.input_type['q_I_meas'] = op.ref_type
+        self.input_type['T_meas'] = op.ref_type
+        self.input_type['bg_batch_output'] = op.ref_type
+        self.input_type['bg_T_uri'] = op.path_type
+        self.input_type['bg_I_uri'] = op.path_type
 
     def run(self):
         q_I_meas = self.inputs['q_I_meas']
@@ -51,7 +52,6 @@ class BgSubtractByTemperature(Operation):
         bg_out = self.inputs['bg_batch_output']
         T_allbg = [optools.get_uri_from_dict(bg_T_uri,d) for d in bg_out]
         closest_T_idx = np.argmin(np.abs([T_bg - T_meas for T_bg in T_allbg]))
-        #I_allbg = [optools.get_uri_from_dict(bg_I_uri,d) for d in bg_out]
         T_bg = T_allbg[closest_T_idx]
         I_bg = optools.get_uri_from_dict(bg_I_uri,bg_out[closest_T_idx])
         #if not all(q_I[:,0] == q_I_bg[:,0]):

@@ -3,9 +3,9 @@ from functools import partial
 
 from PySide import QtCore, QtGui, QtUiTools
 
-from ..core.operations import optools
 from ..core import pawstools
 from ..core.models.ListModel import ListModel
+import ..core.operations.Operation as op
 
 class InputLoader(object):
     """This class controls the input_loader.ui to select inputs from various sources."""
@@ -20,24 +20,24 @@ class InputLoader(object):
             self.ui.setParent(parent,QtCore.Qt.Window)
 
     def setup_ui(self):
-        if self.src == optools.text_input:
+        if self.src == op.text_input:
             ui_file = QtCore.QFile(pawstools.sourcedir+"/ui/qtui/text_input_loader.ui")
-        elif self.src in [optools.plugin_input,optools.fs_input]:
+        elif self.src in [op.plugin_input,op.fs_input]:
             ui_file = QtCore.QFile(pawstools.sourcedir+"/ui/qtui/tree_input_loader.ui")
-        elif self.src == optools.wf_input:
+        elif self.src == op.wf_input:
             ui_file = QtCore.QFile(pawstools.sourcedir+"/ui/qtui/wf_input_loader.ui")
         ui_file.open(QtCore.QFile.ReadOnly)
         self.ui = QtUiTools.QUiLoader().load(ui_file)
         ui_file.close()
         self.ui.setWindowTitle("input loader")
         self.ui.input_box.setTitle(self.input_name)
-        if self.src in [optools.plugin_input,optools.fs_input]:
+        if self.src in [op.plugin_input,op.fs_input]:
             self.ui.source_treeview.setModel(self.src_manager)
-        elif self.src == optools.wf_input:
+        elif self.src == op.wf_input:
             lm = ListModel(self.src_manager.qworkflows.keys())
             self.ui.wf_selector.setModel(lm)
             self.ui.wf_selector.currentIndexChanged.connect( partial(self.set_wf) )
-        if self.src == optools.fs_input:
+        if self.src == op.fs_input:
             self.src_manager.setRootPath(QtCore.QDir.currentPath())
             idx = self.src_manager.index(QtCore.QDir.currentPath())
             while idx.isValid():
@@ -47,18 +47,18 @@ class InputLoader(object):
             self.ui.source_treeview.hideColumn(1)
             self.ui.source_treeview.hideColumn(3)
             self.ui.source_treeview.setColumnWidth(0,250)
-        elif self.src in [optools.plugin_input,optools.wf_input]:
+        elif self.src in [op.plugin_input,op.wf_input]:
             self.ui.source_treeview.hideColumn(2)
             self.ui.source_treeview.setColumnWidth(0,250)
             self.tree_model().set_all_flagged('select',False)
-        if self.src == optools.plugin_input:
+        if self.src == op.plugin_input:
             self.ui.source_treeview.setRootIndex(self.src_manager.root_index())
-        elif self.src == optools.wf_input:
+        elif self.src == op.wf_input:
             self.set_wf() 
-        if self.src == optools.text_input:
+        if self.src == op.text_input:
             self.ui.set_button.setText("&Set entries")
             self.ui.add_button.setText("&Add entries")
-        elif self.src in [optools.wf_input,optools.plugin_input,optools.fs_input]:
+        elif self.src in [op.wf_input,op.plugin_input,op.fs_input]:
             self.ui.set_button.setText("&Set selected")
             self.ui.add_button.setText("&Add selected")
         self.values_model = ListModel()
@@ -73,9 +73,9 @@ class InputLoader(object):
         self.ui.clear_button.clicked.connect(self.clear_values)
 
     def tree_model(self):
-        if self.src in [optools.plugin_input,optools.fs_input]:
+        if self.src in [op.plugin_input,op.fs_input]:
             return self.src_manager
-        elif self.src == optools.wf_input:
+        elif self.src == op.wf_input:
             wf_idx = self.ui.wf_selector.currentIndex()
             wfname = self.ui.wf_selector.model().list_data()[wf_idx]
             return self.src_manager.qworkflows[wfname]
@@ -93,9 +93,9 @@ class InputLoader(object):
 
     def get_values(self):
         #import pdb; pdb.set_trace()
-        if self.src == optools.text_input:
+        if self.src == op.text_input:
             vals = self.ui.source_textedit.toPlainText().split(os.linesep)
-        elif self.src in [optools.plugin_input,optools.wf_input]:
+        elif self.src in [op.plugin_input,op.wf_input]:
             # Get all items currently selected
             idxs = self.tree_model().get_flagged_idxs('select')
             if any(idxs) and all([idx.isValid() for idx in idxs]):
@@ -106,7 +106,7 @@ class InputLoader(object):
                 vals = [str(self.tree_model().get_uri_of_index(idx)).strip()]
             # Reset all selections
             self.tree_model().set_all_flagged('select',False)
-        elif self.src == optools.fs_input:
+        elif self.src == op.fs_input:
             idx = self.ui.source_treeview.currentIndex()
             vals = [str(self.ui.source_treeview.model().filePath(idx)).strip()]
         return vals

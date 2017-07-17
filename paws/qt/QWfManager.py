@@ -9,6 +9,7 @@ from PySide import QtCore
 from .QWfWorker import QWfWorker
 from .QWorkflow import QWorkflow
 from ..core import pawstools
+import ..core.operations.Operation as op
 from ..core.operations import optools
 from ..core.workflow.Workflow import Workflow
 from ..core.operations.Operation import Operation, Batch, Realtime
@@ -188,7 +189,7 @@ class QWfManager(QtCore.QObject):
                 #self.qworkflows[wfname].set_item(batch_op_tag,batch_op)
                 # Rather than re-setting the entire batch_op,
                 # try just updating the outputs subtree for this iteration.
-                batch_output_uri = batch_op_tag+'.'+optools.outputs_tag+'.'+batch_op.batch_outputs_tag()+'.'+str(i)
+                batch_output_uri = batch_op_tag+'.'+op.outputs_tag+'.'+batch_op.batch_outputs_tag()+'.'+str(i)
                 self.qworkflows[wfname].tree_update_at_uri(batch_output_uri,saved_items_dict)
                 self.app.processEvents()
             else:
@@ -224,7 +225,7 @@ class QWfManager(QtCore.QObject):
                     save_dict = self.wfman.uri_to_embedded_dict(uri,save_data) 
                     saved_items_dict = self.wfman.update_embedded_dict(saved_items_dict,save_dict)
                 rt_op.output_list().append(saved_items_dict)
-                output_uri = rt_op_tag+'.'+optools.outputs_tag+'.'+rt_op.batch_outputs_tag()+'.'+str(n_exec)
+                output_uri = rt_op_tag+'.'+op.outputs_tag+'.'+rt_op.batch_outputs_tag()+'.'+str(n_exec)
                 self.qworkflows[wfname].tree_update_at_uri(output_uri,saved_items_dict)
                 self.app.processEvents()
             else:

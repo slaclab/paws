@@ -1,8 +1,9 @@
 """
 Template for developing operations for paws.
 """
-from operation import Operation
-import optools
+
+import <modulepath.>Operation as op
+from <modulepath.>Operation import Operation
 
 # Replace <OperationName> with a SHORT operation title 
 class <OperationName>(Operation):
@@ -23,19 +24,19 @@ class <OperationName>(Operation):
         self.output_doc['<output_name_2>'] = '<etc>'
         # OPTIONAL: set default sources, types, values for the inputs.
         # Valid sources:
-        #   optools.no_input (default input to None), 
-        #   optools.wf_input (take input from another operation in the workflow), 
-        #   optools.text_input (manual text input)
-        #   optools.plugin_input (take input from a PawsPlugin)
-        #   optools.batch_input (input provided by a batch/realtime operation)
-        self.input_src['<input_name_1>'] = <optools.some_source>
+        #   op.no_input (default input to None), 
+        #   op.wf_input (take input from another operation in the workflow), 
+        #   op.text_input (manual text input)
+        #   op.plugin_input (take input from a PawsPlugin)
+        #   op.batch_input (input provided by a batch/realtime operation)
+        self.input_src['<input_name_1>'] = <op.some_source>
         self.input_src['<input_name_2>'] = <etc>
-        # Valid types: optools.none_type (None), optools.str_type (string), 
-        #   optools.int_type (integer), optools.float_type (float), 
-        #   optools.bool_type (boolean), optools.ref_type (direct reference),
-        #   optools.path_type (a path to something in the filesystem or workflow), 
-        #   optools.auto_type (default for chosen source, or input set by batch)
-        self.input_type['<input_name_1>'] = <optools.some_type>
+        # Valid types: op.none_type (None), op.str_type (string), 
+        #   op.int_type (integer), op.float_type (float), 
+        #   op.bool_type (boolean), op.ref_type (direct reference),
+        #   op.path_type (a path to something in the filesystem or workflow), 
+        #   op.auto_type (default for chosen source, or input set by batch)
+        self.input_type['<input_name_1>'] = <op.some_type>
         self.input_type['<input_name_2>'] = <etc>
         
     # Write a run() function for this Operation.

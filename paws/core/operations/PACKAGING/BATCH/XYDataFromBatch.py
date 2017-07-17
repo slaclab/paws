@@ -1,5 +1,6 @@
 import numpy as np
 
+import ...Operation as op
 from ...Operation import Operation
 from ... import optools
 
@@ -17,14 +18,14 @@ class XYDataFromBatch(Operation):
         self.input_doc['x_uri'] = 'uri of data for x. Must be in batch.saved_items().'
         self.input_doc['y_uri'] = 'uri of data for y. Must be in batch.saved_items().'
         self.input_doc['x_shift_flag'] = 'if True, shift x data so that its minimum value is zero.' 
-        self.input_src['batch_output'] = optools.wf_input
-        self.input_src['x_uri'] = optools.wf_input
-        self.input_src['y_uri'] = optools.wf_input
-        self.input_src['x_shift_flag'] = optools.text_input
-        self.input_type['batch_output'] = optools.ref_type
-        self.input_type['x_uri'] = optools.path_type
-        self.input_type['y_uri'] = optools.path_type
-        self.input_type['x_shift_flag'] = optools.bool_type
+        self.input_src['batch_output'] = op.wf_input
+        self.input_src['x_uri'] = op.wf_input
+        self.input_src['y_uri'] = op.wf_input
+        self.input_src['x_shift_flag'] = op.text_input
+        self.input_type['batch_output'] = op.ref_type
+        self.input_type['x_uri'] = op.path_type
+        self.input_type['y_uri'] = op.path_type
+        self.input_type['x_shift_flag'] = op.bool_type
         self.inputs['x_shift_flag'] = False
         self.output_doc['x'] = 'array of the x values in batch output order.'
         self.output_doc['y'] = 'array of the y values in batch output order.'
@@ -35,8 +36,6 @@ class XYDataFromBatch(Operation):
         b_out = self.inputs['batch_output']
         x_uri = self.inputs['x_uri']
         y_uri = self.inputs['y_uri']
-        #x_all = np.array([optools.get_uri_from_dict(x_uri,d) for d in b_out if optools.dict_contains_uri(x_uri,d)],dtype=float)
-        #y_all = np.array([optools.get_uri_from_dict(y_uri,d) for d in b_out if optools.dict_contains_uri(y_uri,d)],dtype=float)
         x_all = np.array([optools.get_uri_from_dict(x_uri,d) for d in b_out],dtype=float)
         y_all = np.array([optools.get_uri_from_dict(y_uri,d) for d in b_out],dtype=float)
         if any(x_all):

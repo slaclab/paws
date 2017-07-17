@@ -3,8 +3,8 @@ import time
 
 import tzlocal
 
+import ...Operation as op
 from ...Operation import Operation
-from ... import optools
 
 class TimeTempFromHeader(Operation):
     """
@@ -16,12 +16,12 @@ class TimeTempFromHeader(Operation):
         input_names = ['header_dict','time_key','temp_key']
         output_names = ['date_time','time','temp']
         super(TimeTempFromHeader,self).__init__(input_names,output_names)        
-        self.input_src['header_dict'] = optools.wf_input
-        self.input_src['time_key'] = optools.text_input
-        self.input_src['temp_key'] = optools.text_input
-        self.input_type['header_dict'] = optools.ref_type
-        self.input_type['time_key'] = optools.str_type
-        self.input_type['temp_key'] = optools.str_type
+        self.input_src['header_dict'] = op.wf_input
+        self.input_src['time_key'] = op.text_input
+        self.input_src['temp_key'] = op.text_input
+        self.input_type['header_dict'] = op.ref_type
+        self.input_type['time_key'] = op.str_type
+        self.input_type['temp_key'] = op.str_type
         self.inputs['time_key'] = 'time'
         self.inputs['temp_key'] = 'TEMP'
         self.input_doc['header_dict'] = 'workflow uri of dict produced from detector output header file.'
@@ -30,7 +30,6 @@ class TimeTempFromHeader(Operation):
         self.output_doc['date_time'] = 'string representation of the time'
         self.output_doc['time'] = 'UTC time in seconds'
         self.output_doc['temp'] = 'Temperature'
-        self.categories = ['PACKAGING']
 
     def run(self):
         d = self.inputs['header_dict']

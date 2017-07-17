@@ -3,8 +3,8 @@ import os
 import numpy as np
 import pyFAI
 
+import ...Operation as op
 from ...Operation import Operation
-from ... import optools
 
 class NikaToPONI(Operation):
     """
@@ -41,10 +41,10 @@ class NikaToPONI(Operation):
         self.input_doc['nika_file'] = str('text file expressing nika automated calibration results- '
         + 'see Operation documentation for the expected format of this file')
         self.input_doc['fpolz'] = 'polarization factor'
-        self.input_src['nika_file'] = optools.fs_input
-        self.input_src['fpolz'] = optools.text_input
-        self.input_type['nika_file'] = optools.path_type
-        self.input_type['fpolz'] = optools.float_type
+        self.input_src['nika_file'] = op.fs_input
+        self.input_src['fpolz'] = op.text_input
+        self.input_type['nika_file'] = op.path_type
+        self.input_type['fpolz'] = op.float_type
         self.inputs['fpolz'] = 0.95 
         self.output_doc['poni_dict'] = 'Dict of pyFAI calibration parameters, as found in a .poni file'
 

@@ -1,8 +1,8 @@
 import numpy as np
 from collections import OrderedDict
 
+import ...Operation as op
 from ...Operation import Operation
-from ... import optools
 from . import saxstools
 
 class SpectrumProfiler(Operation):
@@ -72,11 +72,11 @@ class SpectrumProfiler(Operation):
         #+ 'cos2q_logcorr: Same as cos2q_corr, but with log(I(q)). \n'
         #+ 'cosq_logcorr: Same as cosq_corr, but with log(I(q)). \n'
         #+ 'invq_logcorr: Same as invq_corr, but with log(I(q)).')
-        self.input_src['q'] = optools.wf_input
-        self.input_src['I'] = optools.wf_input
-        self.input_src['dI'] = optools.no_input
-        self.input_type['q'] = optools.ref_type
-        self.input_type['I'] = optools.ref_type
+        self.input_src['q'] = op.wf_input
+        self.input_src['I'] = op.wf_input
+        self.input_src['dI'] = op.no_input
+        self.input_type['q'] = op.ref_type
+        self.input_type['I'] = op.ref_type
 
     def run(self):
         q, I = self.inputs['q'], self.inputs['I']

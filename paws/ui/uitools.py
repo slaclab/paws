@@ -10,8 +10,8 @@ from functools import partial
 from PySide import QtGui, QtCore, QtUiTools
 import yaml
 
+import ..core.operations.Operation as op
 from ..core import pawstools
-from ..core.operations import optools
 from ..core.models.ListModel import ListModel
 
 ## Test whether we have Qt >= 4.7 
@@ -56,24 +56,24 @@ def toggle_expand(trview,idx):
 def type_selection_widget(src,widg=None):
     if not widg:
         widg = QtGui.QComboBox()
-        lm = ListModel(optools.input_types,widg)
+        lm = ListModel(op.input_types,widg)
         widg.setModel(lm)
     else:
-        lm = ListModel(optools.input_types,widg)
+        lm = ListModel(op.input_types,widg)
         widg.setModel(lm)
-    for tp in optools.valid_types:
+    for tp in op.valid_types:
         lm.set_enabled(tp)
-    for tp in optools.invalid_types[src]:
+    for tp in op.invalid_types[src]:
         lm.set_disabled(tp)
         #widg.model().set_disabled(tp)
     return widg 
 
 def src_selection_widget():
     widg = QtGui.QComboBox()
-    lm = ListModel(optools.input_sources,widg)
-    #widg.addItems(optools.input_sources)
+    lm = ListModel(op.input_sources,widg)
+    #widg.addItems(op.input_sources)
     widg.setModel(lm)
-    maxlen = max([len(srctext) for srctext in optools.input_sources])
+    maxlen = max([len(srctext) for srctext in op.input_sources])
     widg.setMinimumWidth(20*maxlen)
     return widg 
         

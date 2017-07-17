@@ -1,6 +1,6 @@
+import ...Operation as op
 from ...Operation import Operation
-from ... import optools
-        
+
 class CreateDataSet(Operation):
     """
     Take a Citrination client as input and use it to create a data set.
@@ -17,14 +17,14 @@ class CreateDataSet(Operation):
         self.input_doc['share'] = 'Flag whether or not dataset should be shared with all users on the instance.'
         self.output_doc['ok_flag'] = 'Indicator of whether or not the data set was created successfully.'
         self.output_doc['dsid'] = 'The index of the new data set, if created successfully.'
-        self.input_src['client'] = optools.plugin_input
-        self.input_src['name'] = optools.text_input
-        self.input_src['description'] = optools.text_input
-        self.input_src['share'] = optools.text_input
-        self.input_type['client'] = optools.ref_type
-        self.input_type['name'] = optools.str_type
-        self.input_type['description'] = optools.str_type
-        self.input_type['share'] = optools.bool_type
+        self.input_src['client'] = op.plugin_input
+        self.input_src['name'] = op.text_input
+        self.input_src['description'] = op.text_input
+        self.input_src['share'] = op.text_input
+        self.input_type['client'] = op.ref_type
+        self.input_type['name'] = op.str_type
+        self.input_type['description'] = op.str_type
+        self.input_type['share'] = op.bool_type
         self.inputs['description'] = 'New Citrination data set'
         self.inputs['share'] = False
 

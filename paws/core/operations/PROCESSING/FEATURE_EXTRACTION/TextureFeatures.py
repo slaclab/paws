@@ -6,10 +6,11 @@ Module originally contributed by Fang Ren.
 For details, refer to the recent paper submitted to ACS Combinatorial Science.
 TODO: Get this citation
 """
+
 import numpy as np
 
+import ...Operation as op
 from ...Operation import Operation
-from ... import optools
 
 class TextureFeatures(Operation):
     """
@@ -23,12 +24,12 @@ class TextureFeatures(Operation):
         self.input_doc['q'] = '1d array of momentum transfer values'
         self.input_doc['chi'] = '1d array of out-of-plane diffraction angles'
         self.input_doc['I'] = '2d array representing intensities at q,chi points'
-        self.input_src['q'] = optools.wf_input
-        self.input_src['chi'] = optools.wf_input
-        self.input_src['I'] = optools.wf_input 
-        self.input_type['q'] = optools.ref_type
-        self.input_type['chi'] = optools.ref_type
-        self.input_type['I'] = optools.ref_type 
+        self.input_src['q'] = op.wf_input
+        self.input_src['chi'] = op.wf_input
+        self.input_src['I'] = op.wf_input 
+        self.input_type['q'] = op.ref_type
+        self.input_type['chi'] = op.ref_type
+        self.input_type['I'] = op.ref_type 
         self.output_doc['q_texture'] = 'q values at which the texture is analyzed'
         self.output_doc['texture'] = 'quantification of texture for each q'
         self.output_doc['int_sqr_texture'] = 'integral over q of the texture squared'

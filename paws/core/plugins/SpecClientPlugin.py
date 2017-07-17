@@ -2,17 +2,17 @@ from __future__ import print_function
 import socket 
 
 from .PawsPlugin import PawsPlugin
-from ..operations import optools
+import ..operations.Operation as op
 
 class SpecClientPlugin(PawsPlugin):
 
     def __init__(self):
         input_names = ['host','port']
         super(SpecClientPlugin,self).__init__(input_names)
-        self.input_src['host'] = optools.text_input
-        self.input_src['port'] = optools.text_input
-        self.input_type['host'] = optools.str_type
-        self.input_type['port'] = optools.int_type
+        self.input_src['host'] = op.text_input
+        self.input_src['port'] = op.text_input
+        self.input_type['host'] = op.str_type
+        self.input_type['port'] = op.int_type
         self.input_doc['host'] = 'string representing host name or IP address'
         self.input_doc['port'] = 'integer port number at which SpecInfoServer should be listening on host' 
         self.history = []

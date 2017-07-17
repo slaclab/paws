@@ -1,6 +1,6 @@
 """Widgets for displaying text"""
 
-from ...core.operations import optools 
+import ...core.operations.Operation as op
 from ...core.operations.Operation import Operation
 from ...core.operations.optools import FileSystemIterator
 
@@ -17,10 +17,10 @@ def display_text(itm,indent=unit_indent):
         t = '(list)'
         for i in range(len(itm)):
             t += '<br>' + indent + '{}: {}'.format(i,display_text(itm[i],indent+unit_indent))
-    elif isinstance(itm,optools.InputLocator):
+    elif isinstance(itm,op.InputLocator):
         t = '(InputLocator)'
-        t += '<br>' + indent + 'src: {}'.format(optools.input_sources[itm.src])
-        t += '<br>' + indent + 'type: {}'.format(optools.input_types[itm.tp])
+        t += '<br>' + indent + 'src: {}'.format(op.input_sources[itm.src])
+        t += '<br>' + indent + 'type: {}'.format(op.input_types[itm.tp])
         t += '<br>' + indent + 'val: {}'.format(itm.val)
         t += '<br>' + indent + 'data: {}'.format(type(itm.data).__name__)
     elif isinstance(itm,FileSystemIterator):
@@ -58,10 +58,10 @@ def display_text_fast(itm,indent=unit_indent):
         for i in range(len(itm))[:ndisp]:
             t += '<br>' + indent + '{}: {}'.format(i,display_text_fast(itm[i],indent+unit_indent))
         t += suffix 
-    elif isinstance(itm,optools.InputLocator):
+    elif isinstance(itm,op.InputLocator):
         t = '(InputLocator)'
-        t += '<br>' + indent + 'src: {}'.format(optools.input_sources[itm.src])
-        t += '<br>' + indent + 'type: {}'.format(optools.input_types[itm.tp])
+        t += '<br>' + indent + 'src: {}'.format(op.input_sources[itm.src])
+        t += '<br>' + indent + 'type: {}'.format(op.input_types[itm.tp])
         t += '<br>' + indent + 'val: {}'.format(itm.val)
         t += '<br>' + indent + 'data: {}'.format(type(itm.data).__name__)
     elif isinstance(itm,FileSystemIterator):

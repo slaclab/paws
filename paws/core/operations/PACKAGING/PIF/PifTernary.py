@@ -1,8 +1,8 @@
 import numpy as np
 import pypif.obj as pifobj
 
+import ...Operation as op
 from ...Operation import Operation
-from ... import optools
 
 class PifTernary(Operation):
     """
@@ -20,20 +20,20 @@ class PifTernary(Operation):
         self.input_doc['pk_idx'] = 'indices in q,I where peaks can be found'
         self.input_doc['date_time'] = 'string date/time from measurement header file for pif record tags'
         self.input_doc['t_utc'] = 'time in seconds utc'
-        self.input_src['name'] = optools.text_input
-        self.input_src['q_I'] = optools.wf_input
-        self.input_src['q_texture'] = optools.wf_input
-        self.input_src['I_features'] = optools.wf_input
-        self.input_src['pk_idx'] = optools.wf_input
-        self.input_src['date_time'] = optools.wf_input
-        self.input_src['t_utc'] = optools.wf_input
-        self.input_type['name'] = optools.str_type
-        self.input_type['q_I'] = optools.ref_type
-        self.input_type['q_texture'] = optools.ref_type
-        self.input_type['I_features'] = optools.ref_type
-        self.input_type['pk_idx'] = optools.ref_type
-        self.input_type['date_time'] = optools.ref_type
-        self.input_type['t_utc'] = optools.ref_type
+        self.input_src['name'] = op.text_input
+        self.input_src['q_I'] = op.wf_input
+        self.input_src['q_texture'] = op.wf_input
+        self.input_src['I_features'] = op.wf_input
+        self.input_src['pk_idx'] = op.wf_input
+        self.input_src['date_time'] = op.wf_input
+        self.input_src['t_utc'] = op.wf_input
+        self.input_type['name'] = op.str_type
+        self.input_type['q_I'] = op.ref_type
+        self.input_type['q_texture'] = op.ref_type
+        self.input_type['I_features'] = op.ref_type
+        self.input_type['pk_idx'] = op.ref_type
+        self.input_type['date_time'] = op.ref_type
+        self.input_type['t_utc'] = op.ref_type
         self.output_doc['pif'] = 'pif object containing the relevant data for this experiment'
 
     def run(self):

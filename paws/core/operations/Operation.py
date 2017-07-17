@@ -4,6 +4,63 @@ from collections import OrderedDict
 
 import optools
 
+# constants used for enumerative types etc
+# tags for inputs and outputs TreeItems    
+inputs_tag = 'inputs'
+outputs_tag = 'outputs'
+
+# Declarations of valid sources and types for workflow and plugin inputs
+##### TODO: the following but gracefully
+no_input = 0
+text_input = 1
+fs_input = 2
+wf_input = 3
+plugin_input = 4
+batch_input = 5 
+valid_sources = [no_input,text_input,fs_input,wf_input,plugin_input,batch_input]
+input_sources = ['none','text','filesystem','workflow','plugins','batch'] 
+
+none_type = 0
+str_type = 1
+int_type = 2
+float_type = 3
+bool_type = 4
+ref_type = 5
+path_type = 6
+auto_type = 7
+valid_types = [none_type,str_type,int_type,float_type,bool_type,ref_type,path_type,auto_type]
+input_types = ['none','string','integer','float','boolean','reference','path','auto']
+
+invalid_types = {}                
+invalid_types[no_input] = [str_type,int_type,float_type,bool_type,ref_type,path_type,auto_type]
+invalid_types[text_input] = [ref_type,path_type,auto_type]
+invalid_types[fs_input] = [str_type,int_type,float_type,bool_type,ref_type,auto_type]
+invalid_types[wf_input] = [str_type,int_type,float_type,bool_type,auto_type]
+invalid_types[plugin_input] = [str_type,int_type,float_type,bool_type,auto_type]
+invalid_types[batch_input] = [str_type,int_type,float_type,bool_type,ref_type,path_type]
+
+class InputLocator(object):
+    """
+    Objects of this class are used as containers for inputs to an Operation.
+    They contain the information needed to find the relevant input data.
+    After the data is loaded, it should be stored in InputLocator.data.
+    """
+    def __init__(self,src=op.no_input,tp=op.none_type,val=None):
+        self.src = src
+        self.tp = tp
+        self.val = val 
+        self.data = None 
+
+def parameter_doc(name,value,doc):
+    if isinstance(value, InputLocator):
+        src_str = input_sources[value.src]
+        tp_str = input_types[value.tp]
+        v_str = str(value.val)
+        return "- name: {} \n- source: {} \n- type: {} \n- value: {} \n- doc: {}".format(name,src_str,tp_str,v_str,doc) 
+    else:
+        tp_str = type(value).__name__
+        return "- name: {} \n- type: {} \n- doc: {}".format(name,tp_str,doc) 
+
 class Operation(object):
     """
     Class template for implementing paws operations.
@@ -16,11 +73,6 @@ class Operation(object):
         that will be used to perform the operation.
         These lists are used as keys to build dicts
         Operation.inputs and Operation.outputs.
-        The Operation.categories attribute is a list that indicates
-        where the operation can be found in the OpManager tree.
-        The Operation will appear one time for each category in the list.
-        Subcategories are indicated by a ".", for example:
-        self.categories = ['CAT1','CAT2.SUBCAT','CAT3'].
         """
         self.inputs = OrderedDict()
         self.input_locator = OrderedDict() 
@@ -31,8 +83,8 @@ class Operation(object):
         self.output_doc = OrderedDict() 
         # For each of the i/o names, assign to None 
         for name in input_names: 
-            self.input_src[name] = optools.no_input
-            self.input_type[name] = optools.none_type
+            self.input_src[name] = no_input
+            self.input_type[name] = none_type
             self.input_locator[name] = None 
             self.inputs[name] = None
             self.input_doc[name] = None
@@ -46,43 +98,43 @@ class Operation(object):
         self._realtime_flag = False
 
     def __getitem__(self,key):
-        if key == optools.inputs_tag:
+        if key == inputs_tag:
             return self.inputs
-        elif key == optools.outputs_tag:
+        elif key == outputs_tag:
             return self.outputs
         else:
             raise KeyError('[{}] Operation only recognizes keys {}'
             .format(__name__,self.keys()))
     def __setitem__(self,key,data):
-        if key == optools.inputs_tag:
+        if key == inputs_tag:
             self.inputs = data
-        elif key == optools.outputs_tag:
+        elif key == outputs_tag:
             self.outputs = data
         else:
             raise KeyError('[{}] Operation only recognizes keys {}'
             .format(__name__,self.keys()))
     def keys(self):
-        return [optools.inputs_tag,optools.outputs_tag]
+        return [inputs_tag,outputs_tag]
 
     def load_defaults(self):
         for name in self.inputs.keys():
-            src = optools.no_input
-            tp = optools.none_type
+            src = no_input
+            tp = none_type
             val = None
-            if not self.input_src[name] == optools.no_input:
+            if not self.input_src[name] == no_input:
                 src = self.input_src[name]
-                #if (self.input_type[name] == optools.none_type
-                #and src in [optools.wf_input,optools.fs_input,optools.batch_input,optools.plugin_input]):
-                #    self.input_type[name] = optools.auto_type
-                if (not self.input_type[name] == optools.none_type
-                and not self.input_type[name] in optools.invalid_types[src]):
+                #if (self.input_type[name] == none_type
+                #and src in [wf_input,fs_input,batch_input,plugin_input]):
+                #    self.input_type[name] = auto_type
+                if (not self.input_type[name] == none_type
+                and not self.input_type[name] in invalid_types[src]):
                     tp = self.input_type[name]
                     if self.inputs[name] is not None:
                         if isinstance(self.inputs[name],list):
                             val = [str(v) for v in self.inputs[name]]
                         else:
                             val = str(self.inputs[name])
-            self.input_locator[name] = optools.InputLocator(src,tp,val)
+            self.input_locator[name] = InputLocator(src,tp,val)
             # defaults are now packaged in InputLocators, so can be dereferenced from self.inputs. 
             self.inputs[name] = None
 
@@ -122,7 +174,7 @@ class Operation(object):
             else:
                 display_val = self.inputs[name] 
             a = a + str("\n\nInput {}:\n".format(inp_indx) 
-            + optools.parameter_doc(name,display_val,self.input_doc[name]))
+            + parameter_doc(name,display_val,self.input_doc[name]))
             inp_indx += 1
         return a
 
@@ -131,7 +183,7 @@ class Operation(object):
         out_indx = 0
         for name,val in self.outputs.items(): 
             a = a + str("\n\nOutput {}:\n".format(out_indx) 
-            + optools.parameter_doc(name,val,self.output_doc[name]))
+            + parameter_doc(name,val,self.output_doc[name]))
             out_indx += 1
         return a
                 

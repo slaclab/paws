@@ -1,7 +1,7 @@
 import numpy as np
 
+import ...Operation as op
 from ...Operation import Operation
-from ... import optools
 
 class ArrayMirrorVertical(Operation):
     """
@@ -15,7 +15,7 @@ class ArrayMirrorVertical(Operation):
         super(ArrayMirrorVertical, self).__init__(input_names, output_names)
         self.input_doc['array_in'] = '2d array'
         self.output_doc['array_out'] = 'input array mirrored vertically'
-        self.input_src['array_in'] = optools.wf_input
+        self.input_src['array_in'] = op.wf_input
 
     def run(self):
         self.outputs['array_out'] = self.inputs['array_in'][:,::-1]

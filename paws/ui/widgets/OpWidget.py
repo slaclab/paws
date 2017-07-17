@@ -1,6 +1,6 @@
 from PySide import QtGui, QtCore
 
-from ...core.operations import optools 
+import ...core.operations.Operation as op
 
 class OpWidget(QtGui.QWidget):
     
@@ -48,8 +48,8 @@ class OpWidget(QtGui.QWidget):
         #outhdr = QtCore.QRectF(QtCore.QPoint(70,-90),QtCore.QPoint(90,-80))
         f.setUnderline(True)
         p.setFont(f)
-        p.drawText(inphdr,QtCore.Qt.AlignCenter,optools.inputs_tag)
-        p.drawText(outhdr,QtCore.Qt.AlignCenter,optools.outputs_tag)
+        p.drawText(inphdr,QtCore.Qt.AlignCenter,op.inputs_tag)
+        p.drawText(outhdr,QtCore.Qt.AlignCenter,op.outputs_tag)
         f.setUnderline(False)
         p.setFont(f)
         # Label the inputs
@@ -67,7 +67,7 @@ class OpWidget(QtGui.QWidget):
             p.drawLine(QtCore.QPoint(-1*(recthorz+10),vcrd-10),QtCore.QPoint(-1*(recthorz+10),vcrd+10))
             ilrec = QtCore.QRectF(QtCore.QPoint(-100,vcrd-10),QtCore.QPoint(-1*(recthorz+12),vcrd+10))
             p.drawText(ilrec,QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter,#|QtCore.Qt.TextWordWrap,
-            'source: {} \ntype: {} \nvalue: {}'.format(optools.input_sources[il.src],optools.input_types[il.tp],il.val))
+            'source: {} \ntype: {} \nvalue: {}'.format(op.input_sources[il.src],op.input_types[il.tp],il.val))
             vcrd += 2*ispc
         # Label the outputs
         n_out = len(self.op.outputs)

@@ -3,8 +3,8 @@ from matplotlib.figure import Figure
 from scipy.special import wofz
 from scipy.optimize import minimize as scimin
 
+import ...Operation as op
 from ...Operation import Operation
-from ... import optools
 
 class VoigtPeakFit(Operation):
     """
@@ -25,14 +25,14 @@ class VoigtPeakFit(Operation):
         self.input_doc['y'] = '1d array of y values (amplitudes)'
         self.input_doc['xguess'] = 'initial guess for the center of the voigt profile'
         self.input_doc['hwhm'] = 'initial guess for the half width at half max of the voigt profile'
-        self.input_src['x'] = optools.wf_input
-        self.input_src['y'] = optools.wf_input
-        self.input_src['xguess'] = optools.wf_input
-        self.input_src['hwhm'] = optools.wf_input
-        self.input_type['x'] = optools.ref_type
-        self.input_type['y'] = optools.ref_type
-        self.input_type['xguess'] = optools.int_type
-        self.input_type['hwhm'] = optools.float_type
+        self.input_src['x'] = op.wf_input
+        self.input_src['y'] = op.wf_input
+        self.input_src['xguess'] = op.wf_input
+        self.input_src['hwhm'] = op.wf_input
+        self.input_type['x'] = op.ref_type
+        self.input_type['y'] = op.ref_type
+        self.input_type['xguess'] = op.int_type
+        self.input_type['hwhm'] = op.float_type
         self.output_doc['y_voigt'] = 'the optimized voigt profile'
         self.output_doc['xguess'] = 'optimized voigt profile distribution center'
         self.output_doc['ypk'] = 'optimized voigt profile peak amplitude'

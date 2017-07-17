@@ -1,7 +1,7 @@
 import numpy as np
 
+import ...Operation as op
 from ...Operation import Operation
-from ... import optools
 
 class Rotation(Operation):
     """Rotate an array by 90, 180, or 270 degrees."""
@@ -10,17 +10,16 @@ class Rotation(Operation):
         input_names = ['image_data','rotation_deg']
         output_names = ['image_data']
         super(Rotation,self).__init__(input_names,output_names)        
-        self.input_src['rotation_deg'] = optools.text_input
-        self.input_type['rotation_deg'] = optools.int_type
+        self.input_src['rotation_deg'] = op.text_input
+        self.input_type['rotation_deg'] = op.int_type
         self.input_doc['image_data'] = '2d array representing intensity for each pixel'
         self.input_doc['rotation_deg'] = str('rotation in degrees counter-clockwise, '
                                     + 'must be either 90, 180, or 270')
         self.output_doc['image_data'] = '2d array representing rotated image'
-        self.input_src['image_data'] = optools.wf_input
-        self.input_src['rotation_deg'] = optools.text_input
-        self.input_type['rotation_deg'] = optools.int_type
+        self.input_src['image_data'] = op.wf_input
+        self.input_src['rotation_deg'] = op.text_input
+        self.input_type['rotation_deg'] = op.int_type
         self.inputs['rotation_deg'] = 90 
-        self.categories = ['PROCESSING']
 
     def run(self):
         """Rotate self.inputs['image_data'] and save as self.outputs['image_data']"""

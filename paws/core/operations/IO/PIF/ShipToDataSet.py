@@ -3,8 +3,8 @@ import os
 from pypif import pif
 import pypif.obj as pifobj 
 
+import ...Operation as op
 from ...Operation import Operation
-from ... import optools
         
 class ShipToDataSet(Operation):
     """
@@ -22,18 +22,18 @@ class ShipToDataSet(Operation):
         self.input_doc['keep_json'] = 'Flag for whether or not to keep the json file' 
         self.input_doc['ship_flag'] = 'Flag for shipping the pif- set to False for a dry run' 
         self.output_doc['response'] = 'The Citrination server response to the shipment'
-        self.input_src['pif'] = optools.wf_input
-        self.input_src['client'] = optools.plugin_input
-        self.input_src['dsid'] = optools.text_input
-        self.input_src['json_path'] = optools.fs_input
-        self.input_src['keep_json'] = optools.text_input
-        self.input_src['ship_flag'] = optools.text_input
-        self.input_type['pif'] = optools.ref_type
-        self.input_type['client'] = optools.ref_type
-        self.input_type['dsid'] = optools.int_type
-        self.input_type['json_path'] = optools.path_type
-        self.input_type['keep_json'] = optools.bool_type
-        self.input_type['ship_flag'] = optools.bool_type
+        self.input_src['pif'] = op.wf_input
+        self.input_src['client'] = op.plugin_input
+        self.input_src['dsid'] = op.text_input
+        self.input_src['json_path'] = op.fs_input
+        self.input_src['keep_json'] = op.text_input
+        self.input_src['ship_flag'] = op.text_input
+        self.input_type['pif'] = op.ref_type
+        self.input_type['client'] = op.ref_type
+        self.input_type['dsid'] = op.int_type
+        self.input_type['json_path'] = op.path_type
+        self.input_type['keep_json'] = op.bool_type
+        self.input_type['ship_flag'] = op.bool_type
         self.inputs['ship_flag'] = False
         self.inputs['keep_json'] = False
 

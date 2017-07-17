@@ -1,11 +1,8 @@
-import os
-import re
-
 import numpy as np
 from PIL import Image
 
+import ...Operation as op
 from ...Operation import Operation
-from ... import optools
 
 class LoadTif_PIL(Operation):
     """
@@ -18,8 +15,8 @@ class LoadTif_PIL(Operation):
         output_names = ['image_data','metadata']
         super(LoadTif_PIL,self).__init__(input_names,output_names)
         self.input_doc['path'] = 'path to a .tif image'
-        self.input_src['path'] = optools.fs_input
-        self.input_type['path'] = optools.path_type
+        self.input_src['path'] = op.fs_input
+        self.input_type['path'] = op.path_type
         self.output_doc['image_data'] = '2D array representing pixel values'
         self.output_doc['metadata'] = 'Dictionary of image metadata'
         

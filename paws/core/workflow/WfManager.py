@@ -4,10 +4,10 @@ import copy
 import traceback
 import time
 
-#from ..plugins.WorkflowPlugin import WorkflowPlugin
 from .Workflow import Workflow
+import ..opertaions.Operation as op
 from ..operations.Operation import Operation, Batch, Realtime        
-from ..operations import optools        
+from ..operations import ptools
 from .. import pawstools
 
 class WfManager(object):
@@ -89,7 +89,7 @@ class WfManager(object):
             batch_op.output_list()[i] = saved_items_dict
             # TODO: set a more specific item here to save some tree update time?
             #self.workflows[wfname].set_item(batch_op_tag,batch_op)
-            outputs_uri = batch_op_tag+'.'+optools.outputs_tag+'.'+batch_op.batch_outputs_tag()+'.'+str(i)
+            outputs_uri = batch_op_tag+'.'+op.outputs_tag+'.'+batch_op.batch_outputs_tag()+'.'+str(i)
             self.workflows[wfname].set_item(outputs_uri,saved_items_dict)
 
     def execute_realtime(self,wfname,rt_op_tag,rt_stk):
@@ -118,7 +118,7 @@ class WfManager(object):
                     save_dict = self.uri_to_embedded_dict(uri,save_data) 
                     saved_items_dict = self.update_embedded_dict(saved_items_dict,save_dict)
                 rt_op.output_list().append(saved_items_dict)
-                output_uri = rt_op_tag+'.'+optools.outputs_tag+'.'+rt_op.batch_outputs_tag()+'.'+str(i)
+                output_uri = rt_op_tag+'.'+op.outputs_tag+'.'+rt_op.batch_outputs_tag()+'.'+str(i)
                 self.workflows[wfname].set_item(output_uri,saved_items_dict)
             else:
                 if wait_iter == 0:
@@ -193,7 +193,7 @@ class WfManager(object):
         for name in op.inputs.keys():
             il = op.input_locator[name]
             inp_dct[name] = {'src':copy.copy(il.src),'tp':copy.copy(il.tp),'val':copy.copy(il.val)}
-        dct[optools.inputs_tag] = inp_dct 
+        dct[op.inputs_tag] = inp_dct 
         return dct
 
     def build_op_from_dict(self,op_setup,opman):
@@ -202,17 +202,17 @@ class WfManager(object):
         if issubclass(op,Operation):
             op = op()
             op.load_defaults()
-            il_setup_dict = op_setup[optools.inputs_tag]
+            il_setup_dict = op_setup[op.inputs_tag]
             for name in op.inputs.keys():
                 if name in il_setup_dict.keys():
                     src = il_setup_dict[name]['src']
                     #if 'tp' in il_setup_dict[name].keys():
                     tp = il_setup_dict[name]['tp']
                     val = il_setup_dict[name]['val']
-                    if tp in optools.invalid_types[src]:
-                        il = optools.InputLocator(src,optools.none_type,None)
+                    if tp in op.invalid_types[src]:
+                        il = op.InputLocator(src,op.none_type,None)
                     else:
-                        il = optools.InputLocator(src,tp,val)
+                        il = op.InputLocator(src,tp,val)
                     op.input_locator[name] = il
                     # dereference any existing inputs
                     # LAP: commented out bc it should be handled in op.load_defaults()

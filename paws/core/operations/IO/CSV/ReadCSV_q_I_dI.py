@@ -1,7 +1,7 @@
 import numpy as np
 
+import ...Operation as op
 from ...Operation import Operation
-from ...import optools
 
 class ReadCSV_q_I_dI(Operation):
     """
@@ -18,8 +18,8 @@ class ReadCSV_q_I_dI(Operation):
         self.output_doc['I'] = "1d array, second column of csv, presumed to be scattering intensity I"
         self.output_doc['dI'] = "1d array, third column of csv, presumed to be error estimate of I"
         # source & type
-        self.input_src['path'] = optools.fs_input
-        self.input_type['path'] = optools.path_type
+        self.input_src['path'] = op.fs_input
+        self.input_type['path'] = op.path_type
 
     def run(self):
         path = self.inputs['path']

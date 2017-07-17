@@ -3,8 +3,8 @@ import copy
 
 from scipy.optimize import curve_fit
 
+import ...Operation as op
 from ...Operation import Operation
-from ... import optools
 from . import saxstools
 
 class SpectrumFit(Operation):
@@ -53,16 +53,16 @@ class SpectrumFit(Operation):
         self.output_doc['q_I_opt'] = str('n-by-2 array of q and the theoretical intensity spectrum, '
         + 'normalized so that I(q=0) is near 1.') 
 
-        self.input_src['q'] = optools.wf_input
-        self.input_src['I'] = optools.wf_input
-        self.input_src['objfun'] = optools.text_input
-        self.input_src['fit_params'] = optools.text_input
-        self.input_src['features'] = optools.wf_input
-        self.input_type['q'] = optools.ref_type
-        self.input_type['I'] = optools.ref_type
-        self.input_type['objfun'] = optools.str_type
-        self.input_type['fit_params'] = optools.str_type
-        self.input_type['features'] = optools.ref_type
+        self.input_src['q'] = op.wf_input
+        self.input_src['I'] = op.wf_input
+        self.input_src['objfun'] = op.text_input
+        self.input_src['fit_params'] = op.text_input
+        self.input_src['features'] = op.wf_input
+        self.input_type['q'] = op.ref_type
+        self.input_type['I'] = op.ref_type
+        self.input_type['objfun'] = op.str_type
+        self.input_type['fit_params'] = op.str_type
+        self.input_type['features'] = op.ref_type
         # TODO: establish a good default here.
         self.inputs['objfun'] = 'full_spectrum_chi2log' 
 

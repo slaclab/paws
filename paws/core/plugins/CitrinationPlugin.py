@@ -3,10 +3,9 @@ from __future__ import print_function
 from pypif import pif
 from citrination_client import CitrinationClient 
 
-from ..operations import optools
 from .. import pawstools
 from .PawsPlugin import PawsPlugin
-
+import ..operations.Operation as op
 
 class CitrinationPlugin(PawsPlugin):
     """
@@ -19,10 +18,10 @@ class CitrinationPlugin(PawsPlugin):
         super(CitrinationPlugin,self).__init__(input_names)
         self.input_doc['address'] = 'web address of citrination instance'
         self.input_doc['api_key_file'] = 'path to a file in the local filesystem containing a valid citrination api key'
-        self.input_src['address'] = optools.text_input
-        self.input_src['api_key_file'] = optools.fs_input
-        self.input_type['address'] = optools.str_type
-        self.input_type['api_key_file'] = optools.path_type
+        self.input_src['address'] = op.text_input
+        self.input_src['api_key_file'] = op.fs_input
+        self.input_type['address'] = op.str_type
+        self.input_type['api_key_file'] = op.path_type
         self.inputs['address'] = 'https://slac.citrination.com' 
         self.ctn_client = None
         self.return_codes = {} 

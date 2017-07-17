@@ -1,7 +1,7 @@
 import numpy as np
 
+import ...Operation as op
 from ...Operation import Operation
-from ... import optools
 
 class FindPeaksByWindow(Operation):
     """
@@ -19,14 +19,14 @@ class FindPeaksByWindow(Operation):
         self.input_doc['y'] = '1d array of y values (amplitudes)'
         self.input_doc['windowsize'] = 'the window is this many points in either direction of a given point'
         self.input_doc['threshold'] = 'threshold on Ipk/I(window) for being counted as a peak: set to zero to deactivate'
-        self.input_src['x'] = optools.wf_input
-        self.input_src['y'] = optools.wf_input
-        self.input_src['windowsize'] = optools.text_input
-        self.input_src['threshold'] = optools.text_input
-        self.input_type['x'] = optools.ref_type
-        self.input_type['y'] = optools.ref_type
-        self.input_type['windowsize'] = optools.int_type
-        self.input_type['threshold'] = optools.float_type
+        self.input_src['x'] = op.wf_input
+        self.input_src['y'] = op.wf_input
+        self.input_src['windowsize'] = op.text_input
+        self.input_src['threshold'] = op.text_input
+        self.input_type['x'] = op.ref_type
+        self.input_type['y'] = op.ref_type
+        self.input_type['windowsize'] = op.int_type
+        self.input_type['threshold'] = op.float_type
         self.inputs['windowsize'] = 10
         self.inputs['threshold'] = 0 
         self.output_doc['pk_idx'] = 'q values of found peaks'
