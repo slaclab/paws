@@ -6,7 +6,7 @@ from scipy.optimize import minimize
 
 from ... import Operation as op
 from ...Operation import Operation
-from . import saxstools
+from ....tools import saxstools
 
 class SpectrumParameterization(Operation):
     """

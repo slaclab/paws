@@ -110,7 +110,7 @@ class QTreeSelectionModel(QTreeModel):
             return super(QTreeSelectionModel,self).flags(idx)
         else:
             return super(QTreeSelectionModel,self).flags(idx) | QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsTristate
-    
+
     # Ui-editable QAbstractItemModel subclasses must implement setData(index,value[,role])
     def setData(self,idx,val,data_role):
         if idx.column() == 0:

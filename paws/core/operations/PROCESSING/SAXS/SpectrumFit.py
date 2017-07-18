@@ -5,7 +5,7 @@ from scipy.optimize import curve_fit
 
 from ... import Operation as op
 from ...Operation import Operation
-from . import saxstools
+from ....tools import saxstools
 
 class SpectrumFit(Operation):
     """

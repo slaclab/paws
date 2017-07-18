@@ -8,8 +8,6 @@ import yaml
 
 from .. import pawstools
 
-# TODO: Add ops.cfg information to .wfl files.
-
 # check for an ops.cfg (yaml) file
 cfg_file = os.path.join(pawstools.paws_cfg_dir,'ops.cfg')
 if os.path.exists(cfg_file):
@@ -61,37 +59,46 @@ def load_ops_from_path(path_,pkg,cat_root=''):
         #
         load_flags[mod_root] = load_mod
         # if it is a package, recurse
-        if load_mod and ispkg:
+        if ispkg:
             pkg_path = [os.path.join(path_[0],modname)]
             pkg_ops, pkg_cats = load_ops_from_path(pkg_path,pkg+'.'+modname,mod_root)
             pkg_ops = [op for op in pkg_ops if not op in ops]
             pkg_cats = [cat for cat in pkg_cats if not cat in cats]
             ops = ops + pkg_ops
             cats = cats + pkg_cats
-        elif load_mod:
-            mod = importlib.import_module('.'+modname,pkg)
-            # Get the operation from the module:
-            # assume Operation name is same as module name
-            try:
-                op = getattr(mod,modname)
-                ops.append( (cat_root,op) )
-                if not cat_root in cats:
-                    cats.append(cat_root)
-            except AttributeError as ex:
-                pass
+        else:
+            # assume that there is an Operation in this module
+            # whose class name is the same as the module name.
+            ops.append( (cat_root,modname) )
+            if not cat_root in cats:
+                cats.append(cat_root)
+    return ops, cats
+        #if load_mod:
+        #    # Assume Operation name is same as module name.
+        #    # Get the operation from the module.
+        #    # TODO: Handle any ImportErrors or AttributeErrors.
+        #    mod = importlib.import_module('.'+modname,pkg)
+        #    op = getattr(mod,modname)
+            #try:
+            #    ops.append( (cat_root,op) )
+            #    if not cat_root in cats:
+            #        cats.append(cat_root)
+            #except AttributeError as ex:
+            #    pass
             #    msg = str('Failed to load Operation subclass {} '.format(modname)
             #    + 'from module of the same name. Error message: '+ ex.message
             #    + '\nTo load an Operation, '
             #    + 'ensure the Operation subclass '
             #    + 'has the same name as its .py module file')
             #    print(msg)
-    return ops, cats
 
 def disable_ops(disable_root):
     # get all keys that contain disable_root
     disable_keys = [k for k in load_flags.keys() if disable_root in k]
     for k in disable_keys:
         load_flags[k] = False 
+
+print(load_flags)
 
 cat_op_list, cat_list = load_ops_from_path(__path__,__name__)
 

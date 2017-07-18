@@ -219,8 +219,8 @@ class TreeModel(object):
     def contains_uri(self,uri):
         return self._tree.contains_uri(uri)
 
-    def list_uris(self,root_uri=''):
-        return self._tree.list_uris(root_uri)
+    #def list_uris(self,root_uri=''):
+    #    return self._tree.list_uris(root_uri)
 
     def get_data_from_idx(self,idx):
         uri = self.build_uri(idx)

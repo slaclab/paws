@@ -10,9 +10,9 @@ class QOpManager(QTreeSelectionModel):
     """
 
     def __init__(self,opman):
-        flag_dict = OrderedDict()
-        flag_dict['enable'] = True
-        super(QOpManager,self).__init__(flag_dict,opman)
+        default_flags = OrderedDict()
+        default_flags['enable'] = False
+        super(QOpManager,self).__init__(default_flags,opman)
         self.opman = opman
 
     def headerData(self,section,orientation,data_role):
@@ -20,6 +20,15 @@ class QOpManager(QTreeSelectionModel):
             return "{} operations available".format(self.opman.n_ops())
         else:
             return super(QOpManager,self).headerData(section,orientation,data_role) 
+
+    # TODO: use flags() to disable the "enabled" check box for categories.
+    #def flags(self,idx):
+    #    itm = idx.internalPointer()
+    #    if isinstance(itm,dict):
+    #        return QtCore.Qt.NoItemFlags
+    #        #return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+    #    else:
+    #        return super(QOpManager,self).flags(idx)
 
     #def idx_of_cat(self,catname,p_idx):
     #    """

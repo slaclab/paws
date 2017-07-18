@@ -152,16 +152,16 @@ class Operation(object):
         return str(
         "Operation description: "
         + self.doc_as_string()
-        + "\n\n--- Input ---"
+        + "\n\n--- Inputs ---"
         + self.input_description() 
-        + "\n\n--- Output ---"
+        + "\n\n--- Outputs ---"
         + self.output_description())
 
     def doc_as_string(self):
         if self.__doc__:
             return re.sub("\s\s+"," ",self.__doc__.replace('\n','')) 
         else:
-            return "no documentation found"
+            return "none"
 
     def input_description(self):
         a = ""

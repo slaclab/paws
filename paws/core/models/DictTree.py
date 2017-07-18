@@ -323,7 +323,11 @@ class DictTree(object):
                 suffix += 1
         return testuri 
 
-    def print_tree(self,rowprefix='',root_uri=''):
+    def print_tree(self,root_uri='',rowprefix=''):
+        """
+        Print the content of the tree rooted at root_uri,
+        with each row of the string preceded by rowprefix.
+        """
         if root_uri:
             itm = self.get_from_uri(root_uri)
         else:
@@ -331,12 +335,35 @@ class DictTree(object):
         if isinstance(itm,dict):
             tree_string = '\n'
             for k,x in itm.items():
-                x_tree = self.print_tree(rowprefix+'\t',root_uri+'.'+k)
+                x_tree = self.print_tree(root_uri+'.'+k,rowprefix+'\t')
                 tree_string = tree_string+rowprefix+'{}: {}\n'.format(k,x_tree)
         elif isinstance(itm,list):
             tree_string = '\n'
             for i,x in zip(range(len(itm)),itm):
-                x_tree = self.print_tree(rowprefix+'\t',root_uri+'.'+str(i))
+                x_tree = self.print_tree(root_uri+'.'+str(i),rowprefix+'\t')
+                tree_string = tree_string+rowprefix+'{}: {}\n'.format(i,x_tree)
+        else:
+            return '{}'.format(itm)
+        return tree_string
+
+    def print_tree(self,root_uri='',rowprefix=''):
+        """
+        Print the content of the tree rooted at root_uri,
+        with each row of the string preceded by rowprefix.
+        """
+        if root_uri:
+            itm = self.get_from_uri(root_uri)
+        else:
+            itm = self._root
+        if isinstance(itm,dict):
+            tree_string = '\n'
+            for k,x in itm.items():
+                x_tree = self.print_tree(root_uri+'.'+k,rowprefix+'\t')
+                tree_string = tree_string+rowprefix+'{}: {}\n'.format(k,x_tree)
+        elif isinstance(itm,list):
+            tree_string = '\n'
+            for i,x in zip(range(len(itm)),itm):
+                x_tree = self.print_tree(root_uri+'.'+str(i),rowprefix+'\t')
                 tree_string = tree_string+rowprefix+'{}: {}\n'.format(i,x_tree)
         else:
             return '{}'.format(itm)

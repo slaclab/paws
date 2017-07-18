@@ -5,6 +5,7 @@ from collections import OrderedDict
 from PySide import QtGui, QtCore, QtUiTools
 import yaml
 
+from ..core.operations.Operation import Operation
 from . import uitools
 from . import widgets 
 from ..core import pawstools
@@ -92,9 +93,10 @@ class UiManager(QtCore.QObject):
         self.ui.add_wf_button.clicked.connect( partial(self.add_wf,'new_workflow') )
         self.ui.plugin_tree.setModel(self.qplugman)
         self.ui.op_tree.setModel(self.qopman)
-        self.ui.op_tree.clicked.connect( partial(uitools.toggle_expand,self.ui.op_tree) ) 
+        #self.ui.op_tree.clicked.connect( partial(uitools.toggle_expand,self.ui.op_tree) ) 
         self.ui.op_tree.setRootIndex(self.qopman.root_index())
-        self.ui.wf_tree.clicked.connect( partial(uitools.toggle_expand,self.ui.wf_tree) )
+        #self.ui.wf_tree.clicked.connect( partial(uitools.toggle_expand,self.ui.wf_tree) )
+        self.ui.op_tree.clicked.connect( self.display_op_item )
         self.ui.wf_tree.clicked.connect( self.display_wf_item )
         self.ui.wf_tree.doubleClicked.connect( partial(self.edit_wf) )
         self.ui.plugin_tree.clicked.connect( self.display_plugin_item )
@@ -119,8 +121,9 @@ class UiManager(QtCore.QObject):
         self.ui.message_board.setReadOnly(True)
         self.ui.message_board.insertPlainText('--- MESSAGE BOARD ---') 
         self.msg_board_log('paws is ready') 
-        self.ui.op_tree.hideColumn(1)
-        self.ui.op_tree.hideColumn(2)
+        #self.ui.op_tree.hideColumn(1)
+        #self.ui.op_tree.hideColumn(2)
+        self.ui.op_tree.setColumnWidth(0,200)
         self.ui.plugin_tree.hideColumn(1)
         self.ui.plugin_tree.hideColumn(2)
         self.ui.hsplitter.setStretchFactor(1,2)    
@@ -147,6 +150,30 @@ class UiManager(QtCore.QObject):
             self.ui.wf_tree.hideColumn(1)
             self.ui.wf_tree.hideColumn(2)
         self.ui.wf_selector.setCurrentIndex(self.qwfman.n_wf()-1)
+
+    def display_op_item(self,idx):
+        """
+        Display selected item from the op tree in viewer layout 
+        """
+        if idx.isValid(): 
+            itm_data = self.qopman.get_data_from_index(idx)
+            itm_uri = self.qopman.get_uri_of_index(idx)
+            w = QtGui.QTextEdit()
+            if itm_data is None:
+                # this should be the condition for a not-enabled Operation
+                t = str('selected Operation: {}. \n'.format(itm_uri)
+                + 'This Operation is not currently enabled. '
+                + 'Click the "enable" box to enable it. ')
+            elif isinstance(itm_data,dict):
+                # this should be the condition for a category
+                t = str('selected category: {}. \n\n'.format(itm_uri)
+                + '{}: '.format(itm_uri)) 
+                t = t + self.qopman.opman.print_cat(itm_uri) 
+            else:
+                # the only remaining case is an enabled Operation
+                t = itm_data().description()
+            w.setText(t)
+            self.display_widget(w)
 
     def display_plugin_item(self,idx):
         """
