@@ -156,24 +156,27 @@ class UiManager(QtCore.QObject):
         Display selected item from the op tree in viewer layout 
         """
         if idx.isValid(): 
-            itm_data = self.qopman.get_data_from_index(idx)
-            itm_uri = self.qopman.get_uri_of_index(idx)
-            w = QtGui.QTextEdit()
-            if itm_data is None:
-                # this should be the condition for a not-enabled Operation
-                t = str('selected Operation: {}. \n'.format(itm_uri)
-                + 'This Operation is not currently enabled. '
-                + 'Click the "enable" box to enable it. ')
-            elif isinstance(itm_data,dict):
-                # this should be the condition for a category
-                t = str('selected category: {}. \n\n'.format(itm_uri)
-                + '{}: '.format(itm_uri)) 
-                t = t + self.qopman.opman.print_cat(itm_uri) 
-            else:
-                # the only remaining case is an enabled Operation
-                t = itm_data().description()
-            w.setText(t)
-            self.display_widget(w)
+            # If the user is clicking a check box (idx.column()!=0),
+            # leave the central display unchanged... ?
+            #if idx.column() == 0:
+                itm_data = self.qopman.get_data_from_index(idx)
+                itm_uri = self.qopman.get_uri_of_index(idx)
+                w = QtGui.QTextEdit()
+                if itm_data is None:
+                    # this should be the condition for a not-enabled Operation
+                    t = str('selected Operation: {}. \n'.format(itm_uri)
+                    + 'This Operation is not currently enabled. '
+                    + 'Click the "enable" box to enable it. ')
+                elif isinstance(itm_data,dict):
+                    # this should be the condition for a category
+                    t = str('selected category: {}. \n\n'.format(itm_uri)
+                    + '{}: '.format(itm_uri)) 
+                    t = t + self.qopman.opman.print_cat(itm_uri) 
+                else:
+                    # the only remaining case is an enabled Operation
+                    t = itm_data().description()
+                w.setText(t)
+                self.display_widget(w)
 
     def display_plugin_item(self,idx):
         """

@@ -57,7 +57,6 @@ class TreeModel(object):
             # store the data 
             self._tree.set_uri(itm_uri,itm_data)
         except Exception as ex:
-            #import pdb; pdb.set_trace()
             msg = str('[{}] Encountered an error while trying to set uri {}: \n'
             .format(__name__,itm_uri) + ex.message)
             raise KeyError(msg) 

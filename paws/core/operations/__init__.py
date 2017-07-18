@@ -98,7 +98,7 @@ def disable_ops(disable_root):
     for k in disable_keys:
         load_flags[k] = False 
 
-print(load_flags)
+#print(load_flags)
 
 cat_op_list, cat_list = load_ops_from_path(__path__,__name__)
 

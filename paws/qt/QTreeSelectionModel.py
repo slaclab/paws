@@ -7,7 +7,7 @@ from .QTreeModel import QTreeModel
 class QTreeSelectionModel(QTreeModel):
     """
     QTreeSelectionModel extends QTreeModel 
-    by using TreeItem.flags to indicate selection of tree items.
+    by using TreeItem.flags to handle tree item selection.
     """
 
     def __init__(self,flag_defaults={},trmod=QTreeModel()):
@@ -51,7 +51,6 @@ class QTreeSelectionModel(QTreeModel):
     def get_flagged_idxs(self,flag_key,idx=None,val=True):
         if idx is None:
             idx = self.root_index()
-        #import pdb; pdb.set_trace()
         itm = self.get_from_index(idx) 
         flagged_idxs = []
         if self.is_flagged(itm,flag_key) == val:
