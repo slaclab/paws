@@ -3,10 +3,10 @@ import unittest
 class TestAPI(unittest.TestCase):
 
     def test_start_stop(self):
-        print 'testing paws api start/stop'
+        # smoke testing paws api
         import paws.api
         paw = paws.api.start()
-        self.assertIsNone(paw._current_wf_name)
+        self.assertIsInstance(paw,paws.api.PawsAPI)
 
 if __name__ == '__main__':
     unittest.main()

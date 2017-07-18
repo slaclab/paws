@@ -1,5 +1,5 @@
 """This module defines a class that presents an API for paws."""
-
+from __future__ import print_function
 import os
 from functools import partial
 from collections import OrderedDict
@@ -14,19 +14,16 @@ from ..core.workflow.WfManager import WfManager
 from ..core.plugins.PluginManager import PluginManager 
 from ..core.plugins.WfManagerPlugin import WfManagerPlugin
 
-def start(app_args=[]):
+def start():
     """
     Instantiate and return a PawsAPI object. 
 
     paws.api.start() calls the PawsAPI constructor.
 
-    :param app_args: arguments to pass to the 
-    QApplication constructor within the PawsAPI constructor
-    :type app_args: sequence
     :returns: a PawsAPI object
     :return type: paws.api.PawsAPI 
     """
-    return PawsAPI(app_args)
+    return PawsAPI()
 
 class PawsAPI(object):
     """
@@ -34,8 +31,11 @@ class PawsAPI(object):
     an Operations Manager, a Workflow Manager, and a Plugins Manager. 
     """
 
-    def __init__(self,api_args):
+    def __init__(self):
         super(PawsAPI,self).__init__()
+        # Assign a function(str) to PawsAPI.logmethod
+        # to change where messages get printed
+        self.logmethod = print 
         self._op_manager = OpManager()
         self._plugin_manager = PluginManager()
         self._wf_manager = WfManager(self._plugin_manager)
@@ -49,15 +49,28 @@ class PawsAPI(object):
         wfman_pgin.start()
         self._plugin_manager.set_item('wf_manager',wfman_pgin)
 
+    def write_log(self,msg):
+        self.logmethod(msg)
+
     def info(self):   
         info_msg = str('PAWS: the Platform for Automated Workflows by SSRL. '
         + 'Version: {}'.format(pawstools.version))
-        print info_msg
+        print(info_msg)
         return info_msg
  
-    def enable_op(self,op_spec=''):
-        # TODO: operation enable/disable functionality
-        pass
+    def enable_op(self,op_spec):
+        """
+        Import and enable the Operation indicated by op_spec.
+        The Operation becomes available to add to workflows by paws.api.add_op()
+        """
+        self._op_manager.set_op_enabled(op_spec)
+
+    def disable_op(self,op_spec):
+        """
+        Disable the Operation indicated by op_spec.
+        The Operation becomes unavailable until it is enabled again. 
+        """
+        self._op_manager.set_op_enabled(op_spec,False)
 
     def enable_plugin(self,pgin_name=''):
         """
@@ -104,13 +117,20 @@ class PawsAPI(object):
         return self.get_wf(wfname).get_data_from_uri(opname) 
 
     def add_op(self,op_tag,op_spec,wfname=None):
-        wf = self.get_wf(wfname)
-        # get the op referred to by op_spec
-        op = self._op_manager.get_data_from_uri(op_spec)
-        # instantiate with default inputs
-        op = op()
-        op.load_defaults()
-        wf.set_item(op_tag,op)
+        if ops.load_flags[op_spec]:
+            wf = self.get_wf(wfname)
+            # get the op referred to by op_spec
+            op = self._op_manager.get_data_from_uri(op_spec)
+            # instantiate with default inputs
+            op = op()
+            op.load_defaults()
+            wf.set_item(op_tag,op)
+        else:
+            msg = str('Attempted to add Operation {}, '.format(op_spec)
+            + 'but this Operation has not been enabled. '
+            + 'Enable it with paws.api.enable_op() '
+            + 'before adding it to a workflow.')
+            self.write_log(msg) 
 
     def add_plugin(self,pgin_tag,pgin_name):
         pgin = self._plugin_manager.get_plugin(pgin_name)
