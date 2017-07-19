@@ -266,9 +266,9 @@ def saxs_fit(q,I,objfun,features,x_keys,constraints=[]):
     Input constraints (list of strings) to specify constraints.
     
     Supported objective functions: 
-    (1) 'full_spectrum_chi2': sum of difference squared across entire q range. 
-    (2) 'full_spectrum_chi2log': sum of difference of logarithm, squared, across entire q range. 
-    (3) 'full_spectrum_chi2norm': sum of difference divided by measured value, squared, aross entire q range. 
+    (1) 'chi2': sum of difference squared across entire q range. 
+    (2) 'chi2log': sum of difference of logarithm, squared, across entire q range. 
+    (3) 'chi2norm': sum of difference divided by measured value, squared, aross entire q range. 
     (4) 'low_q_chi2': sum of difference squared in only the lowest half of measured q range. 
     (5) 'low_q_chi2log': sum of difference of logarithm, squared, in lowest half of measured q range. 
     (6) 'pearson': pearson correlation between measured and modeled spectra. 
@@ -336,7 +336,8 @@ def saxs_fit(q,I,objfun,features,x_keys,constraints=[]):
     x_init = [] 
     x_bounds = [] 
     for k in x_keys:
-        # features.keys() may not have the x_key if the relevant population was not flagged.
+        # features.keys() may not include k,
+        # e.g. if the relevant population was not flagged.
         if k in features.keys():
             x_init.append(features[k])
             if k in ['r0_pre','r0_form']:
@@ -346,44 +347,76 @@ def saxs_fit(q,I,objfun,features,x_keys,constraints=[]):
             elif k in ['sigma_form']:
                 x_bounds.append((0.0,0.3))
 
-    saxs_fun = lambda q,x,d: compute_saxs_with_substitutions(q,d,x_keys,x)
-    I_nz = (I>0)
-    n_q = len(q)
-    idx_lowq = (q<0.4)
-    if objfun == 'full_spectrum_chi2':
-        fit_obj = lambda x: np.sum( (saxs_fun(q,x,features) - I)**2 )
-    elif objfun == 'full_spectrum_chi2log':
-        fit_obj = lambda x: np.sum( (np.log(saxs_fun(q[I_nz],x,features)) - np.log(I[I_nz]))**2 )
-    elif objfun == 'full_spectrum_chi2norm':
-        fit_obj = lambda x: np.sum( ((saxs_fun(q[I_nz],x,features) - I[I_nz])/I[I_nz])**2 )
-    elif objfun == 'low_q_chi2':
-        fit_obj = lambda x: np.sum( (saxs_fun(q[idx_lowq],x,features) - I[idx_lowq])**2 )
-    elif objfun == 'pearson':
-        fit_obj = lambda x: -1*compute_pearson(saxs_fun(q,x,features), I)
-    elif objfun == 'low_q_pearson':
-        fit_obj = lambda x: -1*compute_pearson(saxs_fun(q[idx_lowq],x,features), I[idx_lowq]) 
-    elif objfun == 'low_q_chi2log':
-        fit_obj = lambda x: np.sum( (np.log(saxs_fun(q[I_nz][idx_lowq[I_nz]],x,features)) - np.log(I[I_nz][idx_lowq[I_nz]]))**2 )
-    elif objfun == 'pearson_log':
-        fit_obj = lambda x: -1*compute_pearson(np.log(saxs_fun(q[I_nz],x,features)), np.log(I[I_nz])) 
-    elif objfun == 'low_q_pearson_log':
-        fit_obj = lambda x: -1*compute_pearson(np.log(saxs_fun(q[I_nz][idx_lowq[I_nz]],x,features)), np.log(I[I_nz][idx_lowq[I_nz]])) 
-    else:
-        msg = 'objective function {} not supported'.format(objfun)
-        raise ValueError(msg)
-    try:
-        res = scipimin(fit_obj,x_init,bounds=x_bounds,constraints=c)
-    except:
-        import pdb; pdb.set_trace()
-    x_opt = res.x
+    # Only proceed if there is still work to do.
     d_opt = OrderedDict()
-    for k,xk in zip(x_keys,x_opt):
-        d_opt[k] = xk
-    d_opt['objective_before'] = fit_obj(x_init)
-    d_opt['objective_after'] = fit_obj(x_opt)
+    x_opt = []
+    if any(x_init):
+        saxs_fun = lambda q,x,d: compute_saxs_with_substitutions(q,d,x_keys,x)
+        I_nz = (I>0)
+        n_q = len(q)
+        idx_lowq = (q<0.4)
+        if objfun == 'chi2':
+            fit_obj = lambda x: compute_chi2( saxs_fun(q,x,features) , I )
+        elif objfun == 'chi2log':
+            fit_obj = lambda x: compute_chi2( np.log(saxs_fun(q[I_nz],x,features)) , np.log(I[I_nz]) )
+        elif objfun == 'chi2norm':
+            fit_obj = lambda x: compute_chi2( saxs_fun(q[I_nz],x,features) , I[I_nz] , weights=float(1)/I[I_nz] )
+        elif objfun == 'low_q_chi2':
+            fit_obj = lambda x: compute_chi2( saxs_fun(q[idx_lowq],x,features) , I[idx_lowq] )
+        elif objfun == 'pearson':
+            fit_obj = lambda x: -1*compute_pearson( saxs_fun(q,x,features) , I )
+        elif objfun == 'low_q_pearson':
+            fit_obj = lambda x: -1*compute_pearson( saxs_fun(q[idx_lowq],x,features) , I[idx_lowq] )
+        elif objfun == 'low_q_chi2log':
+            fit_obj = lambda x: compute_chi2( np.log(saxs_fun(q[I_nz][idx_lowq[I_nz]],x,features)) , np.log(I[I_nz][idx_lowq[I_nz]]) ) 
+        elif objfun == 'pearson_log':
+            fit_obj = lambda x: -1*compute_pearson( np.log(saxs_fun(q[I_nz],x,features)) , np.log(I[I_nz]) ) 
+        elif objfun == 'low_q_pearson_log':
+            fit_obj = lambda x: -1*compute_pearson( np.log(saxs_fun(q[I_nz][idx_lowq[I_nz]],x,features)) , np.log(I[I_nz][idx_lowq[I_nz]]) ) 
+        else:
+            msg = 'objective function {} not supported'.format(objfun)
+            raise ValueError(msg)
+        d_opt['objective_before'] = fit_obj(x_init)
+        #try:
+        res = scipimin(fit_obj,x_init,bounds=x_bounds,constraints=c)
+        #except:
+        #    import pdb; pdb.set_trace()
+        x_opt = res.x
+        d_opt['objective_after'] = fit_obj(x_opt)
+        if d_opt['objective_after'] > d_opt['objective_before']:
+            print('WARNING: optimization has increased the objective function. why?')
+            print('x_init: {}'.format(x_init))
+            print('obj_init: {}'.format(d_opt['objective_before']))
+            print('x_opt: {}'.format(x_opt))
+            print('obj_opt: {}'.format(d_opt['objective_after']))
+            #import pdb; pdb.set_trace()
+            x_opt = x_init
+        for k,xk in zip(x_keys,x_opt):
+            d_opt[k] = xk
     return d_opt    
 
+def compute_chi2(y1,y2,weights=None):
+    """
+    Compute the sum of the difference squared between input arrays y1 and y2.
+    """
+    if weights is None:
+        return np.sum( (y1 - y2)**2 )
+    else:
+        weights = weights / np.sum(weights)
+        return np.sum( (y1 - y2)**2*weights )
+
+def compute_Rsquared(y1,y2):
+    """
+    Compute the coefficient of determination between input arrays y1 and y2.
+    """
+    sum_var = np.sum( (y1-np.mean(y1))**2 )
+    sum_res = np.sum( (y1-y2)**2 ) 
+    return float(1)-float(sum_res)/sum_var
+
 def compute_pearson(y1,y2):
+    """
+    Compute the Pearson correlation coefficient between input arrays y1 and y2.
+    """
     y1mean = np.mean(y1)
     y2mean = np.mean(y2)
     y1std = np.std(y1)

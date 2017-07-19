@@ -72,7 +72,10 @@ class SpectrumParameterization(Operation):
         + 'I0_form: form factor scattering intensity scaling factor \n'
         + 'q0_structure: q value (1/Angstrom) for location of fundamental structure factor peak \n' 
         + 'I0_structure: structure factor intensity scaling factor \n'
-        + 'sigma_structure: width parameter for Pseudo-Voigt diffraction peak profile') 
+        + 'sigma_structure: width parameter for Pseudo-Voigt diffraction peak profile \n' 
+        + 'R2log_guess: Coefficient of determination between logarithms of measured and parameterized spectra \n' 
+        + 'chi2log_guess: Sum of difference squared between standardized logarithms '
+        + 'of measured and parameterized spectra. Standardized by the measured spectrum. ') 
         self.output_doc['q_I_guess'] = str('n-by-2 array of q and the intensity spectrum '
         + 'corresponding to the population parameters in the features dict.')
 
@@ -239,26 +242,15 @@ class SpectrumParameterization(Operation):
 
         I_guess = saxstools.compute_saxs(q,p)
         q_I_guess = np.array([q,I_guess]).T
+        nz = ((I>0)&(I_guess>0))
+        logI_nz = np.log(I[nz])
+        logIguess_nz = np.log(I_guess[nz])
+        Imean = np.mean(logI_nz)
+        Istd = np.std(logI_nz)
+        logI_nz_s = (logI_nz - Imean) / Istd
+        logIguess_nz_s = (logIguess_nz - Imean) / Istd
+        p['R2log_guess'] = saxstools.compute_Rsquared(logI_nz,logIguess_nz)
+        p['chi2log_guess'] = saxstools.compute_chi2(logI_nz_s,logIguess_nz_s)
         self.outputs['q_I_guess'] = q_I_guess 
         self.outputs['features'] = p 
-
-        #### Get logarithmic coef of determination to assess fit quality:
-        #I_norm_nz = np.invert( (q_I_norm[:,1]<=0) )
-        #logI_norm = np.log(q_I_norm[I_norm_nz,1])
-        #logI_guess = np.log(q_I_guess[I_norm_nz,1])
-        #sum_logvar = np.sum( (logI_norm-np.mean(logI_norm))**2 )
-        #sum_logres = np.sum( (logI_guess-logI_norm)**2 ) 
-        #R2_log = float(1)-float(sum_logres)/sum_logvar
-        #p['R2_log'] = R2_log
-        ####
-
-        #from matplotlib import pyplot as plt
-        #print self.outputs['features']
-        #plt.figure(1)
-        #plt.semilogy(q_I_norm[:,0],q_I_norm[:,1])
-        #plt.semilogy(q_I_guess[:,0],q_I_guess[:,1],'r')
-        #plt.show()
-
-
-
 

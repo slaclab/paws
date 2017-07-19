@@ -49,7 +49,11 @@ class SpectrumFit(Operation):
         #+ 'See documentation of saxstools.fit_saxs() for supported constraints.')
 
         self.output_doc['features'] = str('dict of features copied from inputs, '
-        + 'with entries optimized for all keys specified in fit_params.')
+        + 'with entries optimized for all keys specified in fit_params. '
+        + 'Adds the following keys: \n' 
+        + 'R2log_fit: Coefficient of determination between the measured and optimized spectra. ' 
+        + 'chi2log_fit: Sum of difference squared between standardized logarithms '
+        + 'of measured and optimized spectra. Standardized by the measured spectrum. ') 
         self.output_doc['q_I_opt'] = str('n-by-2 array of q and the theoretical intensity spectrum, '
         + 'normalized so that I(q=0) is near 1.') 
 
@@ -64,11 +68,9 @@ class SpectrumFit(Operation):
         self.input_type['fit_params'] = op.str_type
         self.input_type['features'] = op.ref_type
         # TODO: establish a good default here.
-        self.inputs['objfun'] = 'full_spectrum_chi2log' 
+        self.inputs['objfun'] = 'chi2log' 
 
     def run(self):
-        # Set return code to 1 (error) by default;
-        # if execution finishes, set it to 0
         f = copy.deepcopy(self.inputs['features'])
         if not any([f['precursor_flag'],f['form_flag'],f['structure_flag']]):
             self.outputs['features'] = f
@@ -90,10 +92,24 @@ class SpectrumFit(Operation):
             c = ['fix_I0']
 
         # Fitting happens here
+        #print 'fitting {}'.format(p)
+        #print 'init: {}'.format([f[k] for k in p])
         d_opt = saxstools.saxs_fit(q,I,m,f,p,c)
+        #print 'final: {}'.format([d_opt[k] for k in p])
 
         f.update(d_opt)
         I_opt = saxstools.compute_saxs(q,f)
+
+        nz = ((I>0)&(I_opt>0))
+        logI_nz = np.log(I[nz])
+        logIopt_nz = np.log(I_opt[nz])
+        Imean = np.mean(logI_nz)
+        Istd = np.std(logI_nz)
+        logI_nz_s = (logI_nz - Imean) / Istd
+        logIopt_nz_s = (logIopt_nz - Imean) / Istd
+        f['R2log_fit'] = saxstools.compute_Rsquared(np.log(I[nz]),np.log(I_opt[nz]))
+        f['chi2log_fit'] = saxstools.compute_chi2(logI_nz_s,logIopt_nz_s)
+
         q_I_opt = np.array([q,I_opt]).T
         self.outputs['features'] = f 
         self.outputs['q_I_opt'] = q_I_opt

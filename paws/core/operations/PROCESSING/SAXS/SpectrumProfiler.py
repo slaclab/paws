@@ -60,8 +60,8 @@ class SpectrumProfiler(Operation):
         + 'Imax_over_Ihighq: Maximum intensity divided by mean intensity over q>0.4. \n'
         + 'Ilowq_over_Ihighq: Mean intensity for q<0.1 divided by mean intensity for q>0.4. \n'
         + 'low_q_logcurv: Curvature of parabola fit to log(I) versus log(q) for q<0.1. \n'
-        + 'q_Imax: q value of the maximum intensity. ')
-        #+ 'bin_strengths: (not implemented). \n'
+        + 'q_Imax: q value of the maximum intensity. \n'
+        + 'bin_strengths: log(I) integrated in q-bins of 0.1 1/Angstrom from 0 to 1 1/Angstrom. ')
         #+ 'q_corr: Pearson correlation between I(q) and q. \n'
         #+ 'qsquared_corr: Pearson correlation between I(q) and q^2. \n'
         #+ 'cos2q_corr: Pearson correlation between I(q) and (cos(q))^2. \n'
@@ -133,19 +133,16 @@ class SpectrumProfiler(Operation):
         invq_logcorr = saxstools.compute_pearson( np.log(I[idx_nz]) , q[idx_nz]**-1 )
 
         ### bin-integrated intensity analysis
-        # TODO: standardize these bins in q space
-        #qmin, qmax = q[0], q[-1]
-        #qrange = qmax-qmin
-        #bin_strengths = np.zeros(10)
-        #for i in range(10):
-        #    qmini, qmaxi = qmin+i*qrange/10,qmin+(i+1)*qrange/10
-        #    idxi = list((q>=qmini) & (q<qmaxi))
-        #    idxi_shift = [False]+idxi[:-1]
-        #    idxi = np.array(idxi,dtype=bool)
-        #    idxi_shift = np.array(idxi_shift,dtype=bool)
-        #    dqi = q[ idxi_shift ] - q[ idxi ]
-        #    Ii = I[ idxi ]
-        #    bin_strengths[i] = np.sum(Ii * dqi) / (qmaxi-qmini)
+        bin_strengths = np.zeros(10)
+        for i in range(10):
+            qmini, qmaxi = i*0.1, (i+1)*0.1 
+            idxi = ((q>=qmini) & (q<qmaxi))
+            if any(idxi):
+                qi = q[ idxi ]
+                Ii = I[ idxi ]
+                dqi = qi[1:]-qi[:-1]
+                Ii = (Ii[1:]+Ii[:-1])/2
+                bin_strengths[i] = np.sum(np.log(Ii) * dqi) / (qi[-1]-qi[0]) 
         idx_nz = np.invert((I==0))
         q_nz = q[idx_nz] 
         I_nz_log = np.log(I[idx_nz])
@@ -211,18 +208,22 @@ class SpectrumProfiler(Operation):
             # Low-q region of spectrum should be quite flat.
             # Noise levels may be high if only precursors are present.
             # More high-q intensity than form factor alone.
-            precursor_flag = low_q_ratio/high_q_ratio > 2 and high_q_ratio > 1E-3 
+            nz_bins = np.invert(np.array((bin_strengths==0)))
+            s_nz = bin_strengths[nz_bins]
+            precursor_flag = ( low_q_ratio/high_q_ratio > 2 
+                            and high_q_ratio > 1E-3 
+                            #and np.argmin(s_nz) == np.sum(nz_bins)-1 
+                            #and (s_nz[-2]-s_nz[-1]) > (s_nz[-3]-s_nz[-2]) 
+                            and Imax_over_Ilowq < 4 )
 
             # Flagging structure:
-            # Structure is present if max intensity occurs outside the low-q region. 
+            # Structure is likely to cause max intensity to be outside the low-q region. 
             # Maximum intensity should be large relative to its 'local' mean intensity. 
-            structure_flag = Imax_over_Imean_local > 2 
+            structure_flag = Imax_over_Imean_local > 2 and q_Imax > 0.06 
             if structure_flag:
                 # TODO: determine structure factor here
                 structure_id = 'fcc'
         d_r = OrderedDict() 
-        #d_r['bin_strengths'] = bin_strengths
-        #d_r['bin_strengths'] = None 
         d_r['bad_data_flag'] = bad_data_flag
         d_r['precursor_flag'] = precursor_flag
         d_r['form_flag'] = form_flag
@@ -242,6 +243,7 @@ class SpectrumProfiler(Operation):
         d_r['high_freq_ratio'] = high_freq_ratio 
         d_r['fluctuation_strength'] = fluctuation_strength
         d_r['q_Imax'] = q_Imax
+        d_r['bin_strengths'] = bin_strengths
         #d_r['q_logcorr'] = q_logcorr
         #d_r['qsquared_logcorr'] = qsquared_logcorr
         #d_r['cos2q_logcorr'] = cos2q_logcorr
