@@ -3,16 +3,15 @@ python:
 - '2.7'
 script:
 - PYTHONPATH=`pwd` python tests/test_api.py 
+branches:
+  only:
+    - master
+    - dev
 deploy:
   provider: pypi
   user: lensonp
   password:
     secure: lfSsoBi8zNsGFgVYgkp/ucq+4wp+HWK7wqNhbjK5bHpUH1AXWcqNiw7axVqkSsDNQd5mNJgCr7AGbNtrHohiyAHaywMG8/FZpODJhaSbfW+OhbkoDtvJhwuWcMmc7PhQdQC4V+UNzxyXk/rJjAltGG76KAAwQx/jD3xV0PGibPrZTMNpnkXcGO8AlQlCj1DWuVR1yx7/ut00gfKv1N1MwviKzYPA2NLtfwAfjHaMTOCWI95t4dx4Lib23wHjPquIGuc8dBcwctd/MdEqHRIaTrtZ0g3BV5h+ZVV5YanK7RAETpC1G2lGwRxWZa3UFZr+iAUUIe6G7xYxEI6h16UXwiiBsfDVaoi76eLSG1/ri5zNMC+GkhmTtsUAY8wXkFhkfklMZqC51cbkdKZBm4fc6WbtpdUAu7lENGCSp32LebG9E1uViDXGI8xmrZcfdJRBF61YEzm8tmE7KKWV3oZpPjpqRwhnuyYwyXsVX+EQd+pAUU9JBJJun5dHCf8MWdMQhyh4HRJmOAkt3ZhPgnXVav2pV/m7wPIeZ4P4s0NR07URO9sKjCGutZs/R9pam8vat0PxY1hgj1/KHghRiWE7rleMZdy8gwwJqUtsna4XmH0bLiNNX8jnKU8ZbeaZCMsUqxfnpbQYC90wA5XSjoTJZF6PbGOFegF8XzN7HCKfWdY=
-  branches:
-    only:
-      - master
-      - dev
-      - /^v\d+\.\d+(\.\d+)?(-\S*)?$/
   on:
     tags: true
     branch: master
