@@ -7,7 +7,7 @@ from collections import OrderedDict
 from ..core import pawstools
 from ..core import operations as ops
 from ..core import plugins 
-from ..core.operations import Operation as op
+from ..core.operations import Operation as opmod
 from ..core.operations import optools
 from ..core.operations.OpManager import OpManager 
 from ..core.workflow.WfManager import WfManager 
@@ -131,6 +131,7 @@ class PawsAPI(object):
             + 'Enable it with paws.api.enable_op() '
             + 'before adding it to a workflow.')
             self.write_log(msg) 
+            raise pawstools.OperationDisabledError(msg)
 
     def add_plugin(self,pgin_tag,pgin_name):
         pgin = self._plugin_manager.get_plugin(pgin_name)
@@ -146,7 +147,7 @@ class PawsAPI(object):
             tp = pgin.input_type[input_name]
         if val is None:
             val = pgin.inputs[input_name]
-        if src == op.text_input:
+        if src == opmod.text_input:
             pgin.inputs[input_name] = optools.cast_type_val(tp,val)
         else:
             pgin.inputs[input_name] = val 
@@ -171,7 +172,7 @@ class PawsAPI(object):
             tp = op.input_locator[input_name].tp
         if val is None:
             val = op.input_locator[input_name].val
-        il = op.InputLocator(src,tp,val)
+        il = opmod.InputLocator(src,tp,val)
         op.input_locator[input_name] = il
 
     @staticmethod
@@ -180,24 +181,24 @@ class PawsAPI(object):
         tp = None
         val = None
         if 'src' in kw_dict:
-            if kw_dict['src'] in op.input_sources:
-                src = op.valid_sources[ op.input_sources.index(kw_dict['src']) ]
+            if kw_dict['src'] in opmod.input_sources:
+                src = opmod.valid_sources[ opmod.input_sources.index(kw_dict['src']) ]
                 # Any default type setting can go here.
-                if src == op.batch_input:
-                    tp = op.auto_type
-                if src == op.fs_input:
-                    tp = op.path_type
-                if src == op.wf_input:
-                    tp = op.ref_type
+                if src == opmod.batch_input:
+                    tp = opmod.auto_type
+                if src == opmod.fs_input:
+                    tp = opmod.path_type
+                if src == opmod.wf_input:
+                    tp = opmod.ref_type
             else:
                 #TODO: error? warning?
-                src = op.no_input
+                src = opmod.no_input
         if 'tp' in kw_dict:
-            if kw_dict['tp'] in op.input_types:
-                tp = op.valid_types[ op.input_types.index(kw_dict['tp']) ]
+            if kw_dict['tp'] in opmod.input_types:
+                tp = opmod.valid_types[ opmod.input_types.index(kw_dict['tp']) ]
             else:
                 #TODO: error? warning?
-                tp = op.none_type
+                tp = opmod.none_type
         if 'val' in kw_dict:
             val = kw_dict['val']
         return src,tp,val

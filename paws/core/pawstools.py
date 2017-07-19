@@ -31,12 +31,19 @@ with open(os.path.join(sourcedir,'paws_config.py')) as f:
 version=__version__
 
 class LazyCodeError(Exception):
-    def __init__(self,msg):
-        super(LazyCodeError,self).__init__(self,msg)
+    pass
+    #def __init__(self,msg):
+    #    super(LazyCodeError,self).__init__(self,msg)
 
 class WorkflowAborted(Exception):
-    def __init__(self,msg):
-        super(WorkflowAborted,self).__init__(self,msg)
+    pass
+    #def __init__(self,msg):
+    #    super(WorkflowAborted,self).__init__(self,msg)
+
+class OperationDisabledError(Exception):
+    pass
+    #def __init__(self,msg):
+    #    super(WorkflowAborted,self).__init__(self,msg)
 
 def dtstr():
     """Return date and time as a string"""
