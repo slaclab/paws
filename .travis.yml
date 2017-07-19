@@ -2,7 +2,7 @@ language: python
 python:
 - '2.7'
 script:
-- python tests/test_api.py 
+- PYTHONPATH=`pwd` python tests/test_api.py 
 deploy:
   provider: pypi
   user: lensonp
