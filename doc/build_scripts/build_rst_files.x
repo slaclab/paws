@@ -8,7 +8,7 @@
 
 #sphinx-apidoc -f -H paws -A '2017 Lenson A. Pellouchoud' -o source/opdoc_files ../paws/core/operations/
 
-sphinx-apidoc -f -H paws -A '2017 Lenson A. Pellouchoud' -o source/moduledoc_files ../paws/ ../paws/core/operations/DMZ
+sphinx-apidoc -f -H paws -A '2017 Lenson A. Pellouchoud' -o source/moduledoc_files ../paws/ ../paws/ui ../paws/qt ../paws/core/operations/DMZ 
 
 
 
