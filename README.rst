@@ -148,14 +148,15 @@ Contribution
 ------------
 
 Contribution to `paws` is encouraged and appreciated.
-Whether you are a researcher looking to contribute operations to the `paws` library,
+Whether you are a researcher looking to contribute operations to the `paws` library
 or a software developer looking to contribute to the platform itself,
 the `paws` development team would love to hear from you.
-
-See the documentation (TODO: insert readthedocs link here) 
-for basic instructions on contributing,
-and/or get in touch with the `paws` development team
+Get in touch with the `paws` development team
 at `paws-developers@slac.stanford.edu`.
+
+Full details about contributing to `paws`
+can be found in our online documentation,
+at (TODO: insert readthedocs link here).
 
 
 License
