@@ -1,16 +1,13 @@
-paws.core.operations package
-============================
+paws\.core\.operations package
+==============================
 
 Subpackages
 -----------
 
 .. toctree::
 
-    paws.core.operations.COMM
-    paws.core.operations.DISPLAY
     paws.core.operations.EXECUTION
-    paws.core.operations.INPUT
-    paws.core.operations.OUTPUT
+    paws.core.operations.IO
     paws.core.operations.PACKAGING
     paws.core.operations.PROCESSING
     paws.core.operations.TESTS
@@ -18,24 +15,24 @@ Subpackages
 Submodules
 ----------
 
-paws.core.operations.op_manager module
+paws\.core\.operations\.OpManager module
+----------------------------------------
+
+.. automodule:: paws.core.operations.OpManager
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+paws\.core\.operations\.Operation module
+----------------------------------------
+
+.. automodule:: paws.core.operations.Operation
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+paws\.core\.operations\.optools module
 --------------------------------------
-
-.. automodule:: paws.core.operations.op_manager
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-paws.core.operations.operation module
--------------------------------------
-
-.. automodule:: paws.core.operations.operation
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-paws.core.operations.optools module
------------------------------------
 
 .. automodule:: paws.core.operations.optools
     :members:

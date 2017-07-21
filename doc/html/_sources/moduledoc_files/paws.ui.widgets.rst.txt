@@ -1,27 +1,43 @@
-paws.ui.widgets package
-=======================
+paws\.ui\.widgets package
+=========================
 
 Submodules
 ----------
 
-paws.ui.widgets.op_widget module
---------------------------------
+paws\.ui\.widgets\.OpWidget module
+----------------------------------
 
-.. automodule:: paws.ui.widgets.op_widget
+.. automodule:: paws.ui.widgets.OpWidget
     :members:
     :undoc-members:
     :show-inheritance:
 
-paws.ui.widgets.pif_widget module
----------------------------------
-
-.. automodule:: paws.ui.widgets.pif_widget
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-paws.ui.widgets.text_widgets module
+paws\.ui\.widgets\.PifWidget module
 -----------------------------------
+
+.. automodule:: paws.ui.widgets.PifWidget
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+paws\.ui\.widgets\.PipelineWidget module
+----------------------------------------
+
+.. automodule:: paws.ui.widgets.PipelineWidget
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+paws\.ui\.widgets\.WorkflowGraphView module
+-------------------------------------------
+
+.. automodule:: paws.ui.widgets.WorkflowGraphView
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+paws\.ui\.widgets\.text\_widgets module
+---------------------------------------
 
 .. automodule:: paws.ui.widgets.text_widgets
     :members:

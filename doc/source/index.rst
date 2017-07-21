@@ -12,9 +12,7 @@ Contents:
     :maxdepth: 3
 
     intro
-    quickstart
     installation
-    apidoc
     moduledoc
 
 

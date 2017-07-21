@@ -1,25 +1,13 @@
-paws.core.operations.EXECUTION package
-======================================
+paws\.core\.operations\.EXECUTION package
+=========================================
 
-Submodules
-----------
+Subpackages
+-----------
 
-paws.core.operations.EXECUTION.batch_execution module
------------------------------------------------------
+.. toctree::
 
-.. automodule:: paws.core.operations.EXECUTION.batch_execution
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-paws.core.operations.EXECUTION.realtime_execution module
---------------------------------------------------------
-
-.. automodule:: paws.core.operations.EXECUTION.realtime_execution
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
+    paws.core.operations.EXECUTION.BATCH
+    paws.core.operations.EXECUTION.REALTIME
 
 Module contents
 ---------------

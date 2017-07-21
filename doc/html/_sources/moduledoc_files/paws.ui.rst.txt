@@ -1,5 +1,5 @@
-paws.ui package
-===============
+paws\.ui package
+================
 
 Subpackages
 -----------
@@ -11,74 +11,66 @@ Subpackages
 Submodules
 ----------
 
-paws.ui.data_viewer module
+paws\.ui\.InputLoader module
+----------------------------
+
+.. automodule:: paws.ui.InputLoader
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+paws\.ui\.OpUiManager module
+----------------------------
+
+.. automodule:: paws.ui.OpUiManager
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+paws\.ui\.PluginUiManager module
+--------------------------------
+
+.. automodule:: paws.ui.PluginUiManager
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+paws\.ui\.UiManager module
 --------------------------
 
-.. automodule:: paws.ui.data_viewer
+.. automodule:: paws.ui.UiManager
     :members:
     :undoc-members:
     :show-inheritance:
 
-paws.ui.input_loader module
----------------------------
-
-.. automodule:: paws.ui.input_loader
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-paws.ui.opuiman module
-----------------------
-
-.. automodule:: paws.ui.opuiman
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-paws.ui.plotmaker_mpl module
+paws\.ui\.WfUiManager module
 ----------------------------
+
+.. automodule:: paws.ui.WfUiManager
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+paws\.ui\.plotmaker\_mpl module
+-------------------------------
 
 .. automodule:: paws.ui.plotmaker_mpl
     :members:
     :undoc-members:
     :show-inheritance:
 
-paws.ui.plotmaker_pqg module
-----------------------------
+paws\.ui\.plotmaker\_pqg module
+-------------------------------
 
 .. automodule:: paws.ui.plotmaker_pqg
     :members:
     :undoc-members:
     :show-inheritance:
 
-paws.ui.pluguiman module
+paws\.ui\.uitools module
 ------------------------
 
-.. automodule:: paws.ui.pluguiman
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-paws.ui.ui_manager module
--------------------------
-
-.. automodule:: paws.ui.ui_manager
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-paws.ui.uitools module
-----------------------
-
 .. automodule:: paws.ui.uitools
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-paws.ui.wfuiman module
-----------------------
-
-.. automodule:: paws.ui.wfuiman
     :members:
     :undoc-members:
     :show-inheritance:

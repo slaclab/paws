@@ -1,21 +1,29 @@
-paws.core.operations.PACKAGING.PIF package
-==========================================
+paws\.core\.operations\.PACKAGING\.PIF package
+==============================================
 
 Submodules
 ----------
 
-paws.core.operations.PACKAGING.PIF.pif_saxs module
---------------------------------------------------
+paws\.core\.operations\.PACKAGING\.PIF\.EmptyPif module
+-------------------------------------------------------
 
-.. automodule:: paws.core.operations.PACKAGING.PIF.pif_saxs
+.. automodule:: paws.core.operations.PACKAGING.PIF.EmptyPif
     :members:
     :undoc-members:
     :show-inheritance:
 
-paws.core.operations.PACKAGING.PIF.pif_ternary module
------------------------------------------------------
+paws\.core\.operations\.PACKAGING\.PIF\.PifNPSynth module
+---------------------------------------------------------
 
-.. automodule:: paws.core.operations.PACKAGING.PIF.pif_ternary
+.. automodule:: paws.core.operations.PACKAGING.PIF.PifNPSynth
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+paws\.core\.operations\.PACKAGING\.PIF\.PifTernary module
+---------------------------------------------------------
+
+.. automodule:: paws.core.operations.PACKAGING.PIF.PifTernary
     :members:
     :undoc-members:
     :show-inheritance:

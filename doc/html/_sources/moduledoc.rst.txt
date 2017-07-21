@@ -1,14 +1,12 @@
-.. _ch-moduledoc:
+.. _ch-apidoc:
 
-Module Documentation
-====================
+API Documentation
+=================
 
-This is the complete auto-generated documentation 
-for all modules of the ``paws`` package,
-built from sphinx-apidoc.
+Full documentation of all PAWS modules, built with sphinx-apidoc.
 
 .. toctree::
 
-    moduledoc_files/paws
+    moduledoc_files/modules
 
 

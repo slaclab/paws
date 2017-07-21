@@ -1,21 +1,21 @@
-paws.core.workflow package
-==========================
+paws\.core\.workflow package
+============================
 
 Submodules
 ----------
 
-paws.core.workflow.wf_manager module
-------------------------------------
+paws\.core\.workflow\.WfManager module
+--------------------------------------
 
-.. automodule:: paws.core.workflow.wf_manager
+.. automodule:: paws.core.workflow.WfManager
     :members:
     :undoc-members:
     :show-inheritance:
 
-paws.core.workflow.wf_worker module
------------------------------------
+paws\.core\.workflow\.Workflow module
+-------------------------------------
 
-.. automodule:: paws.core.workflow.wf_worker
+.. automodule:: paws.core.workflow.Workflow
     :members:
     :undoc-members:
     :show-inheritance:

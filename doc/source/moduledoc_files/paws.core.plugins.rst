@@ -1,45 +1,53 @@
-paws.core.plugins package
-=========================
+paws\.core\.plugins package
+===========================
 
 Submodules
 ----------
 
-paws.core.plugins.CitrinationPlugin module
-------------------------------------------
+paws\.core\.plugins\.CitrinationPlugin module
+---------------------------------------------
 
 .. automodule:: paws.core.plugins.CitrinationPlugin
     :members:
     :undoc-members:
     :show-inheritance:
 
-paws.core.plugins.SpecClientPlugin module
+paws\.core\.plugins\.PawsPlugin module
+--------------------------------------
+
+.. automodule:: paws.core.plugins.PawsPlugin
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+paws\.core\.plugins\.PluginManager module
 -----------------------------------------
+
+.. automodule:: paws.core.plugins.PluginManager
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+paws\.core\.plugins\.SpecClientPlugin module
+--------------------------------------------
 
 .. automodule:: paws.core.plugins.SpecClientPlugin
     :members:
     :undoc-members:
     :show-inheritance:
 
-paws.core.plugins.TCPClientPlugin module
-----------------------------------------
+paws\.core\.plugins\.TCPClientPlugin module
+-------------------------------------------
 
 .. automodule:: paws.core.plugins.TCPClientPlugin
     :members:
     :undoc-members:
     :show-inheritance:
 
-paws.core.plugins.plugin module
--------------------------------
+paws\.core\.plugins\.WfManagerPlugin module
+-------------------------------------------
 
-.. automodule:: paws.core.plugins.plugin
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-paws.core.plugins.plugin_manager module
----------------------------------------
-
-.. automodule:: paws.core.plugins.plugin_manager
+.. automodule:: paws.core.plugins.WfManagerPlugin
     :members:
     :undoc-members:
     :show-inheritance:

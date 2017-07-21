@@ -1,40 +1,25 @@
-.. _ch-installation:
+.. _sec-quickstart:
 
-Installation
-============
+Quick Start
+-----------
 
-Here are instructions for installing ``paws`` from PyPI,
-or downloading and testing the ``paws`` source code.
+Minimal and usually-effective installation instructions.
 
+Here is a reference to the :ref:`brief introduction <ch-introduction>`.
 
-.. _sec-pip-installation:
+:ref:`This chapter <sec-quickstart>` is for setting up PAWS quickly
+in an environment that is prepared to install Python packages with pip.
+To install PAWS, enter ``pip install pypaws`` at the command line
+from within your Python environment.
 
-Installing with pip
--------------------
+The only dependency of PAWS is pyyaml,
+used for serializing and de-serializing workflow data.
+pip should automatically install this along with PAWS.
 
-Instructions will go here for installing ``paws`` using 
-the Python package installer ``pip`` (currently not implemented).
-
-
-.. _sec-src-installation:
-
-Downloading Source
-------------------
-
-The source code for ``paws`` is hosted on github.
-Clone the repository from ``https://github.com/slaclab/paws.git``.
-You should then be able to run ``paws`` by invoking
-``python main.py`` from the root directory.
+The PAWS GUI modules are not explicitly supported by the package dependencies.
+To use PAWS GUI modules, install PySide into your Python environment with
+``pip install PySide``
 
 
-.. _sec-testing:
 
-Testing
--------
-
-``paws`` comes with a tests that can be used 
-to ensure the platform runs as expected.
-After :ref:`downloading the source <sec-src-installation>`, 
-invoke ``python -m unittest discover``
-from the root directory.
 

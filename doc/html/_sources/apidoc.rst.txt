@@ -8,6 +8,6 @@ build with sphinx-apidoc.
 
 .. toctree::
 
-    apidoc_files/paws
+    apidoc_files/api
 
 

@@ -1,29 +1,29 @@
-paws.core.operations.PROCESSING.SAXS package
-============================================
+paws\.core\.operations\.PROCESSING\.SAXS package
+================================================
 
 Submodules
 ----------
 
-paws.core.operations.PROCESSING.SAXS.background_subtraction module
-------------------------------------------------------------------
+paws\.core\.operations\.PROCESSING\.SAXS\.SpectrumFit module
+------------------------------------------------------------
 
-.. automodule:: paws.core.operations.PROCESSING.SAXS.background_subtraction
+.. automodule:: paws.core.operations.PROCESSING.SAXS.SpectrumFit
     :members:
     :undoc-members:
     :show-inheritance:
 
-paws.core.operations.PROCESSING.SAXS.saxs module
-------------------------------------------------
+paws\.core\.operations\.PROCESSING\.SAXS\.SpectrumParameterization module
+-------------------------------------------------------------------------
 
-.. automodule:: paws.core.operations.PROCESSING.SAXS.saxs
+.. automodule:: paws.core.operations.PROCESSING.SAXS.SpectrumParameterization
     :members:
     :undoc-members:
     :show-inheritance:
 
-paws.core.operations.PROCESSING.SAXS.saxs_features module
----------------------------------------------------------
+paws\.core\.operations\.PROCESSING\.SAXS\.SpectrumProfiler module
+-----------------------------------------------------------------
 
-.. automodule:: paws.core.operations.PROCESSING.SAXS.saxs_features
+.. automodule:: paws.core.operations.PROCESSING.SAXS.SpectrumProfiler
     :members:
     :undoc-members:
     :show-inheritance:
