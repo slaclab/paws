@@ -4,17 +4,17 @@ from twisted.protocols.basic import LineReceiver
 from twisted.protocols.policies import TimeoutMixin
 
 from .PawsPlugin import PawsPlugin
-from ..operations import Operation as op
+from ..operations import Operation as opmod
 
 class TCPClientPlugin(PawsPlugin):
 
     def __init__(self):
         input_names = ['host','port']
         super(TCPClientPlugin,self).__init__(input_names)
-        self.input_src['host'] = op.text_input
-        self.input_src['port'] = op.text_input
-        self.input_type['host'] = op.str_type
-        self.input_type['port'] = op.int_type
+        self.input_src['host'] = opmod.text_input
+        self.input_src['port'] = opmod.text_input
+        self.input_type['host'] = opmod.str_type
+        self.input_type['port'] = opmod.int_type
         self.input_doc['host'] = 'string representing host name or IP address'
         self.input_doc['port'] = 'integer port number at which some server will be listening' 
        

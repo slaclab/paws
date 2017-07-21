@@ -7,7 +7,7 @@ import copy
 from collections import Iterator
 from collections import OrderedDict
 
-from . import Operation as op 
+from . import Operation as opmod 
 
 class FileSystemIterator(Iterator):
 
@@ -63,18 +63,18 @@ def cast_type_val(tp,val):
     Perform type casting for operation inputs.
     This should be called only for source = text_input.
     """
-    if tp == op.none_type:
+    if tp == opmod.none_type:
         val = None 
-    elif tp == op.int_type:
+    elif tp == opmod.int_type:
         val = int(val)
-    elif tp == op.float_type:
+    elif tp == opmod.float_type:
         val = float(val)
-    elif tp == op.str_type:
+    elif tp == opmod.str_type:
         val = str(val)
-    elif tp == op.bool_type:
+    elif tp == opmod.bool_type:
         val = bool(eval(str(val)))
     else:
-        msg = 'type selection {}, should be one of {}'.format(tp,op.valid_types)
+        msg = 'type selection {}, should be one of {}'.format(tp,opmod.valid_types)
         raise ValueError(msg)
     return val
 
@@ -85,18 +85,18 @@ def locate_input(il,wf=None,plugin_manager=None):
     as optional arguments,
     in which case they are used to fetch data.
     """
-    if il.src == op.no_input or il.tp == op.none_type:
+    if il.src == opmod.no_input or il.tp == opmod.none_type:
         return None
-    elif il.src == op.batch_input:
+    elif il.src == opmod.batch_input:
         # Expect this input to have been set by Workflow Manager.
         return il.data 
-    elif il.src == op.text_input: 
+    elif il.src == opmod.text_input: 
         if isinstance(il.val,list):
             return [cast_type_val(il.tp,v) for v in il.val]
         else:
             return cast_type_val(il.tp,il.val)
-    elif il.src == op.wf_input:
-        if il.tp == op.ref_type:
+    elif il.src == opmod.wf_input:
+        if il.tp == opmod.ref_type:
 
             # Note, this will return whatever data is stored in the TreeItem at uri.
             # If il.val is the uri of an input that has not yet been loaded,
@@ -109,45 +109,45 @@ def locate_input(il,wf=None,plugin_manager=None):
                 return [wf.get_data_from_uri(v) for v in il.val]
             else:
                 return wf.get_data_from_uri(il.val)
-        elif il.tp == op.path_type: 
+        elif il.tp == opmod.path_type: 
             if isinstance(il.val,list):
                 return [str(v) for v in il.val]
             else:
                 return str(il.val)
-    elif il.src == op.plugin_input:
-        if il.tp == op.ref_type:
+    elif il.src == opmod.plugin_input:
+        if il.tp == opmod.ref_type:
             if isinstance(il.val,list):
                 return [plugin_manager.get_data_from_uri(v) for v in il.val]
             elif il.val is not None:
                 return plugin_manager.get_data_from_uri(il.val)
             else:
                 return None
-        elif il.tp == op.path_type:
+        elif il.tp == opmod.path_type:
             if isinstance(il.val,list):
                 return [str(v) for v in il.val]
             else:
                 return str(il.val)
-    elif il.src == op.fs_input:
+    elif il.src == opmod.fs_input:
         if isinstance(il.val,list):
             return [str(v) for v in il.val]
         else:
             return str(il.val)
     else: 
         msg = 'found input source {}, should be one of {}'.format(
-        il.src, op.valid_sources)
+        il.src, opmod.valid_sources)
         raise ValueError(msg)
 
-def load_inputs(operation,wf=None,plugin_manager=None):
+def load_inputs(op,wf=None,plugin_manager=None):
     """
     Loads input data for an Operation from its input_locators.
     A Workflow and a PluginManager can be provided 
     as optional arguments,
     in which case they are used to fetch data.
     """
-    for name,il in operation.input_locator.items():
-        if isinstance(il,op.InputLocator):
+    for name,il in op.input_locator.items():
+        if isinstance(il,opmod.InputLocator):
             il.data = locate_input(il,wf,plugin_manager)
-            operation.inputs[name] = il.data
+            op.inputs[name] = il.data
         else:
             msg = '[{}] Found broken Operation.input_locator for {}: {}'.format(
             __name__, name, il)
@@ -156,15 +156,15 @@ def load_inputs(operation,wf=None,plugin_manager=None):
 ####### functions having to do with workflow execution #######
 # TODO: consider creating a wftools module instead
 
-def get_valid_wf_inputs(op_tag,operation):
+def get_valid_wf_inputs(op_tag,op):
     """
     Return the TreeModel uris of the op and its inputs/outputs 
     that are eligible as downstream inputs in the workflow.
     """
     # valid_wf_inputs should be the operation, its input and output dicts, and their respective entries
-    valid_wf_inputs = [op_tag,op_tag+'.'+op.inputs_tag,op_tag+'.'+op.outputs_tag]
-    valid_wf_inputs += [op_tag+'.'+op.outputs_tag+'.'+k for k in operation.outputs.keys()]
-    valid_wf_inputs += [op_tag+'.'+op.inputs_tag+'.'+k for k in operation.inputs.keys()]
+    valid_wf_inputs = [op_tag,op_tag+'.'+opmod.inputs_tag,op_tag+'.'+opmod.outputs_tag]
+    valid_wf_inputs += [op_tag+'.'+opmod.outputs_tag+'.'+k for k in op.outputs.keys()]
+    valid_wf_inputs += [op_tag+'.'+opmod.inputs_tag+'.'+k for k in op.inputs.keys()]
     return valid_wf_inputs
     
 def stack_size(stk):
@@ -204,30 +204,30 @@ def print_stack(stk):
     return stktxt
 
 def is_op_ready(wf,op_tag,valid_wf_inputs,batch_routes=[]):
-    operation = wf.get_data_from_uri(op_tag)
-    if operation._batch_flag: 
+    op = wf.get_data_from_uri(op_tag)
+    if op._batch_flag: 
         b_stk,op_rdy,diagnostics = batch_op_stack(wf,op_tag,valid_wf_inputs)
-    elif operation._realtime_flag: 
+    elif op._realtime_flag: 
         rt_stk,op_rdy,diagnostics = batch_op_stack(wf,op_tag,valid_wf_inputs)
     else:
         inputs_rdy = []
         diagnostics = {} 
-        for name,il in operation.input_locator.items():
+        for name,il in op.input_locator.items():
             msg = ''
-            if (il.src == op.wf_input and il.tp == op.ref_type 
+            if (il.src == opmod.wf_input and il.tp == opmod.ref_type 
             and not il.val in valid_wf_inputs):
                 inp_rdy = False
                 msg = str('Operation input {}.inputs.{} (={}) '.format(op_tag,name,il.val)
                 + 'not found in valid Workflow input list: {}'.format(valid_wf_inputs))
-            elif (il.src == op.batch_input 
-            and not op_tag+'.'+op.inputs_tag+'.'+name in batch_routes):
+            elif (il.src == opmod.batch_input 
+            and not op_tag+'.'+opmod.inputs_tag+'.'+name in batch_routes):
                 inp_rdy = False
                 msg = str('Operation input {}.inputs.{} (={}) '.format(op_tag,name,il.val)
                 + 'expects batch input but is not listed in batch routes: {}'.format(batch_routes))
             else:
                 inp_rdy = True
             inputs_rdy.append(inp_rdy)
-            diagnostics[op_tag+'.'+op.inputs_tag+'.'+name] = msg
+            diagnostics[op_tag+'.'+opmod.inputs_tag+'.'+name] = msg
         if all(inputs_rdy):
             op_rdy = True
         else:
@@ -269,8 +269,8 @@ def batch_op_stack(wf,batch_op_tag,valid_wf_inputs):
     while any(layer):
         b_stk.append(layer)
         for op_tag in layer:
-            operation = wf.get_data_from_uri(op_tag)
-            valid_batch_inputs += get_valid_wf_inputs(op_tag,operation)
+            op = wf.get_data_from_uri(op_tag)
+            valid_batch_inputs += get_valid_wf_inputs(op_tag,op)
         layer = []
         for op_tag in op_tags:
             op_rdy,op_diag = is_op_ready(wf,op_tag,valid_batch_inputs,batch_op.input_routes())
@@ -319,15 +319,15 @@ def execution_stack(wf):
             # Which of these are not Batch/Realtime ops?
             non_batch_rdy = []
             for op_tag in ops_rdy:
-                operation = wf.get_data_from_uri(op_tag)
-                if not any([operation._batch_flag,operation._realtime_flag]):
+                op = wf.get_data_from_uri(op_tag)
+                if not any([op._batch_flag,op._realtime_flag]):
                     non_batch_rdy.append(op_tag)
             if any(non_batch_rdy):
                 ops_rdy = non_batch_rdy
                 stk.append(ops_rdy)
                 for op_tag in ops_rdy:
-                    operation = wf.get_data_from_uri(op_tag)
-                    valid_wf_inputs += get_valid_wf_inputs(op_tag,operation)
+                    op = wf.get_data_from_uri(op_tag)
+                    valid_wf_inputs += get_valid_wf_inputs(op_tag,op)
             else:
                 batch_tag = ops_rdy[0]
                 ops_rdy = [batch_tag]

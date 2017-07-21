@@ -4,7 +4,7 @@ from PySide import QtCore
 
 from .QTreeSelectionModel import QTreeSelectionModel
 from ..core.plugins.PawsPlugin import PawsPlugin
-from ..core.operations import Operation as op
+from ..core.operations import Operation as opmod
 
 class QPluginManager(QTreeSelectionModel):
     """
@@ -52,8 +52,8 @@ class QPluginManager(QTreeSelectionModel):
                     return 
             pgin = pgin()
             for name in pgin.inputs.keys():
-                if name in pgin_spec[op.inputs_tag]:
-                    pgin.inputs[name] = pgin_spec[op.inputs_tag][name]
+                if name in pgin_spec[opmod.inputs_tag]:
+                    pgin.inputs[name] = pgin_spec[opmod.inputs_tag][name]
             pgin.start()
             self.add_plugin(tag,pgin)
 

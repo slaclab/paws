@@ -2,7 +2,7 @@
 Template for developing operations for paws.
 """
 
-import <modulepath.>Operation as op
+import <modulepath.>Operation as opmod
 from <modulepath.>Operation import Operation
 
 # Replace <OperationName> with a SHORT operation title 
@@ -24,19 +24,19 @@ class <OperationName>(Operation):
         self.output_doc['<output_name_2>'] = '<etc>'
         # OPTIONAL: set default sources, types, values for the inputs.
         # Valid sources:
-        #   op.no_input (default input to None), 
-        #   op.wf_input (take input from another operation in the workflow), 
-        #   op.text_input (manual text input)
-        #   op.plugin_input (take input from a PawsPlugin)
-        #   op.batch_input (input provided by a batch/realtime operation)
-        self.input_src['<input_name_1>'] = <op.some_source>
+        #   opmod.no_input (default input to None), 
+        #   opmod.wf_input (take input from another operation in the workflow), 
+        #   opmod.text_input (manual text input)
+        #   opmod.plugin_input (take input from a PawsPlugin)
+        #   opmod.batch_input (input provided by a batch/realtime operation)
+        self.input_src['<input_name_1>'] = <opmod.some_source>
         self.input_src['<input_name_2>'] = <etc>
-        # Valid types: op.none_type (None), op.str_type (string), 
-        #   op.int_type (integer), op.float_type (float), 
-        #   op.bool_type (boolean), op.ref_type (direct reference),
-        #   op.path_type (a path to something in the filesystem or workflow), 
-        #   op.auto_type (default for chosen source, or input set by batch)
-        self.input_type['<input_name_1>'] = <op.some_type>
+        # Valid types: opmod.none_type (None), opmod.str_type (string), 
+        #   opmod.int_type (integer), opmod.float_type (float), 
+        #   opmod.bool_type (boolean), opmod.ref_type (direct reference),
+        #   opmod.path_type (a path to something in the filesystem or workflow), 
+        #   opmod.auto_type (default for chosen source, or input set by batch)
+        self.input_type['<input_name_1>'] = <opmod.some_type>
         self.input_type['<input_name_2>'] = <etc>
         
     # Write a run() function for this Operation.

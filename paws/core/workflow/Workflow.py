@@ -3,7 +3,7 @@ import copy
 from functools import partial
 
 from ..models.TreeModel import TreeModel
-from ..operations import Operation as op
+from ..operations import Operation as opmod
 from ..operations.Operation import Operation, Batch, Realtime
 
 class Workflow(TreeModel):
@@ -40,8 +40,8 @@ class Workflow(TreeModel):
         """
         if isinstance(x,Operation):
             d = OrderedDict()
-            d[op.inputs_tag] = self.build_tree(x.inputs)
-            d[op.outputs_tag] = self.build_tree(x.outputs)
+            d[opmod.inputs_tag] = self.build_tree(x.inputs)
+            d[opmod.outputs_tag] = self.build_tree(x.outputs)
             return d
         else:
             return super(Workflow,self).build_tree(x) 
@@ -65,11 +65,11 @@ class Workflow(TreeModel):
         """
         path = uri.split('.')
         opname = path[0]
-        if not path[1] == op.inputs_tag:
+        if not path[1] == opmod.inputs_tag:
             msg = '[{}] uri {} does not point to an input'.format(__name__,uri)
             raise ValueError(msg)
         inpname = path[2]
-        uri = opname+'.'+op.inputs_tag+'.'+inpname
+        uri = opname+'.'+opmod.inputs_tag+'.'+inpname
         op = self.get_data_from_uri(opname)
         op.input_locator[inpname].data = val
         self.set_item(uri,val)

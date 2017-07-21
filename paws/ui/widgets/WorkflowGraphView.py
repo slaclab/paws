@@ -1,6 +1,6 @@
 from PySide import QtCore, QtGui
 
-from ...core.operations import Operation as op
+from ...core.operations import Operation as opmod
 
 class WorkflowGraphView(QtGui.QScrollArea):
     
@@ -82,7 +82,7 @@ class WorkflowGraphWidget(QtGui.QWidget):
         for lst in stk:
             v = self._scale*self.vspace
             first_op = self.wf.get_data_from_uri(lst[0])
-            if isinstance(first_op,op.Batch) or isinstance(first_op,op.Realtime):
+            if isinstance(first_op,opmod.Batch) or isinstance(first_op,opmod.Realtime):
                 b_coords, b_inp_coords, b_out_coords = self.get_op_coords(lst[1])
                 for name,coords in b_coords.items():
                     topleft = coords[0]

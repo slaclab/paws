@@ -2,7 +2,7 @@ from functools import partial
 
 from PySide import QtCore, QtGui, QtUiTools
 
-from ..core.operations import Operation as op
+from ..core.operations import Operation as opmod
 from ..core import pawstools
 from ..core.models.ListModel import ListModel
 from .InputLoader import InputLoader
@@ -67,11 +67,11 @@ class WfUiManager(QtCore.QObject):
         x = src_qtree.get_data_from_index(itm_idx)
         if x is not None:
             try:
-                new_op_flag = issubclass(x,op.Operation)
+                new_op_flag = issubclass(x,opmod.Operation)
             except:
                 new_op_flag = False
             try:
-                existing_op_flag = isinstance(x,op.Operation)
+                existing_op_flag = isinstance(x,opmod.Operation)
             except:
                 existing_op_flag = False
             if not new_op_flag and not existing_op_flag:  
@@ -165,19 +165,19 @@ class WfUiManager(QtCore.QObject):
         src = self.src_widgets[name].currentIndex()
         tp = self.type_widgets[name].currentIndex()
         il = None
-        if src == op.no_input:
-            il = op.InputLocator() 
-        elif src == op.batch_input:
-            if tp == op.auto_type:
+        if src == opmod.no_input:
+            il = opmod.InputLocator() 
+        elif src == opmod.batch_input:
+            if tp == opmod.auto_type:
                 val = 'batch_input' 
             else:
                 val = None
-            il = op.InputLocator(src,tp,val) 
+            il = opmod.InputLocator(src,tp,val) 
         else:
             # all other input sources use a ui for loading
             if ui:
                 val = self.fetch_from_input_ui(ui) 
-                il = op.InputLocator(src,tp,val)
+                il = opmod.InputLocator(src,tp,val)
                 self.val_widgets[name].setText(str(il.val))
                 ui.close()
                 ui.deleteLater()
@@ -192,7 +192,7 @@ class WfUiManager(QtCore.QObject):
                 and str(self.op.input_locator[name].val) == val):
                     il = self.op.input_locator[name]
                 else:
-                    il = op.InputLocator(src,tp,val)
+                    il = opmod.InputLocator(src,tp,val)
         return il
 
     def fetch_from_input_ui(self,ui):
@@ -215,17 +215,17 @@ class WfUiManager(QtCore.QObject):
                 self.input_loaders[name].ui.close()
                 self.input_loaders[name] = None
         src = self.src_widgets[name].currentIndex()
-        input_loader_title = self.ui.tag_entry.text()+'.'+op.inputs_tag+'.'+name
-        if src == op.wf_input:
+        input_loader_title = self.ui.tag_entry.text()+'.'+opmod.inputs_tag+'.'+name
+        if src == opmod.wf_input:
             inp_loader = InputLoader(input_loader_title,src,self.qwfman,self.ui)
             inp_loader.ui.wf_selector.setCurrentIndex(self.ui.wf_selector.currentIndex())
             inp_loader.set_wf()
-        elif src == op.fs_input:
+        elif src == opmod.fs_input:
             trmod = QtGui.QFileSystemModel()
             inp_loader = InputLoader(input_loader_title,src,trmod,self.ui)
-        elif src == op.plugin_input:
+        elif src == opmod.plugin_input:
             inp_loader = InputLoader(input_loader_title,src,self.qplugman,self.ui)
-        elif src == op.text_input:
+        elif src == opmod.text_input:
             inp_loader = InputLoader(input_loader_title,src,None,self.ui)
         if self.op.input_locator[name].src == src and self.op.input_locator[name].val is not None:
             if isinstance(self.op.input_locator[name].val,list):
@@ -302,7 +302,7 @@ class WfUiManager(QtCore.QObject):
             if self.op.input_locator[name] is not None:
                 src = self.op.input_locator[name].src
             else:
-                src = op.no_input 
+                src = opmod.no_input 
             src_widget.setCurrentIndex(src)
             self.ui.input_layout.addWidget( src_widget,i,self.src_col,1,1 )
             self.src_widgets[name] = src_widget 
@@ -328,19 +328,19 @@ class WfUiManager(QtCore.QObject):
         if not src:
             src = self.src_widgets[name].currentIndex()
         new_type_widget = uitools.type_selection_widget(src)
-        if not self.op.input_locator[name].src == op.no_input:
-            if (self.op.input_locator[name].tp not in op.invalid_types[src]
+        if not self.op.input_locator[name].src == opmod.no_input:
+            if (self.op.input_locator[name].tp not in opmod.invalid_types[src]
             and self.op.input_locator[name].src == src):
                 # load operation defaults
                 new_type_widget.setCurrentIndex(self.op.input_locator[name].tp)
             else:
                 # set sensible defaults
-                if src == op.fs_input:
-                    new_type_widget.setCurrentIndex(op.path_type)
-                elif src in [op.wf_input,op.plugin_input]:
-                    new_type_widget.setCurrentIndex(op.ref_type)
-                elif src == op.batch_input:
-                    new_type_widget.setCurrentIndex(op.auto_type)
+                if src == opmod.fs_input:
+                    new_type_widget.setCurrentIndex(opmod.path_type)
+                elif src in [opmod.wf_input,opmod.plugin_input]:
+                    new_type_widget.setCurrentIndex(opmod.ref_type)
+                elif src == opmod.batch_input:
+                    new_type_widget.setCurrentIndex(opmod.auto_type)
         new_type_widget.currentIndexChanged.connect( partial(self.reset_val_widget,name,row,src) )            
         self.type_widgets[name] = new_type_widget  
         self.ui.input_layout.addWidget(new_type_widget,row,self.type_col,1,1)
@@ -366,15 +366,15 @@ class WfUiManager(QtCore.QObject):
         btn_widget = QtGui.QPushButton()
         val_widget = QtGui.QLineEdit()
         #val_widget = QtGui.QTextEdit()
-        if src == op.no_input or tp == op.none_type: 
+        if src == opmod.no_input or tp == opmod.none_type: 
             btn_widget.setText('no input')
             btn_widget.setEnabled(False)
             val_widget.setText('None')
-        elif src == op.batch_input:
+        elif src == opmod.batch_input:
             btn_widget.setText('auto')
             btn_widget.setEnabled(False)
             val_widget.setText('auto (batch)')
-        elif src in [op.wf_input,op.fs_input,op.plugin_input,op.text_input]:
+        elif src in [opmod.wf_input,opmod.fs_input,opmod.plugin_input,opmod.text_input]:
             btn_widget.setText('edit...')
             btn_widget.clicked.connect( partial(self.fetch_data,name) )
             if self.op.input_locator[name]:
