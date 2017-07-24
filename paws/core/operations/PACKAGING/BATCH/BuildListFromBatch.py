@@ -1,6 +1,6 @@
 import numpy as np
 
-from ... import Operation as op
+from ... import Operation as opmod 
 from ...Operation import Operation
 from ... import optools
 
@@ -16,10 +16,10 @@ class BuildListFromBatch(Operation):
         super(BuildListFromBatch,self).__init__(input_names,output_names)        
         self.input_doc['batch_output'] = 'list of dicts produced by a batch execution'
         self.input_doc['data_uri'] = 'uri for data to be packed into list- must be an item saved in batch_output'
-        self.input_src['batch_output'] = op.wf_input
-        self.input_src['data_uri'] = op.wf_input
-        self.input_type['batch_output'] = op.ref_type
-        self.input_type['data_uri'] = op.path_type
+        self.input_src['batch_output'] = opmod.wf_input
+        self.input_src['data_uri'] = opmod.wf_input
+        self.input_type['batch_output'] = opmod.ref_type
+        self.input_type['data_uri'] = opmod.path_type
         self.output_doc['data_list'] = 'list of the data fetched from batch_output using data_uri'
 
     def run(self):

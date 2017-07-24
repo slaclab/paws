@@ -1,4 +1,4 @@
-from ... import Operation as op
+from ... import Operation as opmod 
 from ...Operation import Realtime 
 from ... import optools
 
@@ -23,18 +23,18 @@ class RealtimeFromFiles(Realtime):
         self.output_doc['realtime_inputs'] = str('iterator over dicts of [input_route:input_value] '
         + 'generated in real time from the local filesystem')
         self.output_doc['realtime_outputs'] = 'list of dicts of [output_route:output_value]'
-        self.input_src['dir_path'] = op.fs_input
-        self.input_src['regex'] = op.text_input 
-        self.input_src['new_files_only'] = op.text_input 
-        self.input_src['input_route'] = op.wf_input 
+        self.input_src['dir_path'] = opmod.fs_input
+        self.input_src['regex'] = opmod.text_input 
+        self.input_src['new_files_only'] = opmod.text_input 
+        self.input_src['input_route'] = opmod.wf_input 
         self.input_src['realtime_ops'] = op.wf_input 
-        self.input_src['saved_items'] = op.wf_input 
-        self.input_type['dir_path'] = op.path_type
-        self.input_type['regex'] = op.str_type
-        self.input_type['new_files_only'] = op.bool_type
-        self.input_type['input_route'] = op.path_type
+        self.input_src['saved_items'] = opmod.wf_input 
+        self.input_type['dir_path'] = opmod.path_type
+        self.input_type['regex'] = opmod.str_type
+        self.input_type['new_files_only'] = opmod.bool_type
+        self.input_type['input_route'] = opmod.path_type
         self.input_type['realtime_ops'] = op.path_type 
-        self.input_type['saved_items'] = op.path_type 
+        self.input_type['saved_items'] = opmod.path_type 
         self.inputs['regex'] = '*.tif' 
         self.inputs['new_files_only'] = True 
         self.inputs['realtime_ops'] = []

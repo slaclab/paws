@@ -9,7 +9,7 @@ TODO: get this citation
 
 import numpy as np
 
-from ... import Operation as op
+from ... import Operation as opmod
 from ...Operation import Operation
 
 class FindLocalMaxima(Operation):
@@ -26,10 +26,10 @@ class FindLocalMaxima(Operation):
         self.input_doc['I'] = '1d array for spectral intensities at q values'
         self.input_doc['delta_I'] = str('Criterion for peak finding: point is a maximum '
             + 'if it is more than delta_I larger than the next point')
-        self.input_src['q'] = op.wf_input
-        self.input_src['I'] = op.wf_input
-        self.input_src['delta_I'] = op.text_input
-        self.input_type['delta_I'] = op.float_type
+        self.input_src['q'] = opmod.wf_input
+        self.input_src['I'] = opmod.wf_input
+        self.input_src['delta_I'] = opmod.text_input
+        self.input_type['delta_I'] = opmod.float_type
         self.inputs['delta_I'] = 0.0
         self.output_doc['q_pk'] = 'q values of found peaks'
         self.output_doc['I_pk'] = 'intensities of found peaks'

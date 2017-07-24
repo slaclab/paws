@@ -1,6 +1,6 @@
 import numpy as np
 
-from ... import Operation as op
+from ... import Operation as opmod 
 from ...Operation import Operation
 
 class CSVToXYData(Operation):
@@ -17,8 +17,8 @@ class CSVToXYData(Operation):
         self.output_doc['y'] = 'numpy array built from second column of csv data'
         self.output_doc['x_y'] = 'n-by-2 numpy array with x and y values'
         # source & type
-        self.input_src['path'] = op.fs_input
-        self.input_type['path'] = op.path_type
+        self.input_src['path'] = opmod.fs_input
+        self.input_type['path'] = opmod.path_type
 
     def run(self):
         path = self.inputs['path']

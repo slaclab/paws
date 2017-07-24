@@ -1,6 +1,6 @@
 from collections import OrderedDict
 
-from ... import Operation as op
+from ... import Operation as opmod 
 from ...Operation import Operation
 
 class ReadNPSynthRecipe(Operation):
@@ -14,8 +14,8 @@ class ReadNPSynthRecipe(Operation):
         output_names = ['recipe_dict']
         super(ReadNPSynthRecipe,self).__init__(input_names,output_names)
         self.input_doc['recipe_file'] = 'plain text file describing a synthesis recipe'
-        self.input_src['recipe_file'] = op.fs_input
-        self.input_type['recipe_file'] = op.path_type
+        self.input_src['recipe_file'] = opmod.fs_input
+        self.input_type['recipe_file'] = opmod.path_type
         self.output_doc['recipe_dict'] = 'dict describing the synthesis recipe'
 
     def run(self):

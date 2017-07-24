@@ -1,11 +1,11 @@
 import pypif.obj as pifobj
 
-from ... import Operation as op
+from ... import Operation as opmod 
 from ...Operation import Operation
 
 class EmptyPif(Operation):
     """
-    Package results from nanoparticle solution synthesis into a pypif.obj.ChemicalSystem object.
+    Make and empty pypif.obj.ChemicalSystem object.
     """
 
     def __init__(self):
@@ -16,12 +16,12 @@ class EmptyPif(Operation):
         self.input_doc['date_time'] = 'string date/time for pif record tags'
         self.input_doc['t_utc'] = 'time of record creation in utc'
         self.output_doc['pif'] = 'an empty pif object'
-        self.input_src['uid_prefix'] = op.text_input
-        self.input_src['date_time'] = op.wf_input
-        self.input_src['t_utc'] = op.wf_input
-        self.input_type['uid_prefix'] = op.str_type
-        self.input_type['date_time'] = op.ref_type
-        self.input_type['t_utc'] = op.ref_type
+        self.input_src['uid_prefix'] = opmod.text_input
+        self.input_src['date_time'] = opmod.wf_input
+        self.input_src['t_utc'] = opmod.wf_input
+        self.input_type['uid_prefix'] = opmod.str_type
+        self.input_type['date_time'] = opmod.ref_type
+        self.input_type['t_utc'] = opmod.ref_type
 
     def run(self):
         uid_pre = self.inputs['uid_prefix']

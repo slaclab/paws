@@ -3,7 +3,7 @@ import os.path
 import tifffile
 import numpy as np
 
-from ... import Operation as op
+from ... import Operation as opmod 
 from ...Operation import Operation
 
 class LoadTif(Operation):
@@ -17,8 +17,8 @@ class LoadTif(Operation):
         output_names = ['image_data','filename']
         super(LoadTif,self).__init__(input_names,output_names)
         self.input_doc['path'] = 'path to a .tif image'
-        self.input_src['path'] = op.fs_input
-        self.input_type['path'] = op.path_type
+        self.input_src['path'] = opmod.fs_input
+        self.input_type['path'] = opmod.path_type
         self.output_doc['image_data'] = '2D array representing pixel values'
         self.output_doc['filename'] = 'Filename for image, path and extension stripped'
         

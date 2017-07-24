@@ -1,7 +1,7 @@
 import numpy as np
 import pypif.obj as pifobj
 
-from ... import Operation as op
+from ... import Operation as opmod 
 from ...Operation import Operation
 
 class PifNPSynth(Operation):
@@ -23,22 +23,22 @@ class PifNPSynth(Operation):
         self.input_doc['features'] = str('dict describing spectrum features, in the format of '
         + 'PROCESSING.SAXS.[SpectrumProfiler,SpectrumParameterization].')
         self.output_doc['pif'] = 'pif object representing the input data'
-        self.input_src['uid_prefix'] = op.text_input
-        self.input_src['date_time'] = op.wf_input
-        self.input_src['t_utc'] = op.wf_input
-        self.input_src['temp_C'] = op.wf_input
-        self.input_src['q_I'] = op.wf_input
-        self.input_src['t_T'] = op.wf_input
-        self.input_src['composition'] = op.wf_input
-        self.input_src['features'] = op.wf_input
-        self.input_type['uid_prefix'] = op.str_type
-        self.input_type['date_time'] = op.ref_type
-        self.input_type['t_utc'] = op.ref_type
-        self.input_type['temp_C'] = op.ref_type
-        self.input_type['q_I'] = op.ref_type
-        self.input_type['t_T'] = op.ref_type
-        self.input_type['composition'] = op.ref_type
-        self.input_type['features'] = op.ref_type
+        self.input_src['uid_prefix'] = opmod.text_input
+        self.input_src['date_time'] = opmod.wf_input
+        self.input_src['t_utc'] = opmod.wf_input
+        self.input_src['temp_C'] = opmod.wf_input
+        self.input_src['q_I'] = opmod.wf_input
+        self.input_src['t_T'] = opmod.wf_input
+        self.input_src['composition'] = opmod.wf_input
+        self.input_src['features'] = opmod.wf_input
+        self.input_type['uid_prefix'] = opmod.str_type
+        self.input_type['date_time'] = opmod.ref_type
+        self.input_type['t_utc'] = opmod.ref_type
+        self.input_type['temp_C'] = opmod.ref_type
+        self.input_type['q_I'] = opmod.ref_type
+        self.input_type['t_T'] = opmod.ref_type
+        self.input_type['composition'] = opmod.ref_type
+        self.input_type['features'] = opmod.ref_type
 
     def run(self):
         uid_pre = self.inputs['uid_prefix']

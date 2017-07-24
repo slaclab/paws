@@ -2,7 +2,7 @@ from os.path import splitext
 from os import linesep
 import numpy as np
 
-from ... import Operation as op
+from ... import Operation as opmod 
 from ...Operation import Operation
 
 class WriteArrayCSV(Operation):
@@ -18,16 +18,16 @@ class WriteArrayCSV(Operation):
         self.input_doc['filename'] = 'the name of the file to be saved- no extension is expected'
         self.input_doc['filetag'] = 'tag appended to filename- no extension is expected'
         self.output_doc['csv_path'] = 'the path to the finished csv file: dir_path+filename+filetag+.csv'
-        self.input_src['array'] = op.wf_input
-        self.input_src['headers'] = op.text_input
-        self.input_src['dir_path'] = op.fs_input
-        self.input_src['filename'] = op.wf_input
-        self.input_src['filetag'] = op.text_input
-        self.input_type['array'] = op.ref_type
-        self.input_type['headers'] = op.str_type
-        self.input_type['dir_path'] = op.path_type
-        self.input_type['filename'] = op.ref_type
-        self.input_type['filetag'] = op.str_type
+        self.input_src['array'] = opmod.wf_input
+        self.input_src['headers'] = opmod.text_input
+        self.input_src['dir_path'] = opmod.fs_input
+        self.input_src['filename'] = opmod.wf_input
+        self.input_src['filetag'] = opmod.text_input
+        self.input_type['array'] = opmod.ref_type
+        self.input_type['headers'] = opmod.str_type
+        self.input_type['dir_path'] = opmod.path_type
+        self.input_type['filename'] = opmod.ref_type
+        self.input_type['filetag'] = opmod.str_type
         self.inputs['filetag'] = ''
 
     def run(self):

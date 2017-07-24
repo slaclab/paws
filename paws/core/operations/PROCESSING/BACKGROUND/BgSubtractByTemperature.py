@@ -1,6 +1,6 @@
 import numpy as np
 
-from ... import Operation as op
+from ... import Operation as opmod 
 from ...Operation import Operation
 from ... import optools
 
@@ -32,16 +32,16 @@ class BgSubtractByTemperature(Operation):
         self.output_doc['T_bg'] = 'Temperature of the subtracted background spectrum'
         self.output_doc['bg_factor'] = str('correction factor applied to background '
         + 'before subtraction, to ensure positive intensity values')
-        self.input_src['q_I_meas'] = op.wf_input
-        self.input_src['T_meas'] = op.wf_input
-        self.input_src['bg_batch_output'] = op.wf_input
-        self.input_src['bg_I_uri'] = op.wf_input
-        self.input_src['bg_T_uri'] = op.wf_input
-        self.input_type['q_I_meas'] = op.ref_type
-        self.input_type['T_meas'] = op.ref_type
-        self.input_type['bg_batch_output'] = op.ref_type
-        self.input_type['bg_T_uri'] = op.path_type
-        self.input_type['bg_I_uri'] = op.path_type
+        self.input_src['q_I_meas'] = opmod.wf_input
+        self.input_src['T_meas'] = opmod.wf_input
+        self.input_src['bg_batch_output'] = opmod.wf_input
+        self.input_src['bg_I_uri'] = opmod.wf_input
+        self.input_src['bg_T_uri'] = opmod.wf_input
+        self.input_type['q_I_meas'] = opmod.ref_type
+        self.input_type['T_meas'] = opmod.ref_type
+        self.input_type['bg_batch_output'] = opmod.ref_type
+        self.input_type['bg_T_uri'] = opmod.path_type
+        self.input_type['bg_I_uri'] = opmod.path_type
 
     def run(self):
         q_I_meas = self.inputs['q_I_meas']

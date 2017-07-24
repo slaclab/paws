@@ -8,7 +8,7 @@ to calibrate an input image to I(q,chi).
 import numpy as np
 import pyFAI
 
-from ... import Operation as op
+from ... import Operation as opmod 
 from ...Operation import Operation
 
 class Calibrate(Operation):
@@ -25,10 +25,10 @@ class Calibrate(Operation):
         + 'minimally including keys dist, poni1, poni2, rot1, rot2, rot3, pixel1, pixel2, wavelength;'
         + 'optionally including keys fpolz, detector, splineFile; '
         + 'same specifications as pyFAI .poni format calibration parameters')
-        self.input_src['image_data'] = op.wf_input
-        self.input_src['poni_dict'] = op.wf_input
-        self.input_type['image_data'] = op.ref_type
-        self.input_type['poni_dict'] = op.ref_type
+        self.input_src['image_data'] = opmod.wf_input
+        self.input_src['poni_dict'] = opmod.wf_input
+        self.input_type['image_data'] = opmod.ref_type
+        self.input_type['poni_dict'] = opmod.ref_type
         self.output_doc['q'] = 'scattering vector magnitude in 1/Angstrom'
         self.output_doc['chi'] = 'azimuthal angle in degrees'     
         self.output_doc['I_at_q_chi'] = 'integrated intensity at q, chi'

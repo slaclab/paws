@@ -6,7 +6,7 @@ import numpy as np
 import pyFAI as pf
 import pyFAI.calibrant as pfc
 
-from ... import Operation as op
+from ... import Operation as opmod 
 from ...Operation import Operation
 
 class AutoCal(Operation):
@@ -23,20 +23,21 @@ class AutoCal(Operation):
         self.input_doc['wavelength'] = 'wavelength, in Angstrom'
         self.input_doc['pixel_size'] = 'pixel size in microns'
         self.input_doc['fpolz'] = 'polarization factor'
-        self.input_src['image_data'] = op.wf_input
-        self.input_src['calibrant'] = op.text_input 
-        self.input_src['wavelength'] = op.text_input 
-        self.input_src['pixel_size'] = op.text_input 
-        self.input_src['fpolz'] = op.text_input
-        self.input_type['image_data'] = op.ref_type
-        self.input_type['calibrant'] = op.str_type
-        self.input_type['wavelength'] = op.float_type
-        self.input_type['pixel_size'] = op.float_type
-        self.input_type['fpolz'] = op.float_type
+        self.input_src['image_data'] = opmod.wf_input
+        self.input_src['calibrant'] = opmod.text_input 
+        self.input_src['wavelength'] = opmod.text_input 
+        self.input_src['pixel_size'] = opmod.text_input 
+        self.input_src['fpolz'] = opmod.text_input
+        self.input_type['image_data'] = opmod.ref_type
+        self.input_type['calibrant'] = opmod.str_type
+        self.input_type['wavelength'] = opmod.float_type
+        self.input_type['pixel_size'] = opmod.float_type
+        self.input_type['fpolz'] = opmod.float_type
         self.inputs['calibrant'] = 'AgBh' 
-        self.inputs['wavelength'] = 0.799898 
-        self.inputs['pixel_size'] = 79 
-        self.inputs['fpolz'] = 0.95 
+        # kind of risky to give these such specific default values...
+        #self.inputs['wavelength'] = 0.799898 
+        #self.inputs['pixel_size'] = 79 
+        #self.inputs['fpolz'] = 0.95 
         self.output_doc['cal_params'] = 'Dictionary of the solved calibration parameters, .poni format'
 
     def run(self):

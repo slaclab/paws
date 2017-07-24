@@ -1,4 +1,4 @@
-from ... import Operation as op
+from ... import Operation as opmod 
 from ...Operation import Operation
 
 class ShipJSON(Operation):
@@ -15,14 +15,14 @@ class ShipJSON(Operation):
         self.input_doc['dsid'] = 'Data set ID where the pif will be stored on Citrination' 
         self.input_doc['ship_flag'] = 'Flag for actually shipping the pif' 
         self.output_doc['response'] = 'The Citrination server response to the shipment'
-        self.input_src['json_path'] = op.fs_input
-        self.input_src['client'] = op.plugin_input
-        self.input_src['dsid'] = op.wf_input
-        self.input_src['ship_flag'] = op.text_input
-        self.input_type['json_path'] = op.path_type
-        self.input_type['client'] = op.ref_type
-        self.input_type['dsid'] = op.ref_type
-        self.input_type['ship_flag'] = op.bool_type
+        self.input_src['json_path'] = opmod.fs_input
+        self.input_src['client'] = opmod.plugin_input
+        self.input_src['dsid'] = opmod.wf_input
+        self.input_src['ship_flag'] = opmod.text_input
+        self.input_type['json_path'] = opmod.path_type
+        self.input_type['client'] = opmod.ref_type
+        self.input_type['dsid'] = opmod.ref_type
+        self.input_type['ship_flag'] = opmod.bool_type
         self.inputs['ship_flag'] = False
 
     def run(self):

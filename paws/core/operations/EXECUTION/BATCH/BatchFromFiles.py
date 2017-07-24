@@ -1,7 +1,7 @@
 from collections import OrderedDict
 import glob
 
-from ... import Operation as op
+from ... import Operation as opmod 
 from ...Operation import Batch
 from ... import optools
 
@@ -26,16 +26,16 @@ class BatchFromFiles(Batch):
         self.input_doc['saved_items'] = 'list of uris to be saved in the batch_outputs'
         self.output_doc['batch_inputs'] = 'list of dicts of [input_route:input_value]'
         self.output_doc['batch_outputs'] = 'list of dicts of [output_route:output_value] for all saved_items '
-        self.input_src['dir_path'] = op.fs_input
-        self.input_src['regex'] = op.text_input 
-        self.input_src['input_route'] = op.wf_input 
+        self.input_src['dir_path'] = opmod.fs_input
+        self.input_src['regex'] = opmod.text_input 
+        self.input_src['input_route'] = opmod.wf_input 
         self.input_src['batch_ops'] = op.wf_input 
-        self.input_src['saved_items'] = op.wf_input 
-        self.input_type['dir_path'] = op.path_type
-        self.input_type['regex'] = op.str_type
-        self.input_type['input_route'] = op.path_type
-        self.input_type['batch_ops'] = op.path_type 
-        self.input_type['saved_items'] = op.path_type 
+        self.input_src['saved_items'] = opmod.wf_input 
+        self.input_type['dir_path'] = opmod.path_type
+        self.input_type['regex'] = opmod.str_type
+        self.input_type['input_route'] = opmod.path_type
+        self.input_type['batch_ops'] = opmod.path_type 
+        self.input_type['saved_items'] = opmod.path_type 
         self.inputs['regex'] = '*.tif' 
         self.inputs['batch_ops'] = []
         self.inputs['saved_items'] = []

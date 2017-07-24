@@ -1,6 +1,6 @@
 import numpy as np
 
-from ... import Operation as op
+from ... import Operation as opmod 
 from ...Operation import Operation
 
 class EasyZingers1D(Operation):
@@ -18,8 +18,8 @@ class EasyZingers1D(Operation):
         self.input_doc['q_I'] = 'n-by-2 array of q values and corresponding intensities'
         self.output_doc['q_I_dz'] = 'same as input q_I but with zingers removed'
         self.output_doc['zmask'] = 'array of booleans, same shape as q, true if there is a zinger at q, else false'
-        self.input_src['q_I'] = op.wf_input
-        self.input_type['q_I'] = op.ref_type
+        self.input_src['q_I'] = opmod.wf_input
+        self.input_type['q_I'] = opmod.ref_type
 
     def run(self):
         q_I = self.inputs['q_I']

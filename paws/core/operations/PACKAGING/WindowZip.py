@@ -1,6 +1,6 @@
 import numpy as np
 
-from .. import Operation as op
+from .. import Operation as opmod 
 from ..Operation import Operation
 
 class WindowZip(Operation):
@@ -14,14 +14,14 @@ class WindowZip(Operation):
         input_names = ['x','y','x_min','x_max']
         output_names = ['x_window','y_window','x_y_window']
         super(WindowZip,self).__init__(input_names,output_names)        
-        self.input_src['x'] = op.wf_input
-        self.input_src['y'] = op.wf_input
-        self.input_src['x_min'] = op.text_input
-        self.input_src['x_max'] = op.text_input
-        self.input_type['x'] = op.ref_type
-        self.input_type['y'] = op.ref_type
-        self.input_type['x_min'] = op.float_type
-        self.input_type['x_max'] = op.float_type
+        self.input_src['x'] = opmod.wf_input
+        self.input_src['y'] = opmod.wf_input
+        self.input_src['x_min'] = opmod.text_input
+        self.input_src['x_max'] = opmod.text_input
+        self.input_type['x'] = opmod.ref_type
+        self.input_type['y'] = opmod.ref_type
+        self.input_type['x_min'] = opmod.float_type
+        self.input_type['x_max'] = opmod.float_type
         self.inputs['x_min'] = 0.02 
         self.inputs['x_max'] = 0.6 
         self.input_doc['x'] = 'list (or iterable) of x values'

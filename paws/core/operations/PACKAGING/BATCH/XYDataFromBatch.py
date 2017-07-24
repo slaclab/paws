@@ -1,6 +1,6 @@
 import numpy as np
 
-from ... import Operation as op
+from ... import Operation as opmod 
 from ...Operation import Operation
 from ... import optools
 
@@ -18,14 +18,14 @@ class XYDataFromBatch(Operation):
         self.input_doc['x_uri'] = 'uri of data for x. Must be in batch.saved_items().'
         self.input_doc['y_uri'] = 'uri of data for y. Must be in batch.saved_items().'
         self.input_doc['x_shift_flag'] = 'if True, shift x data so that its minimum value is zero.' 
-        self.input_src['batch_output'] = op.wf_input
-        self.input_src['x_uri'] = op.wf_input
-        self.input_src['y_uri'] = op.wf_input
-        self.input_src['x_shift_flag'] = op.text_input
-        self.input_type['batch_output'] = op.ref_type
-        self.input_type['x_uri'] = op.path_type
-        self.input_type['y_uri'] = op.path_type
-        self.input_type['x_shift_flag'] = op.bool_type
+        self.input_src['batch_output'] = opmod.wf_input
+        self.input_src['x_uri'] = opmod.wf_input
+        self.input_src['y_uri'] = opmod.wf_input
+        self.input_src['x_shift_flag'] = opmod.text_input
+        self.input_type['batch_output'] = opmod.ref_type
+        self.input_type['x_uri'] = opmod.path_type
+        self.input_type['y_uri'] = opmod.path_type
+        self.input_type['x_shift_flag'] = opmod.bool_type
         self.inputs['x_shift_flag'] = False
         self.output_doc['x'] = 'array of the x values in batch output order.'
         self.output_doc['y'] = 'array of the y values in batch output order.'

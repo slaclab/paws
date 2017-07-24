@@ -1,7 +1,7 @@
 import os.path
 
 from ..Operation import Operation
-from .. import Operation as op
+from .. import Operation as opmod 
 
 class BuildFilePath(Operation):
     """
@@ -20,16 +20,16 @@ class BuildFilePath(Operation):
         self.input_doc['filename'] = 'name of the file, excluding any path, extension, prefix, or suffix'
         self.input_doc['suffix'] = 'any text to append to filename (comes after filename, before ext)'
         self.input_doc['ext'] = 'extension for the file- the leading period is optional'
-        self.input_src['dir_path'] = op.fs_input
-        self.input_src['prefix'] = op.text_input
-        self.input_src['filename'] = op.wf_input
-        self.input_src['suffix'] = op.text_input
-        self.input_src['ext'] = op.text_input
-        self.input_type['dir_path'] = op.path_type
-        self.input_type['prefix'] = op.str_type
-        self.input_type['filename'] = op.ref_type
-        self.input_type['suffix'] = op.str_type
-        self.input_type['ext'] = op.str_type
+        self.input_src['dir_path'] = opmod.fs_input
+        self.input_src['prefix'] = opmod.text_input
+        self.input_src['filename'] = opmod.wf_input
+        self.input_src['suffix'] = opmod.text_input
+        self.input_src['ext'] = opmod.text_input
+        self.input_type['dir_path'] = opmod.path_type
+        self.input_type['prefix'] = opmod.str_type
+        self.input_type['filename'] = opmod.ref_type
+        self.input_type['suffix'] = opmod.str_type
+        self.input_type['ext'] = opmod.str_type
         self.inputs['prefix'] = ''
         self.inputs['suffix'] = ''
         self.output_doc['filepath'] = 'filepath will be <path><prefix><filename><suffix>.<ext>' 

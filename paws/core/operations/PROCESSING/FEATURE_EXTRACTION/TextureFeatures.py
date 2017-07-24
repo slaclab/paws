@@ -9,7 +9,7 @@ TODO: Get this citation
 
 import numpy as np
 
-from ... import Operation as op
+from ... import Operation as opmod 
 from ...Operation import Operation
 
 class TextureFeatures(Operation):
@@ -24,12 +24,12 @@ class TextureFeatures(Operation):
         self.input_doc['q'] = '1d array of momentum transfer values'
         self.input_doc['chi'] = '1d array of out-of-plane diffraction angles'
         self.input_doc['I'] = '2d array representing intensities at q,chi points'
-        self.input_src['q'] = op.wf_input
-        self.input_src['chi'] = op.wf_input
-        self.input_src['I'] = op.wf_input 
-        self.input_type['q'] = op.ref_type
-        self.input_type['chi'] = op.ref_type
-        self.input_type['I'] = op.ref_type 
+        self.input_src['q'] = opmod.wf_input
+        self.input_src['chi'] = .wf_input
+        self.input_src['I'] = opmod.wf_input 
+        self.input_type['q'] = opmod.ref_type
+        self.input_type['chi'] = opmod.ref_type
+        self.input_type['I'] = opmod.ref_type 
         self.output_doc['q_texture'] = 'q values at which the texture is analyzed'
         self.output_doc['texture'] = 'quantification of texture for each q'
         self.output_doc['int_sqr_texture'] = 'integral over q of the texture squared'

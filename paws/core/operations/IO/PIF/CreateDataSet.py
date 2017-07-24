@@ -1,4 +1,4 @@
-from ... import Operation as op
+from ... import Operation as opmod 
 from ...Operation import Operation
 
 class CreateDataSet(Operation):
@@ -17,14 +17,14 @@ class CreateDataSet(Operation):
         self.input_doc['share'] = 'Flag whether or not dataset should be shared with all users on the instance.'
         self.output_doc['ok_flag'] = 'Indicator of whether or not the data set was created successfully.'
         self.output_doc['dsid'] = 'The index of the new data set, if created successfully.'
-        self.input_src['client'] = op.plugin_input
-        self.input_src['name'] = op.text_input
-        self.input_src['description'] = op.text_input
-        self.input_src['share'] = op.text_input
-        self.input_type['client'] = op.ref_type
-        self.input_type['name'] = op.str_type
-        self.input_type['description'] = op.str_type
-        self.input_type['share'] = op.bool_type
+        self.input_src['client'] = opmod.plugin_input
+        self.input_src['name'] = opmod.text_input
+        self.input_src['description'] = opmod.text_input
+        self.input_src['share'] = opmod.text_input
+        self.input_type['client'] = opmod.ref_type
+        self.input_type['name'] = opmod.str_type
+        self.input_type['description'] = opmod.str_type
+        self.input_type['share'] = opmod.bool_type
         self.inputs['description'] = 'New Citrination data set'
         self.inputs['share'] = False
 
