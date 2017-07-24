@@ -25,7 +25,7 @@ class TextureFeatures(Operation):
         self.input_doc['chi'] = '1d array of out-of-plane diffraction angles'
         self.input_doc['I'] = '2d array representing intensities at q,chi points'
         self.input_src['q'] = opmod.wf_input
-        self.input_src['chi'] = .wf_input
+        self.input_src['chi'] = opmod.wf_input
         self.input_src['I'] = opmod.wf_input 
         self.input_type['q'] = opmod.ref_type
         self.input_type['chi'] = opmod.ref_type

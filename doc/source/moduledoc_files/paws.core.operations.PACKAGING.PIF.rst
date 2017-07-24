@@ -20,14 +20,6 @@ paws\.core\.operations\.PACKAGING\.PIF\.PifNPSynth module
     :undoc-members:
     :show-inheritance:
 
-paws\.core\.operations\.PACKAGING\.PIF\.PifTernary module
----------------------------------------------------------
-
-.. automodule:: paws.core.operations.PACKAGING.PIF.PifTernary
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 
 Module contents
 ---------------
