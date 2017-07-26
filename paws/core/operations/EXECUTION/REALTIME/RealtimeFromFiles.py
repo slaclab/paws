@@ -27,13 +27,13 @@ class RealtimeFromFiles(Realtime):
         self.input_src['regex'] = opmod.text_input 
         self.input_src['new_files_only'] = opmod.text_input 
         self.input_src['input_route'] = opmod.wf_input 
-        self.input_src['realtime_ops'] = op.wf_input 
+        self.input_src['realtime_ops'] = opmod.wf_input 
         self.input_src['saved_items'] = opmod.wf_input 
         self.input_type['dir_path'] = opmod.path_type
         self.input_type['regex'] = opmod.str_type
         self.input_type['new_files_only'] = opmod.bool_type
         self.input_type['input_route'] = opmod.path_type
-        self.input_type['realtime_ops'] = op.path_type 
+        self.input_type['realtime_ops'] = opmod.path_type 
         self.input_type['saved_items'] = opmod.path_type 
         self.inputs['regex'] = '*.tif' 
         self.inputs['new_files_only'] = True 
