@@ -165,6 +165,10 @@ class PawsAPI(object):
 
     def set_input(self,opname,input_name,wfname=None,**kwargs):
         op = self.get_op(opname,wfname) 
+        if not input_name in op.inputs.keys():
+            msg = str('Input name {} not valid for Operation {} ({}).'
+            .format(input_name,opname,type(op).__name__))
+            raise KeyError(msg)
         src,tp,val = self._parse_src_tp_val(kwargs)
         if src is None:
             src = op.input_locator[input_name].src

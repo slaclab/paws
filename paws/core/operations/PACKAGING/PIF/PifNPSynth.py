@@ -10,18 +10,19 @@ class PifNPSynth(Operation):
     """
 
     def __init__(self):
-        input_names = ['uid_prefix','date_time','t_utc','temp_C','q_I','t_T','composition','features']
+        input_names = ['uid_prefix','date_time','t_utc','temp_C','q_I','t_T','t_features','recipe']
         output_names = ['pif']
         super(PifNPSynth,self).__init__(input_names,output_names)
         self.input_doc['uid_prefix'] = 'text string to prepend to pif uid (pif uid = uid_prefix+t_utc'
-        self.input_doc['date_time'] = 'string date/time from measurement header file for pif record tags'
+        self.input_doc['date_time'] = 'string date/time from measurement header file, used for pif record tags'
         self.input_doc['t_utc'] = 'time in seconds utc'
         self.input_doc['temp_C'] = 'temperature in degrees C'
         self.input_doc['q_I'] = 'n-by-2 array of q values and corresponding intensities for saxs spectrum'
         self.input_doc['t_T'] = 'n-by-2 array of time (in seconds utc) and corresponding temperatures'
-        self.input_doc['composition'] = 'dict describing recipe, in the format of IO.MISC.ReadNPSynthRecipe'
-        self.input_doc['features'] = str('dict describing spectrum features, in the format of '
-        + 'PROCESSING.SAXS.[SpectrumProfiler,SpectrumParameterization].')
+        self.input_doc['t_features'] = str('n-by-2 array of time (in seconds utc) '
+        + 'and the corresponding dicts of spectral features, where the dicts are in the format of '
+        + 'PROCESSING.SAXS.[SpectrumProfiler,SpectrumParameterization,SpectrumFit].outputs.features.')
+        self.input_doc['recipe'] = 'dict describing recipe, in the format of IO.MISC.ReadNPSynthRecipe. Not yet implemented.'
         self.output_doc['pif'] = 'pif object representing the input data'
         self.input_src['uid_prefix'] = opmod.text_input
         self.input_src['date_time'] = opmod.wf_input
@@ -29,16 +30,16 @@ class PifNPSynth(Operation):
         self.input_src['temp_C'] = opmod.wf_input
         self.input_src['q_I'] = opmod.wf_input
         self.input_src['t_T'] = opmod.wf_input
-        self.input_src['composition'] = opmod.wf_input
-        self.input_src['features'] = opmod.wf_input
+        self.input_src['t_features'] = opmod.wf_input
+        self.input_src['recipe'] = opmod.wf_input
         self.input_type['uid_prefix'] = opmod.str_type
         self.input_type['date_time'] = opmod.ref_type
         self.input_type['t_utc'] = opmod.ref_type
         self.input_type['temp_C'] = opmod.ref_type
         self.input_type['q_I'] = opmod.ref_type
         self.input_type['t_T'] = opmod.ref_type
-        self.input_type['composition'] = opmod.ref_type
-        self.input_type['features'] = opmod.ref_type
+        self.input_type['t_features'] = opmod.ref_type
+        self.input_type['recipe'] = opmod.ref_type
 
     def run(self):
         uid_pre = self.inputs['uid_prefix']
@@ -48,8 +49,8 @@ class PifNPSynth(Operation):
         temp_C = self.inputs['temp_C']
         q_I = self.inputs['q_I']
         t_T = self.inputs['t_T']
-        c = self.inputs['composition']
-        f = self.inputs['features']
+        t_f = self.inputs['t_features']
+        rcp = self.inputs['recipe']
         # Subsystems for solution ingredients
         #colloid_sys = pifobj.ChemicalSystem(uid_pre+'_pd_colloid',['colloidal Pd nanoparticles'],None,None,None,'Pd') 
         #acid_sys = pifobj.ChemicalSystem(uid_pre+'_oleic_acid',['oleic acid'],None,None,None,'C18H34O2') 
@@ -60,9 +61,21 @@ class PifNPSynth(Operation):
         main_sys = pifobj.ChemicalSystem()
         main_sys.uid = uid_full
         #main_sys.sub_systems = subsys
+        if t_T is not None:
+            # Process time,temperature profile
+            # Grab the temperature at t_utc, else raise exception
+            pass
+        if t_f is not None:
+            # Process time,features profile
+            # Grab the features at t_utc, else raise exception
+            # Decide whether or not these are equilibrium features
+            pass
         if q_I is not None and temp_C is not None:
-            main_sys.properties = self.saxs_to_pif_properties(q_I,temp_C)
-        main_sys.tags = ['reaction id: '+uid_pre,'date: '+t_str,'utc: '+str(int(t_utc))]
+            main_sys.properties.append(self.saxs_to_pif_properties(q_I,temp_C))
+        main_sys.tags = []
+        main_sys.tags.append('reaction id: '+uid_pre)
+        main_sys.tags.append('date: '+t_str)
+        main_sys.tags.append('utc: '+str(int(t_utc)))
         self.outputs['pif'] = main_sys
 
     def saxs_to_pif_properties(self,q_I,temp_C):
@@ -80,7 +93,7 @@ class PifNPSynth(Operation):
                             [pifobj.Scalar(q_I[i,0]) for i in range(n_qpoints)],
                             None,None,None,'1/Angstrom') )
         pI.conditions.append(pifobj.Value('temperature',[pifobj.Scalar(temp_C)],None,None,None,'degrees Celsius'))
-        return [pI] 
+        return pI 
         
 #    def make_piftemperature(self,t):
 #        v = pifobj.Value()

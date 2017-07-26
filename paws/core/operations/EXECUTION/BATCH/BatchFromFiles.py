@@ -29,7 +29,7 @@ class BatchFromFiles(Batch):
         self.input_src['dir_path'] = opmod.fs_input
         self.input_src['regex'] = opmod.text_input 
         self.input_src['input_route'] = opmod.wf_input 
-        self.input_src['batch_ops'] = op.wf_input 
+        self.input_src['batch_ops'] = opmod.wf_input 
         self.input_src['saved_items'] = opmod.wf_input 
         self.input_type['dir_path'] = opmod.path_type
         self.input_type['regex'] = opmod.str_type

@@ -37,7 +37,8 @@ class XYDataFromBatch(Operation):
         x_uri = self.inputs['x_uri']
         y_uri = self.inputs['y_uri']
         x_all = np.array([optools.get_uri_from_dict(x_uri,d) for d in b_out],dtype=float)
-        y_all = np.array([optools.get_uri_from_dict(y_uri,d) for d in b_out],dtype=float)
+        #y_all = np.array([optools.get_uri_from_dict(y_uri,d) for d in b_out],dtype=float)
+        y_all = np.array([optools.get_uri_from_dict(y_uri,d) for d in b_out])
         if any(x_all):
             xmin = np.min(x_all)
         else:
