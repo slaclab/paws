@@ -75,7 +75,8 @@ class SpectrumParameterization(Operation):
         + 'sigma_structure: width parameter for Pseudo-Voigt diffraction peak profile \n' 
         + 'R2log_guess: Coefficient of determination between logarithms of measured and parameterized spectra \n' 
         + 'chi2log_guess: Sum of difference squared between standardized logarithms '
-        + 'of measured and parameterized spectra. Standardized by the measured spectrum. ') 
+        + 'of measured and parameterized spectra. '
+        + 'Both spectra are standardized by the mean and std of the measured spectrum. ') 
         self.output_doc['q_I_guess'] = str('n-by-2 array of q and the intensity spectrum '
         + 'corresponding to the population parameters in the features dict.')
 
@@ -88,8 +89,6 @@ class SpectrumParameterization(Operation):
 
     def run(self):
         q, I = self.inputs['q'], self.inputs['I']
-        # Set return code to 1 (error) by default;
-        # if execution finishes, set it to 0
         p = self.inputs['features'] 
         if p['bad_data_flag']:
             # stop

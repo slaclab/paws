@@ -3,6 +3,7 @@ import pypif.obj as pifobj
 
 from ... import Operation as opmod 
 from ...Operation import Operation
+from ....tools import saxstools
 
 class PifNPSynth(Operation):
     """
@@ -10,13 +11,13 @@ class PifNPSynth(Operation):
     """
 
     def __init__(self):
-        input_names = ['uid_prefix','date_time','t_utc','temp_C','q_I','t_T','t_features','recipe']
+        input_names = ['uid_prefix','date_time','t_utc','q_I','t_T','t_features','recipe']
         output_names = ['pif']
         super(PifNPSynth,self).__init__(input_names,output_names)
         self.input_doc['uid_prefix'] = 'text string to prepend to pif uid (pif uid = uid_prefix+t_utc'
         self.input_doc['date_time'] = 'string date/time from measurement header file, used for pif record tags'
         self.input_doc['t_utc'] = 'time in seconds utc'
-        self.input_doc['temp_C'] = 'temperature in degrees C'
+        #self.input_doc['temp_C'] = 'temperature in degrees C'
         self.input_doc['q_I'] = 'n-by-2 array of q values and corresponding intensities for saxs spectrum'
         self.input_doc['t_T'] = 'n-by-2 array of time (in seconds utc) and corresponding temperatures'
         self.input_doc['t_features'] = str('n-by-2 array of time (in seconds utc) '
@@ -27,7 +28,7 @@ class PifNPSynth(Operation):
         self.input_src['uid_prefix'] = opmod.text_input
         self.input_src['date_time'] = opmod.wf_input
         self.input_src['t_utc'] = opmod.wf_input
-        self.input_src['temp_C'] = opmod.wf_input
+        #self.input_src['temp_C'] = opmod.wf_input
         self.input_src['q_I'] = opmod.wf_input
         self.input_src['t_T'] = opmod.wf_input
         self.input_src['t_features'] = opmod.wf_input
@@ -35,7 +36,7 @@ class PifNPSynth(Operation):
         self.input_type['uid_prefix'] = opmod.str_type
         self.input_type['date_time'] = opmod.ref_type
         self.input_type['t_utc'] = opmod.ref_type
-        self.input_type['temp_C'] = opmod.ref_type
+        #self.input_type['temp_C'] = opmod.ref_type
         self.input_type['q_I'] = opmod.ref_type
         self.input_type['t_T'] = opmod.ref_type
         self.input_type['t_features'] = opmod.ref_type
@@ -46,7 +47,7 @@ class PifNPSynth(Operation):
         t_str = self.inputs['date_time']
         t_utc = self.inputs['t_utc']
         uid_full = uid_pre+'_'+str(int(t_utc))
-        temp_C = self.inputs['temp_C']
+        #temp_C = self.inputs['temp_C']
         q_I = self.inputs['q_I']
         t_T = self.inputs['t_T']
         t_f = self.inputs['t_features']
@@ -61,28 +62,122 @@ class PifNPSynth(Operation):
         main_sys = pifobj.ChemicalSystem()
         main_sys.uid = uid_full
         #main_sys.sub_systems = subsys
+
+        temp_C = None
         if t_T is not None:
-            # Process time,temperature profile
+            # Process time,temperature profile as a property
+            it = (t_T[:,0] <= t_utc)
+            t0 = t_T[0,0]
+            t_T_current = np.array(t_T[it,:])
+            t_T_current[:,0] = t_T_current[:,0] - t0
+            main_sys.properties.append(self.time_feature_property(t_T_current,'temperature','degrees C'))
             # Grab the temperature at t_utc, else raise exception
-            pass
-        if t_f is not None:
-            # Process time,features profile
-            # Grab the features at t_utc, else raise exception
-            # Decide whether or not these are equilibrium features
-            pass
+            if t_utc in t_T[:,0]:
+                temp_C = t_T[:,1][list(t_T[:,0]).index(t_utc)]
+            else:
+                raise ValueError('utc time {} not found in t_T data ({})'
+                .format(t_utc,t_T[:,0]))
+
         if q_I is not None and temp_C is not None:
-            main_sys.properties.append(self.saxs_to_pif_properties(q_I,temp_C))
+            # Process measured q_I into a property
+            pI = self.saxs_pif_property(q_I)
+            # TODO: should any more 'conditions' be applied to this Property?
+            pI.conditions.append(pifobj.Value('temperature',[pifobj.Scalar(temp_C)],None,None,None,'degrees Celsius'))
+            main_sys.properties.append(pI)
+
+        if t_f is not None:
+            # Grab the features at t_utc, else raise exception
+            if t_utc in t_f[:,0]:
+                f = t_f[:,1][list(t_f[:,0]).index(t_utc)]
+            else:
+                raise ValueError('utc time {} not found in t_f data ({})'
+                .format(t_utc,t_f[:,0]))
+
+        bflag = f['bad_data_flag']
+        #sflag = f['structure_flag']
+        #pflag = f['precursor_flag']
+        #fflag = f['form_flag']
+        if t_f is not None and not bflag:
+            # Process time,features profile into properties
+            #for fname in ['r0_form','sigma_form','I0_pre','I0_form','I_at_0']:
+            bflags = np.array([fi['bad_data_flag'] for fi in t_f[:,1]],dtype=bool)
+            pflags = np.array([fi['precursor_flag'] for fi in t_f[:,1]],dtype=bool) )  
+            sflags = np.array([fi['structure_flag'] for fi in t_f[:,1]],dtype=bool) )  
+            fflags = np.array([fi['form_flag'] for fi in t_f[:,1]],dtype=bool) )  
+            t0 = t_f[0,0]
+
+            f_idx = ( (t_f[:,0]<=t_utc) & np.invert(bflags) & fflags )
+            if any(f_idx):
+                t_r0 = np.array([t_f[i]['r0_form'] for i in f_idx])
+                t_r0[:,0] = t_r0[:,0] - t0 
+                main_sys.properties.append(self.time_feature_property(t_r0,'nanoparticle mean radius','Angstrom'))
+            
+                t_sig = np.array([t_f[i]['sigma_form'] for i in f_idx])
+                t_sig[:,0] = t_sig[:,0] - t0 
+                main_sys.properties.append(self.time_feature_property(t_r0,'fractional standard deviation of nanoparticle radius',''))
+
+                t_I0form = np.array([t_f[i]['I0_form'] for i in f_idx])
+                t_I0form[:,0] = t_I0form[:,0] - t0 
+                main_sys.properties.append(self.time_feature_property(t_I0form,'form factor scattering intensity prefactor','counts'))
+                # Decide whether or not these are equilibrium features
+                eqm_tag = False
+                if t in t_r0[:,0]:
+                
+                
+            p_idx = ( (t_f[:,0]<=t_utc) & np.invert(bflags) & pflags )
+            if any(p_idx):
+                t_I0pre = np.array([t_f[i]['I0_pre'] for i in p_idx])
+                t_I0pre[:,0] = t_I0pre[:,0] - t0 
+                main_sys.properties.append(self.time_feature_property(t_I0pre,'precursor scattering intensity prefactor','counts'))
+
+            I0_idx = ( (t_f[:,0]<=t_utc) & np.invert(bflags) )
+            if any(I0_idx):
+                t_I0 = np.array([t_f[i]['I_at_0'] for i in I0_idx])
+                t_I0[:,0] = t_I0[:,0] - t0 
+                main_sys.properties.append(self.time_feature_property(t_I0,'scattered intensity at q=0','counts'))
+
+            # Compute the saxs spectrum and package that too
+            qI_computed = saxstools.compute_saxs(q_I[:,0],f)
+            pI_computed = self.saxs_pif_property(qI_computed)
+            pI_computed.name = 'computed SAXS intensity'
+            # Package the of features as properties
+
         main_sys.tags = []
         main_sys.tags.append('reaction id: '+uid_pre)
         main_sys.tags.append('date: '+t_str)
         main_sys.tags.append('utc: '+str(int(t_utc)))
         self.outputs['pif'] = main_sys
 
-    def saxs_to_pif_properties(self,q_I,temp_C):
-        #props = []
-        #for i in range(len(q)):
-        #pq = pifobj.Property()
-        ### property: scattered intensity
+    def time_feature_property(self,t_f,fname,funits):
+        pf = pifobj.Property()
+        pf.name = fname 
+        npts = t_f.shape[0]
+        pf.scalars = [pifobj.Scalar(t_f[i,1]) for i in range(npts)]
+        if funits:
+            pf.units = funits 
+        pf.conditions = []
+        pf.conditions.append( pifobj.Value('reaction time',
+                        [pifobj.Scalar(t_f[i,0]) for i in range(npts)],
+                        None,None,None,'seconds') )
+        return pf 
+
+    #def time_temp_pif_property(self,t_T,t):
+    #    ptT = pifobj.Property()
+    #    ptT.name = 'time-temperature profile'
+    #    it = (t_T[:,0] <= t)
+    #    t0 = t_T[0,0]
+    #    t_T_current = np.array(t_T[it,:])
+    #    t_T_current[:,0] = t_T_current[:,0] - t0
+    #    npts = t_T_current.shape[0]
+    #    ptT.scalars = [pifobj.Scalar(t_T_current[i,1]) for i in range(npts)]
+    #    ptT.units = 'degrees C'
+    #    ptT.conditions = []
+    #    ptT.conditions.append( pifobj.Value('reaction time',
+    #                        [pifobj.Scalar(t_T_current[i,0]) for i in range(npts)],
+    #                        None,None,None,'seconds') )
+    #    return ptT
+
+    def saxs_pif_property(self,q_I):
         pI = pifobj.Property()
         pI.name = 'SAXS intensity'
         n_qpoints = q_I.shape[0]
@@ -92,7 +187,6 @@ class PifNPSynth(Operation):
         pI.conditions.append( pifobj.Value('SAXS scattering vector', 
                             [pifobj.Scalar(q_I[i,0]) for i in range(n_qpoints)],
                             None,None,None,'1/Angstrom') )
-        pI.conditions.append(pifobj.Value('temperature',[pifobj.Scalar(temp_C)],None,None,None,'degrees Celsius'))
         return pI 
         
 #    def make_piftemperature(self,t):
