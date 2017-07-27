@@ -22,7 +22,7 @@ class ShipToDataSet(Operation):
         self.input_doc['keep_json'] = 'Flag for whether or not to keep the json file' 
         self.input_doc['ship_flag'] = 'Flag for shipping the pif- set to False for a dry run' 
         self.output_doc['response'] = 'The Citrination server response to the shipment'
-        self.input_src['pif'] = opmodmod.wf_input
+        self.input_src['pif'] = opmod.wf_input
         self.input_src['client'] = opmod.plugin_input
         self.input_src['dsid'] = opmod.text_input
         self.input_src['json_path'] = opmod.fs_input
