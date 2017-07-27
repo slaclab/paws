@@ -105,7 +105,8 @@ setup(
     # TODO: entry point for paws python console
     entry_points={
         'console_scripts': [
-            'paws=paws:main',
+            'paws=main:main',
+            'pawspipeline=paws.ui.widgets.widget_launcher:pipeline',
         ],
     },
 )
