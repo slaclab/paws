@@ -181,7 +181,7 @@ class SpectrumProfiler(Operation):
         # Data with high noise are bad.
         # Data that are totally flat or increasing in q are bad.
         # Data that do not have downward curvature at low q are often bad, but not always.
-        bad_data_flag = ( fluctuation_strength > 20 
+        bad_data_flag = ( (fluctuation_strength > 20 and Imax_over_Imean_local < 2)
                         or low_q_ratio/high_q_ratio < 1
                         or Ilowq_over_Ihighq < 10 )
                         #or (low_q_logcurv > 0 and Ilowq_over_Ihighq < 10))
