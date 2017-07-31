@@ -37,23 +37,23 @@ class QPluginManager(QTreeSelectionModel):
         #import pdb; pdb.set_trace()
         self.set_item(pgin_name,self._tree.get_data_from_uri(pgin_name))
 
-    def load_from_dict(self,plugin_dict):
+    def load_from_dict(self,pgin_tag,pgin_spec):
         """
         Load plugins from a dict that specifies their setup parameters.
         """
-        for tag, pgin_spec in plugin_dict.items():
-            pgin_uri = pgin_spec['plugin_module']
-            pgin = self._tree.get_plugin(pgin_uri)
-            if pgin is not None:
-                if not issubclass(pgin,PawsPlugin):
-                    self._tree.write_log('Did not find Plugin {} - skipping.'.format(pgin_uri))
-                    return 
-            pgin = pgin()
-            for name in pgin.inputs.keys():
-                if name in pgin_spec[opmod.inputs_tag]:
-                    pgin.inputs[name] = pgin_spec[opmod.inputs_tag][name]
-            pgin.start()
-            self.add_plugin(tag,pgin)
+        #for tag, pgin_spec in plugin_dict.items():
+        pgin_uri = pgin_spec['plugin_module']
+        pgin = self._tree.get_plugin(pgin_uri)
+        if pgin is not None:
+            if not issubclass(pgin,PawsPlugin):
+                self._tree.write_log('Did not find Plugin {} - skipping.'.format(pgin_uri))
+                return 
+        pgin = pgin()
+        for name in pgin.inputs.keys():
+            if name in pgin_spec[opmod.inputs_tag]:
+                pgin.inputs[name] = pgin_spec[opmod.inputs_tag][name]
+        pgin.start()
+        self.add_plugin(tag,pgin)
 
     #        self.plugman.contains_uri(pgin_name):
     #        #pgin = self.get_data_from_uri(pgin_name)

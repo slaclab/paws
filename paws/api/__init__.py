@@ -219,43 +219,68 @@ class PawsAPI(object):
     def save_config(self):
         ops.save_config()
 
-    def save_workflow(self,wfl_filename):
+    def save_to_wfl(self,wfl_filename):
         """
-        Save the current workflow to a .wfl file,
-        as specified by wfl_filename.
+        Save the current workflows and plugins
+        to a .wfl (YAML) file,
+        specified by wfl_filename.
         If the given filename does not have the .wfl extension,
         it will be appended.
         """
         if not os.path.splitext(wfl_filename)[1] == '.wfl':
             wfl_filename = wfl_filename + '.wfl'
-        self._wf_manager.logmethod( 'dumping workflow {} to {}'.format(self._current_wf_name,wfl_filename) )
-        d = {} 
-        wf_dict = OrderedDict() 
-        for opname in self.current_wf().list_op_tags():
-            op = self.current_wf().get_data_from_uri(opname)
-            wf_dict[opname] = self._wf_manager.op_setup_dict(op)
-        d['WORKFLOW'] = wf_dict
-        pawstools.update_file(wfl_filename,d)
 
-    def save_plugins(self,wfl_filename):
-        """
-        Save the current set of plugins to a .wfl file,
-        as specified by wfl_filename.
-        If the given filename does not have the .wfl extension,
-        it will be appended.
-        """
-        if not os.path.splitext(wfl_filename)[1] == '.wfl':
-            wfl_filename = wfl_filename + '.wfl'
-        self._wf_manager.logmethod( 'dumping plugins to {}'.format(wfl_filename) )
         d = {} 
-        pgin_dict = OrderedDict() 
-        for pgin_name in self._plugin_manager.root_tags():
+        self._wf_manager.logmethod( 'saving current state to {}'.format(wfl_filename) )
+        wfman_dict = OrderedDict()
+        for wfname,wf in self._wf_manager.workflows:
+            wf_dict = OrderedDict() 
+            for opname in wf.list_op_tags():
+                op = wf.get_data_from_uri(opname)
+                wf_dict[opname] = self._wf_manager.op_setup_dict(op)
+            wfman_dict[wfname] = wf_dict
+        d['wf_manager'] = wfman_dict
+        #pgin_dict = OrderedDict() 
+        for pgin_name in self._plugin_manager.list_plugins():
             if not pgin_name == 'wf_manager':
                 pgin = self._plugin_manager.get_data_from_uri(pgin_name)
-                pgin_dict[pgin_name] = self._plugin_manager.plugin_setup_dict(pgin)
-        d['PLUGINS'] = pgin_dict
-        pawstools.update_file(wfl_filename,d)
+                d[pgin_name] = self._plugin_manager.plugin_setup_dict(pgin)
+        #d['PLUGINS'] = pgin_dict
+        #pawstools.update_file(wfl_filename,d)
+        pawstools.save_file(wfl_filename,d)
 
+    def load_from_wfl(self,wfl_filename):
+        # NOTE: code duplication with paws.ui.UiManager
+        f = open(wfl_filename,'r')
+        d = yaml.load(f)
+        f.close()
+        wfman_dict = d['wf_manager']
+        for wfname,wfspec in wfman_dict:
+            self.qwfman.load_from_dict(wfname,self.qopman.opman,wfspec)
+            if not wfname in self.ui.wf_selector.model().list_data():
+                self.ui.wf_selector.model().append_item(wfname)
+            if self.qwfman.n_wf() == 1:
+                self.ui.wf_tree.hideColumn(1)
+                self.ui.wf_tree.hideColumn(2)
+        ui.close()
+
+        #if 'wf_manager' in d.keys():
+        #    wfname = fname_noext
+            #if wfname in self.qwfman.qworkflows.keys():
+            #    wfname = self.qwfman.auto_name(wfname)
+
+    #
+    #    pawstools.update_file(wfl_filename,d)
+
+    #def save_plugins(self,wfl_filename):
+    #    """
+    #    Save the current set of plugins to a .wfl (YAML) file,
+    #    pecified by wfl_filename.
+    #    If the given filename does not have the .wfl extension,
+    #    it will be appended.
+    #    """
+    #    if not os.path.splitext(wfl_filename)[1] == '.wfl':
+    #        wfl_filename = wfl_filename + '.wfl'
     def op_count(self,wfname=None):
         if wfname is None:
             wfname = self._current_wf_name

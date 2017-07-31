@@ -62,6 +62,21 @@ class Workflow(TreeModel):
     def n_ops(self):
         return self.n_children()
 
+    def break_wf_input(self,wf_input_name):
+        self.inputs.pop(wf_input_name)
+    
+    def connect_wf_input(self,wf_input_name,op_input_uri):
+        self.inputs[wf_input_name] = op_input_uri
+
+    def connect_wf_output(self,wf_output_name,op_output_uri):
+        self.outputs[wf_output_name] = op_output_uri
+
+    def get_wf_output(wf_output_name):
+        return self.get_data_from_uri(self.outputs[wf_output_name])
+
+    def set_wf_input(self,wf_input_name,val):
+        self.set_op_input_at_uri(self.inputs[wf_input_name],val)
+
     def set_op_input_at_uri(self,uri,val):
         """
         Set an op input at uri to provided value val.
