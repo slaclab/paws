@@ -94,11 +94,6 @@ class SpectrumParameterization(Operation):
             # stop
             self.outputs['features'] = p
             return 
-        if p['structure_flag']:
-            # stop
-            p['ERROR_MESSAGE'] = '[{}] structure factor parameterization not yet supported'.format(__name__)
-            self.outputs['features'] = p
-            return 
         pre_flag = p['precursor_flag']
         f_flag = p['form_flag']
         s_flag = p['structure_flag']
@@ -107,7 +102,6 @@ class SpectrumParameterization(Operation):
         fixed_params = {} 
         for k,v in zip(fix_keys,fix_vals):
             fixed_params[k] = v
-
 
         # Check for overconstrained system
         if 'I_at_0' in fix_keys and 'I0_form' in fix_keys and 'I0_pre' in fix_keys:
@@ -142,6 +136,15 @@ class SpectrumParameterization(Operation):
                 # fit to second order.
                 idx_lowq = (q<0.06)
                 I_at_0 = saxstools.fit_I0(q[idx_lowq],I[idx_lowq],2)
+                p['I_at_0'] = I_at_0
+                #
+                #
+                # And now bail, until structure factor fitting is in.
+                #
+                #
+                p['ERROR_MESSAGE'] = '[{}] structure factor parameterization not yet supported'.format(__name__)
+                self.outputs['features'] = p
+                return 
             elif f_flag:
                 # If form factor scattering, fit 3rd order. 
                 # Use q<0.1 and disregard lowest-q values if they are far from the mean, 

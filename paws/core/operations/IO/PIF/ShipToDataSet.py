@@ -48,7 +48,7 @@ class ShipToDataSet(Operation):
             if isinstance(p,pifobj.ChemicalSystem):
                 json_file = json_path+'/'+p.uid+'.json'
             else:
-                json_file = json_path+'/pif_tmp.json'
+                json_file = json_path+'/pif.json'
             # make p an array of pifs to get a big json that has all records
             pif.dump(p, open(json_file,'w'))
             if ship_flag:

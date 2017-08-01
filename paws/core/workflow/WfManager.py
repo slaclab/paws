@@ -4,6 +4,7 @@ import copy
 import traceback
 import time
 
+from .. import operations as ops
 from .Workflow import Workflow
 from ..operations import Operation as opmod
 from ..operations.Operation import Operation, Batch, Realtime        
@@ -198,6 +199,8 @@ class WfManager(object):
 
     def build_op_from_dict(self,op_setup,opman):
         op_uri = op_setup['op_module']
+        if not ops.load_flags[op_uri]:
+            opman.set_op_enabled(op_uri)
         op = opman.get_data_from_uri(op_uri)
         if issubclass(op,Operation):
             op = op()

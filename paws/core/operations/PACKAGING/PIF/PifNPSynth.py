@@ -81,7 +81,7 @@ class PifNPSynth(Operation):
         pflag = f['precursor_flag']
         fflag = f['form_flag']
         if bflag:
-            csys.tags.append('bad data')
+            csys.tags.append('unidentified scattering')
         if sflag:
             csys.tags.append('structure factor scattering')
         if fflag:
@@ -111,19 +111,20 @@ class PifNPSynth(Operation):
             pI.conditions.append(pifobj.Value('temperature',[pifobj.Scalar(temp_C)],None,None,None,'degrees Celsius'))
             csys.properties.append(pI)
 
-        if fflag:
+        if fflag and not sflag and not bflag:
             csys.properties.append(self.feature_property(f['r0_form'],'nanoparticle mean radius','Angstrom'))
             csys.properties.append(self.feature_property(f['sigma_form'],'fractional standard deviation of nanoparticle radius',''))
             csys.properties.append(self.feature_property(f['I0_form'],'form factor scattering intensity prefactor','counts'))
-        if pflag:
+        if pflag and not sflag and not bflag:
             csys.properties.append(self.feature_property(f['r0_pre'],'precursor effective radius','Angstrom'))
             csys.properties.append(self.feature_property(f['I0_pre'],'precursor scattering intensity prefactor','counts'))
-        if not bflag:
+        if not bflag and not sflag:
             csys.properties.append(self.feature_property(f['I_at_0'],'scattered intensity at q=0','counts'))
             # Compute the saxs spectrum, package it
             qI_computed = saxstools.compute_saxs(q_I[:,0],f)
-            pI_computed = self.saxs_pif_property(np.hstack([q_I[:,0],qI_computed]))
+            pI_computed = self.saxs_pif_property(np.array( [[q_I[i,0],qI_computed[i]] for i in range(len(qI_computed))] ))
             pI_computed.name = 'computed SAXS intensity'
+            csys.properties.append(pI_computed)
 
         # Package features-vs-time up to now as properties
         if t_f is not None and not bflag:
@@ -135,17 +136,17 @@ class PifNPSynth(Operation):
             fflags = np.array([fi['form_flag'] for fi in t_f[:,1]],dtype=bool)   
             t0 = t_f[0,0]
 
-            f_idx = ( (t_f[:,0]<=t_utc) & fflags )
+            f_idx = np.where( (t_f[:,0]<=t_utc) & fflags & np.invert(sflags) & np.invert(bflags) )[0]
             if any(f_idx):
-                t_r0 = np.array([t_f[i]['r0_form'] for i in f_idx])
+                t_r0 = np.array([[t_f[i][0],t_f[i][1]['r0_form']] for i in f_idx])
                 t_r0[:,0] = t_r0[:,0] - t0 
                 csys.properties.append(self.time_feature_property(t_r0,'nanoparticle mean radius vs. time','Angstrom'))
             
-                t_sig = np.array([t_f[i]['sigma_form'] for i in f_idx])
+                t_sig = np.array([[t_f[i][0],t_f[i][1]['sigma_form']] for i in f_idx])
                 t_sig[:,0] = t_sig[:,0] - t0 
-                csys.properties.append(self.time_feature_property(t_r0,'fractional standard deviation of nanoparticle radius vs. time',''))
+                csys.properties.append(self.time_feature_property(t_sig,'fractional standard deviation of nanoparticle radius vs. time',''))
 
-                t_I0form = np.array([t_f[i]['I0_form'] for i in f_idx])
+                t_I0form = np.array([[t_f[i][0],t_f[i][1]['I0_form']] for i in f_idx])
                 t_I0form[:,0] = t_I0form[:,0] - t0 
                 csys.properties.append(self.time_feature_property(t_I0form,'form factor scattering intensity prefactor vs. time','counts'))
                 # Decide whether or not these are equilibrium features
@@ -160,17 +161,17 @@ class PifNPSynth(Operation):
                 if eqm_flag is not None:
                     csys.tags.append('chemical equilibrium: {}'.format(eqm_flag))
                 else: 
-                    csys.tags.append('chemical equilibrium: undefined')
+                    csys.tags.append('chemical equilibrium: unclear')
                 
-            p_idx = ( (t_f[:,0]<=t_utc) & pflags )
+            p_idx = np.where( (t_f[:,0]<=t_utc) & pflags & np.invert(sflags) & np.invert(bflags) )[0]
             if any(p_idx):
-                t_I0pre = np.array([t_f[i]['I0_pre'] for i in p_idx])
+                t_I0pre = np.array([[t_f[i][0],t_f[i][1]['I0_pre']] for i in p_idx])
                 t_I0pre[:,0] = t_I0pre[:,0] - t0 
                 csys.properties.append(self.time_feature_property(t_I0pre,'precursor scattering intensity prefactor vs. time','counts'))
 
-            I0_idx = ( (t_f[:,0]<=t_utc) & np.invert(bflags) )
+            I0_idx = np.where( (t_f[:,0]<=t_utc) & np.invert(bflags) )[0]
             if any(I0_idx):
-                t_I0 = np.array([t_f[i]['I_at_0'] for i in I0_idx])
+                t_I0 = np.array([[t_f[i][0],t_f[i][1]['I_at_0']] for i in I0_idx])
                 t_I0[:,0] = t_I0[:,0] - t0 
                 csys.properties.append(self.time_feature_property(t_I0,'scattered intensity at q=0 vs. time','counts'))
 

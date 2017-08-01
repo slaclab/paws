@@ -143,7 +143,7 @@ class SpectrumProfiler(Operation):
                 dqi = qi[1:]-qi[:-1]
                 Ii = (Ii[1:]+Ii[:-1])/2
                 bin_strengths[i] = np.sum(np.log(Ii) * dqi) / (qi[-1]-qi[0]) 
-        idx_nz = np.invert((I==0))
+        idx_nz = (I>0)
         q_nz = q[idx_nz] 
         I_nz_log = np.log(I[idx_nz])
         # make values positive:
@@ -171,7 +171,8 @@ class SpectrumProfiler(Operation):
         lowq_s = (lowq - lowq_mean)/lowq_std
         #p_lowq = saxstools.fit_with_slope_constraint(lowq_s,np.log(I_lowq_s),-1*lowq_mean/lowq_std,0,3) 
         #p_lowq = saxstools.fit_with_slope_constraint(lowq_s,np.log(I_lowq_s),lowq_s[-1],0,3) 
-        p_lowq = np.polyfit(lowq_s,np.log(I_lowq_s),2)
+        nz = (I_lowq_s>0)
+        p_lowq = np.polyfit(lowq_s[nz],np.log(I_lowq_s[nz]),2)
         low_q_logcurv = p_lowq[0]
         Imax_over_Ilowq = float(Imax)/I_lowq_mean
         Imax_over_Ihighq = float(Imax)/I_highq_mean
