@@ -16,9 +16,7 @@ class QPluginManager(QTreeSelectionModel):
     # TODO: Clean up headerData
 
     def __init__(self,plugman):
-        flag_dict = OrderedDict()
-        flag_dict['select'] = False
-        super(QPluginManager,self).__init__(flag_dict,plugman)
+        super(QPluginManager,self).__init__(plugman)
         self.plugman = plugman
 
     def headerData(self,section,orientation,data_role):

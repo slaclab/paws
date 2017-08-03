@@ -10,22 +10,22 @@ class QTreeSelectionModel(QTreeModel):
     by using TreeItem.flags to handle tree item selection.
     """
 
-    def __init__(self,flag_defaults={},trmod=QTreeModel()):
+    def __init__(self,trmod=QTreeModel()):
         super(QTreeSelectionModel,self).__init__(trmod)
-        self.flag_defaults = flag_defaults 
+        #self.flag_defaults = flag_defaults 
 
-    def create_tree_item(self,parent_itm,itm_tag):
-        """
-        Build a TreeItem for use in this tree.
-        Reimplemented for QTreeSelectionModel to set its flag_defaults
-        as the flags for any new TreeItems.
-        """
-        itm = self._tree.create_tree_item(parent_itm,itm_tag)
-        itm.flags = copy.copy(self.flag_defaults)
-        return itm
+    #def create_tree_item(self,parent_itm,itm_tag):
+    #    """
+    #    Build a TreeItem for use in this tree.
+    #    Reimplemented for QTreeSelectionModel to set its flag_defaults
+    #    as the flags for any new TreeItems.
+    #    """
+    #    itm = self._tree.create_tree_item(parent_itm,itm_tag)
+    #    itm.flags = copy.copy(self.flag_defaults)
+    #    return itm
 
     def n_flags(self):
-        return len(self.flag_defaults)
+        return len(self._tree.default_flags)
 
     def is_flagged(self,itm,flag_key):
         if flag_key in itm.flags.keys():
@@ -73,7 +73,7 @@ class QTreeSelectionModel(QTreeModel):
         if (data_role == QtCore.Qt.DisplayRole and section == 0):
             return super(QTreeSelectionModel,self).headerData(section,orientation,data_role) 
         elif (data_role == QtCore.Qt.DisplayRole and section < self.n_flags()+1):
-            return self.flag_defaults.keys()[section-1]
+            return self._tree.default_flags.keys()[section-1]
         else:
             return None
         #elif (data_role == QtCore.Qt.DisplayRole and section == 1):
@@ -88,7 +88,7 @@ class QTreeSelectionModel(QTreeModel):
         if idx.column() == 0:
             return super(QTreeSelectionModel,self).data(idx,data_role)
         elif data_role == QtCore.Qt.CheckStateRole: 
-            return self.check_state(itm,self.flag_defaults.keys()[idx.column()-1])
+            return self.check_state(itm,self._tree.default_flags.keys()[idx.column()-1])
         else:
             # Not column 0, not CheckStateRole: return None
             return None
@@ -116,7 +116,7 @@ class QTreeSelectionModel(QTreeModel):
             return super(QTreeSelectionModel,self).setData(index,val,data_role)
         elif data_role == QtCore.Qt.CheckStateRole:
             itm = self.get_from_index(idx)
-            self.set_flagged(itm,self.flag_defaults.keys()[idx.column()-1],val)
+            self.set_flagged(itm,self._tree.default_flags.keys()[idx.column()-1],val)
             self.dataChanged.emit(idx,idx)
             return True
         else:

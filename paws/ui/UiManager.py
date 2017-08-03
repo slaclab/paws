@@ -87,6 +87,8 @@ class UiManager(QtCore.QObject):
         self.qwfman.wfdone.connect(self.update_run_wf_button)
         #self.requestRunWorkflow.connect(self.qwfman.runWorkflow)
         #self.requestStopWorkflow.connect(self.qwfman.stopWorkflow)
+        self.ui.workflows_box.setTitle('Workflows')
+        self.ui.plugins_box.setTitle('Plugins')
         lm = ListModel(self.qwfman.qworkflows.keys())
         self.ui.wf_selector.setModel(lm)
         self.ui.wf_selector.currentIndexChanged.connect( partial(self.set_wf) )
@@ -161,22 +163,27 @@ class UiManager(QtCore.QObject):
             #if idx.column() == 0:
                 itm_data = self.qopman.get_data_from_index(idx)
                 itm_uri = self.qopman.get_uri_of_index(idx)
-                w = QtGui.QTextEdit()
+                op_widg = None
                 if itm_data is None:
                     # this should be the condition for a not-enabled Operation
-                    t = str('selected Operation: {}. \n'.format(itm_uri)
+                    t = str('selected Operation: {} \n'.format(itm_uri)
                     + 'This Operation is not currently enabled. '
                     + 'Click the "enable" box to enable it. ')
                 elif isinstance(itm_data,dict):
                     # this should be the condition for a category
-                    t = str('selected category: {}. \n\n'.format(itm_uri)
+                    t = str('selected category: {} \n\n'.format(itm_uri)
                     + '{}: '.format(itm_uri)) 
                     t = t + self.qopman.opman.print_cat(itm_uri) 
                 else:
                     # the only remaining case is an enabled Operation
-                    t = itm_data().description()
+                    op = itm_data()
+                    t = op.description()
+                    op_widg = widgets.make_widget(op)
+                    self.display_widget(op_widg)
+                w = QtGui.QTextEdit()
                 w.setText(t)
-                self.display_widget(w)
+                self.ui.op_info_box.setText(t)
+                self.display_widget(op_widg)
 
     def display_plugin_item(self,idx):
         """
@@ -196,7 +203,7 @@ class UiManager(QtCore.QObject):
             widg = widgets.make_widget(itm_data)
             self.display_widget(widg)
 
-    def display_widget(self,widg):
+    def display_widget(self,widg=None):
         # Loop through the viewer layout, last to first, clear the frame
         n_widgets = self.ui.viewer_layout.count()
         for i in range(n_widgets-1,-1,-1):
@@ -206,7 +213,8 @@ class UiManager(QtCore.QObject):
             itm.widget().close()
             #if itm.widget() is not None:
             #    itm.widget().deleteLater()
-        self.ui.viewer_layout.addWidget(widg,0,0,1,1) 
+        if widg is not None:
+            self.ui.viewer_layout.addWidget(widg,0,0,1,1) 
 
     def current_wf(self):
         wfname = self.current_wfname()

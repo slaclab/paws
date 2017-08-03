@@ -15,7 +15,9 @@ class PluginManager(TreeModel):
     """
 
     def __init__(self,**kwargs):
-        super(PluginManager,self).__init__()
+        flag_dict = OrderedDict()
+        flag_dict['select'] = False
+        super(PluginManager,self).__init__(flag_dict)
         self.logmethod = print 
 
     def write_log(self,msg):

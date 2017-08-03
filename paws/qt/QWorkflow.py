@@ -11,10 +11,7 @@ class QWorkflow(QTreeSelectionModel):
     """
 
     def __init__(self,wf):
-        flag_dict = OrderedDict()
-        flag_dict['select'] = False
-        flag_dict['enable'] = False
-        super(QWorkflow,self).__init__(flag_dict,wf)
+        super(QWorkflow,self).__init__(wf)
         #self._tree references wf after QTreeModel.__init__()
         #self.wf = wf
 

@@ -51,13 +51,13 @@ class InputLocator(object):
 
 def parameter_doc(name,value,doc):
     if isinstance(value, InputLocator):
-        src_str = input_sources[value.src]
+        #src_str = input_sources[value.src]
         tp_str = input_types[value.tp]
         v_str = str(value.val)
-        return "- name: {} \n- source: {} \n- type: {} \n- value: {} \n- doc: {}".format(name,src_str,tp_str,v_str,doc) 
+        return "- name: {} \n- value: {} ({}) \n- doc: {}".format(name,v_str,tp_str,doc) 
     else:
-        tp_str = type(value).__name__
-        return "- name: {} \n- type: {} \n- doc: {}".format(name,tp_str,doc) 
+        v_str = str(value)
+        return "- name: {} \n- value: {} \n- doc: {}".format(name,v_str,doc) 
 
 class Operation(object):
     """
@@ -149,8 +149,7 @@ class Operation(object):
         documenting the input and output structure 
         and usage instructions for the Operation
         """
-        return str(
-        "Operation description: "
+        return str(type(self).__name__+": "
         + self.doc_as_string()
         + "\n\n--- Inputs ---"
         + self.input_description() 
@@ -165,24 +164,18 @@ class Operation(object):
 
     def input_description(self):
         a = ""
-        inp_indx = 0
         for name in self.inputs.keys(): 
             if self.input_locator[name]:
                 display_val = self.input_locator[name]
             else:
                 display_val = self.inputs[name] 
-            a = a + str("\n\nInput {}:\n".format(inp_indx) 
-            + parameter_doc(name,display_val,self.input_doc[name]))
-            inp_indx += 1
+            a = a + '\n\n'+parameter_doc(name,display_val,self.input_doc[name])
         return a
 
     def output_description(self):
         a = ""
-        out_indx = 0
         for name,val in self.outputs.items(): 
-            a = a + str("\n\nOutput {}:\n".format(out_indx) 
-            + parameter_doc(name,val,self.output_doc[name]))
-            out_indx += 1
+            a = a + '\n\n'+parameter_doc(name,val,self.output_doc[name])
         return a
                 
 class Batch(Operation):

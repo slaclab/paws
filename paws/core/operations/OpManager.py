@@ -1,6 +1,9 @@
 from __future__ import print_function
+from collections import OrderedDict
 import importlib
+
 from ..models.TreeModel import TreeModel
+from ..models.TreeItem import TreeItem
 from .. import operations as ops
 from ..operations.Operation import Operation
 
@@ -10,10 +13,20 @@ class OpManager(TreeModel):
     """
 
     def __init__(self):
-        super(OpManager,self).__init__()
+        default_flags = OrderedDict()
+        default_flags['enable'] = False
+        super(OpManager,self).__init__(default_flags)
         self.logmethod = print 
         self._n_ops = 0
         self._n_cats = 0
+
+    # override TreeModel.create_tree_item() to add 
+    # the correct enable/disable flags. 
+    def create_tree_item(self,parent_itm,itm_tag):
+        itm = TreeItem(parent_itm,itm_tag)
+        op_uri = self.build_uri(itm)
+        itm.flags['enable'] = ops.load_flags[op_uri]
+        return itm
 
     def write_log(self,msg):
         self.logmethod(msg)
@@ -55,13 +68,12 @@ class OpManager(TreeModel):
     def add_op(self,cat,opname):
         """
         Add op name to the tree under category cat.
+        If ops.load_flags indicates that this op should be enabled,
+        enable it (this causes it to import the module).
         """
         op_uri = cat+'.'+opname
         if ops.load_flags[op_uri]:
-            mod = importlib.import_module('.'+op_uri,ops.__name__)
-            op = getattr(mod,opname)
-            optest = op()
-            self.set_item(op_uri,op)
+            self.set_op_enabled(op_uri)
         else:
             self.set_item(op_uri,None)
 
@@ -69,16 +81,18 @@ class OpManager(TreeModel):
         cat = op_uri[:op_uri.rfind('.')]
         opname = op_uri.split('.')[-1]
         if flag:
-            # enable the op: set ops.load_flags so that
-            # add_op() imports it and places it in the tree
-            ops.load_flags[op_uri] = True
             self.write_log('Enabling Operation {}...'.format(op_uri))
+            mod = importlib.import_module('.'+op_uri,ops.__name__)
+            op = getattr(mod,opname)
+            optest = op()
+            self.set_item(op_uri,op)
+            ops.load_flags[op_uri] = True
         else:
             # disable the op: set ops.load_flags so that
             # add_op() replaces the treedata with None
-            ops.load_flags[op_uri] = False
             self.write_log('Disabling Operation {}'.format(op_uri))
-        self.add_op(cat,opname)
+            ops.load_flags[op_uri] = False
+            self.set_item(op_uri,None)
         if flag:
             self.write_log('Finished enabling {}'.format(op_uri))
 

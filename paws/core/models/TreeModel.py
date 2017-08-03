@@ -1,3 +1,4 @@
+import copy
 from collections import OrderedDict
 
 from .TreeItem import TreeItem
@@ -11,16 +12,15 @@ class TreeModel(object):
     in subclasses of TreeModel by adding TreeItem.flags.
     """
 
-    def __init__(self):#,dicttree=DictTree()):
+    def __init__(self,default_flags={}):
         super(TreeModel,self).__init__()
         # a TreeItem with no parent is the root of the tree
         self._root_item = TreeItem(None,'ROOT')
-        # the tree data is all stored in a DictTree. 
+        # the underlying data are stored in a DictTree. 
         self._tree = DictTree()
-        #if isinstance(dicttree,DictTree):
-        #    for k in dicttree.list_child_tags():
-        #        self.set_item(k,dicttree[k])
-        #    self._tree = dicttree
+        # any TreeItems will be given these default_flags,
+        # unless subclasses override TreeModel.create_tree_item()
+        self.default_flags = default_flags
 
     def __getitem__(self,uri):
         return self._tree.get_from_uri(uri)
@@ -246,5 +246,6 @@ class TreeModel(object):
         to add features to TreeItems, such as default values for TreeItem.flags.
         TreeModel implementation returns TreeItem(parent_itm,itm_tag).
         """
-        return TreeItem(parent_itm,itm_tag)
-
+        itm = TreeItem(parent_itm,itm_tag)
+        itm.flags = copy.copy(self.default_flags)
+        return itm

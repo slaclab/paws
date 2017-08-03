@@ -12,7 +12,12 @@ class Workflow(TreeModel):
     """
 
     def __init__(self):
-        super(Workflow,self).__init__()
+        flag_dict = OrderedDict()
+        flag_dict['select'] = False
+        flag_dict['enable'] = False
+        super(Workflow,self).__init__(flag_dict)
+        self.inputs = OrderedDict()
+        self.outputs = OrderedDict()
         #self.wfman = wfman
 
     def __getitem__(self,key):
