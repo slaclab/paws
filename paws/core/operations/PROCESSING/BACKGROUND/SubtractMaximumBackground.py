@@ -5,10 +5,11 @@ from ...Operation import Operation
 
 class SubtractMaximumBackground(Operation):
     """
-    Originally contributed by Amanda Fournier.
-
     Subtract a background from a foreground, with scaling to prevent over-subtraction.
-    Has optional arguments for error vectors (default None).
+    Optionally, input an intensity error array, 
+    and get an error estimate for the background-subtracted intensity. 
+
+    Operation originally contributed by Amanda Fournier.
     """
 
     def __init__(self):
