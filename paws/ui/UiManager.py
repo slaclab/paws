@@ -130,7 +130,9 @@ class UiManager(QtCore.QObject):
         self.ui.op_tree.setColumnWidth(0,200)
         self.ui.plugin_tree.hideColumn(1)
         self.ui.plugin_tree.hideColumn(2)
-        self.ui.hsplitter.setStretchFactor(1,2)    
+        self.ui.hsplitter.setStretchFactor(0,2)    
+        self.ui.hsplitter.setStretchFactor(1,3)    
+        self.ui.hsplitter.setStretchFactor(2,2)    
         self.ui.vsplitter.setStretchFactor(0,1)    
 
     def set_wf(self,wf_selector_idx):
