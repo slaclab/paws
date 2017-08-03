@@ -151,10 +151,11 @@ class UiManager(QtCore.QObject):
             .format(self.qwfman.qworkflows.keys()))
         self.qwfman.add_wf(wfname)
         self.ui.wf_selector.model().append_item(wfname)
-        # if this is the first workflow loaded, need to hide the treeview columns.
+        # if this is the first workflow loaded, hide the selection flag column.
         if self.qwfman.n_wf() == 1:
             self.ui.wf_tree.hideColumn(1)
-            self.ui.wf_tree.hideColumn(2)
+            self.ui.wf_tree.setColumnWidth(0,200)
+            #self.ui.wf_tree.hideColumn(2)
         self.ui.wf_selector.setCurrentIndex(self.qwfman.n_wf()-1)
 
     def display_op_item(self,idx):

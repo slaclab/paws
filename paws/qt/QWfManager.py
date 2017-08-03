@@ -12,7 +12,7 @@ from ..core import pawstools
 from ..core.operations import Operation as opmod
 from ..core.operations import optools
 from ..core.workflow.Workflow import Workflow
-from ..core.operations.Operation import Operation, Batch, Realtime
+from ..core.operations.Operation import Operation#, Batch, Realtime
 
 
 class QWfManager(QtCore.QObject):

@@ -4,7 +4,7 @@ from functools import partial
 
 from ..models.TreeModel import TreeModel
 from ..operations import Operation as opmod
-from ..operations.Operation import Operation, Batch, Realtime
+from ..operations.Operation import Operation#, Batch, Realtime
 
 class Workflow(TreeModel):
     """
@@ -14,7 +14,7 @@ class Workflow(TreeModel):
     def __init__(self):
         flag_dict = OrderedDict()
         flag_dict['select'] = False
-        flag_dict['enable'] = False
+        flag_dict['enable'] = True
         super(Workflow,self).__init__(flag_dict)
         self.inputs = OrderedDict()
         self.outputs = OrderedDict()
@@ -94,4 +94,11 @@ class Workflow(TreeModel):
         op.input_locator[inpname].data = val
         self.set_item(uri,val)
 
+    def set_op_enabled(self,opname,flag=True):
+        op_item = self.get_from_uri(opname)
+        op_item.flags['enable'] = flag
+
+    def is_op_enabled(self,opname):
+        op_item = self.get_from_uri(opname)
+        return op_item.flags['enable']
 

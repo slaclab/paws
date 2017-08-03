@@ -13,12 +13,10 @@ class PawsPlugin(object):
         super(PawsPlugin,self).__init__()
         self.inputs = OrderedDict()
         self.input_doc = {}
-        self.input_src = {}
         self.input_type = {}
         # For each of the var names, assign to None 
         for name in input_names: 
-            self.input_src[name] = opmod.no_input
-            self.input_type[name] = opmod.none_type
+            self.input_type[name] = opmod.no_input
             self.inputs[name] = None
             self.input_doc[name] = None
 

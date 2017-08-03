@@ -7,7 +7,7 @@ import time
 from .. import operations as ops
 from .Workflow import Workflow
 from ..operations import Operation as opmod
-from ..operations.Operation import Operation, Batch, Realtime        
+from ..operations.Operation import Operation#, Batch, Realtime        
 from ..operations import optools
 from .. import pawstools
 
