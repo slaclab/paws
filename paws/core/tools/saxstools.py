@@ -39,6 +39,503 @@ def compute_saxs(q,params):
         #    I_pk = compute_peaks()
     return I
 
+def profile_spectrum(q,I,dI=None):
+    """
+    Profile a saxs spectrum (q,I) 
+    by taking several fast numerical metrics 
+    on the measured data.
+
+    :returns: dictionary of metrics and spectrum profiling flags.
+    Dict keys and descriptions: 
+    - 'ERROR_MESSAGE': Any errors or warnings are reported here. 
+    - 'bad_data_flag': Boolean indicating that the spectrum is unfamiliar or mostly made of noise. 
+    - 'precursor_flag': Boolean indicating presence of precursor terms. 
+    - 'form_flag': Boolean indicating presence of form factor terms. 
+    - 'form_id': Form factor identity, e.g. sphere, cube, rod, etc. 
+    - 'structure_flag': Boolean indicating presence of structure factor terms. 
+    - 'structure_id': Structure identity, e.g. fcc, hcp, bcc, etc. 
+    - 'low_q_ratio': fraction of integrated intensity for q<0.4 
+    - 'high_q_ratio': fraction of integrated intensity for q>0.4 
+    - 'low_q_logratio': fraction of total log(I)-min(log(I)) over q<0.4 
+    - 'high_q_logratio': fraction of total log(I)-min(log(I)) over q>0.4 
+    - 'high_freq_ratio': Ratio of the upper half to the lower half 
+        of the power spectrum of the discrete fourier transform of the intensity. 
+        fluctuation_strength': Integrated fluctuation of intensity 
+        (sum of difference in intensity between adjacent points 
+        taken only where this difference changes sign), 
+        divided by the range (maximum minus minimum) of intensity. 
+    - 'Imax_over_Imean': maximum intensity divided by mean intensity. 
+    - 'Imax_over_Imean_local': maximum intensity divided by 
+        mean intensity over q values within 10% of the q value of the maximum. 
+    - 'Imax_over_Ilowq': Maximum intensity divided by mean intensity over q<0.1. 
+    - 'Imax_over_Ihighq': Maximum intensity divided by mean intensity over q>0.4. 
+    - 'Ilowq_over_Ihighq': Mean intensity for q<0.1 divided by mean intensity for q>0.4. 
+    - 'low_q_logcurv': Curvature of parabola fit to log(I) versus log(q) for q<0.1. 
+    - 'q_Imax': q value of the maximum intensity. 
+    - 'bin_strengths': log(I) integrated in q-bins of 0.1 1/Angstrom from 0 to 1 1/Angstrom. 
+    """ 
+    ### amplitude analysis:
+    idxmax = np.argmax(I)
+    Imax = I[idxmax] 
+    q_Imax = q[idxmax]
+    idxmin = np.argmin(I)
+    Imin = I[idxmin]
+    Irange = Imax - Imin
+    Imean = np.mean(I)
+    Imax_over_Imean = float(Imax)/float(Imean)
+    idx_around_max = ((q > 0.9*q_Imax) & (q < 1.1*q_Imax))
+    Imean_around_max = np.mean(I[idx_around_max])
+    Imax_over_Imean_local = Imax / Imean_around_max
+
+    ### fourier analysis
+    n_q = len(q)
+    fftI = np.fft.fft(I)
+    ampI = np.abs(fftI)
+    powI = np.abs(fftI)**2
+    high_freq_ratio = np.sum(powI[n_q/4:n_q/2])/np.sum(powI[1:n_q/4])
+    #high_freq_ratio = np.sum(ampI[n_q/4:n_q/2])/np.sum(ampI[1:n_q/4])
+
+    ### fluctuation analysis
+    # array of the difference between neighboring points:
+    nn_diff = I[1:]-I[:-1]
+    # keep indices where the sign of this difference changes.
+    # also keep first index
+    nn_diff_prod = nn_diff[1:]*nn_diff[:-1]
+    idx_keep = np.hstack((np.array([True]),nn_diff_prod<0))
+    fluc = np.sum(np.abs(nn_diff[idx_keep]))
+    #fluctuation_strength = fluc/Irange
+    fluctuation_strength = fluc/Imean
+
+	# correlations on intensity
+    #q_corr = compute_pearson(I,np.linspace(0,1,n_q))
+    #qsquared_corr = compute_pearson(I,np.linspace(0,1,n_q)**2)
+    #cosq_corr = compute_pearson(I,np.cos(q*np.pi/(2*q[-1])))
+    #cos2q_corr = compute_pearson(I,np.cos(q*np.pi/(2*q[-1]))**2)
+    #invq_corr = compute_pearson(I,q**-1)
+    #invq4_corr = compute_pearson(I,q**-4)
+
+    # correlations on log intensity
+    #idx_nz = np.invert(I <= 0)
+    #q_logcorr = compute_pearson( np.log(I[idx_nz]) , np.linspace(0,1,n_q)[idx_nz] )
+    #qsquared_logcorr = compute_pearson( np.log(I[idx_nz]) , (np.linspace(0,1,n_q)[idx_nz])**2 )
+    #cosq_logcorr = compute_pearson( np.log(I[idx_nz]) , np.cos(q*np.pi/(2*q[-1]))[idx_nz] )
+    #cos2q_logcorr = compute_pearson( np.log(I[idx_nz]) , (np.cos(q*np.pi/(2*q[-1]))[idx_nz])**2 )
+    #invq_logcorr = compute_pearson( np.log(I[idx_nz]) , q[idx_nz]**-1 )
+
+    ### bin-integrated intensity analysis
+    bin_strengths = np.zeros(10)
+    for i in range(10):
+        qmini, qmaxi = i*0.1, (i+1)*0.1 
+        idxi = ((q>=qmini) & (q<qmaxi))
+        if any(idxi):
+            qi = q[ idxi ]
+            Ii = I[ idxi ]
+            dqi = qi[1:]-qi[:-1]
+            Ii = (Ii[1:]+Ii[:-1])/2
+            bin_strengths[i] = np.sum(np.log(Ii) * dqi) / (qi[-1]-qi[0]) 
+    idx_nz = (I>0)
+    q_nz = q[idx_nz] 
+    I_nz_log = np.log(I[idx_nz])
+    # make values positive:
+    I_nz_log = I_nz_log-np.min(I_nz_log)
+    I_logsum = np.sum(I_nz_log)
+    low_q_logratio = np.sum(I_nz_log[(q_nz<0.4)])/I_logsum
+    high_q_logratio = np.sum(I_nz_log[(q_nz>=0.4)])/I_logsum
+    I_sum = np.sum(I)
+    low_q_ratio = np.sum(I[(q<0.4)])/I_sum
+    high_q_ratio = np.sum(I[(q>=0.4)])/I_sum
+
+    ### curve shape analysis
+    lowq_idx = q<0.1
+    highq_idx = q>0.4
+    lowq = q[lowq_idx]
+    highq = q[highq_idx]
+    I_lowq = I[lowq_idx]
+    I_highq = I[highq_idx]
+    I_lowq_mean = np.mean(I_lowq)
+    I_highq_mean = np.mean(I_highq)
+    lowq_mean = np.mean(lowq)
+    lowq_std = np.std(lowq)
+    I_lowq_std = np.std(I_lowq)
+    I_lowq_s = I_lowq/I_lowq_std
+    lowq_s = (lowq - lowq_mean)/lowq_std
+    #p_lowq = fit_with_slope_constraint(lowq_s,np.log(I_lowq_s),-1*lowq_mean/lowq_std,0,3) 
+    #p_lowq = fit_with_slope_constraint(lowq_s,np.log(I_lowq_s),lowq_s[-1],0,3) 
+    nz = (I_lowq_s>0)
+    p_lowq = np.polyfit(lowq_s[nz],np.log(I_lowq_s[nz]),2)
+    low_q_logcurv = p_lowq[0]
+    Imax_over_Ilowq = float(Imax)/I_lowq_mean
+    Imax_over_Ihighq = float(Imax)/I_highq_mean
+    Ilowq_over_Ihighq = I_lowq_mean/I_highq_mean
+
+    # Flagging bad data: 
+    # Data with high noise are bad.
+    # Data that are totally flat or increasing in q are bad.
+    bad_data_flag = ( (fluctuation_strength > 20 and Imax_over_Imean_local < 2)
+                    or low_q_ratio/high_q_ratio < 1
+                    or Ilowq_over_Ihighq < 10 )
+
+    form_id = None 
+    structure_id = None 
+    if bad_data_flag:
+        form_flag = False
+        precursor_flag = False
+        structure_flag = False
+    else:
+        # Flagging form factor:
+        # Intensity should be quite decreasing in q.
+        # Low-q region should be quite flat.
+        # Low-q mean intensity should be much larger than low-q fluctuations.
+        form_flag = low_q_ratio/high_q_ratio > 10 
+        if form_flag:
+            # TODO: determine form factor here
+            #form_id = 'sphere'
+            form_id = 'NOT_IMPLEMENTED'
+ 
+        # Flagging precursors: 
+        # Intensity should decrease in q, at least mildly.
+        # Intensity should decrease more sharply at high q.
+        # Low-q region of spectrum should be quite flat.
+        # Noise levels may be high if only precursors are present.
+        # More high-q intensity than form factor alone.
+        nz_bins = np.invert(np.array((bin_strengths==0)))
+        s_nz = bin_strengths[nz_bins]
+        precursor_flag = ( low_q_ratio/high_q_ratio > 2 
+                        and high_q_ratio > 1E-3 
+                        #and np.argmin(s_nz) == np.sum(nz_bins)-1 
+                        #and (s_nz[-2]-s_nz[-1]) > (s_nz[-3]-s_nz[-2]) 
+                        and Imax_over_Ilowq < 4 )
+
+        # Flagging structure:
+        # Structure is likely to cause max intensity to be outside the low-q region. 
+        # Maximum intensity should be large relative to its 'local' mean intensity. 
+        structure_flag = Imax_over_Imean_local > 2 and q_Imax > 0.06 
+        if structure_flag:
+            # TODO: determine structure factor here
+            structure_id = 'NOT_IMPLEMENTED'
+    d_r = OrderedDict() 
+    d_r['bad_data_flag'] = bad_data_flag
+    d_r['precursor_flag'] = precursor_flag
+    d_r['form_flag'] = form_flag
+    d_r['structure_flag'] = structure_flag
+    d_r['structure_id'] = structure_id 
+    d_r['form_id'] = form_id 
+    d_r['low_q_logcurv'] = low_q_logcurv
+    d_r['Imax_over_Imean'] = Imax_over_Imean
+    d_r['Imax_over_Imean_local'] = Imax_over_Imean_local
+    d_r['Imax_over_Ilowq'] = Imax_over_Ilowq 
+    d_r['Imax_over_Ihighq'] = Imax_over_Ihighq 
+    d_r['Ilowq_over_Ihighq'] = Ilowq_over_Ihighq 
+    d_r['low_q_logratio'] = low_q_logratio 
+    d_r['high_q_logratio'] = high_q_logratio 
+    d_r['low_q_ratio'] = low_q_ratio 
+    d_r['high_q_ratio'] = high_q_ratio 
+    d_r['high_freq_ratio'] = high_freq_ratio 
+    d_r['fluctuation_strength'] = fluctuation_strength
+    d_r['q_Imax'] = q_Imax
+    d_r['bin_strengths'] = bin_strengths
+    #d_r['q_logcorr'] = q_logcorr
+    #d_r['qsquared_logcorr'] = qsquared_logcorr
+    #d_r['cos2q_logcorr'] = cos2q_logcorr
+    #d_r['cosq_logcorr'] = cosq_logcorr
+    #d_r['invq_logcorr'] = invq_logcorr
+    #d_r['q_corr'] = q_corr
+    #d_r['qsquared_corr'] = qsquared_corr
+    #d_r['cos2q_corr'] = cos2q_corr
+    #d_r['cosq_corr'] = cosq_corr
+    #d_r['invq_corr'] = invq_corr
+    return d_r
+
+def parameterize_spectrum(q,I,metrics,fixed_params={}):
+    """
+    Determine a parameterization for a scattering equation,
+    beginning with the measured spectrum (q,I) 
+    and a dict of features (metrics).
+    Dict metrics is similar or equal to 
+    the output dict of profile_spectrum().
+    """
+    if metrics['bad_data_flag']:
+        # stop
+        return metrics 
+    fix_keys = fixed_params.keys()
+
+    pre_flag = metrics['precursor_flag']
+    f_flag = metrics['form_flag']
+    s_flag = metrics['structure_flag']
+
+    # Check for overconstrained system
+    if 'I_at_0' in fix_keys and 'I0_form' in fix_keys and 'I0_pre' in fix_keys:
+        val1 = fixed_params['I_at_0']
+        val2 = fixed_params['I0_form'] + fixed_params['I0_pre'] 
+        if not val1 == val2:
+            msg = str('Spectrum intensity is overconstrained. '
+            + 'I_at_0 is constrained to {}, '
+            + 'but I0_form + I0_pre = {}. '.format(val1,val2))
+            raise ValueError(msg)
+    
+    if 'I0_form' in fix_keys and 'I0_pre' in fix_keys:
+        I_at_0 = fixed_params['I0_pre'] + fixed_params['I0_form']
+    else:
+        # Perform a low-q spectrum fit to get I(q=0).
+        if s_flag:
+            # If structure factor scattering,
+            # expect low-q SNR to be high, use q<0.06,
+            # fit to second order.
+            idx_lowq = (q<0.06)
+            I_at_0 = fit_I0(q[idx_lowq],I[idx_lowq],2)
+            metrics['I_at_0'] = I_at_0
+            #
+            #
+            # And now bail, until structure factor parameterization is in.
+            #
+            #
+            metrics['ERROR_MESSAGE'] = '[{}] structure factor parameterization not yet supported'.format(__name__)
+            return metrics
+        elif f_flag:
+            # If form factor scattering, fit 3rd order. 
+            # Use q<0.1 and disregard lowest-q values if they are far from the mean, 
+            # as these points are likely dominated by experimental error.
+            idx_lowq = (q<0.1)
+            Imean_lowq = np.mean(I[idx_lowq])
+            Istd_lowq = np.std(I[idx_lowq])
+            idx_good = ((I[idx_lowq] < Imean_lowq+Istd_lowq) & (I[idx_lowq] > Imean_lowq-Istd_lowq))
+            #dI_lowq = (I[idx_lowq][1:] - I[idx_lowq][:-1])/Imed_lowq
+            #idx_good = np.hstack( ( (abs(dI_lowq)<0.1) , np.array([True]) ) )
+            I_at_0 = fit_I0(q[idx_lowq][idx_good],I[idx_lowq][idx_good],3)
+        else:
+            # If only precursor scattering, fit the entire spectrum.
+            I_at_0 = fit_I0(q,I,4)
+        if I_at_0 > 10*I[0] or I_at_0 < 0.1*I[0]:
+            # stop 
+            msg = 'polynomial fit for I(q=0) deviates too far from low-q values' 
+            metrics['ERROR_MESSAGE'] = msg
+            metrics['I_at_0'] = I_at_0
+            metrics['bad_data_flag'] = True 
+            return metrics
+
+    # If we make it to the point, I_at_0 should be set.
+    metrics['I_at_0'] = I_at_0
+
+    r0_form = None
+    sigma_form = None
+    if f_flag:
+        if ('r0_form' in fix_keys and 'sigma_form' in fix_keys):
+            r0_form = fixed_params['r0_form']
+            sigma_form = fixed_params['sigma_form']
+        else:
+            # get at least one of r0_form or sigma_form from spherical_normal_heuristics()
+            r0_form, sigma_form = spherical_normal_heuristics(q,I,I_at_0=I_at_0)
+            if 'r0_form' in fix_keys:
+                r0_form = fixed_params['r0_form']
+            if 'sigma_form' in fix_keys:
+                sigma_form = fixed_params['sigma_form']
+    metrics['r0_form'] = r0_form
+    metrics['sigma_form'] = sigma_form
+    
+    r0_pre = None
+    if pre_flag:
+        if 'r0_pre' in fix_keys:
+            r0_pre = fixed_params['r0_pre']
+        else:
+            r0_pre = precursor_heuristics(q,I,I_at_0=I_at_0)
+    metrics['r0_pre'] = r0_pre 
+
+    I0_pre = None
+    I0_form = None
+    if pre_flag and f_flag:
+        if 'I0_pre' in fix_keys and 'I0_form' in fix_keys:
+            I0_pre = fixed_params['I0_pre']
+            I0_form = fixed_params['I0_form']
+        elif 'I0_pre' in fix_keys:
+            I0_pre = fixed_params['I0_pre']
+            I0_form = I_at_0 - I0_pre
+        elif 'I0_form' in fix_keys:
+            I0_form = fixed_params['I0_form']
+            I0_pre = I_at_0 - I0_form
+        else:
+            I_pre = compute_spherical_normal_saxs(q,r0_pre,0)
+            I_form = compute_spherical_normal_saxs(q,r0_form,sigma_form)
+            I_nz = np.invert((I<=0))
+            I_error = lambda x: np.sum( (np.log(I_at_0*(x*I_pre+(1.-x)*I_form)[I_nz])-np.log(I[I_nz]))**2 )
+            x_res = minimize(I_error,[0.1],bounds=[(0.0,1.0)]) 
+            x_fit = x_res.x[0]
+            I0_form = (1.-x_fit)*I_at_0
+            I0_pre = x_fit*I_at_0
+    elif pre_flag:
+        if 'I0_pre' in fix_keys:
+            I0_pre = fixed_params['I0_pre']
+        else:
+            I0_pre = I_at_0 
+    elif f_flag:
+        if 'I0_form' in fix_keys:
+            I0_form = fixed_params['I0_form'] 
+        else:
+            I0_form = I_at_0 
+    metrics['I0_pre'] = I0_pre 
+    metrics['I0_form'] = I0_form 
+
+    q0_structure = None
+    I0_structure = None
+    sigma_structure = None
+    #if s_flag:
+    #   .....   
+    metrics['q0_structure'] = q0_structure 
+    metrics['I0_structure'] = I0_structure 
+    metrics['sigma_structure'] = sigma_structure
+
+    I_guess = compute_saxs(q,p)
+    q_I_guess = np.array([q,I_guess]).T
+    nz = ((I>0)&(I_guess>0))
+    logI_nz = np.log(I[nz])
+    logIguess_nz = np.log(I_guess[nz])
+    Imean = np.mean(logI_nz)
+    Istd = np.std(logI_nz)
+    logI_nz_s = (logI_nz - Imean) / Istd
+    logIguess_nz_s = (logIguess_nz - Imean) / Istd
+    metrics['R2log_guess'] = compute_Rsquared(logI_nz,logIguess_nz)
+    metrics['chi2log_guess'] = compute_chi2(logI_nz_s,logIguess_nz_s)
+    return metrics
+
+def fit_spectrum(q,I,objfun,features,x_keys,constraints=[]):
+    """
+    Fit a saxs spectrum (I(q) vs q) to the theoretical spectrum 
+    for one or several scattering populations.
+    Input objfun (string) specifies objective function to use in optimization.
+    Input features (dict) describes spectrum and scatterer populations.
+    Input x_keys (list of strings) are the keys of variables that will be optimized.
+    Every item in x_keys should be a key in the features dict.
+    Input constraints (list of strings) to specify constraints.
+    
+    Supported objective functions: 
+    (1) 'chi2': sum of difference squared across entire q range. 
+    (2) 'chi2log': sum of difference of logarithm, squared, across entire q range. 
+    (3) 'chi2norm': sum of difference divided by measured value, squared, aross entire q range. 
+    (4) 'low_q_chi2': sum of difference squared in only the lowest half of measured q range. 
+    (5) 'low_q_chi2log': sum of difference of logarithm, squared, in lowest half of measured q range. 
+    (6) 'pearson': pearson correlation between measured and modeled spectra. 
+    (7) 'pearson_log': pearson correlation between logarithms of measured and modeled spectra.
+    (8) 'low_q_pearson': pearson correlation between measured and modeled spectra. 
+    (9) 'low_q_pearson_log': pearson correlation between logarithms of measured and modeled spectra. 
+
+    Supported constraints: 
+    (1) 'fix_I0': keeps I(q=0) fixed while fitting x_keys.
+
+    TODO: document the objective functions, etc.
+    """
+    pre_flag = features['precursor_flag']
+    form_flag = features['form_flag']
+    structure_flag = features['structure_flag']
+
+    # trim non-flagged populations out of x_keys
+    if not pre_flag:
+        if 'I0_pre' in x_keys:
+            x_keys.pop(x_keys.index('I0_pre')) 
+        if 'r0_pre' in x_keys:
+            x_keys.pop(x_keys.index('r0_pre')) 
+    if not form_flag:
+        if 'I0_form' in x_keys:
+            x_keys.pop(x_keys.index('I0_form')) 
+        if 'r0_form' in x_keys:
+            x_keys.pop(x_keys.index('r0_form')) 
+        if 'sigma_form' in x_keys:
+            x_keys.pop(x_keys.index('sigma_form')) 
+    if not structure_flag:
+        if 'I0_structure' in x_keys:
+            x_keys.pop(x_keys.index('I0_structure')) 
+        if 'q0_structure' in x_keys:
+            x_keys.pop(x_keys.index('q0_structure')) 
+        if 'sigma_structure' in x_keys:
+            x_keys.pop(x_keys.index('sigma_structure')) 
+
+    c = []
+    if 'fix_I0' in constraints: 
+        I_keys = []
+        if 'I0_pre' in x_keys:
+            I_keys.append('I0_pre')
+        if 'I0_form' in x_keys:
+            I_keys.append('I0_form')
+        if 'I0_structure' in x_keys:
+            I_keys.append('I0_structure')
+        if len(I_keys) == 0:
+            # constraint inherently satisfied: do nothing.
+            pass
+        elif len(I_keys) == 1:
+            # overconstrained: skip the constraint, reduce dimensionality. 
+            x_keys.pop(x_keys.index(I_keys[0])) 
+        else:
+            # find the indices of the relevant x_keys and form a constraint function.
+            iargs = []
+            Icons = 0
+            for ik,k in zip(range(len(x_keys)),x_keys):
+                if k in I_keys:
+                    iargs.append(ik)
+                    Icons += features[k]
+            cfun = lambda x: sum([x[i] for i in iargs]) - Icons 
+            c_fixI0 = {'type':'eq','fun':cfun}
+            c.append(c_fixI0)
+
+    x_init = [] 
+    x_bounds = [] 
+    for k in x_keys:
+        # features.keys() may not include k,
+        # e.g. if the relevant population was not flagged.
+        if k in features.keys():
+            x_init.append(features[k])
+            if k in ['r0_pre','r0_form']:
+                x_bounds.append((1E-3,None))
+            elif k in ['I0_pre','I0_form']:
+                x_bounds.append((0,None))
+            elif k in ['sigma_form']:
+                x_bounds.append((0.0,0.3))
+
+    # Only proceed if there is still work to do.
+    d_opt = OrderedDict()
+    x_opt = []
+    if any(x_init):
+        saxs_fun = lambda q,x,d: compute_saxs_with_substitutions(q,d,x_keys,x)
+        I_nz = (I>0)
+        n_q = len(q)
+        idx_lowq = (q<0.4)
+        if objfun == 'chi2':
+            fit_obj = lambda x: compute_chi2( saxs_fun(q,x,features) , I )
+        elif objfun == 'chi2log':
+            fit_obj = lambda x: compute_chi2( np.log(saxs_fun(q[I_nz],x,features)) , np.log(I[I_nz]) )
+        elif objfun == 'chi2norm':
+            fit_obj = lambda x: compute_chi2( saxs_fun(q[I_nz],x,features) , I[I_nz] , weights=float(1)/I[I_nz] )
+        elif objfun == 'low_q_chi2':
+            fit_obj = lambda x: compute_chi2( saxs_fun(q[idx_lowq],x,features) , I[idx_lowq] )
+        elif objfun == 'pearson':
+            fit_obj = lambda x: -1*compute_pearson( saxs_fun(q,x,features) , I )
+        elif objfun == 'low_q_pearson':
+            fit_obj = lambda x: -1*compute_pearson( saxs_fun(q[idx_lowq],x,features) , I[idx_lowq] )
+        elif objfun == 'low_q_chi2log':
+            fit_obj = lambda x: compute_chi2( np.log(saxs_fun(q[I_nz][idx_lowq[I_nz]],x,features)) , np.log(I[I_nz][idx_lowq[I_nz]]) ) 
+        elif objfun == 'pearson_log':
+            fit_obj = lambda x: -1*compute_pearson( np.log(saxs_fun(q[I_nz],x,features)) , np.log(I[I_nz]) ) 
+        elif objfun == 'low_q_pearson_log':
+            fit_obj = lambda x: -1*compute_pearson( np.log(saxs_fun(q[I_nz][idx_lowq[I_nz]],x,features)) , np.log(I[I_nz][idx_lowq[I_nz]]) ) 
+        else:
+            msg = 'objective function {} not supported'.format(objfun)
+            raise ValueError(msg)
+        d_opt['objective_before'] = fit_obj(x_init)
+        #try:
+        res = scipimin(fit_obj,x_init,bounds=x_bounds,constraints=c)
+        #except:
+        #    import pdb; pdb.set_trace()
+        x_opt = res.x
+        d_opt['objective_after'] = fit_obj(x_opt)
+        if d_opt['objective_after'] > d_opt['objective_before']:
+            print('WARNING: optimization has increased the objective function. why?')
+            print('x_init: {}'.format(x_init))
+            print('obj_init: {}'.format(d_opt['objective_before']))
+            print('x_opt: {}'.format(x_opt))
+            print('obj_opt: {}'.format(d_opt['objective_after']))
+            #import pdb; pdb.set_trace()
+            x_opt = x_init
+        for k,xk in zip(x_keys,x_opt):
+            d_opt[k] = xk
+    return d_opt    
+
 def compute_spherical_normal_saxs(q,r0,sigma):
     """
     Given q, a mean radius r0, 
@@ -254,146 +751,6 @@ def compute_saxs_with_substitutions(q,d,x_keys,x_vals):
         d_sub[k] = v
     return compute_saxs(q,d_sub)
 
-
-def saxs_fit(q,I,objfun,features,x_keys,constraints=[]):
-    """
-    Fit a saxs spectrum (I(q) vs q) to the theoretical spectrum 
-    for one or several scattering populations.
-    Input objfun (string) specifies objective function to use in optimization.
-    Input features (dict) describes spectrum and scatterer populations.
-    Input x_keys (list of strings) are the keys of variables that will be optimized.
-    Every item in x_keys should be a key in the features dict.
-    Input constraints (list of strings) to specify constraints.
-    
-    Supported objective functions: 
-    (1) 'chi2': sum of difference squared across entire q range. 
-    (2) 'chi2log': sum of difference of logarithm, squared, across entire q range. 
-    (3) 'chi2norm': sum of difference divided by measured value, squared, aross entire q range. 
-    (4) 'low_q_chi2': sum of difference squared in only the lowest half of measured q range. 
-    (5) 'low_q_chi2log': sum of difference of logarithm, squared, in lowest half of measured q range. 
-    (6) 'pearson': pearson correlation between measured and modeled spectra. 
-    (7) 'pearson_log': pearson correlation between logarithms of measured and modeled spectra.
-    (8) 'low_q_pearson': pearson correlation between measured and modeled spectra. 
-    (9) 'low_q_pearson_log': pearson correlation between logarithms of measured and modeled spectra. 
-
-    Supported constraints: 
-    (1) 'fix_I0': keeps I(q=0) fixed while fitting x_keys.
-
-    TODO: document the objective functions, etc.
-    """
-    pre_flag = features['precursor_flag']
-    form_flag = features['form_flag']
-    structure_flag = features['structure_flag']
-
-    # trim non-flagged populations out of x_keys
-    if not pre_flag:
-        if 'I0_pre' in x_keys:
-            x_keys.pop(x_keys.index('I0_pre')) 
-        if 'r0_pre' in x_keys:
-            x_keys.pop(x_keys.index('r0_pre')) 
-    if not form_flag:
-        if 'I0_form' in x_keys:
-            x_keys.pop(x_keys.index('I0_form')) 
-        if 'r0_form' in x_keys:
-            x_keys.pop(x_keys.index('r0_form')) 
-        if 'sigma_form' in x_keys:
-            x_keys.pop(x_keys.index('sigma_form')) 
-    if not structure_flag:
-        if 'I0_structure' in x_keys:
-            x_keys.pop(x_keys.index('I0_structure')) 
-        if 'q0_structure' in x_keys:
-            x_keys.pop(x_keys.index('q0_structure')) 
-        if 'sigma_structure' in x_keys:
-            x_keys.pop(x_keys.index('sigma_structure')) 
-
-    c = []
-    if 'fix_I0' in constraints: 
-        I_keys = []
-        if 'I0_pre' in x_keys:
-            I_keys.append('I0_pre')
-        if 'I0_form' in x_keys:
-            I_keys.append('I0_form')
-        if 'I0_structure' in x_keys:
-            I_keys.append('I0_structure')
-        if len(I_keys) == 0:
-            # constraint inherently satisfied: do nothing.
-            pass
-        elif len(I_keys) == 1:
-            # overconstrained: skip the constraint, reduce dimensionality. 
-            x_keys.pop(x_keys.index(I_keys[0])) 
-        else:
-            # find the indices of the relevant x_keys and form a constraint function.
-            iargs = []
-            Icons = 0
-            for ik,k in zip(range(len(x_keys)),x_keys):
-                if k in I_keys:
-                    iargs.append(ik)
-                    Icons += features[k]
-            cfun = lambda x: sum([x[i] for i in iargs]) - Icons 
-            c_fixI0 = {'type':'eq','fun':cfun}
-            c.append(c_fixI0)
-
-    x_init = [] 
-    x_bounds = [] 
-    for k in x_keys:
-        # features.keys() may not include k,
-        # e.g. if the relevant population was not flagged.
-        if k in features.keys():
-            x_init.append(features[k])
-            if k in ['r0_pre','r0_form']:
-                x_bounds.append((1E-3,None))
-            elif k in ['I0_pre','I0_form']:
-                x_bounds.append((0,None))
-            elif k in ['sigma_form']:
-                x_bounds.append((0.0,0.3))
-
-    # Only proceed if there is still work to do.
-    d_opt = OrderedDict()
-    x_opt = []
-    if any(x_init):
-        saxs_fun = lambda q,x,d: compute_saxs_with_substitutions(q,d,x_keys,x)
-        I_nz = (I>0)
-        n_q = len(q)
-        idx_lowq = (q<0.4)
-        if objfun == 'chi2':
-            fit_obj = lambda x: compute_chi2( saxs_fun(q,x,features) , I )
-        elif objfun == 'chi2log':
-            fit_obj = lambda x: compute_chi2( np.log(saxs_fun(q[I_nz],x,features)) , np.log(I[I_nz]) )
-        elif objfun == 'chi2norm':
-            fit_obj = lambda x: compute_chi2( saxs_fun(q[I_nz],x,features) , I[I_nz] , weights=float(1)/I[I_nz] )
-        elif objfun == 'low_q_chi2':
-            fit_obj = lambda x: compute_chi2( saxs_fun(q[idx_lowq],x,features) , I[idx_lowq] )
-        elif objfun == 'pearson':
-            fit_obj = lambda x: -1*compute_pearson( saxs_fun(q,x,features) , I )
-        elif objfun == 'low_q_pearson':
-            fit_obj = lambda x: -1*compute_pearson( saxs_fun(q[idx_lowq],x,features) , I[idx_lowq] )
-        elif objfun == 'low_q_chi2log':
-            fit_obj = lambda x: compute_chi2( np.log(saxs_fun(q[I_nz][idx_lowq[I_nz]],x,features)) , np.log(I[I_nz][idx_lowq[I_nz]]) ) 
-        elif objfun == 'pearson_log':
-            fit_obj = lambda x: -1*compute_pearson( np.log(saxs_fun(q[I_nz],x,features)) , np.log(I[I_nz]) ) 
-        elif objfun == 'low_q_pearson_log':
-            fit_obj = lambda x: -1*compute_pearson( np.log(saxs_fun(q[I_nz][idx_lowq[I_nz]],x,features)) , np.log(I[I_nz][idx_lowq[I_nz]]) ) 
-        else:
-            msg = 'objective function {} not supported'.format(objfun)
-            raise ValueError(msg)
-        d_opt['objective_before'] = fit_obj(x_init)
-        #try:
-        res = scipimin(fit_obj,x_init,bounds=x_bounds,constraints=c)
-        #except:
-        #    import pdb; pdb.set_trace()
-        x_opt = res.x
-        d_opt['objective_after'] = fit_obj(x_opt)
-        if d_opt['objective_after'] > d_opt['objective_before']:
-            print('WARNING: optimization has increased the objective function. why?')
-            print('x_init: {}'.format(x_init))
-            print('obj_init: {}'.format(d_opt['objective_before']))
-            print('x_opt: {}'.format(x_opt))
-            print('obj_opt: {}'.format(d_opt['objective_after']))
-            #import pdb; pdb.set_trace()
-            x_opt = x_init
-        for k,xk in zip(x_keys,x_opt):
-            d_opt[k] = xk
-    return d_opt    
 
 def compute_chi2(y1,y2,weights=None):
     """

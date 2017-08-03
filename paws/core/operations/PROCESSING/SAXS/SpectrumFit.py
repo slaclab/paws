@@ -44,7 +44,7 @@ class SpectrumFit(Operation):
         self.input_doc['fit_params'] = str('List of strings indicating which parameters to optimize. '
         + 'Each of these strings should also be a key of the input features dict.')
         self.input_doc['objfun'] = str('String indicating choice of objective function for optimization. '
-        + 'See documentation of saxstools.saxs_fit() for supported objective functions.')
+        + 'See documentation of saxstools.fit_spectrum() for supported objective functions.')
         #self.input_doc['constraints'] = str('List of strings indicating optimization constraints. '
         #+ 'See documentation of saxstools.fit_saxs() for supported constraints.')
 
@@ -94,7 +94,7 @@ class SpectrumFit(Operation):
         # Fitting happens here
         #print 'fitting {}'.format(p)
         #print 'init: {}'.format([f[k] for k in p])
-        d_opt = saxstools.saxs_fit(q,I,m,f,p,c)
+        d_opt = saxstools.fit_spectrum(q,I,m,f,p,c)
         #print 'final: {}'.format([d_opt[k] for k in p])
 
         f.update(d_opt)

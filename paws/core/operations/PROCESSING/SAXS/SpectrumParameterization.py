@@ -90,169 +90,20 @@ class SpectrumParameterization(Operation):
     def run(self):
         q, I = self.inputs['q'], self.inputs['I']
         p = self.inputs['features'] 
-        if p['bad_data_flag']:
-            # stop
-            self.outputs['features'] = p
-            return 
-        pre_flag = p['precursor_flag']
-        f_flag = p['form_flag']
-        s_flag = p['structure_flag']
+
         fix_keys = self.inputs['fixed_params']
         fix_vals = self.inputs['fixed_param_values']
-        fixed_params = {} 
+        p_fix = {}
         for k,v in zip(fix_keys,fix_vals):
-            fixed_params[k] = v
+            p_fix[k] = v
 
-        # Check for overconstrained system
-        if 'I_at_0' in fix_keys and 'I0_form' in fix_keys and 'I0_pre' in fix_keys:
-            val1 = fixed_params['I_at_0']
-            val2 = fixed_params['I0_form'] + fixed_params['I0_pre'] 
-            if not val1 == val2:
-                msg = str('Spectrum intensity is overconstrained. '
-                + 'I_at_0 is constrained to {}, '
-                + 'but I0_form + I0_pre = {}. '.format(val1,val2))
-                raise ValueError(msg)
-        
-        #if 'I_at_0' in fix_keys:
-        #    if not fixed_params['I_at_0'] == 0:
-        #        I_at_0 = fixed_params['I_at_0']
-        #    else:
-        #        # Perform a low-q spectrum fit to get I(q=0).
-        #        # If there are form or structure factor terms,
-        #        # use the lower 10% of the q range.
-        #        if f_flag or s_flag:
-        #            qmax_fit = q[0]+float(q[-1]-q[0])*0.1
-        #            idx_lowq = (q<qmax_fit)
-        #            I_at_0 = saxstools.fit_I0(q[idx_lowq],I[idx_lowq])
-        #        else:
-        #            I_at_0 = saxstools.fit_I0(q,I)
-        if 'I0_form' in fix_keys and 'I0_pre' in fix_keys:
-            I_at_0 = fixed_params['I0_pre'] + fixed_params['I0_form']
-        else:
-            # Perform a low-q spectrum fit to get I(q=0).
-            if s_flag:
-                # If structure factor scattering,
-                # expect low-q SNR to be high, use q<0.06,
-                # fit to second order.
-                idx_lowq = (q<0.06)
-                I_at_0 = saxstools.fit_I0(q[idx_lowq],I[idx_lowq],2)
-                p['I_at_0'] = I_at_0
-                #
-                #
-                # And now bail, until structure factor fitting is in.
-                #
-                #
-                p['ERROR_MESSAGE'] = '[{}] structure factor parameterization not yet supported'.format(__name__)
-                self.outputs['features'] = p
-                return 
-            elif f_flag:
-                # If form factor scattering, fit 3rd order. 
-                # Use q<0.1 and disregard lowest-q values if they are far from the mean, 
-                # as these points are likely dominated by experimental error.
-                idx_lowq = (q<0.1)
-                Imean_lowq = np.mean(I[idx_lowq])
-                Istd_lowq = np.std(I[idx_lowq])
-                idx_good = ((I[idx_lowq] < Imean_lowq+Istd_lowq) & (I[idx_lowq] > Imean_lowq-Istd_lowq))
-                #dI_lowq = (I[idx_lowq][1:] - I[idx_lowq][:-1])/Imed_lowq
-                #idx_good = np.hstack( ( (abs(dI_lowq)<0.1) , np.array([True]) ) )
-                I_at_0 = saxstools.fit_I0(q[idx_lowq][idx_good],I[idx_lowq][idx_good],3)
-            else:
-                # If only precursor scattering, fit the entire spectrum.
-                I_at_0 = saxstools.fit_I0(q,I,4)
-            if I_at_0 > 10*I[0] or I_at_0 < 0.1*I[0]:
-                # stop 
-                msg = 'polynomial fit for I(q=0) deviates too far from low-q values' 
-                p['ERROR_MESSAGE'] = msg
-                p['I_at_0'] = I_at_0
-                p['bad_data_flag'] = True 
-                self.outputs['features'] = p
-                return 
-        p['I_at_0'] = I_at_0
+        p_new = saxstools.parameterize_spectrum(q,I,p,p_fix)
 
-        r0_form = None
-        sigma_form = None
-        if f_flag:
-            if ('r0_form' in fix_keys and 'sigma_form' in fix_keys):
-                r0_form = fixed_params['r0_form']
-                sigma_form = fixed_params['sigma_form']
-            else:
-                try:
-                    r0_form, sigma_form = saxstools.spherical_normal_heuristics(q,I,I_at_0=I_at_0)
-                except Exception as ex:
-                    # stop 
-                    p['ERROR_MESSAGE'] = ex.message
-                    p['bad_data_flag'] = True 
-                    self.outputs['features'] = p
-                    raise ex 
-                if 'r0_form' in fix_keys:
-                    r0_form = fixed_params['r0_form']
-                if 'sigma_form' in fix_keys:
-                    sigma_form = fixed_params['sigma_form']
-        p['r0_form'] = r0_form
-        p['sigma_form'] = sigma_form
-        
-        r0_pre = None
-        if pre_flag:
-            if 'r0_pre' in fix_keys:
-                r0_pre = fixed_params['r0_pre']
-            else:
-                r0_pre = saxstools.precursor_heuristics(q,I,I_at_0=I_at_0)
-        p['r0_pre'] = r0_pre 
-
-        I0_pre = None
-        I0_form = None
-        if pre_flag and f_flag:
-            if 'I0_pre' in fix_keys and 'I0_form' in fix_keys:
-                I0_pre = fixed_params['I0_pre']
-                I0_form = fixed_params['I0_form']
-            elif 'I0_pre' in fix_keys:
-                I0_pre = fixed_params['I0_pre']
-                I0_form = I_at_0 - I0_pre
-            elif 'I0_form' in fix_keys:
-                I0_form = fixed_params['I0_form']
-                I0_pre = I_at_0 - I0_form
-            else:
-                I_pre = saxstools.compute_spherical_normal_saxs(q,r0_pre,0)
-                I_form = saxstools.compute_spherical_normal_saxs(q,r0_form,sigma_form)
-                I_nz = np.invert((I<=0))
-                I_error = lambda x: np.sum( (np.log(I_at_0*(x*I_pre+(1.-x)*I_form)[I_nz])-np.log(I[I_nz]))**2 )
-                x_res = minimize(I_error,[0.1],bounds=[(0.0,1.0)]) 
-                x_fit = x_res.x[0]
-                I0_form = (1.-x_fit)*I_at_0
-                I0_pre = x_fit*I_at_0
-        elif pre_flag:
-            if 'I0_pre' in fix_keys:
-                I0_pre = fixed_params['I0_pre']
-            else:
-                I0_pre = I_at_0 
-        elif f_flag:
-            if 'I0_form' in fix_keys:
-                I0_form = fixed_params['I0_form'] 
-            else:
-                I0_form = I_at_0 
-        p['I0_pre'] = I0_pre 
-        p['I0_form'] = I0_form 
-
-        q0_structure = None
-        I0_structure = None
-        sigma_structure = None
-        #if s_flag:
-        #   .....   
-        p['q0_structure'] = q0_structure 
-        p['I0_structure'] = I0_structure 
-        p['sigma_structure'] = sigma_structure
-
-        I_guess = saxstools.compute_saxs(q,p)
+        I_guess = saxstools.compute_saxs(q,p_new)
         q_I_guess = np.array([q,I_guess]).T
-        nz = ((I>0)&(I_guess>0))
-        logI_nz = np.log(I[nz])
-        logIguess_nz = np.log(I_guess[nz])
-        Imean = np.mean(logI_nz)
-        Istd = np.std(logI_nz)
-        logI_nz_s = (logI_nz - Imean) / Istd
-        logIguess_nz_s = (logIguess_nz - Imean) / Istd
-        p['R2log_guess'] = saxstools.compute_Rsquared(logI_nz,logIguess_nz)
-        p['chi2log_guess'] = saxstools.compute_chi2(logI_nz_s,logIguess_nz_s)
+        self.outputs['features'] = p_new
         self.outputs['q_I_guess'] = q_I_guess 
-        self.outputs['features'] = p 
+
+
+
 
