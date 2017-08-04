@@ -138,19 +138,31 @@ class PawsAPI(object):
         pgin = pgin()
         self._plugin_manager.set_item(pgin_tag,pgin)
 
-    def set_plugin_input(self,pgin_tag,input_name,**kwargs):
-        src,tp,val = self._parse_src_tp_val(kwargs)
+    def set_plugin_input(self,pgin_tag,input_name,val=None,tp=None):
         pgin = self._plugin_manager.get_data_from_uri(pgin_tag)
-        if src is None:
-            src = pgin.input_src[input_name]
         if tp is None:
+            # if type is not specified, take the plugin's default 
             tp = pgin.input_type[input_name]
-        if val is None:
-            val = pgin.inputs[input_name]
-        if src == opmod.text_input:
-            pgin.inputs[input_name] = optools.cast_type_val(tp,val)
         else:
-            pgin.inputs[input_name] = val 
+            if tp in opmod.input_types:
+                tp = opmod.valid_types[ opmod.input_types.index(tp) ]
+            #else:
+            #    tp = opmod.no_input
+        if tp == opmod.no_input or val is None: 
+            pgin.inputs[input_name] = None
+        elif (tp == opmod.filesystem_path
+        or tp == opmod.string_type):
+            pgin.inputs[input_name] = str(val)
+        elif tp == opmod.integer_type:
+            pgin.inputs[input_name] = int(val)
+        elif tp == opmod.float_type:
+            pgin.inputs[input_name] = float(val)
+        elif tp == opmod.bool_type:
+            pgin.inputs[input_name] = bool(eval(str(val)))
+        else:
+            msg = '[{}] failed to parse plugin input {}, tp: {}, val: {}'.format(
+            __name__,input_name,tp,val)
+            raise ValueError(msg)
 
     def start_plugin(self,pgin_name):
         pgin = self.get_plugin(pgin_name)
@@ -163,49 +175,66 @@ class PawsAPI(object):
         wf = self.get_wf(wfname)
         wf.remove_item(op_tag)
 
-    def set_input(self,opname,input_name,wfname=None,**kwargs):
+    def set_input(self,wfname,opname,input_name,val=None,tp=None):
         op = self.get_op(opname,wfname) 
         if not input_name in op.inputs.keys():
             msg = str('Input name {} not valid for Operation {} ({}).'
             .format(input_name,opname,type(op).__name__))
             raise KeyError(msg)
-        src,tp,val = self._parse_src_tp_val(kwargs)
-        if src is None:
-            src = op.input_locator[input_name].src
         if tp is None:
-            tp = op.input_locator[input_name].tp
-        if val is None:
-            val = op.input_locator[input_name].val
-        il = opmod.InputLocator(src,tp,val)
+            # if type is not specified, take the operation's default 
+            tp = op.input_type[input_name]
+        else:
+            if tp in opmod.input_types:
+                tp = opmod.valid_types[ opmod.input_types.index(tp) ]
+            #else:
+            #    tp = opmod.no_input
+        if tp == opmod.no_input: 
+            val = None
+        elif (tp == opmod.filesystem_path 
+        or tp == opmod.workflow_path
+        or tp == opmod.string_type):
+            val = str(val)
+        elif tp == opmod.integer_type:
+            val = int(val)
+        elif tp == opmod.float_type:
+            val = float(val)
+        elif tp == opmod.bool_type:
+            val = bool(eval(str(val)))
+        else:
+            msg = '[{}] failed to parse plugin input {}, tp: {}, val: {}'.format(
+            __name__,input_name,tp,val)
+
+        il = opmod.InputLocator(tp,val)
         op.input_locator[input_name] = il
 
-    @staticmethod
-    def _parse_src_tp_val(kw_dict): 
-        src = None
-        tp = None
-        val = None
-        if 'src' in kw_dict:
-            if kw_dict['src'] in opmod.input_sources:
-                src = opmod.valid_sources[ opmod.input_sources.index(kw_dict['src']) ]
-                # Any default type setting can go here.
-                if src == opmod.batch_input:
-                    tp = opmod.auto_type
-                if src == opmod.fs_input:
-                    tp = opmod.path_type
-                if src == opmod.wf_input:
-                    tp = opmod.ref_type
-            else:
-                #TODO: error? warning?
-                src = opmod.no_input
-        if 'tp' in kw_dict:
-            if kw_dict['tp'] in opmod.input_types:
-                tp = opmod.valid_types[ opmod.input_types.index(kw_dict['tp']) ]
-            else:
-                #TODO: error? warning?
-                tp = opmod.none_type
-        if 'val' in kw_dict:
-            val = kw_dict['val']
-        return src,tp,val
+    #@staticmethod
+    #def _parse_src_tp_val(kw_dict): 
+    #    src = None
+    #    tp = None
+    #    val = None
+    #    if 'src' in kw_dict:
+    #        if kw_dict['src'] in opmod.input_sources:
+    #            src = opmod.valid_sources[ opmod.input_sources.index(kw_dict['src']) ]
+    #            # Any default type setting can go here.
+    #            if src == opmod.batch_input:
+    #                tp = opmod.auto_type
+    #            if src == opmod.fs_input:
+    #                tp = opmod.path_type
+    #            if src == opmod.wf_input:
+    #                tp = opmod.ref_type
+    #        else:
+    #            #TODO: error? warning?
+    #            src = opmod.no_input
+    #    if 'tp' in kw_dict:
+    #        if kw_dict['tp'] in opmod.input_types:
+    #            tp = opmod.valid_types[ opmod.input_types.index(kw_dict['tp']) ]
+    #        else:
+    #            #TODO: error? warning?
+    #            tp = opmod.none_type
+    #    if 'val' in kw_dict:
+    #        val = kw_dict['val']
+    #    return src,tp,val
 
     def get_output(self,opname,output_name,wfname=None):
         op = self.get_op(opname,wfname)
@@ -229,9 +258,10 @@ class PawsAPI(object):
         """
         if not os.path.splitext(wfl_filename)[1] == '.wfl':
             wfl_filename = wfl_filename + '.wfl'
-
-        d = {} 
         self._wf_manager.logmethod( 'saving current state to {}'.format(wfl_filename) )
+        d = {} 
+        d['OP_LOAD_FLAGS'] = ops.load_flags
+        d['PAWS_VERSION'] = pawstools.version 
         wfman_dict = OrderedDict()
         for wfname,wf in self._wf_manager.workflows:
             wf_dict = OrderedDict() 
@@ -239,13 +269,12 @@ class PawsAPI(object):
                 op = wf.get_data_from_uri(opname)
                 wf_dict[opname] = self._wf_manager.op_setup_dict(op)
             wfman_dict[wfname] = wf_dict
-        d['wf_manager'] = wfman_dict
-        #pgin_dict = OrderedDict() 
+        d['WORKFLOWS'] = wfman_dict
+        pgin_dict = OrderedDict() 
         for pgin_name in self._plugin_manager.list_plugins():
-            if not pgin_name == 'wf_manager':
-                pgin = self._plugin_manager.get_data_from_uri(pgin_name)
-                d[pgin_name] = self._plugin_manager.plugin_setup_dict(pgin)
-        #d['PLUGINS'] = pgin_dict
+            pgin = self._plugin_manager.get_data_from_uri(pgin_name)
+            pgin_dict[pgin_name] = self._plugin_manager.plugin_setup_dict(pgin)
+        d['PLUGINS'] = pgin_dict
         #pawstools.update_file(wfl_filename,d)
         pawstools.save_file(wfl_filename,d)
 
@@ -254,33 +283,32 @@ class PawsAPI(object):
         f = open(wfl_filename,'r')
         d = yaml.load(f)
         f.close()
-        wfman_dict = d['wf_manager']
-        for wfname,wfspec in wfman_dict:
-            self.qwfman.load_from_dict(wfname,self.qopman.opman,wfspec)
-            if not wfname in self.ui.wf_selector.model().list_data():
-                self.ui.wf_selector.model().append_item(wfname)
-            if self.qwfman.n_wf() == 1:
-                self.ui.wf_tree.hideColumn(1)
-                self.ui.wf_tree.hideColumn(2)
-        ui.close()
-
-        #if 'wf_manager' in d.keys():
-        #    wfname = fname_noext
-            #if wfname in self.qwfman.qworkflows.keys():
-            #    wfname = self.qwfman.auto_name(wfname)
-
-    #
-    #    pawstools.update_file(wfl_filename,d)
-
-    #def save_plugins(self,wfl_filename):
-    #    """
-    #    Save the current set of plugins to a .wfl (YAML) file,
-    #    pecified by wfl_filename.
-    #    If the given filename does not have the .wfl extension,
-    #    it will be appended.
-    #    """
-    #    if not os.path.splitext(wfl_filename)[1] == '.wfl':
-    #        wfl_filename = wfl_filename + '.wfl'
+        if 'PAWS_VERSION' in d.keys():
+            wfl_version = d['PAWS_VERSION']
+        else:
+            wfl_version = '0.0.0'
+        wfl_vparts = re.match(r'(\d+)\.(\d+)\.(\d+)',wfl_version)
+        wfl_vparts = list(map(int,wfl_vparts.groups()))
+        current_vparts = re.match(r'(\d+)\.(\d+)\.(\d+)',pawstools.version)  
+        current_vparts = list(map(int,current_vparts.groups()))
+        if wfl_vparts[0] < current_vparts[0] or wfl_vparts[1] < current_vparts[1]:
+            # WARNING
+            self.write_log('WARNING: paws (version {}) '\
+            'is trying to load a state built in version {} - '\
+            'this is likely to cause things to crash, '\
+            'until the workflows and plugins are reviewed/refactored '\
+            'under the current version.'.format(pawstools.version,wfl_version))  
+        if 'OP_LOAD_FLAGS' in d.keys():
+            ops.load_flags.update(d['OP_LOAD_FLAGS'])
+        if 'WORKFLOWS' in d.keys():
+            wf_dict = d['WORKFLOWS']
+            for wfname,wfspec in wf_dict:
+                self._wf_manager.load_from_dict(wfname,self._op_manager,wfspec)
+        if 'PLUGINS' in d.keys():
+            pgin_dict = d['PLUGINS']
+            for pgin_name,pginspec in pgin_dict:
+                self._plugin_manager.load_from_dict(pgin_name,pgin_dict)
+    
     def op_count(self,wfname=None):
         if wfname is None:
             wfname = self._current_wf_name
@@ -291,45 +319,4 @@ class PawsAPI(object):
             wfname = self._current_wf_name
         return self._wf_manager.workflows[wfname].list_op_tags()
 
-    #def inspect_objects(self):
-    #    """
-    #    Use QObject.findChildren() to count references to child objects
-    #    of the top-level paws resource managers.
-    #    Return a report of the result as a string.
-    #    """
-    #    opman_children = self._op_manager.findChildren(QtCore.QObject)
-    #    wfman_children = self._wf_manager.findChildren(QtCore.QObject)
-    #    plugman_children = self._plugin_manager.findChildren(QtCore.QObject)
-    #    rpt = str('paws QObject count:\n'
-    #        + 'operations manager: {}\n{}...\n'.format(len(opman_children),opman_children)
-    #        + 'plugins manager: {}\n{}\n'.format(len(plugman_children),plugman_children)
-    #        + 'workflow manager: {}\n{}\n'.format(len(wfman_children),wfman_children))
-    #    for wfname,wf in self._wf_manager.workflows.items():
-    #        wf_children = wf.findChildren(QtCore.QObject)
-    #        rpt += '\tworkflow {}: {}\n\t{}\n'.format(wfname,len(wf_children),wf_children)
-    #    return rpt
-        
-#def core_app(app_args=[]):
-#    """
-#    Return a reference to a new QCoreApplication or a currently running QApplication.
-#    
-#    Input arguments are passed to the QApplication constructor.
-#    If a RuntimeError is thrown,
-#    it is assumed that a QApplication is already running,
-#    and an attempt is made to return a reference to that QApplication.
-#    If that fails, this returns None.
-#
-#    :param app_args: arguments to pass to the QApplication constructor
-#    :type args: sequence
-#    :returns: reference to a new or existing QCoreApplication
-#    :return type: PySide.QtCore.QCoreApplication or None
-#    """
-#    try:
-#        app = QtCore.QCoreApplication(app_args)
-#    except RuntimeError:
-#        try:
-#            app = QtCore.QCoreApplication.instance()
-#        except:
-#            app = None
-#    return app
 

@@ -380,20 +380,27 @@ class UiManager(QtCore.QObject):
 
     def finish_load_state(self,ui):
         fname = ui.tree.model().filePath(ui.tree.currentIndex())
-        # NOTE: code duplication with paws.api.__init__
-        #self.paw.load_from_wfl(fname)
+        self.paw.load_from_wfl(fname)
+        # Some additional effort to update Qt objects.
         f = open(wfl_filename,'r')
         d = yaml.load(f)
         f.close()
-        for pgin_name,pginspec in d:
-            if not pgin_name == 'wf_manager':
+        if 'OP_LOAD_FLAGS' in d.keys():
+            # this should update the operation enable/disable fields
+            self.qopman.tree_datachanged(self.qopman.root_index())
+        if 'WORKFLOWS' in d.keys():
+            wf_dict = d['WORKFLOWS']
+            for wfname,wfspec in wf_dict:
+                # NOTE: this part duplicates effort
+                self.qwfman.load_from_dict(wfname,self.qopman.opman,wfspec)
+                # the rest is mundane widget handling
+                if not wfname in self.ui.wf_selector.model().list_data():
+                    self.ui.wf_selector.model().append_item(wfname)
+                if self.qwfman.n_wf() == 1:
+                    self.ui.wf_tree.hideColumn(1)
+        if 'PLUGINS' in d.keys():
+            pgin_dict = d['PLUGINS']
+            for pgin_name,pginspec in pgin_dict:
+                # NOTE: this part duplicates effort
                 self.qplugman.load_from_dict(pgin_name,pgin_dict)
-        wfman_dict = d['wf_manager']
-        for wfname,wfspec in wfman_dict:
-            self.qwfman.load_from_dict(wfname,self.qopman.opman,wfspec)
-            if not wfname in self.ui.wf_selector.model().list_data():
-                self.ui.wf_selector.model().append_item(wfname)
-            if self.qwfman.n_wf() == 1:
-                self.ui.wf_tree.hideColumn(1)
-        ui.close()
 

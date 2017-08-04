@@ -1,5 +1,5 @@
 """
-Operations config and processing routines
+Various tools for working with Workflows and Operations
 """
 
 import glob
@@ -58,26 +58,6 @@ def dict_contains_uri(uri,d):
 
 ####### functions for fetching inputs and loading them into operations #######
 
-def cast_type_val(tp,val):
-    """
-    Perform type casting for operation inputs.
-    This should be called only for source = text_input.
-    """
-    if tp == opmod.none_type:
-        val = None 
-    elif tp == opmod.int_type:
-        val = int(val)
-    elif tp == opmod.float_type:
-        val = float(val)
-    elif tp == opmod.str_type:
-        val = str(val)
-    elif tp == opmod.bool_type:
-        val = bool(eval(str(val)))
-    else:
-        msg = 'type selection {}, should be one of {}'.format(tp,opmod.valid_types)
-        raise ValueError(msg)
-    return val
-
 def locate_input(il,wf=None,plugin_manager=None):
     """
     Return the data pointed to by a given InputLocator object.
@@ -85,57 +65,77 @@ def locate_input(il,wf=None,plugin_manager=None):
     as optional arguments,
     in which case they are used to fetch data.
     """
-    if il.src == opmod.no_input or il.tp == opmod.none_type:
+    if il.tp == opmod.no_input or il.val is None:
         return None
-    elif il.src == opmod.batch_input:
-        # Expect this input to have been set by Workflow Manager.
-        return il.data 
-    elif il.src == opmod.text_input: 
-        if isinstance(il.val,list):
-            return [cast_type_val(il.tp,v) for v in il.val]
-        else:
-            return cast_type_val(il.tp,il.val)
-    elif il.src == opmod.wf_input:
-        if il.tp == opmod.ref_type:
-
-            # Note, this will return whatever data is stored in the TreeItem at uri.
-            # If il.val is the uri of an input that has not yet been loaded,
-            # this means it will get the InputLocator that currently inhabits that uri.
-
-            # Note, this problem has now been fixed by changing Workflow.build_dict()
-            # to not substitute InputLocators for inputs that had not been loaded.
-
-            if isinstance(il.val,list):
-                return [wf.get_data_from_uri(v) for v in il.val]
-            else:
-                return wf.get_data_from_uri(il.val)
-        elif il.tp == opmod.path_type: 
-            if isinstance(il.val,list):
-                return [str(v) for v in il.val]
-            else:
-                return str(il.val)
-    elif il.src == opmod.plugin_input:
-        if il.tp == opmod.ref_type:
-            if isinstance(il.val,list):
-                return [plugin_manager.get_data_from_uri(v) for v in il.val]
-            elif il.val is not None:
-                return plugin_manager.get_data_from_uri(il.val)
-            else:
-                return None
-        elif il.tp == opmod.path_type:
-            if isinstance(il.val,list):
-                return [str(v) for v in il.val]
-            else:
-                return str(il.val)
-    elif il.src == opmod.fs_input:
+    elif (il.tp == opmod.filesystem_path
+        or il.tp == opmod.workflow_path):
         if isinstance(il.val,list):
             return [str(v) for v in il.val]
         else:
             return str(il.val)
-    else: 
-        msg = 'found input source {}, should be one of {}'.format(
-        il.src, opmod.valid_sources)
+    elif il.tp == opmod.workflow_item:
+        if isinstance(il.val,list):
+            return [wf.get_data_from_uri(v) for v in il.val]
+        else:
+            return wf.get_data_from_uri(il.val)
+    elif il.tp == opmod.plugin_item:
+        if isinstance(il.val,list):
+            return [plugin_manager.get_data_from_uri(v) for v in il.val]
+        else:
+            return plugin_manager.get_data_from_uri(il.val)
+    elif il.tp == opmod.string_type:
+        return str(il.val)
+    elif il.tp == opmod.integer_type:
+        return int(il.val)
+    elif il.tp == opmod.float_type:
+        return float(il.val)
+    elif il.tp == opmod.bool_type:
+        return bool(eval(str(il.val)))
+    else:
+        msg = '[{}] failed to parse InputLocator (type: {}, val: {})'.format(
+        __name__,il.tp,il.val)
         raise ValueError(msg)
+    #elif il.src == opmod.batch_input:
+    #    # Expect this input to have been set by Workflow Manager.
+    #    return il.data 
+    #elif il.src == opmod.text_input: 
+    #    if isinstance(il.val,list):
+    #        return [cast_type_val(il.tp,v) for v in il.val]
+    #    else:
+    #        return cast_type_val(il.tp,il.val)
+    #elif il.src == opmod.wf_input:
+    #    if il.tp == opmod.ref_type:
+    #        if isinstance(il.val,list):
+    #            return [wf.get_data_from_uri(v) for v in il.val]
+    #        else:
+    #            return wf.get_data_from_uri(il.val)
+    #    elif il.tp == opmod.path_type: 
+    #        if isinstance(il.val,list):
+    #            return [str(v) for v in il.val]
+    #        else:
+    #            return str(il.val)
+    #elif il.src == opmod.plugin_input:
+    #    if il.tp == opmod.ref_type:
+    #        if isinstance(il.val,list):
+    #            return [plugin_manager.get_data_from_uri(v) for v in il.val]
+    #        elif il.val is not None:
+    #            return plugin_manager.get_data_from_uri(il.val)
+    #        else:
+    #            return None
+    #    elif il.tp == opmod.path_type:
+    #        if isinstance(il.val,list):
+    #            return [str(v) for v in il.val]
+    #        else:
+    #            return str(il.val)
+    #elif il.src == opmod.fs_input:
+    #    if isinstance(il.val,list):
+    #        return [str(v) for v in il.val]
+    #    else:
+    #        return str(il.val)
+    #else: 
+    #    msg = 'found input source {}, should be one of {}'.format(
+    #    il.src, opmod.valid_sources)
+    #    raise ValueError(msg)
 
 def load_inputs(op,wf=None,plugin_manager=None):
     """
@@ -154,7 +154,6 @@ def load_inputs(op,wf=None,plugin_manager=None):
             raise ValueError(msg)
 
 ####### functions having to do with workflow execution #######
-# TODO: consider creating a wftools module instead
 
 def get_valid_wf_inputs(op_tag,op):
     """
