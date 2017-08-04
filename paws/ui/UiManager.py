@@ -78,9 +78,8 @@ class UiManager(QtCore.QObject):
         logo_view.setScene(scene)
         self.ui.viewer_tabwidget.clear()
         tab_idx = self.ui.viewer_tabwidget.addTab(logo_view,'paws viewer') 
-        #self.ui.viewer_layout.addWidget(logo_view,0,0,1,1)
-        #self.ui.setWindowTitle("paws v{}".format(pawstools.version))
-        #self.ui.setWindowIcon(pixmap)
+        self.ui.setWindowTitle("paws v{}".format(pawstools.version))
+        self.ui.setWindowIcon(pixmap)
 
     def build(self):
         """
