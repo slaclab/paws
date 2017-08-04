@@ -95,47 +95,6 @@ def locate_input(il,wf=None,plugin_manager=None):
         msg = '[{}] failed to parse InputLocator (type: {}, val: {})'.format(
         __name__,il.tp,il.val)
         raise ValueError(msg)
-    #elif il.src == opmod.batch_input:
-    #    # Expect this input to have been set by Workflow Manager.
-    #    return il.data 
-    #elif il.src == opmod.text_input: 
-    #    if isinstance(il.val,list):
-    #        return [cast_type_val(il.tp,v) for v in il.val]
-    #    else:
-    #        return cast_type_val(il.tp,il.val)
-    #elif il.src == opmod.wf_input:
-    #    if il.tp == opmod.ref_type:
-    #        if isinstance(il.val,list):
-    #            return [wf.get_data_from_uri(v) for v in il.val]
-    #        else:
-    #            return wf.get_data_from_uri(il.val)
-    #    elif il.tp == opmod.path_type: 
-    #        if isinstance(il.val,list):
-    #            return [str(v) for v in il.val]
-    #        else:
-    #            return str(il.val)
-    #elif il.src == opmod.plugin_input:
-    #    if il.tp == opmod.ref_type:
-    #        if isinstance(il.val,list):
-    #            return [plugin_manager.get_data_from_uri(v) for v in il.val]
-    #        elif il.val is not None:
-    #            return plugin_manager.get_data_from_uri(il.val)
-    #        else:
-    #            return None
-    #    elif il.tp == opmod.path_type:
-    #        if isinstance(il.val,list):
-    #            return [str(v) for v in il.val]
-    #        else:
-    #            return str(il.val)
-    #elif il.src == opmod.fs_input:
-    #    if isinstance(il.val,list):
-    #        return [str(v) for v in il.val]
-    #    else:
-    #        return str(il.val)
-    #else: 
-    #    msg = 'found input source {}, should be one of {}'.format(
-    #    il.src, opmod.valid_sources)
-    #    raise ValueError(msg)
 
 def load_inputs(op,wf=None,plugin_manager=None):
     """
