@@ -13,7 +13,6 @@ class QPluginManager(QTreeSelectionModel):
     The QPluginManager works mostly by
     calling on the methods of the PluginManager.
     """
-    # TODO: Clean up headerData
 
     def __init__(self,plugman):
         super(QPluginManager,self).__init__(plugman)
@@ -21,16 +20,23 @@ class QPluginManager(QTreeSelectionModel):
 
     def headerData(self,section,orientation,data_role):
         if (data_role == QtCore.Qt.DisplayRole and section == 0):
-            return "{} plugin(s) loaded".format(self._tree._root_item.n_children())
+            return "{} plugin(s) loaded".format(self.plugman.n_plugins())
         else:
             return super(QPluginManager,self).headerData(section,orientation,data_role)    
 
     def add_plugin(self,pgin_tag,pgin):
         """Add a Plugin to the tree at the top level."""
+        self.plugman.add_plugin(pgin_tag,pgin)
         self.set_item(pgin_tag,pgin,self.root_index())
 
     def remove_plugin(self,pgin_tag):
         self.remove_item(pgin_tag)
+
+    def n_plugins(self):
+        return self.plugman.n_plugins()
+
+    def list_plugin_names(self):
+        return self.plugman.list_plugin_names()
 
     @QtCore.Slot(str)
     def update_plugin(self,pgin_name):

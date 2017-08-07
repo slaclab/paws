@@ -45,6 +45,15 @@ class OperationDisabledError(Exception):
     #def __init__(self,msg):
     #    super(WorkflowAborted,self).__init__(self,msg)
 
+class WfNameError(Exception):
+    pass
+
+class PluginNameError(Exception):
+    pass
+
+class PluginLoadError(Exception):
+    pass
+
 def dtstr():
     """Return date and time as a string"""
     return dt.strftime(dt.now(),'%Y %m %d, %H:%M:%S')

@@ -48,6 +48,8 @@ class WfManager(object):
         If wfname is not unique (i.e. a workflow with that name already exists),
         this method will overwrite the existing workflow with a new one.
         """
+        if not self.is_tag_valid(wfname): 
+            raise pawstools.WfNameError(self.tag_error(wfname))
         wf = Workflow()
         self.workflows[wfname] = wf
 
