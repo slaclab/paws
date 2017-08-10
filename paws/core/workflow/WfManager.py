@@ -136,6 +136,7 @@ class WfManager(object):
             op = self.workflows[wfname].get_data_from_uri(op_tag) 
             optools.load_inputs(op,self.workflows[wfname],self.plugman)
             try:
+                op.clear_outputs()
                 op.run() 
             except Exception as ex:
                 tb = traceback.format_exc()

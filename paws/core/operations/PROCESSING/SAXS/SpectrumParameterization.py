@@ -99,7 +99,11 @@ class SpectrumParameterization(Operation):
 
         p_new = saxstools.parameterize_spectrum(q,I,p,p_fix)
 
-        I_guess = saxstools.compute_saxs(q,p_new)
+        try:
+            I_guess = saxstools.compute_saxs(q,p_new)
+        except Exception as ex:
+            import pdb; pdb.set_trace()
+
         q_I_guess = np.array([q,I_guess]).T
         self.outputs['features'] = p_new
         self.outputs['q_I_guess'] = q_I_guess 

@@ -207,9 +207,12 @@ class PawsAPI(object):
             val = kw_dict['val']
         return src,tp,val
 
-    def get_output(self,opname,output_name,wfname=None):
+    def get_output(self,opname,output_name=None,wfname=None):
         op = self.get_op(opname,wfname)
-        return op.outputs[output_name]
+        if output_name is not None:
+            return op.outputs[output_name]
+        else:
+            return op.outputs
 
     def execute(self,wfname=None):
         if wfname is None:
