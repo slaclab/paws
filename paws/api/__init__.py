@@ -12,7 +12,6 @@ from ..core.operations import optools
 from ..core.operations.OpManager import OpManager 
 from ..core.workflow.WfManager import WfManager 
 from ..core.plugins.PluginManager import PluginManager 
-from ..core.plugins.WfManagerPlugin import WfManagerPlugin
 
 def start():
     """
@@ -44,10 +43,10 @@ class PawsAPI(object):
         self._op_manager.load_cats(ops.cat_list) 
         self._op_manager.load_ops(ops.cat_op_list)
         self._current_wf_name = None 
-        wfman_pgin = WfManagerPlugin()
-        wfman_pgin.inputs['wf_manager'] = self._wf_manager 
-        wfman_pgin.start()
-        self._plugin_manager.set_item('wf_manager',wfman_pgin)
+        #wfman_pgin = WfManagerPlugin()
+        #wfman_pgin.inputs['wf_manager'] = self._wf_manager 
+        #wfman_pgin.start()
+        #self._plugin_manager.set_item('wf_manager',wfman_pgin)
 
     def write_log(self,msg):
         self.logmethod(msg)

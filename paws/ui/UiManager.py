@@ -14,7 +14,6 @@ from .WfUiManager import WfUiManager
 from .OpUiManager import OpUiManager
 from .PluginUiManager import PluginUiManager
 from ..core.models.ListModel import ListModel
-from ..core.plugins.WfManagerPlugin import WfManagerPlugin
 from ..qt.QWfManager import QWfManager
 from ..qt.QOpManager import QOpManager
 from ..qt.QPluginManager import QPluginManager
@@ -111,8 +110,8 @@ class UiManager(QtCore.QObject):
         self.ui.wf_name_header.setSizePolicy(QtGui.QSizePolicy.Minimum,
         self.ui.wf_name_header.sizePolicy().verticalPolicy())
         self.ui.add_workflow_button.setText('Add')
-        self.ui.add_workflow_button.clicked.connect( partial(self.add_wf) )
-        lm = ListModel(self.qwfman.qworkflows.keys())
+        self.ui.add_workflow_button.clicked.connect( self.add_wf )
+        lm = ListModel(['(select workflow)']+self.qwfman.qworkflows.keys())
         self.ui.wf_selector.setModel(lm)
         self.ui.wf_selector.currentIndexChanged.connect( partial(self.set_wf) )
         self.ui.run_wf_button.setText("&Run")
@@ -143,12 +142,10 @@ class UiManager(QtCore.QObject):
         pgin_lm = ListModel(['(select plugin)']+pgns.plugin_name_list)
         self.ui.plugin_selector.setModel(pgin_lm)
         self.ui.add_plugin_button.setText('Add')
-
-        #
-        # TODO: self.add_plugin, and hide the columns if first plugin
+        self.ui.plugin_tree.hideColumn(1)
+        self.ui.plugin_tree.hideColumn(2)
+        self.ui.plugin_tree.setColumnWidth(0,200)
         self.ui.add_plugin_button.clicked.connect( self.add_plugin )
-        #
-        #
 
         #self.ui.add_wf_button.clicked.connect( partial(self.add_wf,'new_workflow') )
         self.ui.op_tree.setModel(self.qopman)
@@ -179,7 +176,7 @@ class UiManager(QtCore.QObject):
         self.ui.op_tree.setColumnWidth(0,200)
         self.ui.hsplitter.setStretchFactor(0,2)    
         self.ui.hsplitter.setStretchFactor(1,3)    
-        self.ui.hsplitter.setStretchFactor(2,2)    
+        self.ui.hsplitter.setStretchFactor(2,1)    
         self.ui.left_vsplitter.setStretchFactor(0,1)    
         self.ui.left_vsplitter.setStretchFactor(1,3)    
         self.ui.left_vsplitter.setStretchFactor(2,3)    
@@ -220,20 +217,14 @@ class UiManager(QtCore.QObject):
                 msg_ui.setWindowTitle("Plugin Name Error")
                 msg_ui.message_box.setPlainText(ex.message)
                 msg_ui.show()
-            if self.qplugman.n_plugins() == 1:
-                self.ui.plugin_tree.hideColumn(1)
-                self.ui.plugin_tree.hideColumn(2)
-                self.ui.plugin_tree.setColumnWidth(0,200)
-            self.ui.plugin_selector.setCurrentIndex(self.qplugman.n_plugins()-1)
 
-
-
-    def add_wf(self,wfname):
+    def add_wf(self):
         """
         Method for adding workflows through the main UI.
         For this case, the workflow name is inspected
         to ensure that it doesn't clobber an existing workflow.
         """
+        wfname = self.ui.wf_name_entry.text()
         #if wfname in self.wfman.workflows.keys():
         #    wfname = self.wfman.auto_name(wfname)
         if wfname in self.qwfman.qworkflows.keys():
@@ -255,11 +246,11 @@ class UiManager(QtCore.QObject):
                 msg_ui.show()
             self.ui.wf_selector.model().append_item(wfname)
             # if this is the first workflow loaded, hide the selection flag column.
+            self.ui.wf_selector.setCurrentIndex(self.qwfman.n_wf())
             if self.qwfman.n_wf() == 1:
                 self.ui.wf_tree.hideColumn(1)
                 self.ui.wf_tree.setColumnWidth(0,200)
                 #self.ui.wf_tree.hideColumn(2)
-            self.ui.wf_selector.setCurrentIndex(self.qwfman.n_wf()-1)
 
     def display_op_item(self,idx):
         """
