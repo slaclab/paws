@@ -620,6 +620,7 @@ def precursor_heuristics(q,I,I_at_0=None):
     """
     n_q = len(q)
     # optimize the log pearson correlation in the upper half of the q domain
+    # TODO: This would be a good place for a unified fit instead.
     nz = (I[n_q/2:]>0)
     fit_obj = lambda r: -1*compute_pearson(np.log(compute_spherical_normal_saxs(q[n_q/2:],r,0)[nz]),np.log(I[n_q/2:][nz]))
     #res = scipimin(fit_ojb,[0.1],bounds=[(0,0.3)]) 
