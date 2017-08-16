@@ -1,63 +1,61 @@
 from collections import OrderedDict
 import glob
+import os
 
+from ...Operation import Operation
 from ... import Operation as opmod 
-from ...Operation import Batch
 from ... import optools
 
-class BatchFromFiles(Batch):
+class BatchFromFiles(Operation):
     """
     Read a directory and filter its contents with a regular expression
     to form  a list of file paths to be used as inputs
-    for the repeated execution of a workflow.
+    for the repeated execution of a specified Workflow.
     Specify, by workflow uri, where this file path will be fed to the workflow.
-    Collect specified outputs from the workflow for each of the inputs.
+    Collect outputs from the Workflow for each of the input files.
     """
 
     def __init__(self):
-        input_names = ['dir_path','regex','input_route','batch_ops','saved_items']
+        input_names = ['dir_path','regex','workflow','input_name']
         output_names = ['batch_inputs','batch_outputs']
         super(BatchFromFiles,self).__init__(input_names,output_names)
         self.input_doc['dir_path'] = 'path to directory containing batch of files to be used as input'
         self.input_doc['regex'] = 'string with * wildcards that will be substituted to indicate input files'
-        self.input_doc['input_route'] = 'inputs constructed by the batch executor are directed to this uri'
-        self.input_doc['batch_ops'] = str('list of workflow uris pointing to Operations to be included in batch execution- '
-        + 'the order of entries is unimportant, as the proper execution stack is resolved at runtime')
-        self.input_doc['saved_items'] = 'list of uris to be saved in the batch_outputs'
-        self.output_doc['batch_inputs'] = 'list of dicts of [input_route:input_value]'
-        self.output_doc['batch_outputs'] = 'list of dicts of [output_route:output_value] for all saved_items '
-        self.input_src['dir_path'] = opmod.fs_input
-        self.input_src['regex'] = opmod.text_input 
-        self.input_src['input_route'] = opmod.wf_input 
-        self.input_src['batch_ops'] = opmod.wf_input 
-        self.input_src['saved_items'] = opmod.wf_input 
-        self.input_type['dir_path'] = opmod.path_type
-        self.input_type['regex'] = opmod.str_type
-        self.input_type['input_route'] = opmod.path_type
-        self.input_type['batch_ops'] = opmod.path_type 
-        self.input_type['saved_items'] = opmod.path_type 
+        self.input_doc['workflow'] = 'the Workflow to be executed'
+        self.input_doc['input_name'] = 'name of the workflow input where the file paths will be used'
+        self.output_doc['batch_inputs'] = 'list of dicts of [input_name:input_value]'
+        self.output_doc['batch_outputs'] = 'list of dicts of [output_name:output_value] for all Workflow outputs'
+        self.input_type['dir_path'] = opmod.filesystem_path
+        self.input_type['regex'] = opmod.string_type
+        self.input_type['workflow'] = opmod.workflow_item
+        self.input_type['input_name'] = opmod.workflow_path
         self.inputs['regex'] = '*.tif' 
-        self.inputs['batch_ops'] = []
-        self.inputs['saved_items'] = []
         
     def run(self):
-        """
-        Build a list of [uri:value] dicts to be used in the workflow.
-        """
+        wf = self.inputs['workflow']
         dirpath = self.inputs['dir_path']
         rx = self.inputs['regex']
-        inproute = self.inputs['input_route']
-        #batch_list = [dirpath+'/'+rx.replace('*',sub) for sub in subs]
-        batch_list = glob.glob(dirpath+'/'+rx)
+        inpname = self.inputs['input_name']
+        batch_list = glob.glob(os.path.join(dirpath,rx))
         input_dict_list = []
         output_dict_list = []
-        for filename in batch_list:
+        n_batch = len(batch_list)
+        for i,filename in zip(range(n_batch),batch_list):
             inp_dict = OrderedDict() 
-            inp_dict[inproute] = filename
+            inp_dict[inpname] = filename
+            #import pdb; pdb.set_trace()
+            wf.set_wf_input(inpname,filename)
+            wf.execute()
+            #stk,diag = wf.execution_stack()
+            #for lst in stk:
+            #    wf.write_log('batch {}/{}: running {}'.format(i,n_batch,op_list))
+            #    for op_tag in lst: 
+            #        op = self.workflows[wfname].get_data_from_uri(op_tag) 
+            #        optools.load_inputs(op,wf.wf_manager,wf.wf_manager.plugin_manager)
+            #    self.workflows[wfname].execute(op_list)
             input_dict_list.append(inp_dict)
-            output_dict_list.append(OrderedDict())
+            output_dict_list.append(wf.wf_outputs_dict())
         self.outputs['batch_inputs'] = input_dict_list
-        # Instantiate the batch_outputs list
         self.outputs['batch_outputs'] = output_dict_list 
 
     def input_list(self):

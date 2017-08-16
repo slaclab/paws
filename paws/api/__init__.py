@@ -174,7 +174,21 @@ class PawsAPI(object):
         wf = self.get_wf(wfname)
         wf.remove_item(op_tag)
 
-    def set_input(self,wfname,opname,input_name,val=None,tp=None):
+    def connect_wf_input(self,wf_input_name,input_uri,wfname=None):
+        if wfname is None:
+            wfname = self._current_wf_name
+        wf = self.get_wf(wfname)
+        wf.connect_wf_input(wf_input_name,input_uri) 
+
+    def connect_wf_output(self,wf_output_name,output_uri,wfname=None):
+        if wfname is None:
+            wfname = self._current_wf_name
+        wf = self.get_wf(wfname)
+        wf.connect_wf_output(wf_output_name,output_uri) 
+
+    def set_input(self,opname,input_name,val=None,tp=None,wfname=None):
+        if wfname is None:
+            wfname = self._current_wf_name
         op = self.get_op(opname,wfname) 
         if not input_name in op.inputs.keys():
             msg = str('Input name {} not valid for Operation {} ({}).'

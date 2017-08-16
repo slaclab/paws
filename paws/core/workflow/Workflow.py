@@ -1,21 +1,24 @@
 from collections import OrderedDict
 import copy
 from functools import partial
+import traceback
 
 from ..models.TreeModel import TreeModel
 from ..operations import Operation as opmod
 from ..operations.Operation import Operation#, Batch, Realtime
+from ..operations import optools
 
 class Workflow(TreeModel):
     """
     Tree structure for a Workflow built from paws Operations.
     """
 
-    def __init__(self):
+    def __init__(self,wfman):
         flag_dict = OrderedDict()
         flag_dict['select'] = False
         flag_dict['enable'] = True
         super(Workflow,self).__init__(flag_dict)
+        self.wf_manager = wfman
         self.inputs = OrderedDict()
         self.outputs = OrderedDict()
         #self.wfman = wfman
@@ -38,6 +41,9 @@ class Workflow(TreeModel):
     def keys(self):
         return self.list_op_tags() 
 
+    def write_log(self,msg):
+        self.wf_manager.write_log(msg)
+
     def build_tree(self,x):
         """
         Reimplemented TreeModel.build_tree() 
@@ -50,6 +56,23 @@ class Workflow(TreeModel):
             return d
         else:
             return super(Workflow,self).build_tree(x) 
+
+    def execute(self):
+        stk,diag = self.execution_stack()
+        for lst in stk:
+            self.write_log('running: {}...'.format(lst))
+            for op_tag in lst: 
+                op = self.get_data_from_uri(op_tag) 
+                optools.load_inputs(op,self.wf_manager,self.wf_manager.plugin_manager)
+                try:
+                    op.run() 
+                except Exception as ex:
+                    tb = traceback.format_exc()
+                    self.write_log(str('Operation {} threw an error. '
+                    + '\nMessage: {} \nTrace: {}').format(op_tag,ex.message,tb)) 
+                self.set_item(op_tag,op)
+            #self.workflows[wfname].execute(op_list)
+            self.write_log('... finished'.format(lst))
 
     def op_dict(self):
         optags = self.list_op_tags() 
@@ -71,6 +94,12 @@ class Workflow(TreeModel):
     def connect_wf_output(self,wf_output_name,op_output_uri):
         self.outputs[wf_output_name] = op_output_uri
 
+    def wf_outputs_dict(self):
+        d = OrderedDict()
+        for wfoutnm in self.outputs.keys():
+            d[wfoutnm] = self.get_data_from_uri(self.outputs[wfoutnm])
+        return d
+
     def get_wf_output(wf_output_name):
         return self.get_data_from_uri(self.outputs[wf_output_name])
 
@@ -91,7 +120,9 @@ class Workflow(TreeModel):
         inpname = path[2]
         uri = opname+'.'+opmod.inputs_tag+'.'+inpname
         op = self.get_data_from_uri(opname)
-        op.input_locator[inpname].data = val
+        op.input_locator[inpname].val = val
+        #op.input_locator[inpname].data = val
+        #op.inputs[inpname] = val
         self.set_item(uri,val)
 
     def set_op_enabled(self,opname,flag=True):
@@ -101,4 +132,124 @@ class Workflow(TreeModel):
     def is_op_enabled(self,opname):
         op_item = self.get_from_uri(opname)
         return op_item.flags['enable']
+
+    def execution_stack(self):
+        """
+        Build a stack (list) of lists of Operation uris,
+        such that each list indicates a set of Operations
+        whose dependencies are satisfied by the Operations above them.
+        """
+        stk = []
+        # By default, let the workflows themselves be valid as inputs
+        #valid_wf_inputs = self.wf_manager.workflows.keys() 
+        valid_wf_inputs = [] 
+        diagnostics = {}
+        continue_flag = True
+        while not self.stack_size(stk) == self.n_ops() and continue_flag:
+            ops_rdy = []
+            ops_not_rdy = []
+            #print 'continue: {}, stacksize: {}, n_ops: {}'.format(continue_flag,self.stack_size(stk),self.n_ops())
+            for op_tag in self.list_op_tags():
+                if not self.stack_contains(op_tag,stk):
+                    op_rdy,op_diag = self.is_op_ready(op_tag,valid_wf_inputs)
+                diagnostics.update(op_diag)
+                if op_rdy:
+                    ops_rdy.append(op_tag)
+                else:
+                    ops_not_rdy.append(op_tag)
+            if any(ops_rdy):
+                stk.append(ops_rdy)
+                for op_tag in ops_rdy:
+                    op = self.get_data_from_uri(op_tag)
+                    valid_wf_inputs += self.get_valid_wf_inputs(op_tag,op)
+            else:
+                continue_flag = False
+        return stk,diagnostics
+        # Finished building list of ops currently ready. Now filter these into stack.
+        #if any(ops_rdy):
+        #     Which of these are not Batch/Realtime ops?
+        #    non_batch_rdy = []
+        #    for op_tag in ops_rdy:
+        #        op = wf.get_data_from_uri(op_tag)
+        #        if not any([op._batch_flag,op._realtime_flag]):
+        #            non_batch_rdy.append(op_tag)
+        #    if any(non_batch_rdy):
+        #        ops_rdy = non_batch_rdy
+        #        stk.append(ops_rdy)
+        #        for op_tag in ops_rdy:
+        #            op = wf.get_data_from_uri(op_tag)
+        #            valid_wf_inputs += get_valid_wf_inputs(op_tag,op)
+        #    else:
+        #        batch_tag = ops_rdy[0]
+        #        ops_rdy = [batch_tag]
+        #        batch_op = wf.get_data_from_uri(batch_tag)
+        #        batch_stk,batch_rdy,batch_diag = batch_op_stack(
+        #        wf,batch_tag,valid_wf_inputs)
+        #        diagnostics.update(batch_diag)
+        #        stk.append([batch_tag,batch_stk])
+        #        valid_wf_inputs += get_valid_wf_inputs(batch_tag,batch_op)
+        #else:
+        #    continue_flag = False
+
+    @staticmethod
+    def stack_contains(itm,stk):
+        for lst in stk:
+            if itm in lst:
+                return True
+            for lst_itm in lst:
+                if isinstance(lst_itm,list):
+                    if stack_contains(itm,lst_itm):
+                        return True
+        return False
+
+    @staticmethod
+    def stack_size(stk):
+        sz = 0
+        for lst in stk:
+            for lst_itm in lst:
+                if isinstance(lst_itm,list):
+                    sz += stack_size(lst_itm)
+                else:
+                    sz += 1
+        return sz
+
+    def is_op_ready(self,op_tag,valid_wf_inputs,batch_routes=[]):
+        op = self.get_data_from_uri(op_tag)
+        inputs_rdy = []
+        diagnostics = {} 
+        for name,il in op.input_locator.items():
+            msg = ''
+            if il.val in self.wf_manager.workflows.keys():
+                inp_uri = il.val
+            else:
+                inp_uri = il.val[il.val.find('.')+1:]
+            if (il.tp == opmod.workflow_item 
+            and not inp_uri in valid_wf_inputs 
+            and not inp_uri in self.wf_manager.workflows.keys()):
+                inp_rdy = False
+                msg = str('Operation input {}.inputs.{} (={}) '.format(op_tag,name,il.val)
+                + 'not found in valid Workflow input list: {}'.format(valid_wf_inputs)
+                + 'or in workflows: {}'.format(self.wf_manager.workflows.keys()))
+            else:
+                inp_rdy = True
+            inputs_rdy.append(inp_rdy)
+            diagnostics[op_tag+'.'+opmod.inputs_tag+'.'+name] = msg
+        if all(inputs_rdy):
+            op_rdy = True
+        else:
+            op_rdy = False
+        return op_rdy,diagnostics 
+
+    @staticmethod
+    def get_valid_wf_inputs(op_tag,op):
+        """
+        Return the TreeModel uris of the op and its inputs/outputs 
+        that are eligible as downstream inputs in the workflow.
+        """
+        # valid_wf_inputs should be the operation, its input and output dicts, and their respective entries
+        valid_wf_inputs = [op_tag,op_tag+'.'+opmod.inputs_tag,op_tag+'.'+opmod.outputs_tag]
+        valid_wf_inputs += [op_tag+'.'+opmod.outputs_tag+'.'+k for k in op.outputs.keys()]
+        valid_wf_inputs += [op_tag+'.'+opmod.inputs_tag+'.'+k for k in op.inputs.keys()]
+        return valid_wf_inputs
+    
 

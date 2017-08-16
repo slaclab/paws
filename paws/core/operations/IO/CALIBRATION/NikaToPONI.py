@@ -41,9 +41,7 @@ class NikaToPONI(Operation):
         self.input_doc['nika_file'] = str('text file expressing nika automated calibration results- '
         + 'see Operation documentation for the expected format of this file')
         self.input_doc['fpolz'] = 'polarization factor'
-        self.input_src['nika_file'] = opmod.fs_input
-        self.input_src['fpolz'] = opmod.text_input
-        self.input_type['nika_file'] = opmod.path_type
+        self.input_type['nika_file'] = opmod.filesystem_path
         self.input_type['fpolz'] = opmod.float_type
         self.inputs['fpolz'] = 0.95 
         self.output_doc['poni_dict'] = 'Dict of pyFAI calibration parameters, as found in a .poni file'

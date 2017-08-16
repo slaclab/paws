@@ -58,92 +58,62 @@ def dict_contains_uri(uri,d):
 
 ####### functions for fetching inputs and loading them into operations #######
 
-def locate_input(il,wf=None,plugin_manager=None):
+def locate_input(il,wf_manager=None,plugin_manager=None):
     """
     Return the data pointed to by a given InputLocator object.
-    A Workflow and a PluginManager can be provided 
+    A WfManager and/or a PluginManager can be provided 
     as optional arguments,
     in which case they are used to fetch data.
     """
     if il.tp == opmod.no_input or il.val is None:
         return None
     elif (il.tp == opmod.filesystem_path
-        or il.tp == opmod.workflow_path):
+        or il.tp == opmod.workflow_path
+        or il.tp == opmod.string_type):
         if isinstance(il.val,list):
             return [str(v) for v in il.val]
         else:
             return str(il.val)
     elif il.tp == opmod.workflow_item:
         if isinstance(il.val,list):
-            return [wf.get_data_from_uri(v) for v in il.val]
+            return [wf_manager.get_wf_item(v) for v in il.val]
         else:
-            return wf.get_data_from_uri(il.val)
+            return wf_manager.get_wf_item(il.val)
     elif il.tp == opmod.plugin_item:
         if isinstance(il.val,list):
             return [plugin_manager.get_data_from_uri(v) for v in il.val]
         else:
             return plugin_manager.get_data_from_uri(il.val)
-    elif il.tp == opmod.string_type:
-        return str(il.val)
     elif il.tp == opmod.integer_type:
-        return int(il.val)
+        if isinstance(il.val,list):
+            return [int(v) for v in il.val]
+        else:
+            return int(il.val)
     elif il.tp == opmod.float_type:
-        return float(il.val)
+        if isinstance(il.val,list):
+            return [float(v) for v in il.val]
+        else:
+            return float(il.val)
     elif il.tp == opmod.bool_type:
-        return bool(eval(str(il.val)))
+        if isinstance(il.val,list):
+            return [bool(eval(str(v))) for v in il.val]
+        else:
+            return bool(eval(str(il.val)))
     else:
         msg = '[{}] failed to parse InputLocator (type: {}, val: {})'.format(
         __name__,il.tp,il.val)
         raise ValueError(msg)
 
-def load_inputs(op,wf=None,plugin_manager=None):
+def load_inputs(op,wf_manager=None,plugin_manager=None):
     """
     Loads input data for an Operation from its input_locators.
-    A Workflow and a PluginManager can be provided 
+    A WfManager and a PluginManager can be provided 
     as optional arguments,
     in which case they are used to fetch data.
     """
     for name,il in op.input_locator.items():
-        if isinstance(il,opmod.InputLocator):
-            il.data = locate_input(il,wf,plugin_manager)
-            op.inputs[name] = il.data
-        else:
-            msg = '[{}] Found broken Operation.input_locator for {}: {}'.format(
-            __name__, name, il)
-            raise ValueError(msg)
-
-####### functions having to do with workflow execution #######
-
-def get_valid_wf_inputs(op_tag,op):
-    """
-    Return the TreeModel uris of the op and its inputs/outputs 
-    that are eligible as downstream inputs in the workflow.
-    """
-    # valid_wf_inputs should be the operation, its input and output dicts, and their respective entries
-    valid_wf_inputs = [op_tag,op_tag+'.'+opmod.inputs_tag,op_tag+'.'+opmod.outputs_tag]
-    valid_wf_inputs += [op_tag+'.'+opmod.outputs_tag+'.'+k for k in op.outputs.keys()]
-    valid_wf_inputs += [op_tag+'.'+opmod.inputs_tag+'.'+k for k in op.inputs.keys()]
-    return valid_wf_inputs
-    
-def stack_size(stk):
-    sz = 0
-    for lst in stk:
-        for lst_itm in lst:
-            if isinstance(lst_itm,list):
-                sz += stack_size(lst_itm)
-            else:
-                sz += 1
-    return sz
-
-def stack_contains(itm,stk):
-    for lst in stk:
-        if itm in lst:
-            return True
-        for lst_itm in lst:
-            if isinstance(lst_itm,list):
-                if stack_contains(itm,lst_itm):
-                    return True
-    return False
+        il.data = locate_input(il,wf_manager,plugin_manager)
+        op.inputs[name] = il.data
 
 def print_stack(stk):
     stktxt = ''
@@ -161,26 +131,6 @@ def print_stack(stk):
             stktxt += ('{}'+opt_newline).format(lst)
     return stktxt
 
-def is_op_ready(wf,op_tag,valid_wf_inputs,batch_routes=[]):
-    op = wf.get_data_from_uri(op_tag)
-    inputs_rdy = []
-    diagnostics = {} 
-    for name,il in op.input_locator.items():
-        msg = ''
-        if (il.tp == opmod.workflow_item and not il.val in valid_wf_inputs):
-            inp_rdy = False
-            msg = str('Operation input {}.inputs.{} (={}) '.format(op_tag,name,il.val)
-            + 'not found in valid Workflow input list: {}'.format(valid_wf_inputs))
-        else:
-            inp_rdy = True
-        inputs_rdy.append(inp_rdy)
-        diagnostics[op_tag+'.'+opmod.inputs_tag+'.'+name] = msg
-    if all(inputs_rdy):
-        op_rdy = True
-    else:
-        op_rdy = False
-    return op_rdy,diagnostics 
-
 # TODO: the following
 def check_wf(wf):
     """
@@ -189,58 +139,4 @@ def check_wf(wf):
     Return a status code and message for each of the Operations.
     """
     pass
-
-def execution_stack(wf):
-    """
-    Build a stack (list) of lists of Operation uris,
-    such that each list indicates a set of Operations
-    whose dependencies are satisfied by the Operations above them.
-    """
-    stk = []
-    valid_wf_inputs = []
-    diagnostics = {}
-    continue_flag = True
-    while not stack_size(stk) == wf.n_ops() and continue_flag:
-        ops_rdy = []
-        ops_not_rdy = []
-        for op_tag in wf.list_op_tags():
-            if not stack_contains(op_tag,stk):
-                op_rdy,op_diag = is_op_ready(wf,op_tag,valid_wf_inputs)
-                diagnostics.update(op_diag)
-                if op_rdy:
-                    ops_rdy.append(op_tag)
-                else:
-                    ops_not_rdy.append(op_tag)
-        if any(ops_rdy):
-            stk.append(ops_rdy)
-            for op_tag in ops_rdy:
-                op = wf.get_data_from_uri(op_tag)
-                valid_wf_inputs += get_valid_wf_inputs(op_tag,op)
-    return stk,diagnostics
-        # Finished building list of ops currently ready. Now filter these into stack.
-        #if any(ops_rdy):
-        #     Which of these are not Batch/Realtime ops?
-        #    non_batch_rdy = []
-        #    for op_tag in ops_rdy:
-        #        op = wf.get_data_from_uri(op_tag)
-        #        if not any([op._batch_flag,op._realtime_flag]):
-        #            non_batch_rdy.append(op_tag)
-        #    if any(non_batch_rdy):
-        #        ops_rdy = non_batch_rdy
-        #        stk.append(ops_rdy)
-        #        for op_tag in ops_rdy:
-        #            op = wf.get_data_from_uri(op_tag)
-        #            valid_wf_inputs += get_valid_wf_inputs(op_tag,op)
-        #    else:
-        #        batch_tag = ops_rdy[0]
-        #        ops_rdy = [batch_tag]
-        #        batch_op = wf.get_data_from_uri(batch_tag)
-        #        batch_stk,batch_rdy,batch_diag = batch_op_stack(
-        #        wf,batch_tag,valid_wf_inputs)
-        #        diagnostics.update(batch_diag)
-        #        stk.append([batch_tag,batch_stk])
-        #        valid_wf_inputs += get_valid_wf_inputs(batch_tag,batch_op)
-        #else:
-        #    continue_flag = False
-
 

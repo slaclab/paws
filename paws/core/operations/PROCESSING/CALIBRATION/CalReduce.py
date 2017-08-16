@@ -26,10 +26,8 @@ class CalReduce(Operation):
         + 'minimally including keys dist, poni1, poni2, rot1, rot2, rot3, pixel1, pixel2, wavelength;'
         + 'optionally including keys fpolz, detector, splineFile; '
         + 'same specifications as pyFAI .poni format calibration parameters')
-        self.input_src['image_data'] = opmod.wf_input
-        self.input_src['poni_dict'] = opmod.wf_input
-        self.input_type['image_data'] = opmod.ref_type
-        self.input_type['poni_dict'] = opmod.ref_type
+        self.input_type['image_data'] = opmod.workflow_item
+        self.input_type['poni_dict'] = opmod.workflow_item
         self.output_doc['q'] = 'Scattering vector magnitude q in 1/Angstrom.'
         self.output_doc['I'] = 'Integrated intensity at q.'
         self.output_doc['q_I'] = 'q and I zipped together an a n-by-2 numpy array.'

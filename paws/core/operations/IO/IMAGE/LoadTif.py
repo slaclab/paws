@@ -17,8 +17,7 @@ class LoadTif(Operation):
         output_names = ['image_data','filename']
         super(LoadTif,self).__init__(input_names,output_names)
         self.input_doc['path'] = 'path to a .tif image'
-        self.input_src['path'] = opmod.fs_input
-        self.input_type['path'] = opmod.path_type
+        self.input_type['path'] = opmod.filesystem_path
         self.output_doc['image_data'] = '2D array representing pixel values'
         self.output_doc['filename'] = 'Filename for image, path and extension stripped'
         
