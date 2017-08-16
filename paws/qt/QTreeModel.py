@@ -203,11 +203,12 @@ class QTreeModel(QtCore.QAbstractItemModel):
         self.tree_dataChanged(parent_idx)
 
     def tree_dataChanged(self,idx):
-        itm = idx.internalPointer()
         self.dataChanged.emit(idx,idx)
+        itm = idx.internalPointer()
         for c_row in range(itm.n_children())[::-1]:
-            c_idx = self.index(c_row,0,idx)
-            self.tree_dataChanged(c_idx)
+            for c_col in range(1+len(itm.flags)):
+                c_idx = self.index(c_row,c_col,idx)
+                self.tree_dataChanged(c_idx)
 
     # Subclass of QAbstractItemModel must implement parent()
     def parent(self,idx):

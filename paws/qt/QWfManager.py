@@ -12,7 +12,7 @@ from ..core import pawstools
 from ..core.operations import Operation as opmod
 from ..core.operations import optools
 from ..core.workflow.Workflow import Workflow
-from ..core.operations.Operation import Operation, Batch, Realtime
+from ..core.operations.Operation import Operation#, Batch, Realtime
 
 
 class QWfManager(QtCore.QObject):
@@ -39,9 +39,10 @@ class QWfManager(QtCore.QObject):
         If wfname is not unique (i.e. a workflow with that name already exists),
         this method will overwrite the existing workflow with a new one.
         """
-        wf = Workflow()
-        self.wfman.workflows[wfname] = wf
-        self.qworkflows[wfname] = QWorkflow(wf)
+        #wf = Workflow()
+        #self.wfman.workflows[wfname] = wf
+        self.wfman.add_wf(wfname)
+        self.qworkflows[wfname] = QWorkflow(self.wfman.workflows[wfname])
         self.wf_running[wfname] = False
         self.wf_updated.emit(wfname)
         #wf.exec_finished.connect( partial(self.finish_wf,wfname) )

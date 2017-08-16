@@ -83,9 +83,15 @@ class SpectrumParameterization(Operation):
         self.input_src['q'] = opmod.wf_input
         self.input_src['I'] = opmod.wf_input
         self.input_src['features'] = opmod.wf_input
+        self.input_src['fixed_params'] = opmod.text_input
+        self.input_src['fixed_param_values'] = opmod.text_input
         self.input_type['q'] = opmod.ref_type
         self.input_type['I'] = opmod.ref_type
         self.input_type['features'] = opmod.ref_type
+        self.input_type['fixed_params'] = opmod.str_type
+        self.input_type['fixed_param_values'] = opmod.float_type
+        self.inputs['fixed_params'] = []
+        self.inputs['fixed_param_values'] = []
 
     def run(self):
         q, I = self.inputs['q'], self.inputs['I']
@@ -100,6 +106,7 @@ class SpectrumParameterization(Operation):
         p_new = saxstools.parameterize_spectrum(q,I,p,p_fix)
 
         I_guess = saxstools.compute_saxs(q,p_new)
+
         q_I_guess = np.array([q,I_guess]).T
         self.outputs['features'] = p_new
         self.outputs['q_I_guess'] = q_I_guess 

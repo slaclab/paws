@@ -45,6 +45,15 @@ class OperationDisabledError(Exception):
     #def __init__(self,msg):
     #    super(WorkflowAborted,self).__init__(self,msg)
 
+class WfNameError(Exception):
+    pass
+
+class PluginNameError(Exception):
+    pass
+
+class PluginLoadError(Exception):
+    pass
+
 def dtstr():
     """Return date and time as a string"""
     return dt.strftime(dt.now(),'%Y %m %d, %H:%M:%S')
@@ -53,6 +62,15 @@ def timestr():
     """Return time as a string"""
     return dt.strftime(dt.now(),'%H:%M:%S')
 
+def save_file(filename,d):
+    """
+    Create or replace file indicated by filename,
+    as a yaml serialization of dict d.
+    """
+    f = open(filename, 'w')
+    yaml.dump(d, f)
+    f.close()
+    
 def update_file(filename,d):
     """
     Save the items in dict d into filename,

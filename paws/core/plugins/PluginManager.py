@@ -34,35 +34,45 @@ class PluginManager(TreeModel):
         dct[opmod.inputs_tag] = pgin.inputs 
         return dct
 
-    def load_from_dict(self,plugin_dict):
+    def load_from_dict(self,pgin_name,pgin_spec):
         """
         Load plugins from a dict that specifies their setup parameters.
         """
-        for tag, pgin_spec in plugin_dict.items():
-            pgin_uri = pgin_spec['plugin_module']
-            pgin = self.get_plugin(pgin_uri)
-            if pgin is not None:
-                if not issubclass(pgin,PawsPlugin):
-                    self.write_log('Did not find Plugin {} - skipping.'.format(pgin_uri))
-                else:
-                    pgin = pgin()
-                    for name in pgin.inputs.keys():
-                        if name in pgin_spec[opmod.inputs_tag]:
-                            pgin.inputs[name] = pgin_spec[opmod.inputs_tag][name]
-                    pgin.start()
-                    # if already have this uri, first generate auto_tag
-                    #if self.tree_contains_uri(uri):
-                    #    uri = self.auto_tag(uri)
-                    #self.add_plugin(uri,pgin)
-                    self.set_item(tag,pgin)
+        #for tag, pgin_spec in plugin_dict.items():
+        pgin_uri = pgin_spec['plugin_module']
+        pgin = self.get_plugin(pgin_uri)
+        if pgin is not None:
+            if not issubclass(pgin,PawsPlugin):
+                self.write_log('Did not find Plugin {} - skipping.'.format(pgin_uri))
             else:
-                self.write_log('Did not find Plugin {} - skipping.'.format(ptype))
+                pgin = pgin()
+                for name in pgin.inputs.keys():
+                    if name in pgin_spec[opmod.inputs_tag]:
+                        pgin.inputs[name] = pgin_spec[opmod.inputs_tag][name]
+                pgin.start()
+                # if already have this uri, first generate auto_tag
+                #if self.tree_contains_uri(uri):
+                #    uri = self.auto_tag(uri)
+                #self.add_plugin(uri,pgin)
+                self.set_item(pgin_name,pgin)
+        else:
+            self.write_log('Did not find Plugin {} - skipping.'.format(ptype))
 
     #def tree_update(self,parent_idx,itm_tag,itm_data):
     #    if isinstance(itm_data,Operation) or isinstance(itm_data,PawsPlugin):
     #        super(PluginManager,self).tree_update(parent_idx,itm_tag,self.build_tree(itm_data))
     #    else:
     #        super(PluginManager,self).tree_update(parent_idx,itm_tag,itm_data)
+
+    def add_plugin(self,pgin_name,pgin):
+        """
+        Add a plugin, with key specified by pgin_name.
+        If pgin_name is not unique (i.e. a plugin with that name already exists),
+        this method will overwrite the existing plugin with a new one.
+        """
+        if not self.is_tag_valid(pgin_name): 
+            raise pawstools.PluginNameError(self.tag_error(pgin_name))
+        self.set_item(pgin_name,pgin)
 
     def build_tree(self,x):
         """
@@ -102,9 +112,12 @@ class PluginManager(TreeModel):
             msg = str('Trouble loading module for plugin {}. '
             .format(pgin_name) + 'Error message: ' + ex.message)
             self.write_log(msg)
-            return None
+            raise pawstools.PluginLoadError(msg)   
+ 
+    def n_plugins(self):
+        return self.n_children() 
 
-    def list_plugins(self):
+    def list_plugin_names(self):
         return self.root_tags()
         #r = self.get_from_idx(self.root_index())
         #return [itm.tag for itm in r.children]

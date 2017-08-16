@@ -8,21 +8,23 @@ def compute_saxs(q,params):
     """
     Given q and a dict of parameters,
     compute the saxs spectrum.
-    Supported parameters are the same as 
-    SaxsParameterization Operation outputs,
-    and should include at least the following keys:
-    I_at_0, precursor_flag, form_flag, structure_flag.
+    Supported parameters are... TODO: fill in 
 
     TODO: Document the equation.
     """
-    pre_flag = params['precursor_flag']
-    f_flag = params['form_flag']
+    b_flag = params['bad_data_flag']
     s_flag = params['structure_flag']
-    I_at_0 = params['I_at_0']
-    if not any([pre_flag,f_flag]):
-        return np.ones(len(q))*I_at_0
-    else:
-        I = np.zeros(len(q))
+    I = np.zeros(len(q))
+    if not b_flag and not s_flag:
+        pre_flag = params['precursor_flag']
+        f_flag = params['form_flag']
+        #I_at_0 = params['I_at_0']
+        #if not any([pre_flag,f_flag]):
+        #    return np.ones(len(q))*I_at_0
+        #else:
+        # begin with floor term
+        I0_floor = params['I0_floor'] 
+        I = I0_floor*np.ones(len(q))
         if pre_flag:
             I0_pre = params['I0_pre']
             r0_pre = params['r0_pre']
@@ -34,9 +36,6 @@ def compute_saxs(q,params):
             sigma_sph = params['sigma_form']
             I_sph = compute_spherical_normal_saxs(q,r0_sph,sigma_sph)
             I += I0_sph*I_sph
-        #if s_flag:
-        #    I0_pk = params['I0_pk']
-        #    I_pk = compute_peaks()
     return I
 
 def profile_spectrum(q,I,dI=None):
@@ -250,8 +249,8 @@ def parameterize_spectrum(q,I,metrics,fixed_params={}):
     """
     Determine a parameterization for a scattering equation,
     beginning with the measured spectrum (q,I) 
-    and a dict of features (metrics).
-    Dict metrics is similar or equal to 
+    and a dict of features (metrics),
+    which is intended to be 
     the output dict of profile_spectrum().
     """
     if metrics['bad_data_flag']:
@@ -264,56 +263,56 @@ def parameterize_spectrum(q,I,metrics,fixed_params={}):
     s_flag = metrics['structure_flag']
 
     # Check for overconstrained system
-    if 'I_at_0' in fix_keys and 'I0_form' in fix_keys and 'I0_pre' in fix_keys:
-        val1 = fixed_params['I_at_0']
-        val2 = fixed_params['I0_form'] + fixed_params['I0_pre'] 
-        if not val1 == val2:
-            msg = str('Spectrum intensity is overconstrained. '
-            + 'I_at_0 is constrained to {}, '
-            + 'but I0_form + I0_pre = {}. '.format(val1,val2))
-            raise ValueError(msg)
+    #if 'I_at_0' in fix_keys and 'I0_form' in fix_keys and 'I0_pre' in fix_keys:
+    #    val1 = fixed_params['I_at_0']
+    #    val2 = fixed_params['I0_form'] + fixed_params['I0_pre'] 
+    #    if not val1 == val2:
+    #        msg = str('Spectrum intensity is overconstrained. '
+    #        + 'I_at_0 is constrained to {}, '
+    #        + 'but I0_form + I0_pre = {}. '.format(val1,val2))
+    #        raise ValueError(msg)
     
-    if 'I0_form' in fix_keys and 'I0_pre' in fix_keys:
-        I_at_0 = fixed_params['I0_pre'] + fixed_params['I0_form']
+    #if 'I0_form' in fix_keys and 'I0_pre' in fix_keys:
+    #    I_at_0 = fixed_params['I0_pre'] + fixed_params['I0_form']
+    #else:
+    # Perform a low-q spectrum fit to get I(q=0).
+    if s_flag:
+        # If structure factor scattering,
+        # expect low-q SNR to be high, use q<0.06,
+        # fit to second order.
+        idx_lowq = (q<0.06)
+        I_at_0 = fit_I0(q[idx_lowq],I[idx_lowq],2)
+        metrics['I_at_0'] = I_at_0
+        #
+        #
+        # And now bail, until structure factor parameterization is in.
+        #
+        #
+        metrics['ERROR_MESSAGE'] = '[{}] structure factor parameterization not yet supported'.format(__name__)
+        return metrics
+    elif f_flag:
+        # If form factor scattering, fit 3rd order, use q<0.06. 
+        idx_lowq = (q<0.06)
+        #I_at_0 = fit_I0(q[idx_lowq],I[idx_lowq],3)
+        # Disregard lowest-q values if they are far from the mean, 
+        # as these points are likely dominated by experimental error.
+        Imean_lowq = np.mean(I[idx_lowq])
+        Istd_lowq = np.std(I[idx_lowq])
+        idx_good = ((I[idx_lowq] < Imean_lowq+Istd_lowq) & (I[idx_lowq] > Imean_lowq-Istd_lowq))
+        #dI_lowq = (I[idx_lowq][1:] - I[idx_lowq][:-1])/Imed_lowq
+        #idx_good = np.hstack( ( (abs(dI_lowq)<0.1) , np.array([True]) ) )
+        I_at_0 = fit_I0(q[idx_lowq][idx_good],I[idx_lowq][idx_good],3)
     else:
-        # Perform a low-q spectrum fit to get I(q=0).
-        if s_flag:
-            # If structure factor scattering,
-            # expect low-q SNR to be high, use q<0.06,
-            # fit to second order.
-            idx_lowq = (q<0.06)
-            I_at_0 = fit_I0(q[idx_lowq],I[idx_lowq],2)
-            metrics['I_at_0'] = I_at_0
-            #
-            #
-            # And now bail, until structure factor parameterization is in.
-            #
-            #
-            metrics['ERROR_MESSAGE'] = '[{}] structure factor parameterization not yet supported'.format(__name__)
-            return metrics
-        elif f_flag:
-            # If form factor scattering, fit 3rd order. 
-            # Use q<0.1 and disregard lowest-q values if they are far from the mean, 
-            # as these points are likely dominated by experimental error.
-            idx_lowq = (q<0.1)
-            Imean_lowq = np.mean(I[idx_lowq])
-            Istd_lowq = np.std(I[idx_lowq])
-            idx_good = ((I[idx_lowq] < Imean_lowq+Istd_lowq) & (I[idx_lowq] > Imean_lowq-Istd_lowq))
-            #dI_lowq = (I[idx_lowq][1:] - I[idx_lowq][:-1])/Imed_lowq
-            #idx_good = np.hstack( ( (abs(dI_lowq)<0.1) , np.array([True]) ) )
-            I_at_0 = fit_I0(q[idx_lowq][idx_good],I[idx_lowq][idx_good],3)
-        else:
-            # If only precursor scattering, fit the entire spectrum.
-            I_at_0 = fit_I0(q,I,4)
-        if I_at_0 > 10*I[0] or I_at_0 < 0.1*I[0]:
-            # stop 
-            msg = 'polynomial fit for I(q=0) deviates too far from low-q values' 
-            metrics['ERROR_MESSAGE'] = msg
-            metrics['I_at_0'] = I_at_0
-            metrics['bad_data_flag'] = True 
-            return metrics
-
-    # If we make it to the point, I_at_0 should be set.
+        # If only precursor scattering, fit second order for q<0.2 
+        idx_lowq = (q<0.2)
+        I_at_0 = fit_I0(q[idx_lowq],I[idx_lowq],2)
+    #if I_at_0 > 10*I[0] or I_at_0 < 0.1*I[0]:
+    #    # stop 
+    #    msg = 'polynomial fit for I(q=0) deviates too far from low-q values' 
+    #    metrics['ERROR_MESSAGE'] = msg
+    #    metrics['I_at_0'] = I_at_0
+    #    metrics['bad_data_flag'] = True 
+    #    return metrics
     metrics['I_at_0'] = I_at_0
 
     r0_form = None
@@ -340,40 +339,84 @@ def parameterize_spectrum(q,I,metrics,fixed_params={}):
             r0_pre = precursor_heuristics(q,I,I_at_0=I_at_0)
     metrics['r0_pre'] = r0_pre 
 
+    # use guessed features to do a quick fit on intensity prefactors
+    # (currently only good for form and precursor flags)
+    # always include a "floor" term
+    #I0_floor = 0
+    I_floor = np.ones(len(q))
+    # include other terms conditionally
     I0_pre = None
+    if pre_flag:
+        I_pre = compute_spherical_normal_saxs(q,r0_pre,0)
     I0_form = None
+    if f_flag:
+        I_form = compute_spherical_normal_saxs(q,r0_form,sigma_form)
+    I0_structure = None
+    #if structure_flag:
+    #   I_structure = .....
+
+    #if pre_flag and form_flag and structure_flag:
+    #   Ifunc = lambda x: x[0]*I_floor + x[1]*I_pre + x[2]*I_form + x[3]*I_structure
     if pre_flag and f_flag:
-        if 'I0_pre' in fix_keys and 'I0_form' in fix_keys:
-            I0_pre = fixed_params['I0_pre']
-            I0_form = fixed_params['I0_form']
-        elif 'I0_pre' in fix_keys:
-            I0_pre = fixed_params['I0_pre']
-            I0_form = I_at_0 - I0_pre
-        elif 'I0_form' in fix_keys:
-            I0_form = fixed_params['I0_form']
-            I0_pre = I_at_0 - I0_form
-        else:
-            I_pre = compute_spherical_normal_saxs(q,r0_pre,0)
-            I_form = compute_spherical_normal_saxs(q,r0_form,sigma_form)
-            I_nz = np.invert((I<=0))
-            I_error = lambda x: np.sum( (np.log(I_at_0*(x*I_pre+(1.-x)*I_form)[I_nz])-np.log(I[I_nz]))**2 )
-            x_res = minimize(I_error,[0.1],bounds=[(0.0,1.0)]) 
-            x_fit = x_res.x[0]
-            I0_form = (1.-x_fit)*I_at_0
-            I0_pre = x_fit*I_at_0
+        x_init = [I_at_0,0.0,0.0]
+        x_bounds = [(0.0,None),(0.0,None),(0.0,None)]
+        Ifunc = lambda x: x[0]*I_floor + x[1]*I_pre + x[2]*I_form 
     elif pre_flag:
-        if 'I0_pre' in fix_keys:
-            I0_pre = fixed_params['I0_pre']
-        else:
-            I0_pre = I_at_0 
+        x_init = [I_at_0,0.0]
+        x_bounds = [(0.0,None),(0.0,None)]
+        Ifunc = lambda x: x[0]*I_floor + x[1]*I_pre 
     elif f_flag:
-        if 'I0_form' in fix_keys:
-            I0_form = fixed_params['I0_form'] 
-        else:
-            I0_form = I_at_0 
+        x_init = [I_at_0,0.0]
+        x_bounds = [(0.0,None),(0.0,None)]
+        Ifunc = lambda x: x[0]*I_floor + x[1]*I_form 
+    if any([pre_flag,f_flag]):
+        I_nz = np.invert((I<=0))
+        I_error = lambda x: np.sum( (np.log(Ifunc(x))[I_nz] - np.log(I[I_nz]))**2 )
+        res = scipimin(I_error,x_init,bounds=x_bounds,
+        constraints=[{'type':'eq','fun':lambda x:np.sum(x)-I_at_0}]) 
+        x_res = res.x
+    I0_floor = x_res[0]
+    if pre_flag and f_flag:
+        I0_pre = x_res[1] 
+        I0_form = x_res[2]
+    elif pre_flag:
+        I0_pre = x_res[1]
+    elif f_flag:
+        I0_form = x_res[1]
+    #if pre_flag and f_flag:
+    #    if 'I0_pre' in fix_keys and 'I0_form' in fix_keys:
+    #        I0_pre = fixed_params['I0_pre']
+    #        I0_form = fixed_params['I0_form']
+    #    elif 'I0_pre' in fix_keys:
+    #        I0_pre = fixed_params['I0_pre']
+    #        I0_form = I_at_0 - I0_pre
+    #    elif 'I0_form' in fix_keys:
+    #        I0_form = fixed_params['I0_form']
+    #        I0_pre = I_at_0 - I0_form
+    #    else:
+    #        I_pre = compute_spherical_normal_saxs(q,r0_pre,0)
+    #        I_form = compute_spherical_normal_saxs(q,r0_form,sigma_form)
+    #        I_nz = np.invert((I<=0))
+    #        I_error = lambda x: np.sum( (np.log(I_at_0*(x*I_pre+(1.-x)*I_form)[I_nz])-np.log(I[I_nz]))**2 )
+    #        x_res = scipimin(I_error,[0.1],bounds=[(0.0,1.0)]) 
+    #        x_fit = x_res.x[0]
+    #        I0_form = (1.-x_fit)*I_at_0
+    #        I0_pre = x_fit*I_at_0
+    #elif pre_flag:
+    #    if 'I0_pre' in fix_keys:
+    #        I0_pre = fixed_params['I0_pre']
+    #    else:
+    #        I0_pre = I_at_0 
+    #elif f_flag:
+    #    if 'I0_form' in fix_keys:
+    #        I0_form = fixed_params['I0_form'] 
+    #    else:
+    #        I0_form = I_at_0 
+    metrics['I0_floor'] = I0_floor 
     metrics['I0_pre'] = I0_pre 
     metrics['I0_form'] = I0_form 
 
+    # boiler plate for structure factor processing
     q0_structure = None
     I0_structure = None
     sigma_structure = None
@@ -383,7 +426,7 @@ def parameterize_spectrum(q,I,metrics,fixed_params={}):
     metrics['I0_structure'] = I0_structure 
     metrics['sigma_structure'] = sigma_structure
 
-    I_guess = compute_saxs(q,p)
+    I_guess = compute_saxs(q,metrics)
     q_I_guess = np.array([q,I_guess]).T
     nz = ((I>0)&(I_guess>0))
     logI_nz = np.log(I[nz])
@@ -521,7 +564,6 @@ def fit_spectrum(q,I,objfun,features,x_keys,constraints=[]):
         #try:
         res = scipimin(fit_obj,x_init,bounds=x_bounds,constraints=c)
         #except:
-        #    import pdb; pdb.set_trace()
         x_opt = res.x
         d_opt['objective_after'] = fit_obj(x_opt)
         if d_opt['objective_after'] > d_opt['objective_before']:
@@ -530,7 +572,6 @@ def fit_spectrum(q,I,objfun,features,x_keys,constraints=[]):
             print('obj_init: {}'.format(d_opt['objective_before']))
             print('x_opt: {}'.format(x_opt))
             print('obj_opt: {}'.format(d_opt['objective_after']))
-            #import pdb; pdb.set_trace()
             x_opt = x_init
         for k,xk in zip(x_keys,x_opt):
             d_opt[k] = xk
@@ -578,8 +619,10 @@ def precursor_heuristics(q,I,I_at_0=None):
     Result is bounded between 0 and 10 Angstroms.
     """
     n_q = len(q)
-    # optimize the pearson correlation in the upper half of the q domain
-    fit_obj = lambda r: -1*compute_pearson(compute_spherical_normal_saxs(q[n_q/2:],r,0),I[n_q/2:])
+    # optimize the log pearson correlation in the upper half of the q domain
+    # TODO: This would be a good place for a unified fit instead.
+    nz = (I[n_q/2:]>0)
+    fit_obj = lambda r: -1*compute_pearson(np.log(compute_spherical_normal_saxs(q[n_q/2:],r,0)[nz]),np.log(I[n_q/2:][nz]))
     #res = scipimin(fit_ojb,[0.1],bounds=[(0,0.3)]) 
     res = scipimin(fit_obj,[5],bounds=[(0,10)])
     r_opt = res.x[0]

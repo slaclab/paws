@@ -41,6 +41,14 @@ class PifNPSynth(Operation):
         self.input_type['t_T'] = opmod.ref_type
         self.input_type['t_features'] = opmod.ref_type
         self.input_type['recipe'] = opmod.ref_type
+        # all workflow inputs default to none: an empty pif should be produced in this case.
+        self.inputs['date_time'] = None
+        self.inputs['uid_prefix'] = None
+        self.inputs['t_utc'] = None
+        self.inputs['q_I'] = None
+        self.inputs['t_T'] = None
+        self.inputs['t_features'] = None
+        self.inputs['recipe'] = None
 
     def run(self):
         uid_pre = self.inputs['uid_prefix']
@@ -76,18 +84,18 @@ class PifNPSynth(Operation):
                 raise ValueError('utc time {} not found in t_f data ({})'
                 .format(t_utc,t_f[:,0]))
 
-        bflag = f['bad_data_flag']
-        sflag = f['structure_flag']
-        pflag = f['precursor_flag']
-        fflag = f['form_flag']
-        if bflag:
-            csys.tags.append('unidentified scattering')
-        if sflag:
-            csys.tags.append('structure factor scattering')
-        if fflag:
-            csys.tags.append('precursor scattering')
-        if pflag:
-            csys.tags.append('form factor scattering')
+            bflag = f['bad_data_flag']
+            sflag = f['structure_flag']
+            pflag = f['precursor_flag']
+            fflag = f['form_flag']
+            if bflag:
+                csys.tags.append('unidentified scattering')
+            if sflag:
+                csys.tags.append('structure factor scattering')
+            if fflag:
+                csys.tags.append('precursor scattering')
+            if pflag:
+                csys.tags.append('form factor scattering')
 
         temp_C = None
         if t_T is not None:
@@ -107,24 +115,28 @@ class PifNPSynth(Operation):
         if q_I is not None and temp_C is not None:
             # Process measured q_I into a property
             pI = self.saxs_pif_property(q_I)
-            # TODO: should any more 'conditions' be applied to this Property?
             pI.conditions.append(pifobj.Value('temperature',[pifobj.Scalar(temp_C)],None,None,None,'degrees Celsius'))
             csys.properties.append(pI)
+        elif q_I is not None:
+            # Process measured q_I into a property
+            pI = self.saxs_pif_property(q_I)
+            csys.properties.append(pI)
 
-        if fflag and not sflag and not bflag:
-            csys.properties.append(self.feature_property(f['r0_form'],'nanoparticle mean radius','Angstrom'))
-            csys.properties.append(self.feature_property(f['sigma_form'],'fractional standard deviation of nanoparticle radius',''))
-            csys.properties.append(self.feature_property(f['I0_form'],'form factor scattering intensity prefactor','counts'))
-        if pflag and not sflag and not bflag:
-            csys.properties.append(self.feature_property(f['r0_pre'],'precursor effective radius','Angstrom'))
-            csys.properties.append(self.feature_property(f['I0_pre'],'precursor scattering intensity prefactor','counts'))
-        if not bflag and not sflag:
-            csys.properties.append(self.feature_property(f['I_at_0'],'scattered intensity at q=0','counts'))
-            # Compute the saxs spectrum, package it
-            qI_computed = saxstools.compute_saxs(q_I[:,0],f)
-            pI_computed = self.saxs_pif_property(np.array( [[q_I[i,0],qI_computed[i]] for i in range(len(qI_computed))] ))
-            pI_computed.name = 'computed SAXS intensity'
-            csys.properties.append(pI_computed)
+        if t_f is not None:
+            if fflag and not sflag and not bflag:
+                csys.properties.append(self.feature_property(f['r0_form'],'nanoparticle mean radius','Angstrom'))
+                csys.properties.append(self.feature_property(f['sigma_form'],'fractional standard deviation of nanoparticle radius',''))
+                csys.properties.append(self.feature_property(f['I0_form'],'form factor scattering intensity prefactor','counts'))
+            if pflag and not sflag and not bflag:
+                csys.properties.append(self.feature_property(f['r0_pre'],'precursor effective radius','Angstrom'))
+                csys.properties.append(self.feature_property(f['I0_pre'],'precursor scattering intensity prefactor','counts'))
+            if not bflag and not sflag:
+                csys.properties.append(self.feature_property(f['I_at_0'],'scattered intensity at q=0','counts'))
+                # Compute the saxs spectrum, package it
+                qI_computed = saxstools.compute_saxs(q_I[:,0],f)
+                pI_computed = self.saxs_pif_property(np.array( [[q_I[i,0],qI_computed[i]] for i in range(len(qI_computed))] ))
+                pI_computed.name = 'computed SAXS intensity'
+                csys.properties.append(pI_computed)
 
         # Package features-vs-time up to now as properties
         if t_f is not None and not bflag:

@@ -272,7 +272,7 @@ class DictTree(object):
         #else:
         #    return True 
 
-    def uri_error(self,uri):
+    def uri_error_message(self,uri):
         """Provide a human-readable error message for bad uris."""
         if not uri:
             err_msg = 'uri is blank.'
@@ -284,7 +284,7 @@ class DictTree(object):
             err_msg = 'Unforeseen uri error.'
         return str('uri error for {}: \n{}\n'.format(uri,err_msg))
 
-    def tag_error(self,tag):
+    def tag_error_message(self,tag):
         """Provide a human-readable error message for bad tags."""
         if '.' in tag:
             return 'tag error for {}: \ntag contains a period (.)\n'.format(tag)

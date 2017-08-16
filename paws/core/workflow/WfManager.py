@@ -7,7 +7,7 @@ import time
 from .. import operations as ops
 from .Workflow import Workflow
 from ..operations import Operation as opmod
-from ..operations.Operation import Operation, Batch, Realtime        
+from ..operations.Operation import Operation#, Batch, Realtime        
 from ..operations import optools
 from .. import pawstools
 
@@ -23,7 +23,7 @@ class WfManager(object):
     def __init__(self,plugin_manager):
         #super(WfManager,self).__init__()
         self.workflows = OrderedDict() 
-        self.plugman = plugin_manager
+        self.plugin_manager = plugin_manager
         self.logmethod = print 
 
     #def __getitem__(self,key):
@@ -35,6 +35,16 @@ class WfManager(object):
 
     def n_wf(self):
         return len(self.workflows)
+
+    def get_wf_item(self,item_uri):
+        uri_parts = item_uri.split('.')
+        wfname = uri_parts[0]
+        if '.' in item_uri:
+            sub_uri = item_uri[item_uri.find('.')+1:]
+            return self.workflows[wfname].get_data_from_uri(sub_uri)
+        else:
+            return self.workflows[wfname]
+        parent_uri = itm_uri[:itm_uri.rfind('.')]
 
     def write_log(self,msg):
         self.logmethod(msg)
@@ -48,100 +58,106 @@ class WfManager(object):
         If wfname is not unique (i.e. a workflow with that name already exists),
         this method will overwrite the existing workflow with a new one.
         """
-        wf = Workflow()
+        wf = Workflow(self)
+        if not wf.is_tag_valid(wfname): 
+            raise pawstools.WfNameError(self.tag_error(wfname))
         self.workflows[wfname] = wf
 
     def run_wf(self,wfname):
         """
-        Serially execute the operations of WfManager.workflows[wfname].
-        Uses optools.execution_stack() to determine execution order.
+        Call the execute() method of self.workflows[wfname]
         """
-        stk,diag = optools.execution_stack(self.workflows[wfname])
-        for lst in stk:
-            batch_flag = isinstance(self.workflows[wfname].get_data_from_uri(lst[0]),Batch)
-            rt_flag = isinstance(self.workflows[wfname].get_data_from_uri(lst[0]),Realtime)
-            if not any([batch_flag,rt_flag]):
-                self.execute_serial(wfname,lst)
-            elif batch_flag:
-                self.execute_batch(wfname,lst[0],lst[1])
-            elif rt_flag:
-                self.execute_realtime(wfname,lst[0],lst[1])
+        self.workflows[wfname].execute()
 
-    def execute_batch(self,wfname,batch_op_tag,batch_stk):
-        batch_op = self.workflows[wfname].get_data_from_uri(batch_op_tag) 
-        optools.load_inputs(batch_op,self.workflows[wfname],self.plugman)
-        batch_op.run()
-        self.workflows[wfname].set_item(batch_op_tag,batch_op)
-        n_batch = len(batch_op.input_list())
-        for i in range(n_batch):
-            input_dict = batch_op.input_list()[i]
-            for uri,val in input_dict.items():
-                self.workflows[wfname].set_op_input_at_uri(uri,val)
-            self.write_log( 'BATCH EXECUTION {} / {}'.format(i+1,n_batch) )
-            for batch_lst in batch_stk:
-                self.execute_serial(wfname,batch_lst)
-            saved_items_dict = OrderedDict()
-            for uri in batch_op.saved_items():
-                # TODO # BUG: there is the chance for infinite recursion here
-                # if the batch is asked to save an upstream item?
-                save_data = copy.deepcopy(self.workflows[wfname].get_data_from_uri(uri))
-                save_dict = self.uri_to_embedded_dict(uri,save_data) 
-                saved_items_dict = self.update_embedded_dict(saved_items_dict,save_dict)
-            batch_op.output_list()[i] = saved_items_dict
-            # TODO: set a more specific item here to save some tree update time?
-            #self.workflows[wfname].set_item(batch_op_tag,batch_op)
-            outputs_uri = batch_op_tag+'.'+opmod.outputs_tag+'.'+batch_op.batch_outputs_tag()+'.'+str(i)
-            self.workflows[wfname].set_item(outputs_uri,saved_items_dict)
+       # stk,diag = self.workflows[wfname].execution_stack()
+       # for lst in stk:
+       #     self.write_log('workflow {} running {}'.format(wfname,op_list))
+       #     for op_tag in lst: 
+       #         op = self.workflows[wfname].get_data_from_uri(op_tag) 
+       #         optools.load_inputs(op,self.workflows[wfname],self.plugman)
+       #     self.workflows[wfname].execute(op_list)
+            # TODO: move execution to the Workflow class.
+            # challenge: how to load plugin manager inputs from Workflow.
+            #optools.load_inputs(op,self.workflows[wfname],self.plugman)
+            #try:
+            #    op.run() 
+            #except Exception as ex:
+            #    tb = traceback.format_exc()
+            #    self.write_log(str('Operation {} of workflow {} threw an error. '
+            #    + '\nMessage: {} \nTrace: {}').format(op_tag,wfname,ex.message,tb)) 
+            #self.workflows[wfname].set_item(op_tag,op)
 
-    def execute_realtime(self,wfname,rt_op_tag,rt_stk):
-        rt_op = self.workflows[wfname].get_data_from_uri(rt_op_tag) 
-        optools.load_inputs(rt_op,self.workflows[wfname],self.plugman)
-        rt_op.run()
-        self.workflows[wfname].set_item(rt_op_tag,rt_op)
-        keep_running = True
-        n_exec = 0
-        wait_iter = 0
-        while keep_running:
-        ##TODO: ways to control the loop exit condition
-            vals = rt_op.input_iter().next()
-            if not None in vals:
-                n_exec += 1
-                wait_iter = 0
-                inp_dict = OrderedDict( zip(rt_op.input_routes(), vals) )
-                for uri,val in inp_dict.items():
-                    self.workflows[wfname].set_op_input_at_uri(uri,val) 
-                self.write_log( 'REALTIME EXECUTION {}'.format(n_exec))
-                for rt_lst in rt_stk:
-                    self.execute_serial(wfname,rt_lst)
-                saved_items_dict = OrderedDict()
-                for uri in rt_op.saved_items():
-                    save_data = copy.deepcopy(self.workflows[wfname].get_data_from_uri(uri))
-                    save_dict = self.uri_to_embedded_dict(uri,save_data) 
-                    saved_items_dict = self.update_embedded_dict(saved_items_dict,save_dict)
-                rt_op.output_list().append(saved_items_dict)
-                output_uri = rt_op_tag+'.'+opmod.outputs_tag+'.'+rt_op.batch_outputs_tag()+'.'+str(i)
-                self.workflows[wfname].set_item(output_uri,saved_items_dict)
-            else:
-                if wait_iter == 0:
-                    self.write_log( 'Waiting for new inputs...' )
-                wait_iter += 1 
-                time.sleep(float(rt_op.delay())/1000.0)
-            if wait_iter > 1000:
-                self.write_log('Waited too long. Exiting...')
-                keep_running = False
+            #batch_flag = isinstance(self.workflows[wfname].get_data_from_uri(lst[0]),Batch)
+            #rt_flag = isinstance(self.workflows[wfname].get_data_from_uri(lst[0]),Realtime)
+            #if not any([batch_flag,rt_flag]):
+            #    self.execute_serial(wfname,lst)
+            #elif batch_flag:
+            #    self.execute_batch(wfname,lst[0],lst[1])
+            #elif rt_flag:
+            #    self.execute_realtime(wfname,lst[0],lst[1])
 
-    def execute_serial(self,wfname,op_list):
-        self.write_log('workflow {} running {}'.format(wfname,op_list))
-        for op_tag in op_list: 
-            op = self.workflows[wfname].get_data_from_uri(op_tag) 
-            optools.load_inputs(op,self.workflows[wfname],self.plugman)
-            try:
-                op.run() 
-            except Exception as ex:
-                tb = traceback.format_exc()
-                self.write_log(str('Operation {} of workflow {} threw an error. '
-                + '\nMessage: {} \nTrace: {}').format(op_tag,wfname,ex.message,tb)) 
-            self.workflows[wfname].set_item(op_tag,op)
+    #def execute_batch(self,wfname,batch_op_tag,batch_stk):
+    #    batch_op = self.workflows[wfname].get_data_from_uri(batch_op_tag) 
+    #    optools.load_inputs(batch_op,self.workflows[wfname],self.plugman)
+    #    batch_op.run()
+    #    self.workflows[wfname].set_item(batch_op_tag,batch_op)
+    #    n_batch = len(batch_op.input_list())
+    #    for i in range(n_batch):
+    #        input_dict = batch_op.input_list()[i]
+    #        for uri,val in input_dict.items():
+    #            self.workflows[wfname].set_op_input_at_uri(uri,val)
+    #        self.write_log( 'BATCH EXECUTION {} / {}'.format(i+1,n_batch) )
+    #        for batch_lst in batch_stk:
+    #            self.execute_serial(wfname,batch_lst)
+    #        saved_items_dict = OrderedDict()
+    #        for uri in batch_op.saved_items():
+    #            # TODO # BUG: there is the chance for infinite recursion here
+    #            # if the batch is asked to save an upstream item?
+    #            save_data = copy.deepcopy(self.workflows[wfname].get_data_from_uri(uri))
+    #            save_dict = self.uri_to_embedded_dict(uri,save_data) 
+    #            saved_items_dict = self.update_embedded_dict(saved_items_dict,save_dict)
+    #        batch_op.output_list()[i] = saved_items_dict
+    #        # TODO: set a more specific item here to save some tree update time?
+    #        #self.workflows[wfname].set_item(batch_op_tag,batch_op)
+    #        outputs_uri = batch_op_tag+'.'+opmod.outputs_tag+'.'+batch_op.batch_outputs_tag()+'.'+str(i)
+    #        self.workflows[wfname].set_item(outputs_uri,saved_items_dict)
+
+    #def execute_realtime(self,wfname,rt_op_tag,rt_stk):
+    #    rt_op = self.workflows[wfname].get_data_from_uri(rt_op_tag) 
+    #    optools.load_inputs(rt_op,self.workflows[wfname],self.plugman)
+    #    rt_op.run()
+    #    self.workflows[wfname].set_item(rt_op_tag,rt_op)
+    #    keep_running = True
+    #    n_exec = 0
+    #    wait_iter = 0
+    #    while keep_running:
+    #    ##TODO: ways to control the loop exit condition
+    #        vals = rt_op.input_iter().next()
+    #        if not None in vals:
+    #            n_exec += 1
+    #            wait_iter = 0
+    #            inp_dict = OrderedDict( zip(rt_op.input_routes(), vals) )
+    #            for uri,val in inp_dict.items():
+    #                self.workflows[wfname].set_op_input_at_uri(uri,val) 
+    #            self.write_log( 'REALTIME EXECUTION {}'.format(n_exec))
+    #            for rt_lst in rt_stk:
+    #                self.execute_serial(wfname,rt_lst)
+    #            saved_items_dict = OrderedDict()
+    #            for uri in rt_op.saved_items():
+    #                save_data = copy.deepcopy(self.workflows[wfname].get_data_from_uri(uri))
+    #                save_dict = self.uri_to_embedded_dict(uri,save_data) 
+    #                saved_items_dict = self.update_embedded_dict(saved_items_dict,save_dict)
+    #            rt_op.output_list().append(saved_items_dict)
+    #            output_uri = rt_op_tag+'.'+opmod.outputs_tag+'.'+rt_op.batch_outputs_tag()+'.'+str(i)
+    #            self.workflows[wfname].set_item(output_uri,saved_items_dict)
+    #        else:
+    #            if wait_iter == 0:
+    #                self.write_log( 'Waiting for new inputs...' )
+    #            wait_iter += 1 
+    #            time.sleep(float(rt_op.delay())/1000.0)
+    #        if wait_iter > 1000:
+    #            self.write_log('Waited too long. Exiting...')
+    #            keep_running = False
 
     def uri_to_embedded_dict(self,uri,data=None):
         path = uri.split('.')

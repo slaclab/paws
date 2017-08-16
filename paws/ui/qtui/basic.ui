@@ -17,44 +17,55 @@
    <property name="enabled">
     <bool>true</bool>
    </property>
-   <layout class="QHBoxLayout" name="horizontalLayout">
-    <item>
+   <layout class="QGridLayout" name="gridLayout">
+    <item row="0" column="0">
      <widget class="QSplitter" name="hsplitter">
       <property name="orientation">
        <enum>Qt::Horizontal</enum>
       </property>
-      <widget class="QFrame" name="left_frame">
-       <property name="frameShape">
-        <enum>QFrame::StyledPanel</enum>
-       </property>
-       <property name="frameShadow">
-        <enum>QFrame::Raised</enum>
-       </property>
-       <layout class="QGridLayout" name="gridLayout_4">
-        <item row="3" column="0" colspan="2">
-         <widget class="QTreeView" name="op_tree"/>
-        </item>
-        <item row="5" column="0" colspan="2">
-         <widget class="QTextEdit" name="op_info_box"/>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QSplitter" name="vsplitter">
+      <widget class="QSplitter" name="left_vsplitter">
        <property name="orientation">
         <enum>Qt::Vertical</enum>
        </property>
-       <widget class="QFrame" name="center_frame">
-        <property name="frameShape">
-         <enum>QFrame::StyledPanel</enum>
+       <widget class="QGroupBox" name="app_control_box">
+        <property name="title">
+         <string>GroupBox</string>
         </property>
-        <property name="frameShadow">
-         <enum>QFrame::Raised</enum>
-        </property>
-        <layout class="QGridLayout" name="gridLayout_2">
-         <item row="0" column="0">
-          <layout class="QGridLayout" name="viewer_layout"/>
+        <layout class="QHBoxLayout" name="horizontalLayout">
+         <item>
+          <widget class="QPushButton" name="save_state_button">
+           <property name="text">
+            <string>PushButton</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="load_state_button">
+           <property name="text">
+            <string>PushButton</string>
+           </property>
+          </widget>
          </item>
         </layout>
+       </widget>
+       <widget class="QTreeView" name="op_tree"/>
+       <widget class="QTextEdit" name="op_info_box"/>
+      </widget>
+      <widget class="QSplitter" name="center_vsplitter">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+       <widget class="QTabWidget" name="viewer_tabwidget">
+        <widget class="QWidget" name="tab">
+         <attribute name="title">
+          <string>Tab 1</string>
+         </attribute>
+        </widget>
+        <widget class="QWidget" name="tab_2">
+         <attribute name="title">
+          <string>Tab 2</string>
+         </attribute>
+        </widget>
        </widget>
        <widget class="QPlainTextEdit" name="message_board">
         <property name="undoRedoEnabled">
@@ -65,82 +76,75 @@
         </property>
        </widget>
       </widget>
-      <widget class="QFrame" name="right_frame">
-       <property name="frameShape">
-        <enum>QFrame::StyledPanel</enum>
+      <widget class="QSplitter" name="right_vsplitter">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
        </property>
-       <property name="frameShadow">
-        <enum>QFrame::Raised</enum>
-       </property>
-       <layout class="QGridLayout" name="gridLayout">
-        <item row="0" column="0">
-         <widget class="QPushButton" name="save_state_button">
-          <property name="text">
-           <string>PushButton</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="1">
-         <widget class="QPushButton" name="load_state_button">
-          <property name="text">
-           <string>PushButton</string>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="0" colspan="2">
-         <widget class="QGroupBox" name="workflows_box">
-          <property name="title">
-           <string>GroupBox</string>
-          </property>
-          <layout class="QGridLayout" name="gridLayout_5">
-           <item row="0" column="0">
-            <widget class="QComboBox" name="wf_selector"/>
-           </item>
-           <item row="1" column="0" colspan="2">
-            <widget class="QTreeView" name="wf_tree"/>
-           </item>
-           <item row="0" column="1">
-            <widget class="QPushButton" name="run_wf_button">
-             <property name="text">
-              <string>PushButton</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="0" colspan="2">
-            <widget class="QPushButton" name="setup_wf_button">
-             <property name="text">
-              <string>PushButton</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-          <zorder>wf_tree</zorder>
-          <zorder>wf_tree</zorder>
-          <zorder>wf_selector</zorder>
-          <zorder>run_wf_button</zorder>
-          <zorder>setup_wf_button</zorder>
-         </widget>
-        </item>
-        <item row="3" column="0" colspan="2">
-         <widget class="QGroupBox" name="plugins_box">
-          <property name="title">
-           <string>GroupBox</string>
-          </property>
-          <layout class="QGridLayout" name="gridLayout_3">
-           <item row="0" column="0">
-            <widget class="QTreeView" name="plugin_tree"/>
-           </item>
-           <item row="1" column="0">
-            <widget class="QPushButton" name="setup_plugins_button">
-             <property name="text">
-              <string>PushButton</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
-       </layout>
+       <widget class="QGroupBox" name="workflows_box">
+        <property name="title">
+         <string>GroupBox</string>
+        </property>
+        <layout class="QGridLayout" name="gridLayout_4">
+         <item row="2" column="0" colspan="3">
+          <widget class="QTreeView" name="wf_tree"/>
+         </item>
+         <item row="1" column="0" colspan="2">
+          <widget class="QComboBox" name="wf_selector"/>
+         </item>
+         <item row="1" column="2">
+          <widget class="QPushButton" name="run_wf_button">
+           <property name="text">
+            <string>PushButton</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="0">
+          <widget class="QLineEdit" name="wf_name_header"/>
+         </item>
+         <item row="0" column="1">
+          <widget class="QLineEdit" name="wf_name_entry"/>
+         </item>
+         <item row="0" column="2">
+          <widget class="QPushButton" name="add_workflow_button">
+           <property name="text">
+            <string>PushButton</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+        <zorder>wf_tree</zorder>
+        <zorder>wf_selector</zorder>
+        <zorder>run_wf_button</zorder>
+        <zorder>wf_name_header</zorder>
+        <zorder>wf_name_entry</zorder>
+        <zorder>add_workflow_button</zorder>
+       </widget>
+       <widget class="QGroupBox" name="plugins_box">
+        <property name="title">
+         <string>GroupBox</string>
+        </property>
+        <layout class="QGridLayout" name="gridLayout_5">
+         <item row="0" column="3">
+          <widget class="QPushButton" name="add_plugin_button">
+           <property name="text">
+            <string>PushButton</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="0">
+          <widget class="QLineEdit" name="add_plugin_header"/>
+         </item>
+         <item row="0" column="1">
+          <widget class="QComboBox" name="plugin_selector"/>
+         </item>
+         <item row="1" column="0" colspan="4">
+          <widget class="QTreeView" name="plugin_tree"/>
+         </item>
+         <item row="0" column="2">
+          <widget class="QLineEdit" name="plugin_name_entry"/>
+         </item>
+        </layout>
+       </widget>
       </widget>
      </widget>
     </item>
