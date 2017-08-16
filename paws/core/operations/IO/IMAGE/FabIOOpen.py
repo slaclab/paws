@@ -10,17 +10,21 @@ class FabIOOpen(Operation):
 
     def __init__(self):
         input_names = ['path']
-        output_names = ['image_data']
+        output_names = ['image_data','dir_path','filename']
         super(FabIOOpen,self).__init__(input_names,output_names) 
         self.input_doc['path'] = 'string representing the path to a .tif image'
         self.output_doc['image_data'] = '2D array representing pixel values taken from the input file'
-        self.input_src['path'] = opmod.fs_input
-        self.input_type['path'] = opmod.path_type
+        self.input_type['path'] = opmod.filesystem_path
         
     def run(self):
         """
         Call on fabIO to extract image data
         """
-        img_url = self.inputs['path']
-        self.outputs['image_data'] = fabio.open(img_url).data
+        p = self.inputs['path']
+        dir_path = os.path.split(p)[0]
+        file_nopath = os.path.split(p)[1]
+        file_noext = os.path.splitext(file_nopath)[0]
+        self.outputs['dir_path'] = dir_path 
+        self.outputs['filename'] = file_noext 
+        self.outputs['image_data'] = fabio.open(p).data
 

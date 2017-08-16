@@ -14,11 +14,8 @@ class ArrayLog(Operation):
         output_names = ['logx']
         super(ArrayLog, self).__init__(input_names, output_names)
         self.input_doc['x'] = 'any array'
-        self.input_doc['logx'] = 'array of log(x), same size as x, non-positive values replaced with np.nan'
-        self.input_src['x'] = opmod.wf_input
-        self.input_src['logx'] = opmod.wf_input
-        self.input_type['x'] = opmod.ref_type
-        self.input_type['logx'] = opmod.ref_type
+        self.output_doc['logx'] = 'array of log(x), same size as x, non-positive values replaced with np.nan'
+        self.input_type['x'] = opmod.workflow_item
 
     def run(self):
         x = self.inputs['x']

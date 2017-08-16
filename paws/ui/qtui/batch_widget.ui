@@ -34,15 +34,15 @@
         <string>batch control</string>
        </property>
        <layout class="QGridLayout" name="gridLayout_3">
-        <item row="0" column="0">
-         <widget class="QTreeView" name="fs_browser"/>
-        </item>
         <item row="1" column="0">
          <widget class="QPushButton" name="remove_files_button">
           <property name="text">
            <string>PushButton</string>
           </property>
          </widget>
+        </item>
+        <item row="0" column="0">
+         <widget class="QListView" name="batch_list"/>
         </item>
        </layout>
       </widget>
@@ -51,15 +51,15 @@
         <string>filesystem browser</string>
        </property>
        <layout class="QGridLayout" name="gridLayout_2">
-        <item row="0" column="0">
-         <widget class="QListView" name="batch_list"/>
-        </item>
-        <item row="1" column="0">
+        <item row="2" column="0">
          <widget class="QPushButton" name="add_files_button">
           <property name="text">
            <string>PushButton</string>
           </property>
          </widget>
+        </item>
+        <item row="0" column="0">
+         <widget class="QTreeView" name="fs_browser"/>
         </item>
        </layout>
       </widget>
@@ -136,11 +136,6 @@
     </widget>
    </item>
   </layout>
-  <zorder>splitter</zorder>
-  <zorder>batch_box</zorder>
-  <zorder>output_tabs</zorder>
-  <zorder>output_tabs</zorder>
-  <zorder>fs_box</zorder>
  </widget>
  <resources/>
  <connections/>

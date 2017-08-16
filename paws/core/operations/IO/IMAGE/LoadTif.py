@@ -14,7 +14,7 @@ class LoadTif(Operation):
 
     def __init__(self):
         input_names = ['path']
-        output_names = ['image_data','filename']
+        output_names = ['image_data','dir_path','filename']
         super(LoadTif,self).__init__(input_names,output_names)
         self.input_doc['path'] = 'path to a .tif image'
         self.input_type['path'] = opmod.filesystem_path
@@ -23,8 +23,10 @@ class LoadTif(Operation):
         
     def run(self):
         p = self.inputs['path']
+        dir_path = os.path.split(p)[0]
         file_nopath = os.path.split(p)[1]
         file_noext = os.path.splitext(file_nopath)[0]
+        self.outputs['dir_path'] = dir_path 
         self.outputs['filename'] = file_noext 
         try:
             self.outputs['image_data'] = tifffile.imread(p)

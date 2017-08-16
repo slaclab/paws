@@ -17,9 +17,7 @@ class ReadPONI(Operation):
         super(ReadPONI,self).__init__(input_names,output_names)
         self.input_doc['poni_file'] = '.poni file describing a calibration result'
         self.input_doc['fpolz'] = 'polarization factor, to be added into the dict. Default value is 1.'
-        self.input_src['poni_file'] = opmod.fs_input
-        self.input_type['poni_file'] = opmod.path_type
-        self.input_src['fpolz'] = opmod.text_input
+        self.input_type['poni_file'] = opmod.filesystem_path
         self.input_type['fpolz'] = opmod.float_type
         self.inputs['fpolz'] = float(1.) 
         self.output_doc['poni_dict'] = 'Dict of pyFAI calibration parameters, as found in a .poni file'
