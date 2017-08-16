@@ -42,7 +42,7 @@
          </widget>
         </item>
         <item row="0" column="0">
-         <widget class="QListView" name="batch_list"/>
+         <widget class="QListWidget" name="batch_list"/>
         </item>
        </layout>
       </widget>
