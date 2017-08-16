@@ -11,11 +11,11 @@ class SpectrumClassifier(Operation):
     """
 
     def __init__(self):
-        input_names = ['features']
+        input_names = ['q','I','features']
         output_names = ['features']
         super(SpectrumClassifier, self).__init__(input_names, output_names)
         self.input_doc['features'] = 'Dict of features as produced by PROCESSING.SAXS.SpectrumProfiler.'
-        self.output_doc['features'] = 'Same dict as input but with classification flags.'
+        self.output_doc['features'] = 'Same dict as input but with classification flags added.'
         self.input_src['features'] = opmod.wf_input
         self.input_type['features'] = opmod.ref_type
 
@@ -27,7 +27,6 @@ class SpectrumClassifier(Operation):
         #f['form_flag']
         #f['structure_flag']
         #f['precursor_flag']
-        #(up to 9 classes) 
 
         # problems for later. determine:
         #f['form_id']

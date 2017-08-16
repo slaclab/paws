@@ -107,6 +107,10 @@ class Operation(object):
         """
         pass
 
+    def clear_outputs(self):
+        for k,v in self.outputs.items():
+            self.outputs[k] = None
+
     def description(self):
         """
         self.description() returns a string 

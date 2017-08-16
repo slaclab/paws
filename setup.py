@@ -17,28 +17,22 @@ here = path.abspath(path.dirname(__file__))
 with open(path.join(here,'README.rst')) as f:
     long_description = f.read()
 
-# Executing paws_config.py defines __version__ 
-with open(path.join(here,'paws/paws_config.py')) as f: 
-    exec(f.read())
-
+# Get authorship as string from contributors.txt
 __authorship__=''
-here = path.abspath(path.dirname(__file__))
-
 with open(path.join(here,'contributors.txt')) as f: 
     for line in f.readlines():
         __authorship__ += line.strip()+', '
 __authorship__ = __authorship__[:-2]
 
+# Executing paws/paws_config.py defines __version__ 
+with open(path.join(here,'paws/paws_config.py')) as f: 
+    exec(f.read())
 
 setup(
     name='pypaws',
-
-    # Versions should comply with PEP440.  
     version=__version__,
-
     description='the Platform for Automated Workflows by SSRL',
     long_description=long_description,
-
     url='https://github.com/slaclab/paws/',
     author=__authorship__,
     author_email='paws-developers@slac.stanford.edu',
@@ -94,7 +88,7 @@ setup(
     },
 
     # Although 'package_data' is the preferred approach, in some case you may
-    # need to place data files outside of your packages. See:
+    # need to place data files outside of your packages. 
     # http://docs.python.org/3.4/distutils/setupscript.html#installing-additional-files # noqa
     # In this case, 'data_file' will be installed into '<sys.prefix>/my_data'
     data_files=[('', ['contributors.txt'])],
