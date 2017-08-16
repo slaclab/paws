@@ -22,7 +22,7 @@ else:
 def make_widget(itm):
     #if isinstance(itm,System):
     #    w = PifWidget(itm)
-    elif isinstance(itm,Workflow):
+    if isinstance(itm,Workflow):
         w = WorkflowGraphView(itm)
     elif isinstance(itm,PawsPlugin):
         w = QtGui.QTextEdit()

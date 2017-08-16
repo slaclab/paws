@@ -24,8 +24,11 @@ class BatchWidget(QtGui.QWidget):
         self.ui.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         self.paw = paws_api
         self._wfname = 'img_process'
+        self._batch_wfname = 'batch'
         self.paw.add_wf(self._wfname)
-    
+        self.paw.add_wf(self._batch_wfname)
+        self.paw.select_wf(self._wfname)   
+ 
         # This is a dict to translate from on-screen operation names
         # to uris for locating the Operations in paws.
         self.ops = OrderedDict()
