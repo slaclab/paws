@@ -1,8 +1,8 @@
 """
-Calibrate and reduce an image, given calibration parameters.
+Integrate an image, given calibration parameters.
 
-This module calls on PyFAI.AzimuthalIntegrator 
-to calibrate an input image to I(q,chi).
+This module builds a PyFAI.AzimuthalIntegrator 
+to integrate an input image to I(q,chi).
 """
 
 import numpy as np
@@ -11,7 +11,7 @@ import pyFAI
 from ... import Operation as opmod 
 from ...Operation import Operation
 
-class Calibrate(Operation):
+class Integrate2d(Operation):
     """
     Input image data (ndarray) and a dict of calibration parameters 
     Return q, chi, I(q,chi) 
@@ -19,7 +19,7 @@ class Calibrate(Operation):
     def __init__(self):
         input_names = ['image_data','poni_dict']
         output_names = ['q','chi','I_at_q_chi','I_at_q','q_I']
-        super(Calibrate,self).__init__(input_names,output_names)
+        super(Integrate2d,self).__init__(input_names,output_names)
         self.input_doc['image_data'] = '2d array representing intensity for each pixel'
         self.input_doc['poni_dict'] = str( 'dict of calibration parameters; '
         + 'minimally including keys dist, poni1, poni2, rot1, rot2, rot3, pixel1, pixel2, wavelength;'
