@@ -7,15 +7,16 @@ no_input = 0
 filesystem_path = 1
 workflow_item = 2
 workflow_path = 3
-plugin_item = 4
-string_type = 5 
-integer_type = 6
-float_type = 7
-bool_type = 8
+entire_workflow = 4
+plugin_item = 5
+string_type = 6 
+integer_type = 7
+float_type = 8
+bool_type = 9
 valid_types = list([no_input,filesystem_path,workflow_item,workflow_path,
-    plugin_item,string_type,integer_type,float_type,bool_type])
-input_types = list(['none','filesystem path','workflow item','workflow path','plugin item',
-    'string','integer','float','boolean'])
+    entire_workflow,plugin_item,string_type,integer_type,float_type,bool_type])
+input_types = list(['none','filesystem path','workflow item','workflow path',
+    'entire workflow','plugin item','string','integer','float','boolean'])
 
 # tags for Operation inputs and outputs in Workflow(TreeModel)s
 inputs_tag = 'inputs'
