@@ -72,7 +72,7 @@ class ApplyIntegrator1d(Operation):
         # use a mask to screen negative pixels
         # mask should be 1 for masked pixels, 0 for unmasked pixels
         kwargexcludemask = ['ROI_mask','integrator']
-        kwargs = {item for item in self.inputs.iteritems() if item[0] not in kwargexcludemask}
+        kwargs = {key:val for key,val in self.inputs.items() if key not in kwargexcludemask}
 
         integ_result = self.inputs['integrator'].integrate1d(**kwargs)
         # save results to self.outputs
