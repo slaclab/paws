@@ -159,7 +159,7 @@ class Workflow(TreeModel):
             ops_not_rdy = []
             #print 'continue: {}, stacksize: {}, n_ops: {}'.format(continue_flag,self.stack_size(stk),self.n_ops())
             for op_tag in self.list_op_tags():
-                if not is_op_enabled(op_tag):
+                if not self.is_op_enabled(op_tag):
                     op_rdy = False
                     op_diag = 'Operation is disabled' 
                 elif not self.stack_contains(op_tag,stk):

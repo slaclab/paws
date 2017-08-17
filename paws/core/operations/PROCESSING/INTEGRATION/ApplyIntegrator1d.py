@@ -38,7 +38,6 @@ class ApplyIntegrator1d(Operation):
         self.input_doc['polarization_factor'] = 'polarization factor, if polarization correction is needed'
         self.input_doc['units'] = 'choice of units. See PyFAI documentation for options.' 
         self.input_doc['method'] = 'choice of integration method. See PyFAI documentation for options.' 
-        self.input_doc['method'] = 'choice of integration method. See PyFAI documentation for options.' 
 
         self.input_type['image_data'] = opmod.workflow_item
         self.input_type['integrator'] = opmod.workflow_item
