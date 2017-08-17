@@ -197,27 +197,40 @@ class PawsAPI(object):
         if tp is None:
             # if type is not specified, take the operation's default 
             tp = op.input_type[input_name]
-        else:
-            if tp in opmod.input_types:
-                tp = opmod.valid_types[ opmod.input_types.index(tp) ]
-            #else:
-            #    tp = opmod.no_input
+        elif tp in opmod.input_types:
+            # type specified by string: conver to enum
+            tp = opmod.valid_types[ opmod.input_types.index(tp) ]
+        elif not tp in opmod.valid_types:
+            # tp is neither a string or an enum: bad news 
+            msg = '[{}] failed to parse input type: {}'.format(
+            __name__,tp)
         if tp == opmod.no_input: 
             val = None
-        elif (tp == opmod.filesystem_path 
-        or tp == opmod.workflow_path
-        or tp == opmod.string_type):
-            val = str(val)
-        elif tp == opmod.integer_type:
-            val = int(val)
-        elif tp == opmod.float_type:
-            val = float(val)
-        elif tp == opmod.bool_type:
-            val = bool(eval(str(val)))
-        else:
-            msg = '[{}] failed to parse plugin input {}, tp: {}, val: {}'.format(
-            __name__,input_name,tp,val)
-
+        #elif (tp == opmod.filesystem_path 
+        #or tp == opmod.workflow_path
+        #or tp == opmod.string_type):
+        #    if isinstance(val,list):
+        #        val = [str(v) for v in val]
+        #    else:
+        #        val = str(val)
+        #elif tp == opmod.integer_type:
+        #    if isinstance(val,list):
+        #        val = [int(v) for v in val]
+        #    else:
+        #        val = int(val)
+        #elif tp == opmod.float_type:
+        #    if isinstance(val,list):
+        #        val = [float(v) for v in val]
+        #    else:
+        #        val = float(val)
+        #elif tp == opmod.bool_type:
+        #    if isinstance(val,list):
+        #        val = [bool(eval(str(v))) for v in val]
+        #    else:
+        #        val = bool(eval(str(val)))
+        #else:
+        #    msg = '[{}] failed to parse plugin input {}, tp: {}, val: {}'.format(
+        #    __name__,input_name,tp,val)
         il = opmod.InputLocator(tp,val)
         op.input_locator[input_name] = il
 

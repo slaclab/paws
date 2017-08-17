@@ -36,15 +36,15 @@ class WfManager(object):
     def n_wf(self):
         return len(self.workflows)
 
-    def get_wf_item(self,item_uri):
-        uri_parts = item_uri.split('.')
-        wfname = uri_parts[0]
-        if '.' in item_uri:
-            sub_uri = item_uri[item_uri.find('.')+1:]
-            return self.workflows[wfname].get_data_from_uri(sub_uri)
-        else:
-            return self.workflows[wfname]
-        parent_uri = itm_uri[:itm_uri.rfind('.')]
+    #def get_wf_item(self,item_uri):
+    #    uri_parts = item_uri.split('.')
+    #    wfname = uri_parts[0]
+    #    if '.' in item_uri:
+    #        sub_uri = item_uri[item_uri.find('.')+1:]
+    #        return self.workflows[wfname].get_data_from_uri(sub_uri)
+    #    else:
+    #        return self.workflows[wfname]
+    #    parent_uri = itm_uri[:itm_uri.rfind('.')]
 
     def write_log(self,msg):
         self.logmethod(msg)

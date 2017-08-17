@@ -25,9 +25,6 @@ class BatchWidget(QtGui.QWidget):
         self.paw = paws_api
         self._wfname = 'img_process'
         self._batch_wfname = 'batch'
-        self.paw.add_wf(self._wfname)
-        self.paw.add_wf(self._batch_wfname)
-        self.paw.select_wf(self._wfname)   
  
         # This is a dict to translate from on-screen operation names
         # to uris for locating the Operations in paws.
@@ -42,23 +39,19 @@ class BatchWidget(QtGui.QWidget):
         self.ops['log_I_2d'] = 'PROCESSING.BASIC.ArrayLog'
         self.ops['log_I_1d'] = 'PROCESSING.BASIC.LogY'
         self.ops['write_csv'] = 'IO.CSV.WriteArrayCSV'
+        #self.ops['batch'] = 'EXECUTION.BATCH.BatchFromFiles'
 
+        self.paw.enable_op('EXECUTION.BATCH.BatchFromFiles')
         for nm,opuri in self.ops.items():
             self.paw.enable_op(opuri)       
- 
-        # This is a dict for specifying inputs that need to be set by the user
-        # when an operation is loaded.
-        #self.required_inputs = dict.fromkeys(self.ops.keys())
-        #self.required_inputs['read_PONI'] = ['poni_file']
-        #self.required_inputs['read_background'] = ['path']
-        #self.required_inputs['read_image'] = ['path']
+         
 
         # This is a dict for holding on to widgets,
         # so that they can be displayed in self.ui.output_tabs as needed.
         self.output_widgets = {} 
 
         self.build_ui()
-        self.set_wf_widgets()
+        self.wf_setup()
 
     def build_ui(self):
         self.ui.output_tabs.clear()
@@ -72,9 +65,52 @@ class BatchWidget(QtGui.QWidget):
         self.ui.setStyleSheet( "QLineEdit { border: none }" + self.ui.styleSheet() )
         self.ui.main_splitter.setSizes([1,2,1])
         self.ui.add_files_button.setText('Add selected files')
+        self.ui.add_files_button.clicked.connect(self.add_files)
         self.ui.remove_files_button.setText('Remove selected files')
+        self.ui.remove_files_button.clicked.connect(self.rm_files)
+        # filesystem viewer setup
+        fsmod = QtGui.QFileSystemModel()
+        fsmod.setRootPath(QtCore.QDir.currentPath())
+        self.ui.fs_browser.setModel(fsmod)
+        self.ui.fs_browser.hideColumn(1)
+        self.ui.fs_browser.hideColumn(3)
+        self.ui.fs_browser.setColumnWidth(0,400)
+        idx = fsmod.index(QtCore.QDir.currentPath())
+        while idx.isValid():
+            self.ui.fs_browser.setExpanded(idx,True)
+            idx = idx.parent()
+        #self.ui.fs_browser.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
+        #self.ui.fs_browser.setSelectionModel(QtGui.QItemSelectionModel.Rows)
+        self.ui.batch_list.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
+        self.ui.fs_browser.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
 
-    def set_wf_widgets(self):
+    def add_files(self):
+        idxs = self.ui.fs_browser.selectedIndexes()
+        for idx in idxs:
+            if idx.column() == 0:
+                fpath = self.ui.fs_browser.model().filePath(idx)
+                itm = QtGui.QListWidgetItem()
+                itm.setText(fpath)
+                self.ui.batch_list.addItem(itm)    
+
+    def rm_files(self):
+        itms = self.ui.batch_list.selectedItems()
+        for itm in itms:
+            self.ui.batch_list.takeItem(self.ui.batch_list.row(itm))
+
+    def wf_setup(self):
+        self.paw.add_wf(self._wfname)
+        self.paw.connect_wf_input('image_path','read_image.inputs.path',self._wfname)
+        self.paw.add_wf(self._batch_wfname)
+
+        # Set up the batch execution Operation first
+        self.paw.select_wf(self._batch_wfname)
+        self.paw.add_op('batch','EXECUTION.BATCH.BatchFromFiles')
+        self.paw.set_input('batch','workflow',self._wfname)
+        self.paw.set_input('batch','input_name','image_path')
+
+        # Set up the rest of the workflow
+        self.paw.select_wf(self._wfname)
         for op_name,op_uri in self.ops.items():
             add_op_row = self.paw.op_count(self._wfname)+1
             op_tag = op_name
@@ -93,6 +129,7 @@ class BatchWidget(QtGui.QWidget):
             op_edit_button = QtGui.QPushButton('edit')
             op_edit_button.clicked.connect( partial(self.edit_op,op_tag,op_name) )
             enable_toggle = QtGui.QCheckBox('enable')
+            enable_toggle.setCheckState(QtCore.Qt.Checked)
             #enable_toggle.stateChanged.connect( partial(self.toggle_enabled,op_tag) )
             vis_toggle = QtGui.QCheckBox('view')
             vis_toggle.stateChanged.connect( partial(self.set_visualizer,op_tag) )
@@ -123,7 +160,7 @@ class BatchWidget(QtGui.QWidget):
         elif op_tag == 'write_csv':
             self.paw.set_input(op_tag,'array','integrate_image.outputs.q_I')
             self.paw.set_input(op_tag,'headers',['q','I'])
-            self.paw.set_input(op_tag,'dir_path','read_image.outputs.dir_path')
+            self.paw.set_input(op_tag,'dir_path','read_image.outputs.dir_path','workflow item')
             self.paw.set_input(op_tag,'filename','read_image.outputs.filename')
             self.paw.set_input(op_tag,'filetag','_processed')
 
@@ -153,23 +190,31 @@ class BatchWidget(QtGui.QWidget):
 
     def make_widget(self,op_tag):
         if op_tag == 'read_PONI':
-            output_data = self.paw.get_output(op_tag,'poni_dict')
+            output_data = self.paw.get_output(op_tag,'poni_dict',self._wfname)
         elif op_tag == 'read_image':
-            output_data = self.paw.get_output(op_tag,'image_data')
+            output_data = self.paw.get_output(op_tag,'image_data',self._wfname)
         elif op_tag == 'calibrate_image':
-            output_data = self.paw.get_output(op_tag,'I_at_q_chi')
+            output_data = self.paw.get_output(op_tag,'I_at_q_chi',self._wfname)
         elif op_tag == 'integrate_image':
-            output_data = self.paw.get_output(op_tag,'q_I')
+            output_data = self.paw.get_output(op_tag,'q_I',self._wfname)
         elif op_tag == 'log_I_1d':
-            output_data = self.paw.get_output(op_tag,'x_logy')
+            output_data = self.paw.get_output(op_tag,'x_logy',self._wfname)
         elif op_tag == 'log_I_2d':
-            output_data = self.paw.get_output(op_tag,'logx')
+            output_data = self.paw.get_output(op_tag,'logx',self._wfname)
         elif op_tag == 'write_csv':
-            output_data = self.paw.get_output(op_tag,'csv_path')
+            output_data = self.paw.get_output(op_tag,'csv_path',self._wfname)
         # Form a widget from the output data 
         widg = widgets.make_widget(output_data)
+        return widg
 
     def run_wf(self):
+        self.paw.select_wf(self._batch_wfname)
+        file_list = []
+        nfiles = self.ui.batch_list.count()
+        for r in range(nfiles):
+            p = self.ui.batch_list.item(r).text()
+            file_list.append(p)
+        self.paw.set_input('batch','file_list',file_list)
         self.paw.execute()
         self.update_visuals()
 
