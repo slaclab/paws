@@ -232,7 +232,8 @@ class Workflow(TreeModel):
         for name,il in op.input_locator.items():
             msg = ''
             if (il.tp == opmod.workflow_item 
-            and not il.val in valid_wf_inputs): 
+            and not il.val in valid_wf_inputs
+            and il.val is not None): 
                 inp_rdy = False
                 msg = str('Operation input {}.inputs.{} (={}) '.format(op_tag,name,il.val)
                 + 'not found in valid Workflow input list: {}'.format(valid_wf_inputs)
