@@ -63,7 +63,7 @@ class Workflow(TreeModel):
             self.write_log('running: {}...'.format(lst))
             for op_tag in lst: 
                 op = self.get_data_from_uri(op_tag) 
-                optools.load_inputs(op,self.wf_manager,self.wf_manager.plugin_manager)
+                self.load_inputs(op,self.wf_manager,self.wf_manager.plugin_manager)
                 try:
                     op.run() 
                 except Exception as ex:
@@ -73,6 +73,17 @@ class Workflow(TreeModel):
                 self.set_item(op_tag,op)
             #self.workflows[wfname].execute(op_list)
             self.write_log('... finished'.format(lst))
+
+    def load_inputs(self,op,wf_manager=None,plugin_manager=None):
+        """
+        Loads input data for an Operation from its input_locators.
+        A WfManager and a PluginManager can be provided 
+        as optional arguments,
+        in which case they are used to fetch data.
+        """
+        for name,il in op.input_locator.items():
+            il.data = optools.locate_input(il,self,wf_manager,plugin_manager)
+            op.inputs[name] = il.data
 
     def op_dict(self):
         optags = self.list_op_tags() 
@@ -140,8 +151,6 @@ class Workflow(TreeModel):
         whose dependencies are satisfied by the Operations above them.
         """
         stk = []
-        # By default, let the workflows themselves be valid as inputs
-        #valid_wf_inputs = self.wf_manager.workflows.keys() 
         valid_wf_inputs = [] 
         diagnostics = {}
         continue_flag = True
@@ -219,13 +228,8 @@ class Workflow(TreeModel):
         diagnostics = {} 
         for name,il in op.input_locator.items():
             msg = ''
-            if il.val in self.wf_manager.workflows.keys():
-                inp_uri = il.val
-            else:
-                inp_uri = il.val[il.val.find('.')+1:]
             if (il.tp == opmod.workflow_item 
-            and not inp_uri in valid_wf_inputs 
-            and not inp_uri in self.wf_manager.workflows.keys()):
+            and not il.val in valid_wf_inputs): 
                 inp_rdy = False
                 msg = str('Operation input {}.inputs.{} (={}) '.format(op_tag,name,il.val)
                 + 'not found in valid Workflow input list: {}'.format(valid_wf_inputs)

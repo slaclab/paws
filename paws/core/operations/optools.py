@@ -55,10 +55,7 @@ def dict_contains_uri(uri,d):
             itm = itm[k]
     return True
 
-
-####### functions for fetching inputs and loading them into operations #######
-
-def locate_input(il,wf_manager=None,plugin_manager=None):
+def locate_input(il,wf=None,wf_manager=None,plugin_manager=None):
     """
     Return the data pointed to by a given InputLocator object.
     A WfManager and/or a PluginManager can be provided 
@@ -76,9 +73,11 @@ def locate_input(il,wf_manager=None,plugin_manager=None):
             return str(il.val)
     elif il.tp == opmod.workflow_item:
         if isinstance(il.val,list):
-            return [wf_manager.get_wf_item(v) for v in il.val]
+            return [wf.get_data_from_uri(v) for v in il.val]
         else:
-            return wf_manager.get_wf_item(il.val)
+            return wf.get_data_from_uri(il.val)
+    elif il.tp == opmod.entire_workflow:
+        return wf_manager.workflows[il.val]
     elif il.tp == opmod.plugin_item:
         if isinstance(il.val,list):
             return [plugin_manager.get_data_from_uri(v) for v in il.val]
@@ -103,17 +102,6 @@ def locate_input(il,wf_manager=None,plugin_manager=None):
         msg = '[{}] failed to parse InputLocator (type: {}, val: {})'.format(
         __name__,il.tp,il.val)
         raise ValueError(msg)
-
-def load_inputs(op,wf_manager=None,plugin_manager=None):
-    """
-    Loads input data for an Operation from its input_locators.
-    A WfManager and a PluginManager can be provided 
-    as optional arguments,
-    in which case they are used to fetch data.
-    """
-    for name,il in op.input_locator.items():
-        il.data = locate_input(il,wf_manager,plugin_manager)
-        op.inputs[name] = il.data
 
 def print_stack(stk):
     stktxt = ''
