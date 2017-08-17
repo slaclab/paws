@@ -43,35 +43,20 @@ class PyFAIIntegrate2d(Operation):
         self.input_doc['method'] = 'choice of integration method. See PyFAI documentation for options.' 
         self.input_doc['normalization_factor'] = 'normalization monitor value'
 
-        self.input_src['image_data'] = opmod.wf_input
-        self.input_src['integrator'] = opmod.wf_input
-        self.input_src['mask'] = opmod.wf_input
-        self.input_src['ROI_mask'] = opmod.wf_input
-        self.input_src['dark_image'] = opmod.wf_input
-        self.input_src['flat_image'] = opmod.wf_input
-        self.input_src['q_range'] = opmod.text_input
-        self.input_src['chi_range'] = opmod.text_input
-        self.input_src['npts_rad'] = opmod.text_input
-        self.input_src['npts_azim'] = opmod.text_input
-        self.input_src['polarization_factor'] = opmod.text_input
-        self.input_src['units'] = opmod.text_input
-        self.input_src['method'] = opmod.text_input
-        self.input_src['normalization_factor'] = opmod.text_input
-
-        self.input_type['image_data'] = opmod.ref_type
-        self.input_type['integrator'] = opmod.ref_type
-        self.input_type['mask'] = opmod.ref_type
-        self.input_type['ROI_mask'] = opmod.ref_type
-        self.input_type['dark_image'] = opmod.ref_type
-        self.input_type['flat_image'] = opmod.ref_type
+        self.input_type['image_data'] = opmod.workflow_item
+        self.input_type['integrator'] = opmod.workflow_item
+        self.input_type['mask'] = opmod.workflow_item
+        self.input_type['ROI_mask'] = opmod.workflow_item
+        self.input_type['dark_image'] = opmod.workflow_item
+        self.input_type['flat_image'] = opmod.workflow_item
         self.input_type['q_range'] = opmod.float_type
         self.input_type['chi_range'] = opmod.float_type
-        self.input_type['npts_rad'] = opmod.int_type
-        self.input_type['npts_azim'] = opmod.int_type
+        self.input_type['npts_rad'] = opmod.integer_type
+        self.input_type['npts_azim'] = opmod.integer_type
         self.input_type['polarization_factor'] = opmod.float_type
-        self.input_type['units'] = opmod.str_type
-        self.input_type['method'] = opmod.str_type
-        self.input_type['normalization_factor'] = opmod.float_type
+        self.input_type['units'] = opmod.string_type
+        self.input_type['method'] = opmod.string_type
+        self.input_type['normalization_factor'] = opmod.workflow_item
 
         self.inputs['mask'] = None 
         self.inputs['ROI_mask'] = None 
@@ -83,7 +68,6 @@ class PyFAIIntegrate2d(Operation):
         self.inputs['polarization_factor'] = 1.
         self.inputs['units'] = 'q_A^-1' 
         self.inputs['method'] = None
-        self.inputs['normalization_factor'] = opmod.float_type
 
         self.output_doc['q'] = 'Scattering vector magnitude q array in 1/Angstrom.'
         self.output_doc['I'] = 'Integrated intensity at q.'

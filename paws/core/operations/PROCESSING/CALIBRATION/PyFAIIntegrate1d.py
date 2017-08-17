@@ -25,7 +25,7 @@ class PyFAIIntegrate1d(Operation):
     """
     def __init__(self):
         input_names = list(['image_data','integrator','mask','ROI_mask','dark_image','flat_image',
-        'q_range','chi_range','n_points','polarization_factor','units','method','integration_mode'])
+        'q_range','chi_range','npts','polarization_factor','units','method','integration_mode'])
         output_names = ['q','I','q_I']
         super(PyFAIIntegrate1d,self).__init__(input_names,output_names)
         self.input_doc['data'] = '2d array representing intensity for each pixel'
@@ -36,43 +36,32 @@ class PyFAIIntegrate1d(Operation):
         self.input_doc['flat_image'] = '2d array for flat field, same shape as image_data'
         self.input_doc['q_range'] = 'list with two values, lower and upper limits of q (scattering vector)'
         self.input_doc['chi_range'] = 'list with two values, lower and upper limits of chi (azimuthal angle)'
-        self.input_doc['n_points'] = 'number of q-points to integrate, as evenly spaced bins between q_range[0] and q_range[1]'
+        self.input_doc['npts'] = 'number of q-points to integrate, as evenly spaced bins between q_range[0] and q_range[1]'
         self.input_doc['polarization_factor'] = 'polarization factor, if polarization correction is needed'
         self.input_doc['units'] = 'choice of units. See PyFAI documentation for options.' 
         self.input_doc['method'] = 'choice of integration method. See PyFAI documentation for options.' 
         self.input_doc['method'] = 'choice of integration method. See PyFAI documentation for options.' 
 
-        self.input_src['data'] = opmod.wf_input
-        self.input_src['integrator'] = opmod.wf_input
-        self.input_src['mask'] = opmod.wf_input
-        self.input_src['ROI_mask'] = opmod.wf_input
-        self.input_src['dark_image'] = opmod.wf_input
-        self.input_src['flat_image'] = opmod.wf_input
-        self.input_src['q_range'] = opmod.text_input
-        self.input_src['chi_range'] = opmod.text_input
-        self.input_src['n_points'] = opmod.text_input
-        self.input_src['polarization_factor'] = opmod.text_input
-        self.input_src['units'] = opmod.text_input
-        self.input_src['method'] = opmod.text_input
-        self.input_type['image_data'] = opmod.ref_type
-        self.input_type['integrator'] = opmod.ref_type
-        self.input_type['mask'] = opmod.ref_type
-        self.input_type['ROI_mask'] = opmod.ref_type
-        self.input_type['dark_image'] = opmod.ref_type
-        self.input_type['flat_image'] = opmod.ref_type
+        self.input_type['image_data'] = opmod.workflow_item
+        self.input_type['integrator'] = opmod.workflow_item
+        self.input_type['mask'] = opmod.workflow_item
+        self.input_type['ROI_mask'] = opmod.workflow_item
+        self.input_type['dark_image'] = opmod.workflow_item
+        self.input_type['flat_image'] = opmod.workflow_item
         self.input_type['q_range'] = opmod.float_type
         self.input_type['chi_range'] = opmod.float_type
-        self.input_type['n_points'] = opmod.int_type
+        self.input_type['npts'] = opmod.integer_type
         self.input_type['polarization_factor'] = opmod.float_type
-        self.input_type['units'] = opmod.str_type
-        self.input_type['method'] = opmod.str_type
+        self.input_type['units'] = opmod.string_type
+        self.input_type['method'] = opmod.string_type
+
         self.inputs['mask'] = None 
         self.inputs['ROI_mask'] = None 
         self.inputs['dark_image'] = None 
         self.inputs['flat_image'] = None 
         self.inputs['q_range'] = None 
         self.inputs['chi_range'] = None  
-        self.inputs['n_points'] = 1000 
+        self.inputs['npts'] = 1000
         self.inputs['polarization_factor'] = 1.
         self.inputs['units'] = 'q_A^-1' 
         self.inputs['method'] = None 
