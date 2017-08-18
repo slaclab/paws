@@ -51,6 +51,12 @@ class PawsAPI(object):
     def write_log(self,msg):
         self.logmethod(msg)
 
+    def set_logmethod(self,lm):
+        self.logmethod = lm
+        self._op_manager.logmethod = lm
+        self._plugin_manager.logmethod = lm
+        self._wf_manager.logmethod = lm
+
     def info(self):   
         info_msg = str('PAWS: the Platform for Automated Workflows by SSRL. '
         + 'Version: {}'.format(pawstools.version))
@@ -105,6 +111,12 @@ class PawsAPI(object):
             msg = str('requested workflow {} not found in {}'
             .format(wfname,self._wf_manager.workflows.keys()))
             raise ValueError(msg)
+
+    def n_wf(self):
+        return self._wf_manager.n_wf()
+
+    def current_wf_name(self):
+        return self._current_wf_name
 
     def current_wf(self):
         if self._current_wf_name:
@@ -342,7 +354,12 @@ class PawsAPI(object):
     def op_count(self,wfname=None):
         return self.get_wf(wfname).n_children()
 
+    def list_wf_tags(self):
+        return self._wf_manager.workflows.keys()
+    
     def list_op_tags(self,wfname=None):
         return self.get_wf(wfname).list_op_tags()
 
+    def list_plugin_tags(self):
+        return self._plugin_manager.list_plugin_tags()
 

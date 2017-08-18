@@ -3,19 +3,19 @@ from collections import OrderedDict
 from PySide import QtCore
 
 from ..qt.QTreeSelectionModel import QTreeSelectionModel
+from ..core.operations.OpManager import OpManager
 
-class QOpManager(QTreeSelectionModel):
+class QOpManager(OpManager,QTreeSelectionModel):
     """
     A QTreeSelectionModel for interacting with TreeModel OpManager.
     """
 
-    def __init__(self,opman):
-        super(QOpManager,self).__init__(opman)
-        self.opman = opman
+    def __init__(self):
+        super(QOpManager,self).__init__()
 
     def headerData(self,section,orientation,data_role):
         if (data_role == QtCore.Qt.DisplayRole and section == 0):
-            return "{} operations available".format(self.opman.n_ops())
+            return "{} operations available".format(self.n_ops())
         else:
             return super(QOpManager,self).headerData(section,orientation,data_role) 
 
@@ -37,11 +37,11 @@ class QOpManager(QTreeSelectionModel):
             itm = self.get_from_index(idx)
             op_uri = self.get_uri_of_index(idx)
             try:
-                self.opman.set_op_enabled(op_uri,bool(val))
+                self.set_op_enabled(op_uri,bool(val))
             except Exception as ex:
                 msg = str('Failed to enable Operation {}. '.format(op_uri)
                 + 'Error message: {}'.format(ex.message))
-                self.opman.write_log(msg)
+                self.write_log(msg)
                 return False
             self.set_flagged(itm,self._tree.default_flags.keys()[idx.column()-1],val)
             self.dataChanged.emit(idx,idx)

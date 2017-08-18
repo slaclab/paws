@@ -4,7 +4,7 @@ This is the main module for gui-driven execution of paws.
 
 import sys
 
-import paws.api
+from paws.qt import qtapi
 import paws.ui
 import paws.ui.UiManager
 
@@ -15,18 +15,18 @@ def main():
     # start QtGui.QApplication
     app = paws.ui.ui_app(sys.argv)
     # start paws objects 
-    corepaw = paws.api.start()
+    qpaw = qtapi.start(app)
 
     # start a ui manager
-    ui_manager = paws.ui.UiManager.UiManager(corepaw,app)
+    ui_manager = paws.ui.UiManager.UiManager(qpaw,app)
 
     ### LAUNCH ###
     ui_manager.ui.show()
     ret = app.exec_()
-    # TODO: connect corepaw.save_config to app.aboutToQuit() signal,
+    # TODO: connect qpaw.save_config to app.aboutToQuit() signal,
     # in case app.exec_() does not have time to return,
     # which may happen in some situations on some platforms.
-    corepaw.save_config()
+    qpaw.save_config()
     sys.exit(ret)
     
 # Run the main() function if this module is invoked 

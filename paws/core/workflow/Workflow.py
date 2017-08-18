@@ -44,6 +44,18 @@ class Workflow(TreeModel):
     def write_log(self,msg):
         self.wf_manager.write_log(msg)
 
+    def set_op(self,op_tag,new_op):
+        """
+        Set workflow tree data at op_tag to new_op.
+        """
+        self.set_item(op_tag,new_op)
+
+    def remove_op(self,op_tag):
+        """
+        Remove an Operation from the workflow tree.
+        """
+        self.remove_item(op_tag)
+
     def build_tree(self,x):
         """
         Reimplemented TreeModel.build_tree() 

@@ -33,6 +33,9 @@ class WfManager(object):
     #        raise KeyError('[{}] WfManager does not recognize workflow name {}.'
     #        .format(__name__,key))
 
+    def get_op(self,wfname,opname):
+        return self.workflows[wfname].get_data_from_uri(opname)
+
     def n_wf(self):
         return len(self.workflows)
 

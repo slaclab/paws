@@ -2,18 +2,17 @@ from collections import OrderedDict
 
 from PySide import QtCore
 
+from ..core.workflow.Workflow import Workflow
 from ..core.operations import Operation as opmod
 from .QTreeSelectionModel import QTreeSelectionModel
 
-class QWorkflow(QTreeSelectionModel):
+class QWorkflow(Workflow,QTreeSelectionModel):
     """
     A QTreeSelectionModel for interacting with TreeModel Workflow.
     """
 
-    def __init__(self,wf):
-        super(QWorkflow,self).__init__(wf)
-        #self._tree references wf after QTreeModel.__init__()
-        #self.wf = wf
+    def __init__(self):
+        super(QWorkflow,self).__init__()
 
     def headerData(self,section,orientation,data_role):
         if (data_role == QtCore.Qt.DisplayRole and section == 0):
@@ -21,38 +20,24 @@ class QWorkflow(QTreeSelectionModel):
         else:
             return super(QWorkflow,self).headerData(section,orientation,data_role)    
 
-    wf_updated = QtCore.Signal()
+    #wf_updated = QtCore.Signal()
 
-    def remove_op(self,op_tag):
-        """
-        Remove an Operation from the workflow tree.
-        """
-        self.remove_item(op_tag)
-        self.wf_updated.emit() 
-
-    def set_op(self,op_tag,new_op):
-        """
-        Set workflow tree data at op_tag to new_op.
-        """
-        self.set_item(op_tag,new_op)
-        self.wf_updated.emit() 
-
-    def set_op_input_at_uri(self,uri,val):
-        """
-        Set an op input at uri to provided value val.
-        The uri must be a valid uri in the QTreeModel,
-        of the form opname.inputs.inpname.
-        """
-        path = uri.split('.')
-        opname = path[0]
-        if not path[1] == opmod.inputs_tag:
-            msg = '[{}] uri {} does not point to an input'.format(__name__,uri)
-            raise ValueError(msg)
-        inpname = path[2]
-        #inp_uri = opmodname+'.'+opmod.inputs_tag+'.'+inpname
-        op = self._tree.get_data_from_uri(opname)
-        op.input_locator[inpname].data = val
-        self.set_item_at_uri(uri,val)
+    #def set_op_input_at_uri(self,uri,val):
+    #    """
+    #    Set an op input at uri to provided value val.
+    #    The uri must be a valid uri in the QTreeModel,
+    #    of the form opname.inputs.inpname.
+    #    """
+    #    path = uri.split('.')
+    #    opname = path[0]
+    #    if not path[1] == opmod.inputs_tag:
+    #        msg = '[{}] uri {} does not point to an input'.format(__name__,uri)
+    #        raise ValueError(msg)
+    #    inpname = path[2]
+    #    #inp_uri = opmodname+'.'+opmod.inputs_tag+'.'+inpname
+    #    op = self._tree.get_data_from_uri(opname)
+    #    op.input_locator[inpname].data = val
+    #    self.set_item_at_uri(uri,val)
 
         # Additionally, set the op.input_locator[name].data to val.
         #opname = uri[:uri.find('.')]

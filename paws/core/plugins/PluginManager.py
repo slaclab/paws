@@ -117,7 +117,7 @@ class PluginManager(TreeModel):
     def n_plugins(self):
         return self.n_children() 
 
-    def list_plugin_names(self):
+    def list_plugin_tags(self):
         return self.root_tags()
         #r = self.get_from_idx(self.root_index())
         #return [itm.tag for itm in r.children]
