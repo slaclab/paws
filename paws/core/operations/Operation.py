@@ -13,10 +13,11 @@ string_type = 6
 integer_type = 7
 float_type = 8
 bool_type = 9
+object_type = 10
 valid_types = list([no_input,filesystem_path,workflow_item,workflow_path,
-    entire_workflow,plugin_item,string_type,integer_type,float_type,bool_type])
+    entire_workflow,plugin_item,string_type,integer_type,float_type,bool_type,object_type])
 input_types = list(['none','filesystem path','workflow item','workflow path',
-    'entire workflow','plugin item','string','integer','float','boolean'])
+    'entire workflow','plugin item','string','integer','float','boolean','object'])
 
 # tags for Operation inputs and outputs in Workflow(TreeModel)s
 inputs_tag = 'inputs'

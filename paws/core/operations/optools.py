@@ -98,6 +98,8 @@ def locate_input(il,wf=None,wf_manager=None,plugin_manager=None):
             return [bool(eval(str(v))) for v in il.val]
         else:
             return bool(eval(str(il.val)))
+    elif il.tp == opmod.object_type:
+        return il.val
     else:
         msg = '[{}] failed to parse InputLocator (type: {}, val: {})'.format(
         __name__,il.tp,il.val)

@@ -57,19 +57,25 @@ class PawsAPI(object):
         print(info_msg)
         return info_msg
  
-    def enable_op(self,op_spec):
+    def activate_op(self,op_uri):
         """
-        Import and enable the Operation indicated by op_spec.
-        The Operation becomes available to add to workflows by paws.api.add_op()
+        Import the Operation indicated by op_uri, and tag it as active.
+        The Operation becomes available to add to workflows via paws.api.add_op()
         """
-        self._op_manager.set_op_enabled(op_spec)
+        self._op_manager.set_op_enabled(op_uri)
 
-    def disable_op(self,op_spec):
+    def deactivate_op(self,op_uri):
         """
-        Disable the Operation indicated by op_spec.
-        The Operation becomes unavailable until it is enabled again. 
+        Disable the Operation indicated by op_uri.
+        The Operation cannot be added to Workflows until it is enabled again. 
         """
-        self._op_manager.set_op_enabled(op_spec,False)
+        self._op_manager.set_op_enabled(op_uri,False)
+
+    def enable_op(self,op_tag,wfname=None):
+        self.get_wf(wfname).set_op_enabled(op_tag,True)
+
+    def disable_op(self,op_tag,wfname=None):
+        self.get_wf(wfname).set_op_enabled(op_tag,False)
 
     def enable_plugin(self,pgin_name=''):
         """
@@ -175,16 +181,10 @@ class PawsAPI(object):
         wf.remove_item(op_tag)
 
     def connect_wf_input(self,wf_input_name,input_uri,wfname=None):
-        if wfname is None:
-            wfname = self._current_wf_name
-        wf = self.get_wf(wfname)
-        wf.connect_wf_input(wf_input_name,input_uri) 
+        self.get_wf(wfname).connect_wf_input(wf_input_name,input_uri) 
 
     def connect_wf_output(self,wf_output_name,output_uri,wfname=None):
-        if wfname is None:
-            wfname = self._current_wf_name
-        wf = self.get_wf(wfname)
-        wf.connect_wf_output(wf_output_name,output_uri) 
+        self.get_wf(wfname).connect_wf_output(wf_output_name,output_uri) 
 
     def set_input(self,opname,input_name,val=None,tp=None,wfname=None):
         if wfname is None:
@@ -204,8 +204,11 @@ class PawsAPI(object):
             # tp is neither a string or an enum: bad news 
             msg = '[{}] failed to parse input type: {}'.format(
             __name__,tp)
+            raise ValueError(msg)
         if tp == opmod.no_input: 
             val = None
+        il = opmod.InputLocator(tp,val)
+        op.input_locator[input_name] = il
         #elif (tp == opmod.filesystem_path 
         #or tp == opmod.workflow_path
         #or tp == opmod.string_type):
@@ -231,8 +234,6 @@ class PawsAPI(object):
         #else:
         #    msg = '[{}] failed to parse plugin input {}, tp: {}, val: {}'.format(
         #    __name__,input_name,tp,val)
-        il = opmod.InputLocator(tp,val)
-        op.input_locator[input_name] = il
 
     #@staticmethod
     #def _parse_src_tp_val(kw_dict): 
@@ -339,13 +340,9 @@ class PawsAPI(object):
                 self._plugin_manager.load_from_dict(pgin_name,pgin_dict)
     
     def op_count(self,wfname=None):
-        if wfname is None:
-            wfname = self._current_wf_name
-        return self._wf_manager.workflows[wfname].n_children()
+        return self.get_wf(wfname).n_children()
 
     def list_op_tags(self,wfname=None):
-        if wfname is None:
-            wfname = self._current_wf_name
-        return self._wf_manager.workflows[wfname].list_op_tags()
+        return self.get_wf(wfname).list_op_tags()
 
 

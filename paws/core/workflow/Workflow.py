@@ -159,7 +159,10 @@ class Workflow(TreeModel):
             ops_not_rdy = []
             #print 'continue: {}, stacksize: {}, n_ops: {}'.format(continue_flag,self.stack_size(stk),self.n_ops())
             for op_tag in self.list_op_tags():
-                if not self.stack_contains(op_tag,stk):
+                if not self.is_op_enabled(op_tag):
+                    op_rdy = False
+                    op_diag = 'Operation is disabled' 
+                elif not self.stack_contains(op_tag,stk):
                     op_rdy,op_diag = self.is_op_ready(op_tag,valid_wf_inputs)
                 diagnostics.update(op_diag)
                 if op_rdy:
@@ -229,7 +232,8 @@ class Workflow(TreeModel):
         for name,il in op.input_locator.items():
             msg = ''
             if (il.tp == opmod.workflow_item 
-            and not il.val in valid_wf_inputs): 
+            and not il.val in valid_wf_inputs
+            and il.val is not None): 
                 inp_rdy = False
                 msg = str('Operation input {}.inputs.{} (={}) '.format(op_tag,name,il.val)
                 + 'not found in valid Workflow input list: {}'.format(valid_wf_inputs)

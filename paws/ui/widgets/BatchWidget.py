@@ -41,10 +41,9 @@ class BatchWidget(QtGui.QWidget):
         self.ops['write_csv'] = 'IO.CSV.WriteArrayCSV'
         #self.ops['batch'] = 'EXECUTION.BATCH.BatchFromFiles'
 
-        self.paw.enable_op('EXECUTION.BATCH.BatchFromFiles')
+        self.paw.activate_op('EXECUTION.BATCH.BatchFromFiles')
         for nm,opuri in self.ops.items():
-            self.paw.enable_op(opuri)       
-         
+            self.paw.activate_op(opuri)       
 
         # This is a dict for holding on to widgets,
         # so that they can be displayed in self.ui.output_tabs as needed.
