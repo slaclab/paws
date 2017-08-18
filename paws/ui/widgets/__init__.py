@@ -33,18 +33,18 @@ def make_widget(itm):
     elif isinstance(itm,Operation):
         w = OpWidget(itm)
     elif isinstance(itm,np.ndarray):
-        if itm.dtype == np.int_ or itm.dtype == np.float_:
-            dims = np.shape(itm)
-            if len(dims) == 2 and dims[0] > 2 and dims[1] > 2:
-                w = plotmaker.array_plot_2d(itm)
-            elif len(dims) == 1 or (len(dims) == 2 and (dims[0]==2 or dims[1]==2)):
-                w = plotmaker.array_plot_1d(itm)
-            else:
-                t = display_text_fast(itm)
-                w = QtGui.QTextEdit(t)
+        #if itm.dtype == np.int_ or itm.dtype == np.float_:
+        dims = np.shape(itm)
+        if len(dims) == 2 and dims[0] > 2 and dims[1] > 2:
+            w = plotmaker.array_plot_2d(itm)
+        elif len(dims) == 1 or (len(dims) == 2 and (dims[0]==2 or dims[1]==2)):
+            w = plotmaker.array_plot_1d(itm)
         else:
             t = display_text_fast(itm)
             w = QtGui.QTextEdit(t)
+        #else:
+        #    t = display_text_fast(itm)
+        #    w = QtGui.QTextEdit(t)
     elif isinstance(itm,Figure):
         w = plotmaker.plot_mpl_fig(itm)
     elif (isinstance(itm,float) 

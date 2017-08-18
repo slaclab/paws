@@ -24,7 +24,7 @@ class ApplyIntegrator2d(Operation):
     def __init__(self):
         input_names = list(['data','integrator','mask','ROI_mask','dark','flat',
         'radial_range','azimuth_range','npt_rad','npt_azim','polarization_factor','normalization_factor','unit','method','integration_mode'])
-        output_names = ['q','I','q_I']
+        output_names = ['q','chi','I_at_q_chi']
         super(ApplyIntegrator2d,self).__init__(input_names,output_names)
         self.input_doc['data'] = '2d array representing intensity for each pixel'
         self.input_doc['integrator'] = 'A PyFAI.AzimuthalIntegrator object'
@@ -40,44 +40,53 @@ class ApplyIntegrator2d(Operation):
         self.input_doc['unit'] = 'choice of unit. See PyFAI documentation for options.'
         self.input_doc['method'] = 'choice of integration method. See PyFAI documentation for options.'
         self.input_doc['normalization_factor'] = 'normalization monitor value'
+        self.input_doc['integration_mode'] = 'not yet implemented' 
 
         self.input_type['data'] = opmod.workflow_item
         self.input_type['integrator'] = opmod.workflow_item
-        self.input_type['mask'] = opmod.workflow_item
-        self.input_type['ROI_mask'] = opmod.workflow_item
-        self.input_type['dark'] = opmod.workflow_item
-        self.input_type['flat'] = opmod.workflow_item
-        self.input_type['radial_range'] = opmod.float_type
-        self.input_type['azimuth_range'] = opmod.float_type
+        #self.input_type['mask'] = opmod.workflow_item
+        #self.input_type['ROI_mask'] = opmod.workflow_item
+        #self.input_type['dark'] = opmod.workflow_item
+        #self.input_type['flat'] = opmod.workflow_item
+        #self.input_type['radial_range'] = opmod.float_type
+        #self.input_type['azimuth_range'] = opmod.float_type
         self.input_type['npt_rad'] = opmod.integer_type
         self.input_type['npt_azim'] = opmod.integer_type
         self.input_type['polarization_factor'] = opmod.float_type
         self.input_type['unit'] = opmod.string_type
-        self.input_type['method'] = opmod.string_type
-        self.input_type['normalization_factor'] = opmod.workflow_item
+        #self.input_type['method'] = opmod.string_type
+        #self.input_type['normalization_factor'] = opmod.workflow_item
 
         self.inputs['npt_rad'] = 1000
+        self.inputs['npt_azim'] = 1000
         self.inputs['polarization_factor'] = 1.
         self.inputs['unit'] = 'q_A^-1'
-        self.inputs['method'] = 'BBox'
+        #self.inputs['method'] = 'BBox'
 
         self.output_doc['q'] = 'Scattering vector magnitude q array in 1/Angstrom.'
-        self.output_doc['I'] = 'Integrated intensity at q.'
         self.output_doc['chi'] = 'Azimuthal angle array.'
+        self.output_doc['I_at_q_chi'] = '2d array of integrated intensity at q,chi.'
 
     def run(self):
-        if self.inputs['ROI_mask']: self.inputs['mask'] = self.inputs['mask'] | self.inputs['ROI_mask']
-        # use a mask to screen negative pixels
-        # mask should be 1 for masked pixels, 0 for unmasked pixels
-        kwargexcludemask = ['ROI_mask', 'integrator','integration_mode']
+        m = None
+        if self.inputs['mask'] is not None and self.inputs['ROI_mask'] is not None: 
+            m = self.inputs['mask'] | self.inputs['ROI_mask']
+        elif self.inputs['mask'] is not None:
+            m = self.inputs['mask']
+        elif self.inputs['ROI_mask'] is not None:
+            m = self.inputs['ROI_mask']
+        self.inputs['mask'] = m
+        #if self.inputs['ROI_mask']: self.inputs['mask'] = self.inputs['mask'] | self.inputs['ROI_mask']
+        kwargexcludemask = [k for k in self.inputs.keys() if self.inputs[k] is None]
+        kwargexcludemask = kwargexcludemask + ['ROI_mask','integrator','integration_mode']
         kwargs = {key:val for key,val in self.inputs.items() if key not in kwargexcludemask}
 
-        integ_result = self.inputs['integrator'].integrate2d(**kwargs)
-        # save results to self.outputs
-        q = integ_result.radial
-        I = integ_result.intensity
-        chi = integ_result.chi
+        I_at_q_chi,q,chi = self.inputs['integrator'].integrate2d(**kwargs)
+        #integ_result = self.inputs['integrator'].integrate2d(**kwargs)
+        #q = integ_result.radial
+        #chi = integ_result.chi
+        #I_at_q_chi = integ_result.intensity
         self.outputs['q'] = q
-        self.outputs['I'] = I
         self.outputs['chi'] = chi
+        self.outputs['I_at_q_chi'] = I_at_q_chi
 

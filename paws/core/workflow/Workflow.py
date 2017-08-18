@@ -60,7 +60,7 @@ class Workflow(TreeModel):
     def execute(self):
         stk,diag = self.execution_stack()
         for lst in stk:
-            self.write_log('running: {}...'.format(lst))
+            self.write_log('running: {}'.format(lst))
             for op_tag in lst: 
                 op = self.get_data_from_uri(op_tag) 
                 self.load_inputs(op,self.wf_manager,self.wf_manager.plugin_manager)
@@ -71,8 +71,7 @@ class Workflow(TreeModel):
                     self.write_log(str('Operation {} threw an error. '
                     + '\nMessage: {} \nTrace: {}').format(op_tag,ex.message,tb)) 
                 self.set_item(op_tag,op)
-            #self.workflows[wfname].execute(op_list)
-            self.write_log('... finished'.format(lst))
+        self.write_log('execution finished')
 
     def load_inputs(self,op,wf_manager=None,plugin_manager=None):
         """
@@ -161,7 +160,7 @@ class Workflow(TreeModel):
             for op_tag in self.list_op_tags():
                 if not self.is_op_enabled(op_tag):
                     op_rdy = False
-                    op_diag = 'Operation is disabled' 
+                    op_diag = {op_tag:'Operation is disabled'}
                 elif not self.stack_contains(op_tag,stk):
                     op_rdy,op_diag = self.is_op_ready(op_tag,valid_wf_inputs)
                 diagnostics.update(op_diag)

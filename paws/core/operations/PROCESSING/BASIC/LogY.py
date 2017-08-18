@@ -24,6 +24,7 @@ class LogY(Operation):
         x_logy = np.zeros(x_y.shape)
         x_logy[idx_ok,1] = np.log10(x_y[idx_ok,1])
         x_logy[np.invert(idx_ok),1] = np.nan
+        x_logy[:,0] = x_y[:,0]
         self.outputs['x_logy'] = x_logy 
 
 
