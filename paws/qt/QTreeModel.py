@@ -13,10 +13,6 @@ class QTreeModel(TreeModel,QtCore.QAbstractItemModel):
 
     def __init__(self,trmod=None):
         super(QTreeModel,self).__init__()
-
-        # TODO: ensure calls to self._tree replaced with super()
-        #self._tree=TreeModel()
-
         if isinstance(trmod,TreeModel):
             for c_tag in trmod.root_tags():
                 self.set_item(c_tag,trmod[c_tag])
@@ -43,8 +39,6 @@ class QTreeModel(TreeModel,QtCore.QAbstractItemModel):
         return self.createIndex(0,0,self.root_item())
 
     def root_item(self):
-        # returns TreeModel._root_item
-        # TODO: should this be super(QTreeModel,self)._root_item?
         return self._root_item
 
     def get_from_index(self,idx=QtCore.QModelIndex()):
@@ -65,6 +59,10 @@ class QTreeModel(TreeModel,QtCore.QAbstractItemModel):
         itm = self.get_from_index(idx)
         return self.build_uri(itm)
 
+    def get_index_of_item(self,itm):
+        uri = itm.build_uri()
+        return self.get_index_of_uri(uri)
+
     def get_index_of_uri(self,uri):
         path = uri.split('.')
         idx = self.root_index()
@@ -80,42 +78,16 @@ class QTreeModel(TreeModel,QtCore.QAbstractItemModel):
         elif k == '':
             return idx 
 
-    # TODO: Carefully overload TreeModel.n_children
-    #def n_children(self,parent_idx=None):
-    #    if parent_idx is None:
-    #        parent_idx = self.root_index()
-    #    return self.rowCount(parent_idx)
-
     def set_item_at_uri(self,itm_uri,itm_data):
         if '.' in itm_uri:
             parent_uri = itm_uri[:itm_uri.rfind('.')]
-            #if self._tree.contains_uri(parent_uri):
             parent_idx = self.get_index_of_uri(parent_uri)
-            #else:
-            #    parent_idx = self.build_to_uri(parent_uri)
-            #parent_idx = self.get_index_of_uri(parent_uri)
             itm_tag = itm_uri[itm_uri.rfind('.')+1:]
         else:
             parent_idx = self.root_index()
             itm_tag = itm_uri
         self.set_item(itm_tag,itm_data,parent_idx)        
 
-    #def build_to_uri(self,uri=''):
-    #    idx = self.root_index()
-    #    if '.' in uri:
-    #        parent_uri = uri[:uri.rfind('.')]
-    #        if self._tree.contains_uri(parent_uri):
-    #            idx = self.get_index_of_uri(parent_uri)
-    #        else:
-    #            idx = self.build_to_uri(parent_uri)
-    #        k = uri.split('.')[-1]
-    #        if k == '':
-    #            return idx 
-    #        elif k is not None:
-    #            self.set_item(k,None,idx)
-    #            return self.get_index_of_uri(uri) 
-
-    # TODO: This should carefully overload TreeModel.set_item
     #def set_item(self,itm_tag,itm_data=None,parent_idx=None):
     #    if parent_idx is None:
     #        parent_idx = self.root_index()
@@ -143,58 +115,53 @@ class QTreeModel(TreeModel,QtCore.QAbstractItemModel):
         else:
             parent_idx = self.root_index()
             itm_tag = itm_uri
-        self.tree_update(parent_idx,itm_tag,self._tree.build_tree(itm_data))        
+        self.tree_update(parent_itm,itm_tag,self.build_tree(itm_data))        
 
-    # TODO: This should carefully overload TreeModel.tree_update
-    #def tree_update(self,parent_idx,itm_tag,itm_tree):
-    #    parent_itm = self.get_from_index(parent_idx)
-    #    child_keys = [c.tag for c in parent_itm.children]
-    #    if itm_tag in child_keys:
-    #        # Find existing itm under parent.
-    #        itm_row = child_keys.index(itm_tag)
-    #        itm = parent_itm.children[itm_row]
-    #        idx = self.index(itm_row,0,parent_idx)
-    #        # Remove any children that do not represent the new itm_tree data
-    #        new_keys = []
-    #        if isinstance(itm_tree,dict):
-    #            new_keys = itm_tree.keys()
-    #        for gc_row in range(itm.n_children())[::-1]:
-    #            gc_itm = itm.children[gc_row]
-    #            if not gc_itm.tag in new_keys:
-    #                #rm_row = [gc.tag for gc in itm.children].index(grandchild_itm.tag)
-    #                self.beginRemoveRows(idx,gc_row,gc_row)
-    #                itm.children.pop(gc_row) 
-    #                self.endRemoveRows()
-    #    else:
-    #        # Else, put a new TreeItem at the end row
-    #        itm_row = self.n_children(parent_idx)
-    #        itm = self._tree.create_tree_item(parent_itm,itm_tag)
-    #        self.beginInsertRows(parent_idx,itm_row,itm_row)
-    #        parent_itm.children.insert(itm_row,itm)
-    #        self.endInsertRows()
-    #    # If needed, get the index of the new item and recurse 
-    #    if isinstance(itm_tree,dict):
-    #        itm_idx = self.index(itm_row,0,parent_idx)
-    #        for tag,val in itm_tree.items():
-    #            #self.tree_update(itm_idx,tag,self._tree.build_tree(val))
-    #            self.tree_update(itm_idx,tag,val)
+    def tree_update(self,parent_itm,itm_tag,treedata):
+        child_keys = [c.tag for c in parent_itm.children]
+        parent_idx = self.get_index_of_item(parent_itm)
+        if itm_tag in child_keys:
+            # Find existing itm under parent.
+            itm_row = child_keys.index(itm_tag)
+            itm = parent_itm.children[itm_row]
+            idx = self.index(itm_row,0,parent_idx)
+            # Remove any children that do not represent the new itm_tree data
+            new_keys = []
+            if isinstance(treedata,dict):
+                new_keys = treedata.keys()
+            for gc_row in range(itm.n_children())[::-1]:
+                gc_itm = itm.children[gc_row]
+                if not gc_itm.tag in new_keys:
+                    #rm_row = [gc.tag for gc in itm.children].index(grandchild_itm.tag)
+                    self.beginRemoveRows(idx,gc_row,gc_row)
+                    itm.children.pop(gc_row) 
+                    self.endRemoveRows()
+        else:
+            # Else, put a new TreeItem at the end row
+            itm_row = parent_itm.n_children()
+            itm = self.create_tree_item(parent_itm,itm_tag)
+            self.beginInsertRows(parent_idx,itm_row,itm_row)
+            parent_itm.children.insert(itm_row,itm)
+            self.endInsertRows()
+        # If needed, get the index of the new item and recurse 
+        if isinstance(treedata,dict):
+            for tag,val in treedata.items():
+                self.tree_update(itm,tag,val)
 
-    # TODO: carefully overload TreeModel.remove_item
-    #def remove_item(self,itm_tag,parent_idx=None):
-    #    if parent_idx is None:
-    #        parent_idx = self.root_index()
-    #    parent_itm = self.get_from_index(parent_idx)
-    #    child_keys = [c.tag for c in parent_itm.children]
-    #    rm_row = child_keys.index(itm_tag)
-    #    rm_idx = self.index(rm_row,0,parent_idx)
-    #    rm_itm = self.get_from_index(rm_idx) 
-    #    rm_uri = self._tree.build_uri(rm_itm)
-    #    self.beginRemoveRows(parent_idx,rm_row,rm_row)
-    #    self._tree.remove_item(rm_uri)
-    #    #parent_itm.children.pop(rm_row)
-    #    self.endRemoveRows()
-    #    #self.dataChanged.emit(rm_idx,rm_idx)
-    #    self.tree_dataChanged(parent_idx)
+    def remove_item(self,itm_uri):
+        itm = self.get_from_uri(itm_uri)
+        parent_itm = itm.parent 
+        parent_idx = self.get_index_of_item(parent_itm) 
+        if parent_idx is None:
+            parent_idx = self.root_index()
+        child_keys = [c.tag for c in parent_itm.children]
+        rm_row = child_keys.index(itm_tag)
+        rm_idx = self.index(rm_row,0,parent_idx)
+        self.beginRemoveRows(parent_idx,rm_row,rm_row)
+        parent_itm.children.pop(rm_row)
+        self.endRemoveRows()
+        self.dataChanged.emit(rm_idx,rm_idx)
+        self.tree_dataChanged(parent_idx)
 
     def tree_dataChanged(self,idx):
         self.dataChanged.emit(idx,idx)

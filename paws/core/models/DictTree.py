@@ -38,31 +38,6 @@ class DictTree(object):
     def root_keys(self):
         return self._root.keys()
 
-    #def __len__(self):
-    #    return self.n_items()
-    #
-    #def n_items(self,root_uri=''):
-    #    """
-    #    Get the total number of data items in the tree.
-    #    Only nodes containing data (i.e. end nodes) are counted.
-    #    Nodes referencing containers, for example, are not counted. 
-    #    """
-    #    if root_uri:
-    #        itm = self.get_from_uri(root_uri)
-    #        prefix = root_uri + '.'
-    #    else:
-    #        itm = self._root
-    #        prefix = ''
-    #    if isinstance(itm,list):
-    #        return sum([self.n_items(prefix+str(i)) for i in range(len(itm))])
-    #    elif isinstance(itm,dict):
-    #        return sum([self.n_items(prefix+k) for k in itm.keys()])
-    #    else:
-    #        # BUG: lacks a solution for simultaneously serving 
-    #        # non-dict non-list and non-parent items.
-    #        # terminal node: return 1
-    #        return 1 
-
     def delete_uri(self,uri=''):
         """
         Delete the given uri, i.e., 
@@ -97,10 +72,7 @@ class DictTree(object):
             itm = self._root
             if '.' in uri:
                 parent_uri = uri[:uri.rfind('.')]
-                #if parent_uri in self._all_uris:
                 itm = self.get_from_uri(parent_uri)
-                #else:
-                #    itm = self.build_to_uri(parent_uri)
             k = uri.split('.')[-1]
             # TODO: Is there a more graceful way to handle lists?
             if k:
@@ -112,7 +84,6 @@ class DictTree(object):
                 if not uri in self._all_uris:
                     self._all_uris.append(uri)
         except Exception as ex:
-            #import pdb; pdb.set_trace()
             msg = str('\n[{}] Encountered an error while trying to set uri {} to val {}: \n'
             .format(__name__,uri,val)) + ex.message
             raise KeyError(msg)
@@ -129,7 +100,6 @@ class DictTree(object):
         try:
             path = uri.split('.')
             itm = self._root 
-            #for k in path[:-1]:
             while any(path):
                 k = path.pop(0)
                 # TODO: Is there a more graceful way to handle lists?
@@ -151,88 +121,12 @@ class DictTree(object):
                                 itm = itm[k+'.']
                                 found = True           
             return itm
-            #k = uri.split('.')[-1]
-            #if k == '':
-            #    # uri ended with a '.' 
-            #    return itm 
-            #elif k is not None:
-            #    if isinstance(itm,list):
-            #        return itm[int(k)]
-            #    else:
-            #        # Note- parent items must implement __getitem__
-            #        return itm[k]
         except Exception as ex:
             #import pdb; pdb.set_trace()
             msg = str('[{}] Encountered an error while fetching uri {}: \n'
             .format(__name__,uri) + ex.message)
             raise KeyError(msg) 
 
-    #def build_to_uri(self,uri=''):
-    #    """ 
-    #    If the tree does not contain the input uri,
-    #    Fill the tree out with dicts
-    #    until an empty dict exists at the given uri. 
-    #    """
-    #    try:
-    #        itm = self._root 
-    #        if '.' in uri:
-    #            parent_uri = uri[:uri.rfind('.')]
-    #            if parent_uri in self._all_uris:
-    #                itm = self.get_from_uri(parent_uri)
-    #            else:
-    #                itm = self.build_to_uri(parent_uri)
-    #        k = uri.split('.')[-1]
-    #        if k == '':
-    #            return itm 
-    #        elif k is not None:
-    #            # Note- parent items must implement __setitem__
-    #            if not uri in self._all_uris:
-    #                self._all_uris.append(uri)
-    #            itm[k] = OrderedDict()
-    #            return itm[k]
-    #    except Exception as ex:
-    #        msg = str('[{}] Encountered an error while trying to build uri {}: \n'
-    #        .format(__name__,uri) + ex.message)
-    #        raise KeyError(msg) 
-        
-    #def list_child_tags(self,parent_uri=''):
-    #    if parent_uri:
-    #        p_itm = self.get_from_uri(parent_uri)
-    #    else:
-    #        p_itm = self._root
-    #    try:
-    #        # TODO: Is there a more graceful way to handle lists?
-    #        if isinstance(p_itm,list):
-    #            return [str(i) for i in range(len(p_itm))]
-    #        elif isinstance(p_itm,dict):
-    #            return p_itm.keys()
-    #        # BUG: lacks a solution for simultaneously serving 
-    #        # non-dict non-list and non-parent items.
-    #    except Exception as ex:
-    #        msg = str('[{}] Encountered an error while trying to get child tags from parent uri {}: \n'
-    #        .format(__name__,parent_uri) + ex.message)
-    #        raise KeyError(msg) 
-
-    #def list_uris(self,root_uri=''):
-    #    if root_uri:
-    #        itm = self.get_from_uri(root_uri)
-    #        l = [root_uri]
-    #        prefix = root_uri+'.'
-    #    else:
-    #        itm = self._root
-    #        l = []
-    #        prefix = ''
-    #    # TODO: Is there a more graceful way to handle lists?
-    #    if isinstance(itm,list):
-    #        for i in range(len(itm)):
-    #            l = l + self.list_uris(prefix+str(i))
-    #    elif isinstance(itm,dict):
-    #        for k in itm.keys():
-    #            l = l + self.list_uris(prefix+k)
-    #        # BUG: lacks a solution for simultaneously serving 
-    #        # non-dict non-list and non-parent items.
-    #    return l
-            
     def is_uri_valid(self,uri):
         """
         Check for validity of a uri. 
@@ -242,8 +136,6 @@ class DictTree(object):
         Any whitespace or any character in the string.punctuation library
         (other than -, _, or .) results in an invalid uri.
         """
-        #if parent is None:
-        #    parent = self.root_index()
         if (any(map(lambda s: s in uri,self.space_chars))
             or any(map(lambda s: s in uri,self.bad_chars))):
             return False 
@@ -265,12 +157,6 @@ class DictTree(object):
         Check for uniqueness of a uri. 
         """
         return uri not in self._all_uris
-        #if parent is None:
-        #    parent = self.root_index()
-        #if uri in self._all_uris:
-        #    return False 
-        #else:
-        #    return True 
 
     def uri_error_message(self,uri):
         """Provide a human-readable error message for bad uris."""
@@ -294,18 +180,6 @@ class DictTree(object):
     def contains_uri(self,uri):
         """Returns whether or not input uri points to an item in this tree."""
         return uri in self._all_uris
-        #if not uri:
-        #    return False
-        #path = uri.split('.')
-        #p_idx = QtCore.QModelIndex()
-        #for itemuri in path:
-        #    try:
-        #        row = self.list_child_tags(p_idx).index(itemuri)
-        #    except ValueError as ex:
-        #        return False
-        #    idx = self.index(row,0,p_idx)
-        #    p_idx = idx
-        #return True
 
     def make_unique_uri(self,prefix):
         """
@@ -369,12 +243,4 @@ class DictTree(object):
             return '{}'.format(itm)
         return tree_string
 
-#        if parent.isValid():
-#            itm = self.get_item(parent)
-#            tree_string = tree_string+rowprefix+str(itm.data)+'\n'
-#            for j in range(itm.n_children()):
-#                tree_string = tree_string + self.print_tree(rowprefix+'\t',self.index(j,0,parent))
-#                l.append(root_uri+'.'+str(i))
-#                l = l + self.list_uris(root_uri+'.'+str(i))
-#
             

@@ -43,10 +43,6 @@ class PawsAPI(object):
         self._op_manager.load_cats(ops.cat_list) 
         self._op_manager.load_ops(ops.cat_op_list)
         self._current_wf_name = None 
-        #wfman_pgin = WfManagerPlugin()
-        #wfman_pgin.inputs['wf_manager'] = self._wf_manager 
-        #wfman_pgin.start()
-        #self._plugin_manager.set_item('wf_manager',wfman_pgin)
 
     def write_log(self,msg):
         self.logmethod(msg)
@@ -91,13 +87,7 @@ class PawsAPI(object):
         then the environment satisfies the plugin dependencies.
         """
         pkg = plugins.__name__
-        #print 'start plugin {} from package {}'.format(pgin_name,pkg)
         mod = importlib.import_module('.'+pgin_name,pkg)
-        #for nm, itm in mod.__dict__.items():
-        #    if isinstance(itm,type):
-        #        if issubclass(itm,PawsPlugin) and not nm == 'PawsPlugin':
-        #            pgin = getattr(mod,nm)
-        #            return
 
     def add_wf(self,wfname):
         self._wf_manager.add_wf(wfname)
@@ -221,59 +211,6 @@ class PawsAPI(object):
             val = None
         il = opmod.InputLocator(tp,val)
         op.input_locator[input_name] = il
-        #elif (tp == opmod.filesystem_path 
-        #or tp == opmod.workflow_path
-        #or tp == opmod.string_type):
-        #    if isinstance(val,list):
-        #        val = [str(v) for v in val]
-        #    else:
-        #        val = str(val)
-        #elif tp == opmod.integer_type:
-        #    if isinstance(val,list):
-        #        val = [int(v) for v in val]
-        #    else:
-        #        val = int(val)
-        #elif tp == opmod.float_type:
-        #    if isinstance(val,list):
-        #        val = [float(v) for v in val]
-        #    else:
-        #        val = float(val)
-        #elif tp == opmod.bool_type:
-        #    if isinstance(val,list):
-        #        val = [bool(eval(str(v))) for v in val]
-        #    else:
-        #        val = bool(eval(str(val)))
-        #else:
-        #    msg = '[{}] failed to parse plugin input {}, tp: {}, val: {}'.format(
-        #    __name__,input_name,tp,val)
-
-    #@staticmethod
-    #def _parse_src_tp_val(kw_dict): 
-    #    src = None
-    #    tp = None
-    #    val = None
-    #    if 'src' in kw_dict:
-    #        if kw_dict['src'] in opmod.input_sources:
-    #            src = opmod.valid_sources[ opmod.input_sources.index(kw_dict['src']) ]
-    #            # Any default type setting can go here.
-    #            if src == opmod.batch_input:
-    #                tp = opmod.auto_type
-    #            if src == opmod.fs_input:
-    #                tp = opmod.path_type
-    #            if src == opmod.wf_input:
-    #                tp = opmod.ref_type
-    #        else:
-    #            #TODO: error? warning?
-    #            src = opmod.no_input
-    #    if 'tp' in kw_dict:
-    #        if kw_dict['tp'] in opmod.input_types:
-    #            tp = opmod.valid_types[ opmod.input_types.index(kw_dict['tp']) ]
-    #        else:
-    #            #TODO: error? warning?
-    #            tp = opmod.none_type
-    #    if 'val' in kw_dict:
-    #        val = kw_dict['val']
-    #    return src,tp,val
 
     def get_output(self,opname,output_name=None,wfname=None):
         op = self.get_op(opname,wfname)

@@ -5,6 +5,7 @@ class TreeItem(object):
     and a list of child TreeItems.
     It is labeled by a tag (TreeItem.tag)
     which must be unique across its sibling TreeItems.
+    A root TreeItem should have None as its parent item.
     """
 
     def __init__(self,parent_itm,tag):
@@ -17,5 +18,16 @@ class TreeItem(object):
 
     def n_children(self):
         return len(self.children)
+
+    def build_uri(self):
+        """
+        Return the TreeModel uri of this TreeItem
+        by following its parents up to a root item. 
+        """
+        uri = ''
+        itm = self.parent
+        while itm is not None:
+            uri = self.tag+'.'+uri
+        return uri
 
 

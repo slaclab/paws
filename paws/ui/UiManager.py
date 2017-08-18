@@ -31,26 +31,10 @@ class UiManager(QtCore.QObject):
         ui_file.close()
         self.ui.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         qpaw.set_logmethod( self.msg_board_log )
-        #paws_api._op_manager.logmethod = self.msg_board_log
-        #paws_api._wf_manager.logmethod = self.msg_board_log
-        #paws_api._plugin_manager.logmethod = self.msg_board_log
-
-        # TODO: replace all refs to these with refs to qpaw
-        #self.qplugman = QPluginManager(paws_api._plugin_manager)
-        #self.qopman = QOpManager(paws_api._op_manager)
-        #self.qwfman = QWfManager(paws_api._wf_manager,app)
 
         self.paw = qpaw
         self.make_title()
         self.build()
-        #self.add_wf('new_workflow')
-
-    #@QtCore.Slot(str)
-    #def update_wfman_plugin(self,wfname):
-    #    self.qplugman.update_plugin('wf_manager')
-
-    #requestStopWorkflow = QtCore.Signal(str)
-    #requestRunWorkflow = QtCore.Signal(str)
 
     def msg_board_log(self,msg):
         """Print timestamped message to msg board"""
@@ -148,32 +132,15 @@ class UiManager(QtCore.QObject):
         self.ui.plugin_tree.setColumnWidth(0,200)
         self.ui.add_plugin_button.clicked.connect( self.add_plugin )
 
-        #self.ui.add_wf_button.clicked.connect( partial(self.add_wf,'new_workflow') )
         self.ui.op_tree.setModel(self.paw._op_manager)
-        #self.ui.op_tree.clicked.connect( partial(uitools.toggle_expand,self.ui.op_tree) ) 
         self.ui.op_tree.setRootIndex(self.paw._op_manager.root_index())
-        #self.ui.wf_tree.clicked.connect( partial(uitools.toggle_expand,self.ui.wf_tree) )
         self.ui.op_tree.clicked.connect( self.display_op_item )
         self.ui.wf_tree.clicked.connect( self.display_wf_item )
-        #self.ui.wf_tree.doubleClicked.connect( partial(self.edit_wf) )
-        #self.ui.edit_ops_button.setText("Edit operations")
-        #self.ui.edit_ops_button.clicked.connect(self.edit_ops)
-        #self.ui.add_wf_button.setText("&New workflow")
-        #self.ui.setup_wf_button.setText("&Workflow setup...")
-        #self.ui.setup_wf_button.clicked.connect(self.edit_wf)
-        #self.ui.save_plugins_button.setText("Save plugins")
-        #self.ui.save_plugins_button.clicked.connect(self.save_plugins)
-        #self.ui.load_plugins_button.setText("Load plugins")
-        #self.ui.load_plugins_button.clicked.connect(self.load_plugins)
-        #self.ui.setup_plugins_button.setText("Plugin setup...")
-        #self.ui.setup_plugins_button.clicked.connect(self.start_plugins_ui)
 
         self.ui.message_board.setReadOnly(True)
         self.ui.message_board.insertPlainText('--- MESSAGE BOARD ---') 
         self.ui.op_info_box.insertPlainText('Operation info: click an Operation above to see its documentation here')
         self.msg_board_log('paws is ready') 
-        #self.ui.op_tree.hideColumn(1)
-        #self.ui.op_tree.hideColumn(2)
         self.ui.op_tree.setColumnWidth(0,200)
         self.ui.hsplitter.setStretchFactor(0,2)    
         self.ui.hsplitter.setStretchFactor(1,3)    
@@ -212,10 +179,8 @@ class UiManager(QtCore.QObject):
                 msg_ui.message_box.setPlainText(ex.message)
                 msg_ui.show()
             try:
-                #pgin = self.paw.get_plugin(pgin_uri)
                 self.paw.add_plugin(pgin_name,pgin)
             except pawstools.PluginNameError as ex:
-                # Request a different tag 
                 msg_ui = uitools.message_ui(self.ui)
                 msg_ui.setWindowTitle("Plugin Name Error")
                 msg_ui.message_box.setPlainText(ex.message)
@@ -228,8 +193,6 @@ class UiManager(QtCore.QObject):
         to ensure that it doesn't clobber an existing workflow.
         """
         wfname = self.ui.wf_name_entry.text()
-        #if wfname in self.wfman.workflows.keys():
-        #    wfname = self.wfman.auto_name(wfname)
         if wfname in self.paw.list_wf_tags():
             msg_ui = uitools.message_ui(self.ui)
             msg_ui.setWindowTitle("Workflow Name Error")
@@ -248,12 +211,11 @@ class UiManager(QtCore.QObject):
                 msg_ui.message_box.setPlainText(ex.message)
                 msg_ui.show()
             self.ui.wf_selector.model().append_item(wfname)
-            # if this is the first workflow loaded, hide the selection flag column.
             self.ui.wf_selector.setCurrentIndex(self.paw.n_wf())
+            # if this is the first workflow loaded, hide the selection flag column.
             if self.paw.n_wf() == 1:
                 self.ui.wf_tree.hideColumn(1)
                 self.ui.wf_tree.setColumnWidth(0,200)
-                #self.ui.wf_tree.hideColumn(2)
 
     def display_op_item(self,idx):
         """
@@ -313,8 +275,6 @@ class UiManager(QtCore.QObject):
             itm = self.ui.viewer_layout.takeAt(i)
             # get the QWidget of that LayoutItem and close it 
             itm.widget().close()
-            #if itm.widget() is not None:
-            #    itm.widget().deleteLater()
         if widg is not None:
             self.ui.viewer_layout.addWidget(widg,0,0,1,1) 
 
@@ -338,74 +298,6 @@ class UiManager(QtCore.QObject):
         else:
             self.ui.run_wf_button.setText("&Run")
 
-    #def edit_wf(self,itm_idx=QtCore.QModelIndex()):
-    #    """
-    #    Interact with user to edit the workflow.
-    #    Pass in QModelIndex to open the editor 
-    #    with the item at that index loaded.
-    #    """
-    #    wf = self.paw.current_wf()
-    #    #if wf is None:
-    #    #    self.add_wf('new_workflow')
-    #    #    wf = self.current_wf()
-    #    if itm_idx.isValid():
-    #        # valid index in workflow tree: percolate up to root ancestor
-    #        while itm_idx.parent().isValid():
-    #            itm_idx = itm_idx.parent()
-    #    if itm_idx.isValid():
-    #        uiman = self.start_wf_editor(wf,itm_idx)
-    #    else:
-    #        uiman = self.start_wf_editor(wf)
-    #    uiman.ui.show()
-
-    #def start_wf_editor(self,qwf=None,idx=QtCore.QModelIndex()):
-    #    """
-    #    Create a WfUiManager (QMainWindow), return it 
-    #    """
-    #    uiman = WfUiManager(self.qwfman,self.qopman,self.qplugman)
-    #    uiman.ui.wf_selector.setCurrentIndex(self.ui.wf_selector.currentIndex())
-    #    #uiman.set_wf()
-    #    if qwf and idx.isValid():
-    #        uiman.get_op(qwf,idx)
-    #    uiman.ui.setParent(self.ui,QtCore.Qt.Window)
-    #    return uiman
-
-    #def edit_ops(self,itm_idx=None):
-    #    """
-    #    interact with user to enable existing Operations
-    #    and edit or develop new Operations 
-    #    """
-    #    uiman = OpUiManager(self.qopman)
-    #    uiman.ui.setParent(self.ui,QtCore.Qt.Window)
-    #    uiman.ui.show()
-
-    #def start_plugins_ui(self):
-    #    uiman = PluginUiManager(self.qplugman)
-    #    uiman.ui.setParent(self.ui,QtCore.Qt.Window)
-    #    uiman.ui.show()
-
-    #def save_plugins(self):
-    #    """
-    #    Start a modal window dialog to choose a .wfl to save the current set of plugins  
-    #    """
-    #    save_ui = uitools.start_save_ui(self.ui)
-    #    save_ui.setWindowTitle('plugins saver')
-    #    save_ui.tree_box.setTitle('Select or enter a .wfl file to save current plugins')
-    #    save_ui.save_button.clicked.connect( partial(self.finish_save_plugins,save_ui) )
-    #    save_ui.show()
-    #    save_ui.activateWindow()
-
-    #def load_plugins(self):
-    #    """
-    #    Start a modal window dialog to choose a .wfl to load a set of plugins 
-    #    """
-    #    load_ui = uitools.start_load_ui(self.ui)
-    #    load_ui.setWindowTitle('plugins loader')
-    #    load_ui.tree_box.setTitle('Select a .wfl file to load plugins')
-    #    load_ui.load_button.clicked.connect( partial(self.finish_load_plugins,load_ui) )
-    #    load_ui.show()
-    #    load_ui.activateWindow()
-      
     def save_state(self):
         """
         Start a modal window dialog to choose a .wfl to save the current configuration  
@@ -430,32 +322,6 @@ class UiManager(QtCore.QObject):
         load_ui.show()
         load_ui.activateWindow()
       
-    #def finish_save_plugins(self,ui):
-    #    fname = ui.filename.text()
-    #    if not os.path.splitext(fname)[1] == '.wfl':
-    #        fname = fname + '.wfl'
-    #    self.msg_board_log( 'dumping current set of plugins to {}'.format(fname) )
-    #    d = {} 
-    #    pgin_dict = OrderedDict() 
-    #    for pgin_name in self.qplugman.plugman.list_plugins():
-    #        pgin = self.qplugman.plugman.get_data_from_uri(pgin_name)
-    #        if not isinstance(pgin,WfManagerPlugin):
-    #            pgin_dict[pgin_name] = self.qplugman.plugman.plugin_setup_dict(pgin)
-    #    d['PLUGINS'] = pgin_dict
-    #    pawstools.update_file(fname,d)
-    #    ui.close()
-
-    #def finish_load_plugins(self,ui):
-    #    fname = ui.tree.model().filePath(ui.tree.currentIndex())
-    #    f = open(fname,'r')
-    #    d = yaml.load(f)
-    #    f.close()
-    #    fname_nopath = os.path.split(fname)[1]
-    #    fname_noext = os.path.splitext(fname_nopath)[0]
-    #    if 'PLUGINS' in d.keys():
-    #        self.qplugman.load_from_dict(d['PLUGINS'])
-    #    ui.close()
-
     def finish_save_state(self,ui):
         fname = ui.filename.text()
         self.paw.save_to_wfl(fname)
@@ -464,26 +330,4 @@ class UiManager(QtCore.QObject):
     def finish_load_state(self,ui):
         fname = ui.tree.model().filePath(ui.tree.currentIndex())
         self.paw.load_from_wfl(fname)
-        # Some additional effort to update Qt objects.
-        #f = open(wfl_filename,'r')
-        #d = yaml.load(f)
-        #f.close()
-        #if 'OP_LOAD_FLAGS' in d.keys():
-        #    # this should update the operation enable/disable fields
-        #    self.qopman.tree_datachanged(self.qopman.root_index())
-        #if 'WORKFLOWS' in d.keys():
-        #    wf_dict = d['WORKFLOWS']
-        #    for wfname,wfspec in wf_dict:
-        #        # NOTE: this part duplicates effort
-        #        self.qwfman.load_from_dict(wfname,self.qopman.opman,wfspec)
-        #        # the rest is mundane widget handling
-        #        if not wfname in self.ui.wf_selector.model().list_data():
-        #            self.ui.wf_selector.model().append_item(wfname)
-        #        if self.qwfman.n_wf() == 1:
-        #            self.ui.wf_tree.hideColumn(1)
-        #if 'PLUGINS' in d.keys():
-        #    pgin_dict = d['PLUGINS']
-        #    for pgin_name,pginspec in pgin_dict:
-        #        # NOTE: this part duplicates effort
-        #        self.qplugman.load_from_dict(pgin_name,pgin_dict)
 

@@ -23,17 +23,11 @@ class TreeModel(object):
         self.default_flags = default_flags
 
     def __getitem__(self,uri):
-        return self._tree.get_from_uri(uri)
+        return self.get_from_uri(uri)
 
     def __setitem__(self,uri,val):
-        self._tree.set_uri(uri,val)
+        self.set_item(uri,val)
     
-    #def __len__(self):
-    #    return self.n_items()
- 
-    #def list_child_tags(self,parent_uri=''):
-    #    return self._tree.list_child_tags(parent_uri)
-
     def n_children(self,parent_uri=''):
         itm = self.get_from_uri(parent_uri)
         return itm.n_children()
@@ -41,12 +35,8 @@ class TreeModel(object):
     def set_item(self,itm_uri,itm_data=None):
         try:
             if '.' in itm_uri:
-                #parent_uri = itm_uri[:itm_uri.rfind('.')]
                 parent_uri = itm_uri[:itm_uri.rfind('.')]
-                #if self.contains_uri(parent_uri):
                 parent_itm = self.get_from_uri(parent_uri)
-                #else:
-                #    parent_itm = self.build_to_uri(parent_uri)
                 itm_tag = itm_uri.split('.')[-1]
             else:
                 parent_itm = self._root_item
@@ -60,16 +50,6 @@ class TreeModel(object):
             msg = str('[{}] Encountered an error while trying to set uri {}: \n'
             .format(__name__,itm_uri) + ex.message)
             raise KeyError(msg) 
-        #if isinstance(treedata,dict):
-        #    # also store any children
-        #    for k,val in treedata.items():
-        #        child_uri = itm_uri+'.'+k
-        #        if not self.contains_uri(child_uri):
-        #            if isinstance(itm_data,list):
-        #                self.set_item(itm_uri+'.'+k,itm_data[int(k)])
-        #            else:
-        #                # Note- parent items need to implement __getitem__
-        #                self.set_item(itm_uri+'.'+k,itm_data[k]) 
 
     def remove_item(self,itm_uri):
         self._tree.delete_uri(itm_uri)
@@ -129,18 +109,6 @@ class TreeModel(object):
             d = OrderedDict()
             for k,v in x.items():
                 d[k] = self.build_tree(v) 
-                #val_tree = self.build_tree(v)
-                #if '.' in k:
-                #    ckeys = k.split('.')
-                #    cdict = OrderedDict()
-                #    cdict[ckeys[-1]] = val_tree
-                #    for ck in ckeys[:-1][::-1]:
-                #        pdict = OrderedDict()
-                #        pdict[ck] = cdict
-                #        cdict = pdict
-                #    d.update(pdict)
-                #else:
-                #    d[k] = val_tree
             return d
         elif isinstance(x,list):
             d = OrderedDict(zip([str(i) for i in range(len(x))],x)) 
@@ -149,32 +117,6 @@ class TreeModel(object):
             return d
         else:
             return x
-
-    #def build_to_uri(self,uri=''):
-    #    """ 
-    #    If the tree does not contain the input uri,
-    #    Fill the tree out with empty TreeItems 
-    #    until an empty TreeItem exists at the given uri. 
-    #    """
-    #    try:
-    #        itm = self._root_item 
-    #        if '.' in uri:
-    #            parent_uri = uri[:uri.rfind('.')]
-    #            if self.contains_uri(parent_uri):
-    #                itm = self.get_from_uri(parent_uri)
-    #            else:
-    #                itm = self.build_to_uri(parent_uri)
-    #        k = uri.split('.')[-1]
-    #        if k == '':
-    #            return itm 
-    #        elif k is not None:
-    #            newdict = OrderedDict()
-    #            self.tree_update(itm,k,newdict)
-    #            return self.get_from_uri(uri) 
-    #    except Exception as ex:
-    #        msg = str('[{}] Encountered an error while trying to build uri {}: \n'
-    #        .format(__name__,uri) + ex.message)
-    #        raise KeyError(msg) 
 
     def get_from_uri(self,uri):
         try:
@@ -197,9 +139,6 @@ class TreeModel(object):
     def get_data_from_uri(self,uri):
         return self._tree.get_from_uri(uri)
 
-    #def n_items(self):
-    #    return self._tree.n_items()
-
     def root_tags(self):
         return self._tree.root_keys()
 
@@ -217,13 +156,6 @@ class TreeModel(object):
 
     def contains_uri(self,uri):
         return self._tree.contains_uri(uri)
-
-    #def list_uris(self,root_uri=''):
-    #    return self._tree.list_uris(root_uri)
-
-    #def get_data_from_idx(self,idx):
-    #    uri = self.build_uri(idx)
-    #    return self.get_data_from_uri(uri)
 
     def build_uri(self,itm):
         """

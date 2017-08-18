@@ -14,16 +14,6 @@ class QTreeSelectionModel(QTreeModel):
         super(QTreeSelectionModel,self).__init__(trmod)
         #self.flag_defaults = flag_defaults 
 
-    #def create_tree_item(self,parent_itm,itm_tag):
-    #    """
-    #    Build a TreeItem for use in this tree.
-    #    Reimplemented for QTreeSelectionModel to set its flag_defaults
-    #    as the flags for any new TreeItems.
-    #    """
-    #    itm = self._tree.create_tree_item(parent_itm,itm_tag)
-    #    itm.flags = copy.copy(self.flag_defaults)
-    #    return itm
-
     def n_flags(self):
         return len(self.default_flags)
 
@@ -76,10 +66,6 @@ class QTreeSelectionModel(QTreeModel):
             return self.default_flags.keys()[section-1]
         else:
             return None
-        #elif (data_role == QtCore.Qt.DisplayRole and section == 1):
-        #    return "selected"
-        #elif (data_role == QtCore.Qt.DisplayRole and section == 2):
-        #    return "enabled"
 
     def data(self,idx,data_role):
         if (not idx.isValid()):
