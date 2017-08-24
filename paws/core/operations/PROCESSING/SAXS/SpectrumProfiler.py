@@ -36,11 +36,8 @@ class SpectrumProfiler(Operation):
         self.input_doc['dI'] = 'optional- 1d array of intensity uncertainty values I(q)'
         self.output_doc['features'] = str('dict profiling the input spectrum. '
         + 'See the documentation of paws.core.tools.saxstools.profile_spectrum().')
-        self.input_src['q'] = opmod.wf_input
-        self.input_src['I'] = opmod.wf_input
-        self.input_src['dI'] = opmod.no_input
-        self.input_type['q'] = opmod.ref_type
-        self.input_type['I'] = opmod.ref_type
+        self.input_type['q'] = opmod.workflow_item
+        self.input_type['I'] = opmod.workflow_item
 
     def run(self):
         q, I = self.inputs['q'], self.inputs['I']

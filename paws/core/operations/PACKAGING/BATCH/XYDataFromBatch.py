@@ -6,26 +6,19 @@ from ... import optools
 
 class XYDataFromBatch(Operation):
     """
-    Given a batch output and appropriate keys, 
-    use the uris to harvest x and y data from the batch.
+    Harvest two arrays from a batch output (a list of dicts). 
+    Takes a batch output, a key for x values, and a key for y values.
     """
 
     def __init__(self):
-        input_names = ['batch_output','x_uri','y_uri','x_shift_flag']
+        input_names = ['batch_outputs','x_key','y_key','x_shift_flag']
         output_names = ['x','y','x_y','x_y_sorted']
         super(XYDataFromBatch,self).__init__(input_names,output_names)        
-        self.input_doc['batch_output'] = 'list of dicts produced by a batch execution.'
+        self.input_doc['batch_outputs'] = 'list of dicts produced by a batch execution.'
         self.input_doc['x_uri'] = 'uri of data for x. Must be in batch.saved_items().'
         self.input_doc['y_uri'] = 'uri of data for y. Must be in batch.saved_items().'
         self.input_doc['x_shift_flag'] = 'if True, shift x data so that its minimum value is zero.' 
-        self.input_src['batch_output'] = opmod.wf_input
-        self.input_src['x_uri'] = opmod.wf_input
-        self.input_src['y_uri'] = opmod.wf_input
-        self.input_src['x_shift_flag'] = opmod.text_input
-        self.input_type['batch_output'] = opmod.ref_type
-        self.input_type['x_uri'] = opmod.path_type
-        self.input_type['y_uri'] = opmod.path_type
-        self.input_type['x_shift_flag'] = opmod.bool_type
+        self.input_type['batch_outputs'] = opmod.workflow_item
         self.inputs['x_shift_flag'] = False
         self.output_doc['x'] = 'array of the x values in batch output order.'
         self.output_doc['y'] = 'array of the y values in batch output order.'
@@ -33,13 +26,19 @@ class XYDataFromBatch(Operation):
         self.output_doc['x_y_sorted'] = 'n-by-2 array of x and y values, sorted for increasing x.'
 
     def run(self):
-        b_out = self.inputs['batch_output']
-        x_uri = self.inputs['x_uri']
-        y_uri = self.inputs['y_uri']
-        x_all = np.array([optools.get_uri_from_dict(x_uri,d) for d in b_out],dtype=float)
-        #y_all = np.array([optools.get_uri_from_dict(y_uri,d) for d in b_out],dtype=float)
-        y_all = np.array([optools.get_uri_from_dict(y_uri,d) for d in b_out])
-        if any(x_all):
+        b_out = self.inputs['batch_outputs']
+        kx = self.inputs['x_key']
+        ky = self.inputs['y_key']
+        #x_all = np.array([optools.get_uri_from_dict(kx,d) for d in b_out],dtype=float)
+        #y_all = np.array([optools.get_uri_from_dict(ky,d) for d in b_out],dtype=float)
+        x_list = [d[kx] for d in b_out]
+        y_list = [d[ky] for d in b_out]
+        #y_0 = b_out[0][kx]
+        #x_0 = b_out[0][ky]
+        x_all = np.array(x_list)
+        y_all = np.array(y_list)
+        x_len = len(x_list)
+        if x_len > 0:
             xmin = np.min(x_all)
         else:
             xmin = 0
@@ -47,11 +46,13 @@ class XYDataFromBatch(Operation):
             x_all = x_all - xmin
             #xmin = 0 
         self.outputs['x'] = x_all 
-        self.outputs['y'] = y_all 
-        self.outputs['x_y'] = np.array(zip(x_all,y_all))
+        self.outputs['y'] = y_all
+        #import pdb; pdb.set_trace() 
+        self.outputs['x_y'] = zip(x_all,y_all)
         #self.outputs['x_y_sorted'] = np.sort(np.array(zip(x_all,y_all)),0)
-        x_sort = np.sort(x_all)
-        y_xsort = y_all[np.argsort(x_all)]
-        self.outputs['x_y_sorted'] = np.array(zip(x_sort,y_xsort))
+        i_xsort = np.argsort(x_all)
+        y_xsort = y_all[i_xsort]
+        x_sort = x_all[i_xsort] 
+        self.outputs['x_y_sorted'] = zip(x_sort,y_xsort)
 
 

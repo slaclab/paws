@@ -64,13 +64,6 @@ def locate_input(il,wf=None,wf_manager=None,plugin_manager=None):
     """
     if il.tp == opmod.no_input or il.val is None:
         return None
-    elif (il.tp == opmod.filesystem_path
-        or il.tp == opmod.workflow_path
-        or il.tp == opmod.string_type):
-        if isinstance(il.val,list):
-            return [str(v) for v in il.val]
-        else:
-            return str(il.val)
     elif il.tp == opmod.workflow_item:
         if isinstance(il.val,list):
             return [wf.get_data_from_uri(v) for v in il.val]
@@ -83,27 +76,34 @@ def locate_input(il,wf=None,wf_manager=None,plugin_manager=None):
             return [plugin_manager.get_data_from_uri(v) for v in il.val]
         else:
             return plugin_manager.get_data_from_uri(il.val)
-    elif il.tp == opmod.integer_type:
-        if isinstance(il.val,list):
-            return [int(v) for v in il.val]
-        else:
-            return int(il.val)
-    elif il.tp == opmod.float_type:
-        if isinstance(il.val,list):
-            return [float(v) for v in il.val]
-        else:
-            return float(il.val)
-    elif il.tp == opmod.bool_type:
-        if isinstance(il.val,list):
-            return [bool(eval(str(v))) for v in il.val]
-        else:
-            return bool(eval(str(il.val)))
-    elif il.tp == opmod.object_type:
+    elif il.tp == opmod.auto_type:
         return il.val
     else:
         msg = '[{}] failed to parse InputLocator (type: {}, val: {})'.format(
         __name__,il.tp,il.val)
         raise ValueError(msg)
+    #elif il.tp == opmod.integer_type:
+    #    if isinstance(il.val,list):
+    #        return [int(v) for v in il.val]
+    #    else:
+    #        return int(il.val)
+    #elif il.tp == opmod.float_type:
+    #    if isinstance(il.val,list):
+    #        return [float(v) for v in il.val]
+    #    else:
+    #        return float(il.val)
+    #elif il.tp == opmod.bool_type:
+    #    if isinstance(il.val,list):
+    #        return [bool(eval(str(v))) for v in il.val]
+    #    else:
+    #        return bool(eval(str(il.val)))
+    #elif (il.tp == opmod.filesystem_path
+    #    or il.tp == opmod.workflow_path
+    #    or il.tp == opmod.string_type):
+    #    if isinstance(il.val,list):
+    #        return [str(v) for v in il.val]
+    #    else:
+    #        return str(il.val)
 
 def print_stack(stk):
     stktxt = ''

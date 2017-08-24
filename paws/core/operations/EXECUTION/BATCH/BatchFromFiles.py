@@ -21,9 +21,7 @@ class BatchFromFiles(Operation):
         self.input_doc['input_name'] = 'name of the workflow input where the file paths will be used'
         self.output_doc['batch_inputs'] = 'list of dicts of [input_name:input_value]'
         self.output_doc['batch_outputs'] = 'list of dicts of [output_name:output_value] for all Workflow outputs'
-        self.input_type['file_list'] = opmod.filesystem_path
         self.input_type['workflow'] = opmod.entire_workflow
-        self.input_type['input_name'] = opmod.workflow_path
         
     def run(self):
         batch_list = self.inputs['file_list'] 

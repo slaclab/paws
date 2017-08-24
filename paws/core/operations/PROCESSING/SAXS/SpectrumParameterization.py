@@ -80,16 +80,9 @@ class SpectrumParameterization(Operation):
         self.output_doc['q_I_guess'] = str('n-by-2 array of q and the intensity spectrum '
         + 'corresponding to the population parameters in the features dict.')
 
-        self.input_src['q'] = opmod.wf_input
-        self.input_src['I'] = opmod.wf_input
-        self.input_src['features'] = opmod.wf_input
-        self.input_src['fixed_params'] = opmod.text_input
-        self.input_src['fixed_param_values'] = opmod.text_input
-        self.input_type['q'] = opmod.ref_type
-        self.input_type['I'] = opmod.ref_type
-        self.input_type['features'] = opmod.ref_type
-        self.input_type['fixed_params'] = opmod.str_type
-        self.input_type['fixed_param_values'] = opmod.float_type
+        self.input_type['q'] = opmod.workflow_item
+        self.input_type['I'] = opmod.workflow_item
+        self.input_type['features'] = opmod.workflow_item
         self.inputs['fixed_params'] = []
         self.inputs['fixed_param_values'] = []
 

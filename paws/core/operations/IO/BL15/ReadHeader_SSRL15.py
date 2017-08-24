@@ -10,22 +10,20 @@ class ReadHeader_SSRL15(Operation):
     """
 
     def __init__(self):
-        input_names = ['txt_path']
+        input_names = ['file_path']
         output_names = ['header_dict', 'filename']
         super(ReadHeader_SSRL15, self).__init__(input_names, output_names)
-        self.input_src['txt_path'] = opmod.fs_input
-        self.input_type['txt_path'] = opmod.path_type
-        self.input_doc['txt_path'] = str('path to a txt header file produced by beamline 1-5 at SSRL.')
+        self.input_doc['file_path'] = 'path to a .txt header file produced by beamline 1-5 at SSRL.'
         self.output_doc['header_dict'] = 'the header file as a python dictionary'
         self.output_doc['filename'] = 'filename with path and extension stripped'
 
     def run(self):
-        txt_path = self.inputs['txt_path']
-        filename = split(txt_path)[1]
+        file_path = self.inputs['file_path']
+        filename = split(file_path)[1]
         filename_noext = splitext(filename)[0]
         self.outputs['filename'] = filename_noext 
         d = OrderedDict()
-        for l in open(txt_path,'r').readlines():
+        for l in open(file_path,'r').readlines():
             try:
                 if not l.strip() == '' and not l.strip()[0] == '#':
                     kvs = l.split(',')

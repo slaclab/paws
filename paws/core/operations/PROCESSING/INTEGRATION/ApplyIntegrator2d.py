@@ -18,12 +18,17 @@ class ApplyIntegrator2d(Operation):
     q-range, chi-range, number of points for integration bin centers,
     polz factor, choice of unit (string), 
     and choice of integration method (string).
+
+    Refer to the PyFAI documentation at ..... 
+    for parameter definitions and defaults.
+    TODO: fill in web uri above. 
  
-    Output arrays containing q and I(q) 
+    Output arrays containing q, chi, and I(q,chi) 
     """
     def __init__(self):
         input_names = list(['data','integrator','mask','ROI_mask','dark','flat',
-        'radial_range','azimuth_range','npt_rad','npt_azim','polarization_factor','normalization_factor','unit','method','integration_mode'])
+        'radial_range','azimuth_range','npt_rad','npt_azim','polarization_factor',
+        'normalization_factor','unit','method','integration_mode'])
         output_names = ['q','chi','I_at_q_chi']
         super(ApplyIntegrator2d,self).__init__(input_names,output_names)
         self.input_doc['data'] = '2d array representing intensity for each pixel'
@@ -44,24 +49,11 @@ class ApplyIntegrator2d(Operation):
 
         self.input_type['data'] = opmod.workflow_item
         self.input_type['integrator'] = opmod.workflow_item
-        #self.input_type['mask'] = opmod.workflow_item
-        #self.input_type['ROI_mask'] = opmod.workflow_item
-        #self.input_type['dark'] = opmod.workflow_item
-        #self.input_type['flat'] = opmod.workflow_item
-        #self.input_type['radial_range'] = opmod.float_type
-        #self.input_type['azimuth_range'] = opmod.float_type
-        self.input_type['npt_rad'] = opmod.integer_type
-        self.input_type['npt_azim'] = opmod.integer_type
-        self.input_type['polarization_factor'] = opmod.float_type
-        self.input_type['unit'] = opmod.string_type
-        #self.input_type['method'] = opmod.string_type
-        #self.input_type['normalization_factor'] = opmod.workflow_item
 
         self.inputs['npt_rad'] = 1000
         self.inputs['npt_azim'] = 1000
         self.inputs['polarization_factor'] = 1.
         self.inputs['unit'] = 'q_A^-1'
-        #self.inputs['method'] = 'BBox'
 
         self.output_doc['q'] = 'Scattering vector magnitude q array in 1/Angstrom.'
         self.output_doc['chi'] = 'Azimuthal angle array.'

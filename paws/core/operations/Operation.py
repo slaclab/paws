@@ -4,20 +4,12 @@ from collections import OrderedDict
 
 # Enumeration of valid types for workflow and plugin inputs
 no_input = 0
-filesystem_path = 1
+auto_type = 1
 workflow_item = 2
-workflow_path = 3
-entire_workflow = 4
-plugin_item = 5
-string_type = 6 
-integer_type = 7
-float_type = 8
-bool_type = 9
-object_type = 10
-valid_types = list([no_input,filesystem_path,workflow_item,workflow_path,
-    entire_workflow,plugin_item,string_type,integer_type,float_type,bool_type,object_type])
-input_types = list(['none','filesystem path','workflow item','workflow path',
-    'entire workflow','plugin item','string','integer','float','boolean','object'])
+entire_workflow = 3
+plugin_item = 4
+valid_types = [no_input,auto_type,workflow_item,entire_workflow]
+input_types = ['none','auto','workflow item','entire workflow','plugin item']
 
 # tags for Operation inputs and outputs in Workflow(TreeModel)s
 inputs_tag = 'inputs'
@@ -55,7 +47,7 @@ class Operation(object):
         self.output_doc = OrderedDict() 
         # For each of the i/o names, assign to None 
         for name in input_names: 
-            self.input_type[name] = no_input
+            self.input_type[name] = auto_type 
             self.input_locator[name] = None 
             self.inputs[name] = None
             self.input_doc[name] = None
@@ -85,19 +77,14 @@ class Operation(object):
     def load_defaults(self):
         """
         Set default types and values into the Operation.input_locators.
-        This should be called only on a new and unmodified Operation,
-        or else it will overwrite any inputs that have been set.
         """
         for name in self.inputs.keys():
-            tp = no_input 
+            tp = auto_type 
             val = None
-            if not self.input_type[name] == no_input:
+            if not self.input_type[name] == auto_type:
                 tp = self.input_type[name]
-                if self.inputs[name] is not None:
-                    if isinstance(self.inputs[name],list):
-                        val = [str(v) for v in self.inputs[name]]
-                    else:
-                        val = str(self.inputs[name])
+            if self.inputs[name] is not None:
+                val = self.inputs[name]
             self.input_locator[name] = InputLocator(tp,val)
             # defaults are now packaged in InputLocators, so can be dereferenced from self.inputs. 
             #self.inputs[name] = None

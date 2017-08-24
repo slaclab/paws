@@ -18,7 +18,11 @@ class ApplyIntegrator1d(Operation):
     q-range, chi-range, number of points for integration bin centers,
     polz factor, choice of unit (string), 
     and choice of integration method (string).
- 
+
+    Refer to the PyFAI documentation at ..... 
+    for parameter definitions and defaults.
+    TODO: fill in web uri above. 
+
     Output arrays containing q and I(q) 
     """
     def __init__(self):
@@ -42,21 +46,10 @@ class ApplyIntegrator1d(Operation):
 
         self.input_type['data'] = opmod.workflow_item
         self.input_type['integrator'] = opmod.workflow_item
-        #self.input_type['mask'] = opmod.workflow_item
-        #self.input_type['ROI_mask'] = opmod.workflow_item
-        #self.input_type['dark'] = opmod.workflow_item
-        #self.input_type['flat'] = opmod.workflow_item
-        #self.input_type['radial_range'] = opmod.float_type
-        #self.input_type['azimuth_range'] = opmod.float_type
-        self.input_type['npt'] = opmod.integer_type
-        self.input_type['polarization_factor'] = opmod.float_type
-        self.input_type['unit'] = opmod.string_type
-        #self.input_type['method'] = opmod.string_type
 
         self.inputs['npt'] = 1000
         self.inputs['polarization_factor'] = 1.
         self.inputs['unit'] = 'q_A^-1'
-        #self.inputs['method'] = 'BBox'
 
         self.output_doc['q'] = 'Scattering vector magnitude q in 1/Angstrom.'
         self.output_doc['I'] = 'Integrated intensity at q.'

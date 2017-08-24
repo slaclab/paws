@@ -90,11 +90,23 @@ class PawsAPI(object):
         mod = importlib.import_module('.'+pgin_name,pkg)
 
     def add_wf(self,wfname):
+        """
+        Adds a workflow to the workflow manager.
+        Input the workflow name.
+        Calls PawsAPI.select_wf(wfname) at the end,
+        selecting the new workflow for subsequent api calls.
+        """
         self._wf_manager.add_wf(wfname)
-        if not self._current_wf_name:
-            self.select_wf(wfname)
+        #if not self._current_wf_name:
+        self.select_wf(wfname)
 
     def select_wf(self,wfname):
+        """
+        Sets the current workflow for the API instance.
+        This is only to simplify subsequent api calls:
+        anywhere there is an optional workflow name input,
+        the default behavior is to apply the call to the current workflow.
+        """
         if wfname in self._wf_manager.workflows.keys():
             self._current_wf_name = wfname
         else:
@@ -153,19 +165,11 @@ class PawsAPI(object):
         else:
             if tp in opmod.input_types:
                 tp = opmod.valid_types[ opmod.input_types.index(tp) ]
-            #else:
-            #    tp = opmod.no_input
+        # TODO: separate opmod from plugin stuff
         if tp == opmod.no_input or val is None: 
             pgin.inputs[input_name] = None
-        elif (tp == opmod.filesystem_path
-        or tp == opmod.string_type):
-            pgin.inputs[input_name] = str(val)
-        elif tp == opmod.integer_type:
-            pgin.inputs[input_name] = int(val)
-        elif tp == opmod.float_type:
-            pgin.inputs[input_name] = float(val)
-        elif tp == opmod.bool_type:
-            pgin.inputs[input_name] = bool(eval(str(val)))
+        elif tp == opmod.auto_type:
+            pgin.inputs[input_name] = val
         else:
             msg = '[{}] failed to parse plugin input {}, tp: {}, val: {}'.format(
             __name__,input_name,tp,val)
@@ -203,7 +207,7 @@ class PawsAPI(object):
             # type specified by string: conver to enum
             tp = opmod.valid_types[ opmod.input_types.index(tp) ]
         elif not tp in opmod.valid_types:
-            # tp is neither a string or an enum: bad news 
+            # tp is neither a string or an enum
             msg = '[{}] failed to parse input type: {}'.format(
             __name__,tp)
             raise ValueError(msg)

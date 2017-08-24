@@ -13,16 +13,12 @@ class WriteArrayCSV(Operation):
         output_names = ['csv_path']
         super(WriteArrayCSV, self).__init__(input_names, output_names)
         self.input_doc['array'] = 'any 2d array'
-        self.input_doc['headers'] = 'list of headers (optional)- one header for each column of array'
+        self.input_doc['headers'] = 'list of string headers (optional)- one header for each column of array'
         self.input_doc['dir_path'] = 'the path to the destination directory'
         self.input_doc['filename'] = 'the name of the file to be saved- no extension is expected'
         self.input_doc['filetag'] = 'tag appended to filename- no extension is expected'
         self.output_doc['csv_path'] = 'the path to the finished csv file: dir_path+filename+filetag+.csv'
         self.input_type['array'] = opmod.workflow_item
-        self.input_type['headers'] = opmod.string_type
-        self.input_type['dir_path'] = opmod.filesystem_path
-        self.input_type['filename'] = opmod.string_type
-        self.input_type['filetag'] = opmod.string_type
         self.inputs['filetag'] = ''
 
     def run(self):

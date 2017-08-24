@@ -30,17 +30,11 @@ class FabIOWrite(Operation):
 
         self.input_type['image_data'] = opmod.workflow_item
         self.input_type['header'] = opmod.workflow_item
-        self.input_type['dir_path'] = opmod.filesystem_path
         self.input_type['filename'] = opmod.workflow_item
-        self.input_type['suffix'] = opmod.string_type
-        self.input_type['ext'] = opmod.string_type
-        self.input_type['overwrite'] = opmod.bool_type
 
         self.inputs['ext'] = '.tif'
         self.inputs['suffix'] = ''
         self.inputs['overwrite'] = False
-        self.inputs['header'] = None
-
 
     def run(self):
         """

@@ -25,10 +25,7 @@ class BatchFromDirectory(Operation):
         self.input_doc['input_name'] = 'name of the workflow input where the file paths will be used'
         self.output_doc['batch_inputs'] = 'list of dicts of [input_name:input_value]'
         self.output_doc['batch_outputs'] = 'list of dicts of [output_name:output_value] for all Workflow outputs'
-        self.input_type['dir_path'] = opmod.filesystem_path
-        self.input_type['regex'] = opmod.string_type
-        self.input_type['workflow'] = opmod.workflow_item
-        self.input_type['input_name'] = opmod.workflow_path
+        self.input_type['workflow'] = opmod.entire_workflow
         self.inputs['regex'] = '*.tif' 
         
     def run(self):
