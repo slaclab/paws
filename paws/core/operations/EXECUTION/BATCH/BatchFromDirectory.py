@@ -37,11 +37,13 @@ class BatchFromDirectory(Operation):
         input_dict_list = []
         output_dict_list = []
         n_batch = len(batch_list)
+        wf.write_log('STARTING BATCH')
         for i,filename in zip(range(n_batch),batch_list):
             inp_dict = OrderedDict() 
             inp_dict[inpname] = filename
             #import pdb; pdb.set_trace()
             wf.set_wf_input(inpname,filename)
+            wf.write_log('BATCH RUN {} / {}'.format(i+1,n_batch))
             wf.execute()
             #stk,diag = wf.execution_stack()
             #for lst in stk:
@@ -52,6 +54,7 @@ class BatchFromDirectory(Operation):
             #    self.workflows[wfname].execute(op_list)
             input_dict_list.append(inp_dict)
             output_dict_list.append(wf.wf_outputs_dict())
+        wf.write_log('BATCH FINISHED')
         self.outputs['batch_inputs'] = input_dict_list
         self.outputs['batch_outputs'] = output_dict_list 
 

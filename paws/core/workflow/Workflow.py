@@ -175,11 +175,11 @@ class Workflow(TreeModel):
                     op_diag = {op_tag:'Operation is disabled'}
                 elif not self.stack_contains(op_tag,stk):
                     op_rdy,op_diag = self.is_op_ready(op_tag,valid_wf_inputs)
-                diagnostics.update(op_diag)
-                if op_rdy:
-                    ops_rdy.append(op_tag)
-                else:
-                    ops_not_rdy.append(op_tag)
+                    diagnostics.update(op_diag)
+                    if op_rdy:
+                        ops_rdy.append(op_tag)
+                    else:
+                        ops_not_rdy.append(op_tag)
             if any(ops_rdy):
                 stk.append(ops_rdy)
                 for op_tag in ops_rdy:
