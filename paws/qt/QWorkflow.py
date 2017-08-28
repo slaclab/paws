@@ -11,8 +11,8 @@ class QWorkflow(Workflow,QTreeSelectionModel):
     A QTreeSelectionModel for interacting with TreeModel Workflow.
     """
 
-    def __init__(self):
-        super(QWorkflow,self).__init__()
+    def __init__(self,wfman):
+        super(QWorkflow,self).__init__(wfman)
 
     def headerData(self,section,orientation,data_role):
         if (data_role == QtCore.Qt.DisplayRole and section == 0):

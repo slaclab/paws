@@ -36,7 +36,7 @@ class QWfManager(WfManager,QtCore.QObject):
         If wfname is not unique (i.e. a workflow with that name already exists),
         this method will overwrite the existing workflow with a new one.
         """
-        wf = QWorkflow()
+        wf = QWorkflow(self)
         if not wf.is_tag_valid(wfname): 
             raise pawstools.WfNameError(self.tag_error(wfname))
         self.workflows[wfname] = wf
