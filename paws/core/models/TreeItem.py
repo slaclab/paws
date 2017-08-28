@@ -24,10 +24,14 @@ class TreeItem(object):
         Return the TreeModel uri of this TreeItem
         by following its parents up to a root item. 
         """
-        uri = ''
-        itm = self.parent
-        while itm is not None:
-            uri = self.tag+'.'+uri
+        if self.parent is None:
+            return ''
+        else:
+            uri = self.tag 
+            itm = self.parent
+            while itm.parent is not None:
+                uri = itm.tag+'.'+uri
+                itm = itm.parent
         return uri
 
 

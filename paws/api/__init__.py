@@ -200,7 +200,7 @@ class PawsAPI(object):
             # if type is not specified, take the operation's default 
             tp = op.input_type[input_name]
         elif tp in opmod.input_types:
-            # type specified by string: conver to enum
+            # type specified by string: convert to enum
             tp = opmod.valid_types[ opmod.input_types.index(tp) ]
         elif not tp in opmod.valid_types:
             # tp is neither a string or an enum: bad news 
