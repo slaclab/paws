@@ -216,6 +216,16 @@ class PawsAPI(object):
         il = opmod.InputLocator(tp,val)
         op.input_locator[input_name] = il
 
+    def get_input_setting(self,opname,input_name,wfname=None):
+        if wfname is None:
+            wfname = self._current_wf_name
+        op = self.get_op(opname,wfname) 
+        if not input_name in op.inputs.keys():
+            msg = str('Input name {} not valid for Operation {} ({}).'
+            .format(input_name,opname,type(op).__name__))
+            raise KeyError(msg)
+        return op.input_locator[input_name].val
+
     def get_output(self,opname,output_name=None,wfname=None):
         op = self.get_op(opname,wfname)
         if output_name is not None:
