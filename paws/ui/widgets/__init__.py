@@ -51,7 +51,8 @@ def make_widget(itm):
     or isinstance(itm,int) 
     or isinstance(itm,dict) 
     or isinstance(itm,list) 
-    or isinstance(itm,str)):    
+    or isinstance(itm,str)
+    or isinstance(itm,unicode)):    
         t = display_text_fast(itm)
         w = QtGui.QTextEdit(t)
     else:
