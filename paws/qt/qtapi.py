@@ -33,6 +33,7 @@ class QPawsAPI(pawsapi.PawsAPI,QtCore.QObject):
         # so that different api instances can have different operations loaded
         self._op_manager.load_cats(ops.cat_list) 
         self._op_manager.load_ops(ops.cat_op_list)
+        self.app = app
 
     def get_op_from_index(self,idx):
         return self._op_manager.get_data_from_index(idx)

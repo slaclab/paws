@@ -17,7 +17,6 @@ class PifNPSynth(Operation):
         self.input_doc['uid_prefix'] = 'text string to prepend to pif uid (pif uid = uid_prefix+t_utc'
         self.input_doc['date_time'] = 'string date/time from measurement header file, used for pif record tags'
         self.input_doc['t_utc'] = 'time in seconds utc'
-        #self.input_doc['temp_C'] = 'temperature in degrees C'
         self.input_doc['q_I'] = 'n-by-2 array of q values and corresponding intensities for saxs spectrum'
         self.input_doc['t_T'] = 'n-by-2 array of time (in seconds utc) and corresponding temperatures'
         self.input_doc['t_features'] = str('n-by-2 array of time (in seconds utc) '
@@ -25,25 +24,16 @@ class PifNPSynth(Operation):
         + 'PROCESSING.SAXS.[SpectrumProfiler,SpectrumParameterization,SpectrumFit].outputs.features.')
         self.input_doc['recipe'] = 'dict describing recipe, in the format of IO.MISC.ReadNPSynthRecipe. Not yet implemented.'
         self.output_doc['pif'] = 'pif object representing the input data'
-        self.input_src['uid_prefix'] = opmod.text_input
-        self.input_src['date_time'] = opmod.wf_input
-        self.input_src['t_utc'] = opmod.wf_input
-        #self.input_src['temp_C'] = opmod.wf_input
-        self.input_src['q_I'] = opmod.wf_input
-        self.input_src['t_T'] = opmod.wf_input
-        self.input_src['t_features'] = opmod.wf_input
-        self.input_src['recipe'] = opmod.wf_input
-        self.input_type['uid_prefix'] = opmod.str_type
-        self.input_type['date_time'] = opmod.ref_type
-        self.input_type['t_utc'] = opmod.ref_type
-        #self.input_type['temp_C'] = opmod.ref_type
-        self.input_type['q_I'] = opmod.ref_type
-        self.input_type['t_T'] = opmod.ref_type
-        self.input_type['t_features'] = opmod.ref_type
-        self.input_type['recipe'] = opmod.ref_type
-        # all workflow inputs default to none: an empty pif should be produced in this case.
-        self.inputs['date_time'] = None
+        self.input_type['uid_prefix'] = opmod.auto_type
+        self.input_type['date_time'] = opmod.workflow_item
+        self.input_type['t_utc'] = opmod.workflow_item
+        self.input_type['q_I'] = opmod.workflow_item
+        self.input_type['t_T'] = opmod.workflow_item
+        self.input_type['t_features'] = opmod.workflow_item
+        self.input_type['recipe'] = opmod.workflow_item
+        # all inputs default to none: an empty pif should be produced in this case.
         self.inputs['uid_prefix'] = None
+        self.inputs['date_time'] = None
         self.inputs['t_utc'] = None
         self.inputs['q_I'] = None
         self.inputs['t_T'] = None
@@ -54,7 +44,11 @@ class PifNPSynth(Operation):
         uid_pre = self.inputs['uid_prefix']
         t_str = self.inputs['date_time']
         t_utc = self.inputs['t_utc']
-        uid_full = uid_pre+'_'+str(int(t_utc))
+        uid_full = 'tmp'
+        if uid_pre is not None:
+            uid_full = uid_pre
+        if t_utc is not None:
+            uid_full = uid_full+'_'+str(int(t_utc))
         #temp_C = self.inputs['temp_C']
         q_I = self.inputs['q_I']
         t_T = self.inputs['t_T']
@@ -72,9 +66,12 @@ class PifNPSynth(Operation):
         #csys.sub_systems = subsys
         csys.properties = []
         csys.tags = []
-        csys.tags.append('reaction id: '+uid_pre)
-        csys.tags.append('date: '+t_str)
-        csys.tags.append('utc: '+str(int(t_utc)))
+        if uid_pre is not None:
+            csys.tags.append('reaction id: '+uid_pre)
+        if t_str is not None:
+            csys.tags.append('date: '+t_str)
+        if t_utc is not None:
+            csys.tags.append('utc: '+str(int(t_utc)))
 
         if t_f is not None:
             # Grab the features at t_utc, else raise exception

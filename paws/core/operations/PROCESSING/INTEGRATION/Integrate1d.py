@@ -17,7 +17,7 @@ class Integrate1d(Operation):
     Output q, I(q) 
     """
     def __init__(self):
-        input_names = ['image_data','poni_dict']
+        input_names = ['image_data','poni_dict','fpolz']
         output_names = ['q','I','q_I']
         super(Integrate1d,self).__init__(input_names,output_names)
         self.input_doc['image_data'] = '2d array representing intensity for each pixel'
@@ -25,8 +25,10 @@ class Integrate1d(Operation):
         + 'minimally including keys dist, poni1, poni2, rot1, rot2, rot3, pixel1, pixel2, wavelength;'
         + 'optionally including keys fpolz, detector, splineFile; '
         + 'same specifications as pyFAI .poni format calibration parameters')
+        self.input_doc['fpolz'] = 'Polarization factor- default 1.0'
         self.input_type['image_data'] = opmod.workflow_item
         self.input_type['poni_dict'] = opmod.workflow_item
+        self.inputs['fpolz'] = float(1.)
         self.output_doc['q'] = 'Scattering vector magnitude q in 1/Angstrom.'
         self.output_doc['I'] = 'Integrated intensity at q.'
         self.output_doc['q_I'] = 'q and I zipped together an a n-by-2 numpy array.'
@@ -36,7 +38,7 @@ class Integrate1d(Operation):
         pd = self.inputs['poni_dict']
         p = pyFAI.AzimuthalIntegrator()
         p.setPyFAI(**pd)
-        fpolz = pd['fpolz']
+        fpolz = self.inputs['fpolz']
         # use a mask to screen negative pixels
         # mask should be 1 for masked pixels, 0 for unmasked pixels
         msk = np.ones(img.shape)*(img <= 0)
