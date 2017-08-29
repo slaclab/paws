@@ -10,8 +10,8 @@ class QTreeSelectionModel(QTreeModel):
     by using TreeItem.flags to handle tree item selection.
     """
 
-    def __init__(self,trmod=None):
-        super(QTreeSelectionModel,self).__init__(trmod)
+    def __init__(self,flag_dict):
+        super(QTreeSelectionModel,self).__init__(flag_dict)
         #self.flag_defaults = flag_defaults 
 
     def n_flags(self):

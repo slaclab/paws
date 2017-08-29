@@ -11,11 +11,8 @@ class QTreeModel(TreeModel,QtCore.QAbstractItemModel):
     To customize the header in QAbstractItemViews, implement headerData().
     """
 
-    def __init__(self,trmod=None):
-        super(QTreeModel,self).__init__()
-        if isinstance(trmod,TreeModel):
-            for c_tag in trmod.root_tags():
-                self.set_item(c_tag,trmod[c_tag])
+    def __init__(self,flag_dict):
+        super(QTreeModel,self).__init__(flag_dict)
 
     # Subclass of QAbstractItemModel must implement index()
     def index(self,row,col,p_idx):

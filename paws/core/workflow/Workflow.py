@@ -168,7 +168,6 @@ class Workflow(TreeModel):
         while not self.stack_size(stk) == self.n_ops() and continue_flag:
             ops_rdy = []
             ops_not_rdy = []
-            #print 'continue: {}, stacksize: {}, n_ops: {}'.format(continue_flag,self.stack_size(stk),self.n_ops())
             for op_tag in self.list_op_tags():
                 if not self.is_op_enabled(op_tag):
                     op_rdy = False
