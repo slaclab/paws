@@ -74,16 +74,22 @@ class Workflow(TreeModel):
         for lst in stk:
             self.write_log('running: {}'.format(lst))
             for op_tag in lst: 
-                op = self.get_data_from_uri(op_tag) 
-                self.load_inputs(op,self.wf_manager,self.wf_manager.plugin_manager)
                 try:
-                    op.run() 
+                    #op = self.get_data_from_uri(op_tag) 
+                    #self.load_inputs(op,self.wf_manager,self.wf_manager.plugin_manager)
+                    #op.run() 
+                    self.execute_op(op_tag)
                 except Exception as ex:
                     tb = traceback.format_exc()
                     self.write_log(str('Operation {} threw an error. '
                     + '\nMessage: {} \nTrace: {}').format(op_tag,ex.message,tb)) 
-                self.set_item(op_tag,op)
         self.write_log('execution finished')
+
+    def execute_op(self,op_tag):
+        op = self.get_data_from_uri(op_tag) 
+        self.load_inputs(op,self.wf_manager,self.wf_manager.plugin_manager)
+        op.run() 
+        self.set_item(op_tag,op)
 
     def load_inputs(self,op,wf_manager=None,plugin_manager=None):
         """

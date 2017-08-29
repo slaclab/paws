@@ -20,7 +20,18 @@ class QWorkflow(Workflow,QTreeSelectionModel):
         else:
             return super(QWorkflow,self).headerData(section,orientation,data_role)    
 
-    #wf_updated = QtCore.Signal()
+    opChanged = QtCore.Signal(str)
+
+    opFinished = QtCore.Signal(str)
+
+    def execute_op(self,op_tag):
+        op = self.get_data_from_uri(op_tag) 
+        self.load_inputs(op,self.wf_manager,self.wf_manager.plugin_manager)
+        self.opChanged.emit(op_tag)
+        op.run() 
+        self.set_item(op_tag,op)
+        self.opChanged.emit(op_tag)
+        self.opFinished.emit(op_tag)
 
     #def set_op_input_at_uri(self,uri,val):
     #    """
