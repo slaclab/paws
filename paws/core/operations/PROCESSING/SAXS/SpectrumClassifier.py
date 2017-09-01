@@ -11,27 +11,37 @@ class SpectrumClassifier(Operation):
     """
 
     def __init__(self):
-        input_names = ['q','I','features']
-        output_names = ['features']
+        input_names = ['profiler_output']
+        output_names = ['population_flags']
         super(SpectrumClassifier, self).__init__(input_names, output_names)
-        self.input_doc['features'] = 'Dict of features as produced by PROCESSING.SAXS.SpectrumProfiler.'
-        self.output_doc['features'] = 'Same dict as input but with classification flags added.'
-        self.input_src['features'] = opmod.wf_input
-        self.input_type['features'] = opmod.ref_type
+        self.input_doc['profiler_output'] = 'Dict of scalar features as produced by PROCESSING.SAXS.SpectrumProfiler.'
+        self.output_doc['population_flags'] = 'Dict of flags indicating the presence of various scattering populations'
+        self.input_type['profiler_output'] = opmod.workflow_item
 
     def run(self):
-        f = self.inputs['features']
-       
-        # classify the spectrum. determine:
-        #f['bad_data_flag']
-        #f['form_flag']
-        #f['structure_flag']
-        #f['precursor_flag']
+        x = self.inputs['profiler_output']
+        flags = OrderedDict()
 
-        # problems for later. determine:
-        #f['form_id']
-        #f['structure_id']
+        ### Classify the spectrum
+        # (1) Import sklearn model from a file in
+        #       paws/core/tools/model_data.
+        # (2) Apply model to input
+        # (3) Interpret model to fill in the following:
+        #   flags['bad_data']                  - formerly 'bad_data_flag'
+        #   flags['precursor_scattering']      - formerly 'precursor_flag'
+        #   flags['form_factor_scattering']    - formerly 'form_flag'
+        #   flags['diffraction_peaks']         - formerly 'structure_flag'
 
-        self.outputs['features'] = f 
+        # problems for later:
+        # if flags['form_factor_scattering']:
+        #     # classify the form factor based on inputs  
+        #     flags['form_factor_id'] = ''     
+        #
+        # if flags['diffraction_peaks']:
+        #     # classify the space group based on inputs
+        #     flags['space_group_id'] = ''
+        #
+
+        self.outputs['population_flags'] = flags 
 
 
