@@ -16,7 +16,7 @@ class PawsPlugin(object):
         self.input_type = {}
         # For each of the var names, assign to None 
         for name in input_names: 
-            self.input_type[name] = opmod.no_input
+            self.input_type[name] = opmod.auto_type
             self.inputs[name] = None
             self.input_doc[name] = None
 

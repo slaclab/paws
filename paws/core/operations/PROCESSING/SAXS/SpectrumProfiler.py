@@ -8,19 +8,9 @@ from ....tools import saxstools
 class SpectrumProfiler(Operation):
     """
     This operation profiles a SAXS spectrum (I(q) vs. q)
-    to determine some characteristics of the sample.
-    Based on some measures of the overall shape of the spectrum,
-    the spectrum is tested for scattering from precursors 
-    (approximated as small dilute monodisperse spheres),
-    scattering from dilute nanoparticles of various form factors 
-    (currently only spheres),
-    diffraction peaks
-    (Voigt-like profiles due to crystalline arrangements),
-    or some combination of the three.
-    TODO: document algorithm here.
+    by taking various scalar quantities from the data.
 
-    Output a return code
-    and a dictionary of the results.
+    Outputs a dictionary of the results.
 
     This Operation is somewhat robust for noisy data,
     but any preprocessing (background subtraction, smoothing, or other cleaning)

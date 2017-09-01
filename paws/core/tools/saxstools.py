@@ -4,429 +4,252 @@ from collections import OrderedDict
 import numpy as np
 from scipy.optimize import minimize as scipimin
 
-def compute_saxs(q,params):
+def compute_saxs(q,flags,params):
     """
-    Given q and a dict of parameters,
+    Given q, a dict of population flags,
+    and a dict of scattering equation parameters,
     compute the saxs spectrum.
     Supported parameters are... TODO: fill in 
 
     TODO: Document the equation.
     """
-    b_flag = params['bad_data_flag']
-    s_flag = params['structure_flag']
+    b_flag = flags['bad_data']
+    s_flag = flags['diffraction_peaks']
     I = np.zeros(len(q))
     if not b_flag and not s_flag:
-        pre_flag = params['precursor_flag']
-        f_flag = params['form_flag']
-        #I_at_0 = params['I_at_0']
-        #if not any([pre_flag,f_flag]):
-        #    return np.ones(len(q))*I_at_0
-        #else:
-        # begin with floor term
+        pre_flag = flags['precursor_scattering']
+        f_flag = flags['form_factor_scattering']
         I0_floor = params['I0_floor'] 
         I = I0_floor*np.ones(len(q))
         if pre_flag:
-            I0_pre = params['I0_pre']
-            r0_pre = params['r0_pre']
+            # TODO: This should employ a Guinier-Porod or similar equation
+            I0_pre = params['I0_precursor']
+            r0_pre = params['r0_precursor']
             I_pre = compute_spherical_normal_saxs(q,r0_pre,0)
             I += I0_pre*I_pre
-        if f_flag: 
-            I0_sph = params['I0_form']
-            r0_sph = params['r0_form']
-            sigma_sph = params['sigma_form']
+        if f_flag:
+            # TODO: support non-spherical form factors 
+            I0_sph = params['I0_sphere']
+            r0_sph = params['r0_sphere']
+            sigma_sph = params['sigma_sphere']
             I_sph = compute_spherical_normal_saxs(q,r0_sph,sigma_sph)
             I += I0_sph*I_sph
     return I
 
-def profile_spectrum(q,I,dI=None):
+def profile_spectrum(q,I):
     """
     Profile a saxs spectrum (q,I) 
     by taking several fast numerical metrics 
-    on the measured data.
+    from the measured data.
 
-    :returns: dictionary of metrics and spectrum profiling flags.
+    :returns: dictionary of scalar metrics.
     Dict keys and descriptions: 
-    - 'ERROR_MESSAGE': Any errors or warnings are reported here. 
-    - 'bad_data_flag': Boolean indicating that the spectrum is unfamiliar or mostly made of noise. 
-    - 'precursor_flag': Boolean indicating presence of precursor terms. 
-    - 'form_flag': Boolean indicating presence of form factor terms. 
-    - 'form_id': Form factor identity, e.g. sphere, cube, rod, etc. 
-    - 'structure_flag': Boolean indicating presence of structure factor terms. 
-    - 'structure_id': Structure identity, e.g. fcc, hcp, bcc, etc. 
-    - 'low_q_ratio': fraction of integrated intensity for q<0.4 
-    - 'high_q_ratio': fraction of integrated intensity for q>0.4 
-    - 'low_q_logratio': fraction of total log(I)-min(log(I)) over q<0.4 
-    - 'high_q_logratio': fraction of total log(I)-min(log(I)) over q>0.4 
-    - 'high_freq_ratio': Ratio of the upper half to the lower half 
-        of the power spectrum of the discrete fourier transform of the intensity. 
-        fluctuation_strength': Integrated fluctuation of intensity 
-        (sum of difference in intensity between adjacent points 
-        taken only where this difference changes sign), 
-        divided by the range (maximum minus minimum) of intensity. 
-    - 'Imax_over_Imean': maximum intensity divided by mean intensity. 
-    - 'Imax_over_Imean_local': maximum intensity divided by 
-        mean intensity over q values within 10% of the q value of the maximum. 
-    - 'Imax_over_Ilowq': Maximum intensity divided by mean intensity over q<0.1. 
-    - 'Imax_over_Ihighq': Maximum intensity divided by mean intensity over q>0.4. 
-    - 'Ilowq_over_Ihighq': Mean intensity for q<0.1 divided by mean intensity for q>0.4. 
-    - 'low_q_logcurv': Curvature of parabola fit to log(I) versus log(q) for q<0.1. 
+    - 'low_q_ratio': fraction of total intensity in the range q<0.4 
+    - 'high_q_ratio': fraction of total intensity in the range q>=0.4 
     - 'q_Imax': q value of the maximum intensity. 
-    - 'bin_strengths': log(I) integrated in q-bins of 0.1 1/Angstrom from 0 to 1 1/Angstrom. 
+    - 'Imax_over_Imean': maximum intensity divided by mean intensity. 
+    - 'Imax_over_Ilowq': Maximum intensity divided by mean intensity in the range q<0.4. 
+    - 'Imax_over_Ihighq': Maximum intensity divided by mean intensity in the range q>0.4. 
+    - 'Imax_sharpness': maximum intensity divided by 
+        the mean intensity in the range 0.9*q_Imax<q<1.1*q_Imax.
+    - 'q_bin_edges' : array of q-values to use as upper bin limits for intensity integration. 
+    - 'q_bin_strengths' : array of integrated log(I) within the bins specified by q_bin_edges.
+    - 'log_fluctuation': Integrated fluctuation of log(I): 
+        sum of difference in log(I) between adjacent points, 
+        taken only where this difference changes sign, 
+        divided by the maximum of log(I). 
     """ 
-    ### amplitude analysis:
+
+    idx_lowq = np.array(q<0.4)
+    idx_highq = np.array(q>=0.4)
+    # log(I) analysis
+    nz = I>0
+    q_nz = q[nz]
+    I_nz = I[nz]
+    logI_nz = np.log(I_nz)
+    logI_max = np.max(logI_nz)
+    # I analysis
+    I_sum = np.sum(I)
+    I_mean = np.mean(I)
+    I_lowq_mean = np.mean(I[idx_lowq])
+    I_highq_mean = np.mean(I[idx_highq])
     idxmax = np.argmax(I)
-    Imax = I[idxmax] 
-    q_Imax = q[idxmax]
     idxmin = np.argmin(I)
     Imin = I[idxmin]
     Irange = Imax - Imin
-    Imean = np.mean(I)
-    Imax_over_Imean = float(Imax)/float(Imean)
+    Imax = I[idxmax] 
+    q_Imax = q[idxmax]
+    # I_max peak shape analysis
     idx_around_max = ((q > 0.9*q_Imax) & (q < 1.1*q_Imax))
     Imean_around_max = np.mean(I[idx_around_max])
-    Imax_over_Imean_local = Imax / Imean_around_max
-
-    ### fourier analysis
-    n_q = len(q)
-    fftI = np.fft.fft(I)
-    ampI = np.abs(fftI)
-    powI = np.abs(fftI)**2
-    high_freq_ratio = np.sum(powI[n_q/4:n_q/2])/np.sum(powI[1:n_q/4])
-    #high_freq_ratio = np.sum(ampI[n_q/4:n_q/2])/np.sum(ampI[1:n_q/4])
+    Imax_sharpness = Imax / Imean_around_max
+    # low-q and high-q intensity integration
+    dq = q[1:] - q[:-1]
+    I_trap = (I[1:]+I[:-1])/2
+    I_integral = np.sum(dq*I_trap)
+    dq_lowq = q[idx_lowq][1:] - q[idx_lowq][:-1]
+    I_trap_lowq = (I[idx_lowq][1:]+I[idx_lowq][:-1])/2
+    I_lowq_integral = np.sum(dq_lowq*I_trap_lowq)
+    dq_highq = q[idx_highq][1:] - q[idx_highq][:-1]
+    I_trap_highq = (I[idx_highq][1:]+I[idx_highq][:-1])/2
+    I_highq_integral = np.sum(dq_highq*I_trap_highq)
+    # I_max relative intensity analysis
+    low_q_ratio = I_lowq_integral / I_integral 
+    high_q_ratio = I_highq_integral / I_integral
+    Imax_over_Imean = Imax/I_mean
+    Imax_over_Ilowq = Imax/I_lowq_mean
+    Imax_over_Ihighq = Imax/I_highq_mean
 
     ### fluctuation analysis
     # array of the difference between neighboring points:
-    nn_diff = I[1:]-I[:-1]
+    nn_diff = logI_nz[1:]-logI_nz[:-1]
     # keep indices where the sign of this difference changes.
     # also keep first index
     nn_diff_prod = nn_diff[1:]*nn_diff[:-1]
     idx_keep = np.hstack((np.array([True]),nn_diff_prod<0))
     fluc = np.sum(np.abs(nn_diff[idx_keep]))
-    #fluctuation_strength = fluc/Irange
-    fluctuation_strength = fluc/Imean
+    log_fluctuation = fluc/logI_max
 
-	# correlations on intensity
-    #q_corr = compute_pearson(I,np.linspace(0,1,n_q))
-    #qsquared_corr = compute_pearson(I,np.linspace(0,1,n_q)**2)
-    #cosq_corr = compute_pearson(I,np.cos(q*np.pi/(2*q[-1])))
-    #cos2q_corr = compute_pearson(I,np.cos(q*np.pi/(2*q[-1]))**2)
-    #invq_corr = compute_pearson(I,q**-1)
-    #invq4_corr = compute_pearson(I,q**-4)
+    ### bin-integrated log(intensity) analysis
+    q_bin_edges = np.arange(0.01,1.)
+    q_bin_strengths = np.zeros(q_bin_edges.shape) 
+    binfloor = 0
+    for binmax in q_bin_edges:
+        binidx = ((q>=binfloor) & (q<binmax))
+        if any(binidx):
+            qbin = q[ binidx ]
+            Ibin = I[ binidx ]
+            dqbin = qbin[1:]-qbin[:-1]
+            Ibin = (Ii[1:]+Ii[:-1])/2
+            q_bin_strengths[i] = np.sum(Ibin * dqi) / I_integral 
 
-    # correlations on log intensity
-    #idx_nz = np.invert(I <= 0)
-    #q_logcorr = compute_pearson( np.log(I[idx_nz]) , np.linspace(0,1,n_q)[idx_nz] )
-    #qsquared_logcorr = compute_pearson( np.log(I[idx_nz]) , (np.linspace(0,1,n_q)[idx_nz])**2 )
-    #cosq_logcorr = compute_pearson( np.log(I[idx_nz]) , np.cos(q*np.pi/(2*q[-1]))[idx_nz] )
-    #cos2q_logcorr = compute_pearson( np.log(I[idx_nz]) , (np.cos(q*np.pi/(2*q[-1]))[idx_nz])**2 )
-    #invq_logcorr = compute_pearson( np.log(I[idx_nz]) , q[idx_nz]**-1 )
-
-    ### bin-integrated intensity analysis
-    bin_strengths = np.zeros(10)
-    for i in range(10):
-        qmini, qmaxi = i*0.1, (i+1)*0.1 
-        idxi = ((q>=qmini) & (q<qmaxi))
-        if any(idxi):
-            qi = q[ idxi ]
-            Ii = I[ idxi ]
-            dqi = qi[1:]-qi[:-1]
-            Ii = (Ii[1:]+Ii[:-1])/2
-            bin_strengths[i] = np.sum(np.log(Ii) * dqi) / (qi[-1]-qi[0]) 
-    idx_nz = (I>0)
-    q_nz = q[idx_nz] 
-    I_nz_log = np.log(I[idx_nz])
-    # make values positive:
-    I_nz_log = I_nz_log-np.min(I_nz_log)
-    I_logsum = np.sum(I_nz_log)
-    low_q_logratio = np.sum(I_nz_log[(q_nz<0.4)])/I_logsum
-    high_q_logratio = np.sum(I_nz_log[(q_nz>=0.4)])/I_logsum
-    I_sum = np.sum(I)
-    low_q_ratio = np.sum(I[(q<0.4)])/I_sum
-    high_q_ratio = np.sum(I[(q>=0.4)])/I_sum
-
-    ### curve shape analysis
-    lowq_idx = q<0.1
-    highq_idx = q>0.4
-    lowq = q[lowq_idx]
-    highq = q[highq_idx]
-    I_lowq = I[lowq_idx]
-    I_highq = I[highq_idx]
-    I_lowq_mean = np.mean(I_lowq)
-    I_highq_mean = np.mean(I_highq)
-    lowq_mean = np.mean(lowq)
-    lowq_std = np.std(lowq)
-    I_lowq_std = np.std(I_lowq)
-    I_lowq_s = I_lowq/I_lowq_std
-    lowq_s = (lowq - lowq_mean)/lowq_std
-    #p_lowq = fit_with_slope_constraint(lowq_s,np.log(I_lowq_s),-1*lowq_mean/lowq_std,0,3) 
-    #p_lowq = fit_with_slope_constraint(lowq_s,np.log(I_lowq_s),lowq_s[-1],0,3) 
-    nz = (I_lowq_s>0)
-    p_lowq = np.polyfit(lowq_s[nz],np.log(I_lowq_s[nz]),2)
-    low_q_logcurv = p_lowq[0]
-    Imax_over_Ilowq = float(Imax)/I_lowq_mean
-    Imax_over_Ihighq = float(Imax)/I_highq_mean
-    Ilowq_over_Ihighq = I_lowq_mean/I_highq_mean
-
-    # Flagging bad data: 
-    # Data with high noise are bad.
-    # Data that are totally flat or increasing in q are bad.
-    bad_data_flag = ( (fluctuation_strength > 20 and Imax_over_Imean_local < 2)
-                    or low_q_ratio/high_q_ratio < 1
-                    or Ilowq_over_Ihighq < 10 )
-
-    form_id = None 
-    structure_id = None 
-    if bad_data_flag:
-        form_flag = False
-        precursor_flag = False
-        structure_flag = False
-    else:
-        # Flagging form factor:
-        # Intensity should be quite decreasing in q.
-        # Low-q region should be quite flat.
-        # Low-q mean intensity should be much larger than low-q fluctuations.
-        form_flag = low_q_ratio/high_q_ratio > 10 
-        if form_flag:
-            # TODO: determine form factor here
-            #form_id = 'sphere'
-            form_id = 'NOT_IMPLEMENTED'
- 
-        # Flagging precursors: 
-        # Intensity should decrease in q, at least mildly.
-        # Intensity should decrease more sharply at high q.
-        # Low-q region of spectrum should be quite flat.
-        # Noise levels may be high if only precursors are present.
-        # More high-q intensity than form factor alone.
-        nz_bins = np.invert(np.array((bin_strengths==0)))
-        s_nz = bin_strengths[nz_bins]
-        precursor_flag = ( low_q_ratio/high_q_ratio > 2 
-                        and high_q_ratio > 1E-3 
-                        #and np.argmin(s_nz) == np.sum(nz_bins)-1 
-                        #and (s_nz[-2]-s_nz[-1]) > (s_nz[-3]-s_nz[-2]) 
-                        and Imax_over_Ilowq < 4 )
-
-        # Flagging structure:
-        # Structure is likely to cause max intensity to be outside the low-q region. 
-        # Maximum intensity should be large relative to its 'local' mean intensity. 
-        structure_flag = Imax_over_Imean_local > 2 and q_Imax > 0.06 
-        if structure_flag:
-            # TODO: determine structure factor here
-            structure_id = 'NOT_IMPLEMENTED'
-    d_r = OrderedDict() 
-    d_r['bad_data_flag'] = bad_data_flag
-    d_r['precursor_flag'] = precursor_flag
-    d_r['form_flag'] = form_flag
-    d_r['structure_flag'] = structure_flag
-    d_r['structure_id'] = structure_id 
-    d_r['form_id'] = form_id 
-    d_r['low_q_logcurv'] = low_q_logcurv
+    d_r['q_Imax'] = q_Imax
     d_r['Imax_over_Imean'] = Imax_over_Imean
-    d_r['Imax_over_Imean_local'] = Imax_over_Imean_local
     d_r['Imax_over_Ilowq'] = Imax_over_Ilowq 
     d_r['Imax_over_Ihighq'] = Imax_over_Ihighq 
-    d_r['Ilowq_over_Ihighq'] = Ilowq_over_Ihighq 
-    d_r['low_q_logratio'] = low_q_logratio 
-    d_r['high_q_logratio'] = high_q_logratio 
+    d_r['Imax_sharpness'] = Imax_sharpness
     d_r['low_q_ratio'] = low_q_ratio 
     d_r['high_q_ratio'] = high_q_ratio 
-    d_r['high_freq_ratio'] = high_freq_ratio 
-    d_r['fluctuation_strength'] = fluctuation_strength
-    d_r['q_Imax'] = q_Imax
-    d_r['bin_strengths'] = bin_strengths
-    #d_r['q_logcorr'] = q_logcorr
-    #d_r['qsquared_logcorr'] = qsquared_logcorr
-    #d_r['cos2q_logcorr'] = cos2q_logcorr
-    #d_r['cosq_logcorr'] = cosq_logcorr
-    #d_r['invq_logcorr'] = invq_logcorr
-    #d_r['q_corr'] = q_corr
-    #d_r['qsquared_corr'] = qsquared_corr
-    #d_r['cos2q_corr'] = cos2q_corr
-    #d_r['cosq_corr'] = cosq_corr
-    #d_r['invq_corr'] = invq_corr
+    d_r['log_fluctuation'] = log_fluctuation 
+    d_r['q_bin_edges'] = q_bin_edges
+    d_r['q_bin_strengths'] = q_bin_strengths
     return d_r
 
-def parameterize_spectrum(q,I,metrics,fixed_params={}):
+def parameterize_spectrum(q,I,flags,fixed_params={}):
     """
     Determine a parameterization for a scattering equation,
     beginning with the measured spectrum (q,I) 
-    and a dict of features (metrics),
-    which is intended to be 
-    the output dict of profile_spectrum().
+    and a dict of population flags. 
+    Returns a dict containing the input population flags
+    along with initial guesses for the scattering equation parameters
+    corresponding to the flagged populations.
     """
-    if metrics['bad_data_flag']:
-        # stop
-        return metrics 
     fix_keys = fixed_params.keys()
-
-    pre_flag = metrics['precursor_flag']
-    f_flag = metrics['form_flag']
-    s_flag = metrics['structure_flag']
-
-    # Check for overconstrained system
-    #if 'I_at_0' in fix_keys and 'I0_form' in fix_keys and 'I0_pre' in fix_keys:
-    #    val1 = fixed_params['I_at_0']
-    #    val2 = fixed_params['I0_form'] + fixed_params['I0_pre'] 
-    #    if not val1 == val2:
-    #        msg = str('Spectrum intensity is overconstrained. '
-    #        + 'I_at_0 is constrained to {}, '
-    #        + 'but I0_form + I0_pre = {}. '.format(val1,val2))
-    #        raise ValueError(msg)
-    
-    #if 'I0_form' in fix_keys and 'I0_pre' in fix_keys:
-    #    I_at_0 = fixed_params['I0_pre'] + fixed_params['I0_form']
-    #else:
-    # Perform a low-q spectrum fit to get I(q=0).
-    if s_flag:
-        # If structure factor scattering,
-        # expect low-q SNR to be high, use q<0.06,
-        # fit to second order.
-        idx_lowq = (q<0.06)
-        I_at_0 = fit_I0(q[idx_lowq],I[idx_lowq],2)
-        metrics['I_at_0'] = I_at_0
-        #
-        #
-        # And now bail, until structure factor parameterization is in.
-        #
-        #
-        metrics['ERROR_MESSAGE'] = '[{}] structure factor parameterization not yet supported'.format(__name__)
-        return metrics
-    elif f_flag:
-        # If form factor scattering, fit 3rd order, use q<0.06. 
-        idx_lowq = (q<0.06)
-        #I_at_0 = fit_I0(q[idx_lowq],I[idx_lowq],3)
-        # Disregard lowest-q values if they are far from the mean, 
-        # as these points are likely dominated by experimental error.
-        Imean_lowq = np.mean(I[idx_lowq])
-        Istd_lowq = np.std(I[idx_lowq])
-        idx_good = ((I[idx_lowq] < Imean_lowq+Istd_lowq) & (I[idx_lowq] > Imean_lowq-Istd_lowq))
-        #dI_lowq = (I[idx_lowq][1:] - I[idx_lowq][:-1])/Imed_lowq
-        #idx_good = np.hstack( ( (abs(dI_lowq)<0.1) , np.array([True]) ) )
-        I_at_0 = fit_I0(q[idx_lowq][idx_good],I[idx_lowq][idx_good],3)
+    d = OrderedDict()
+    d.update(flags)
+    if flags['bad_data']:
+        # stop
+        return d 
     else:
-        # If only precursor scattering, fit second order for q<0.2 
-        idx_lowq = (q<0.2)
-        I_at_0 = fit_I0(q[idx_lowq],I[idx_lowq],2)
-    #if I_at_0 > 10*I[0] or I_at_0 < 0.1*I[0]:
-    #    # stop 
-    #    msg = 'polynomial fit for I(q=0) deviates too far from low-q values' 
-    #    metrics['ERROR_MESSAGE'] = msg
-    #    metrics['I_at_0'] = I_at_0
-    #    metrics['bad_data_flag'] = True 
-    #    return metrics
-    metrics['I_at_0'] = I_at_0
+        # Get a number for I(q=0)
+        if flags['form_factor_scattering']:
+            # If form factor scattering, fit 3rd order, use q<0.06. 
+            idx_lowq = (q<0.06)
+            # Disregard lowest-q values if they are far from the mean, 
+            # as these points are likely dominated by experimental error.
+            Imean_lowq = np.mean(I[idx_lowq])
+            Istd_lowq = np.std(I[idx_lowq])
+            idx_good = ((I[idx_lowq] < Imean_lowq+Istd_lowq) & (I[idx_lowq] > Imean_lowq-Istd_lowq))
+            I_at_0 = fit_I0(q[idx_lowq][idx_good],I[idx_lowq][idx_good],3)
+        elif flags['diffraction_peaks']:
+            # If diffraction without form factor scattering, 
+            # fit 2nd order, use q<0.06. 
+            idx_lowq = (q<0.06)
+            I_at_0 = fit_I0(q[idx_lowq],I[idx_lowq],3)
+        elif flags['precursor_scattering']:
+            # If only precursor scattering, fit third order for entire q-range 
+            I_at_0 = fit_I0(q,I,3)
+        d['I_at_0'] = I_at_0
 
-    r0_form = None
-    sigma_form = None
-    if f_flag:
-        if ('r0_form' in fix_keys and 'sigma_form' in fix_keys):
-            r0_form = fixed_params['r0_form']
-            sigma_form = fixed_params['sigma_form']
-        else:
-            # get at least one of r0_form or sigma_form from spherical_normal_heuristics()
-            r0_form, sigma_form = spherical_normal_heuristics(q,I,I_at_0=I_at_0)
-            if 'r0_form' in fix_keys:
-                r0_form = fixed_params['r0_form']
-            if 'sigma_form' in fix_keys:
-                sigma_form = fixed_params['sigma_form']
-    metrics['r0_form'] = r0_form
-    metrics['sigma_form'] = sigma_form
+    if flags['diffraction_peaks']:
+        d['ERROR_MESSAGE']='diffraction peak parameterization not yet supported'
+        return d
+
+    if flags['form_factor_scattering']:
+        # TODO: insert cases for non-spherical form factors
+        if flags['form_factor_id'] == 'sphere':
+            if ('r0_sphere' in fix_keys and 'sigma_sphere' in fix_keys):
+                r0_sphere = fixed_params['r0_sphere']
+                sigma_sphere = fixed_params['sigma_sphere']
+            else:
+                # get at least one of r0_sphere or sigma_sphere from spherical_normal_heuristics()
+                r0_sphere, sigma_sphere = spherical_normal_heuristics(q,I,I_at_0=I_at_0)
+                if 'r0_sphere' in fix_keys:
+                    r0_sphere = fixed_params['r0_sphere']
+                if 'sigma_sphere' in fix_keys:
+                    sigma_sphere = fixed_params['sigma_sphere']
+            d['r0_sphere'] = r0_sphere
+            d['sigma_sphere'] = sigma_sphere
     
-    r0_pre = None
-    if pre_flag:
-        if 'r0_pre' in fix_keys:
-            r0_pre = fixed_params['r0_pre']
+    if flags['precursor_scattering']: 
+        if 'r0_precursor' in fix_keys:
+            r0_pre = fixed_params['r0_precursor']
         else:
+            # TODO: This should employ a Guinier-Porod or similar fit
+            # TODO: This approach will have to change,
+            # depending on what other populations are flagged. 
             r0_pre = precursor_heuristics(q,I,I_at_0=I_at_0)
-    metrics['r0_pre'] = r0_pre 
+        d['r0_precursor'] = r0_pre 
 
-    # use guessed features to do a quick fit on intensity prefactors
-    # (currently only good for form and precursor flags)
-    # always include a "floor" term
-    #I0_floor = 0
     I_floor = np.ones(len(q))
     # include other terms conditionally
-    I0_pre = None
-    if pre_flag:
+    if flags['precursor_scattering']: 
+        # TODO: This should be a Guinier-Porod or similar fit
         I_pre = compute_spherical_normal_saxs(q,r0_pre,0)
-    I0_form = None
-    if f_flag:
-        I_form = compute_spherical_normal_saxs(q,r0_form,sigma_form)
-    I0_structure = None
-    #if structure_flag:
+    if flags['form_factor_scattering']:
+        if flags['form_factor_id'] == 'sphere':
+            I_form = compute_spherical_normal_saxs(q,r0_sphere,sigma_sphere)
+    #if flags['diffraction_peaks']:
     #   I_structure = .....
 
-    #if pre_flag and form_flag and structure_flag:
-    #   Ifunc = lambda x: x[0]*I_floor + x[1]*I_pre + x[2]*I_form + x[3]*I_structure
-    if pre_flag and f_flag:
+    # depending on flagged populations, set up an objective function
+    # with the intensity prefactors as inputs
+    if flags['precursor_scattering'] and flags['form_factor_scattering']:
         x_init = [I_at_0,0.0,0.0]
         x_bounds = [(0.0,None),(0.0,None),(0.0,None)]
         Ifunc = lambda x: x[0]*I_floor + x[1]*I_pre + x[2]*I_form 
-    elif pre_flag:
+    elif flags['precursor_scattering']:
         x_init = [I_at_0,0.0]
         x_bounds = [(0.0,None),(0.0,None)]
         Ifunc = lambda x: x[0]*I_floor + x[1]*I_pre 
-    elif f_flag:
+    elif flags['form_factor_scattering']:
         x_init = [I_at_0,0.0]
         x_bounds = [(0.0,None),(0.0,None)]
         Ifunc = lambda x: x[0]*I_floor + x[1]*I_form 
-    if any([pre_flag,f_flag]):
+    # Run the optimization of intensity prefactors
+    if flags['precursor_scattering'] or flags['form_factor_scattering']:
         I_nz = np.invert((I<=0))
         I_error = lambda x: np.sum( (np.log(Ifunc(x))[I_nz] - np.log(I[I_nz]))**2 )
         res = scipimin(I_error,x_init,bounds=x_bounds,
         constraints=[{'type':'eq','fun':lambda x:np.sum(x)-I_at_0}]) 
         x_res = res.x
-    I0_floor = x_res[0]
-    if pre_flag and f_flag:
-        I0_pre = x_res[1] 
-        I0_form = x_res[2]
-    elif pre_flag:
-        I0_pre = x_res[1]
-    elif f_flag:
-        I0_form = x_res[1]
-    #if pre_flag and f_flag:
-    #    if 'I0_pre' in fix_keys and 'I0_form' in fix_keys:
-    #        I0_pre = fixed_params['I0_pre']
-    #        I0_form = fixed_params['I0_form']
-    #    elif 'I0_pre' in fix_keys:
-    #        I0_pre = fixed_params['I0_pre']
-    #        I0_form = I_at_0 - I0_pre
-    #    elif 'I0_form' in fix_keys:
-    #        I0_form = fixed_params['I0_form']
-    #        I0_pre = I_at_0 - I0_form
-    #    else:
-    #        I_pre = compute_spherical_normal_saxs(q,r0_pre,0)
-    #        I_form = compute_spherical_normal_saxs(q,r0_form,sigma_form)
-    #        I_nz = np.invert((I<=0))
-    #        I_error = lambda x: np.sum( (np.log(I_at_0*(x*I_pre+(1.-x)*I_form)[I_nz])-np.log(I[I_nz]))**2 )
-    #        x_res = scipimin(I_error,[0.1],bounds=[(0.0,1.0)]) 
-    #        x_fit = x_res.x[0]
-    #        I0_form = (1.-x_fit)*I_at_0
-    #        I0_pre = x_fit*I_at_0
-    #elif pre_flag:
-    #    if 'I0_pre' in fix_keys:
-    #        I0_pre = fixed_params['I0_pre']
-    #    else:
-    #        I0_pre = I_at_0 
-    #elif f_flag:
-    #    if 'I0_form' in fix_keys:
-    #        I0_form = fixed_params['I0_form'] 
-    #    else:
-    #        I0_form = I_at_0 
-    metrics['I0_floor'] = I0_floor 
-    metrics['I0_pre'] = I0_pre 
-    metrics['I0_form'] = I0_form 
+        I0_floor = x_res[0]
+        if pre_flag and f_flag:
+            I0_pre = x_res[1] 
+            I0_sphere = x_res[2]
+            d['I0_precursor'] = I0_pre 
+            d['I0_sphere'] = I0_sphere 
+        elif pre_flag:
+            I0_pre = x_res[1]
+            d['I0_precursor'] = I0_pre 
+        elif f_flag:
+            I0_form = x_res[1]
+            d['I0_sphere'] = I0_form 
+        d['I0_floor'] = I0_floor 
 
-    # boiler plate for structure factor processing
-    q0_structure = None
-    I0_structure = None
-    sigma_structure = None
-    #if s_flag:
-    #   .....   
-    metrics['q0_structure'] = q0_structure 
-    metrics['I0_structure'] = I0_structure 
-    metrics['sigma_structure'] = sigma_structure
+    #TODO: add parameters for diffraction peaks
 
-    I_guess = compute_saxs(q,metrics)
+    I_guess = compute_saxs(q,d)
     q_I_guess = np.array([q,I_guess]).T
     nz = ((I>0)&(I_guess>0))
     logI_nz = np.log(I[nz])
@@ -435,18 +258,18 @@ def parameterize_spectrum(q,I,metrics,fixed_params={}):
     Istd = np.std(logI_nz)
     logI_nz_s = (logI_nz - Imean) / Istd
     logIguess_nz_s = (logIguess_nz - Imean) / Istd
-    metrics['R2log_guess'] = compute_Rsquared(logI_nz,logIguess_nz)
-    metrics['chi2log_guess'] = compute_chi2(logI_nz_s,logIguess_nz_s)
-    return metrics
+    d['R2log_guess'] = compute_Rsquared(logI_nz,logIguess_nz)
+    d['chi2log_guess'] = compute_chi2(logI_nz_s,logIguess_nz_s)
+    return d
 
-def fit_spectrum(q,I,objfun,features,x_keys,constraints=[]):
+def fit_spectrum(q,I,objfun,flags,params,x_keys,constraints=[]):
     """
     Fit a saxs spectrum (I(q) vs q) to the theoretical spectrum 
     for one or several scattering populations.
     Input objfun (string) specifies objective function to use in optimization.
-    Input features (dict) describes spectrum and scatterer populations.
-    Input x_keys (list of strings) are the keys of variables that will be optimized.
-    Every item in x_keys should be a key in the features dict.
+    Inputs flags (dict) and params (dict) describe flagged scatterer populations
+    and corresponding parameters for the scattering equation.
+    Input x_keys (list of strings) indicate the parameters that will be optimized. 
     Input constraints (list of strings) to specify constraints.
     
     Supported objective functions: 
@@ -461,27 +284,28 @@ def fit_spectrum(q,I,objfun,features,x_keys,constraints=[]):
     (9) 'low_q_pearson_log': pearson correlation between logarithms of measured and modeled spectra. 
 
     Supported constraints: 
-    (1) 'fix_I0': keeps I(q=0) fixed while fitting x_keys.
+    (1) 'fix_I0': keeps I(q=0) fixed to the value specified in the input params.
 
     TODO: document the objective functions, etc.
     """
-    pre_flag = features['precursor_flag']
-    form_flag = features['form_flag']
-    structure_flag = features['structure_flag']
+    pre_flag = flags['precursor_scattering']
+    form_flag = flags['form_factor_scattering']
+    structure_flag = flags['diffraction_peaks']
 
+    x_keys = copy.deepcopy(x_keys)
     # trim non-flagged populations out of x_keys
     if not pre_flag:
         if 'I0_pre' in x_keys:
-            x_keys.pop(x_keys.index('I0_pre')) 
+            x_keys.pop(x_keys.index('I0_precursor')) 
         if 'r0_pre' in x_keys:
-            x_keys.pop(x_keys.index('r0_pre')) 
+            x_keys.pop(x_keys.index('r0_precursor')) 
     if not form_flag:
         if 'I0_form' in x_keys:
-            x_keys.pop(x_keys.index('I0_form')) 
+            x_keys.pop(x_keys.index('I0_sphere')) 
         if 'r0_form' in x_keys:
-            x_keys.pop(x_keys.index('r0_form')) 
+            x_keys.pop(x_keys.index('r0_sphere')) 
         if 'sigma_form' in x_keys:
-            x_keys.pop(x_keys.index('sigma_form')) 
+            x_keys.pop(x_keys.index('sigma_sphere')) 
     if not structure_flag:
         if 'I0_structure' in x_keys:
             x_keys.pop(x_keys.index('I0_structure')) 
@@ -497,8 +321,8 @@ def fit_spectrum(q,I,objfun,features,x_keys,constraints=[]):
             I_keys.append('I0_pre')
         if 'I0_form' in x_keys:
             I_keys.append('I0_form')
-        if 'I0_structure' in x_keys:
-            I_keys.append('I0_structure')
+        #if 'I0_structure' in x_keys:
+        #    I_keys.append('I0_structure')
         if len(I_keys) == 0:
             # constraint inherently satisfied: do nothing.
             pass
@@ -520,20 +344,17 @@ def fit_spectrum(q,I,objfun,features,x_keys,constraints=[]):
     x_init = [] 
     x_bounds = [] 
     for k in x_keys:
-        # features.keys() may not include k,
-        # e.g. if the relevant population was not flagged.
-        if k in features.keys():
-            x_init.append(features[k])
-            if k in ['r0_pre','r0_form']:
-                x_bounds.append((1E-3,None))
-            elif k in ['I0_pre','I0_form']:
-                x_bounds.append((0,None))
-            elif k in ['sigma_form']:
-                x_bounds.append((0.0,0.3))
+        x_init.append(features[k])
+        if k in ['r0_precursor','r0_sphere']:
+            x_bounds.append((1E-3,None))
+        elif k in ['I0_precursor','I0_sphere']:
+            x_bounds.append((0,None))
+        elif k in ['sigma_sphere']:
+            x_bounds.append((0.0,0.5))
 
-    # Only proceed if there is still work to do.
     d_opt = OrderedDict()
     x_opt = []
+    # Only proceed if there is still work to do.
     if any(x_init):
         saxs_fun = lambda q,x,d: compute_saxs_with_substitutions(q,d,x_keys,x)
         I_nz = (I>0)
@@ -618,18 +439,15 @@ def precursor_heuristics(q,I,I_at_0=None):
     that would produce the input q, I(q).
     Result is bounded between 0 and 10 Angstroms.
     """
+    # TODO: This should employ a Guinier-Porod or similar fit.
     n_q = len(q)
     # optimize the log pearson correlation in the upper half of the q domain
-    # TODO: This would be a good place for a unified fit instead.
     nz = (I[n_q/2:]>0)
     fit_obj = lambda r: -1*compute_pearson(np.log(compute_spherical_normal_saxs(q[n_q/2:],r,0)[nz]),np.log(I[n_q/2:][nz]))
     #res = scipimin(fit_ojb,[0.1],bounds=[(0,0.3)]) 
     res = scipimin(fit_obj,[5],bounds=[(0,10)])
     r_opt = res.x[0]
     return r_opt
-    # Assume the first dip of the precursor form factor occurs around the max of our q range.
-    # First dip = qmax*r_pre ~ 4.5
-    #r0_pre = 4.5/q[-1] 
 
 def spherical_normal_heuristics(q,I,I_at_0=None):
     """
@@ -789,11 +607,10 @@ def saxs_Iq4_metrics(q,I):
     return d
 
 def compute_saxs_with_substitutions(q,d,x_keys,x_vals):
-    d_sub = d.copy()
+    d_sub = copy.deepcopy(d)
     for k,v in zip(x_keys,x_vals):
-        d_sub[k] = v
+        d_sub[k] = copy(v)
     return compute_saxs(q,d_sub)
-
 
 def compute_chi2(y1,y2,weights=None):
     """
@@ -889,6 +706,7 @@ def spherical_normal_heuristics_setup():
     qr0_focus = []
     # TODO: generate heuristics on a 1-d grid of sigma/r
     # instead of the 2-d grid being used here now.
+    # Document proof that a 1-d grid is sufficient.
     r0_vals = np.arange(10,41,10,dtype=float)              #Angstrom
     for ir,r0 in zip(range(len(r0_vals)),r0_vals):
         q = np.arange(0.001/r0,float(10)/r0,0.001/r0)       #1/Angstrom
@@ -923,39 +741,4 @@ def spherical_normal_heuristics_setup():
         plt.figure(4)
         plt.scatter(width_metric,intensity_metric) 
         plt.show()
-
-def local_maxima_detector(y):
-    """ 
-    Finds local maxima in ordered data y.
-
-    :param y: 1d numpy float array
-    :return maxima: 1d numpy bool array
-
-    *maxima* is *True* at a local maximum, *False* otherwise.
-
-    This function makes no attempt to reject spurious maxima of any sort.
-    """
-    length = y.size
-    greater_than_follower = np.zeros(length, dtype=bool)
-    greater_than_leader = np.zeros(length, dtype=bool)
-    greater_than_follower[:-1] = np.greater(y[:-1], y[1:])
-    greater_than_leader[1:] = np.greater(y[1:], y[:-1])
-    maxima = np.logical_and(greater_than_follower, greater_than_leader)
-    # End points
-    maxima[0] = greater_than_follower[0]
-    maxima[-1] = greater_than_leader[-1]
-    return maxima
-
-def local_minima_detector(y):
-    """
-    Finds local minima in ordered data *y*.
-
-    :param y: 1d numpy float array
-    :return minima: 1d numpy bool array
-
-    *minima* is *True* at a local minimum, *False* otherwise.
-
-    This function makes no attempt to reject spurious minima of any sort.
-    """
-    return local_maxima_detector(-y)
 

@@ -15,10 +15,7 @@ class CheckDataSet(Operation):
         self.input_doc['dsid'] = 'The data set to be queried.'
         self.output_doc['ok_flag'] = 'Indicator of whether or not the data set passes the test.'
         self.output_doc['status'] = 'Message describing the state of the data set.'
-        self.input_src['client'] = opmod.plugin_input
-        self.input_src['dsid'] = opmod.text_input
-        self.input_type['client'] = opmod.ref_type
-        self.input_type['dsid'] = opmod.int_type
+        self.input_type['client'] = opmod.plugin_item
 
     def run(self):
         c = self.inputs['client']

@@ -186,11 +186,17 @@ class PawsAPI(object):
         wf = self.get_wf(wfname)
         wf.remove_item(op_tag)
 
-    def connect_wf_input(self,wf_input_name,input_uri,wfname=None):
+    def add_wf_input(self,wf_input_name,input_uri,wfname=None):
         self.get_wf(wfname).connect_wf_input(wf_input_name,input_uri) 
 
-    def connect_wf_output(self,wf_output_name,output_uri,wfname=None):
+    def add_wf_output(self,wf_output_name,output_uri,wfname=None):
         self.get_wf(wfname).connect_wf_output(wf_output_name,output_uri) 
+
+    def remove_wf_input(self,wf_input_name,wfname=None):
+        self.get_wf(wfname).break_wf_input(wf_input_name) 
+
+    def remove_wf_output(self,wf_output_name,wfname=None):
+        self.get_wf(wfname).break_wf_output(wf_output_name) 
 
     def set_input(self,opname,input_name,val=None,tp=None,wfname=None):
         if wfname is None:

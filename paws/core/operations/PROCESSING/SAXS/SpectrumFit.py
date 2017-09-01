@@ -33,62 +33,43 @@ class SpectrumFit(Operation):
     """
 
     def __init__(self):
-        input_names = ['q','I','features','fit_params','objfun']
-        output_names = ['features','q_I_opt']
+        input_names = ['q','I','flags','parameters','fit_params','objfun']
+        output_names = ['parameters','q_I_opt']
         super(SpectrumFit, self).__init__(input_names, output_names)
-
         self.input_doc['q'] = '1d array of wave vector values in 1/Angstrom units'
         self.input_doc['I'] = '1d array of intensity values I(q)'
-        self.input_doc['features'] = str('dict of features describing the input spectrum and scatterer populations. '
-        + 'Keys of this dict are the same as the SpectrumParameterization.outputs.features dict.')
-        self.input_doc['fit_params'] = str('List of strings indicating which parameters to optimize. '
-        + 'Each of these strings should also be a key of the input features dict.')
-        self.input_doc['objfun'] = str('String indicating choice of objective function for optimization. '
-        + 'See documentation of saxstools.fit_spectrum() for supported objective functions.')
-        #self.input_doc['constraints'] = str('List of strings indicating optimization constraints. '
-        #+ 'See documentation of saxstools.fit_saxs() for supported constraints.')
-
-        self.output_doc['features'] = str('dict of features copied from inputs, '
-        + 'with entries optimized for all keys specified in fit_params. '
-        + 'Adds the following keys: \n' 
-        + 'R2log_fit: Coefficient of determination between the measured and optimized spectra. ' 
-        + 'chi2log_fit: Sum of difference squared between standardized logarithms '
-        + 'of measured and optimized spectra. Standardized by the measured spectrum. ') 
-        self.output_doc['q_I_opt'] = str('n-by-2 array of q and the theoretical intensity spectrum, '
-        + 'normalized so that I(q=0) is near 1.') 
-
-        self.input_src['q'] = opmod.wf_input
-        self.input_src['I'] = opmod.wf_input
-        self.input_src['objfun'] = opmod.text_input
-        self.input_src['fit_params'] = opmod.text_input
-        self.input_src['features'] = opmod.wf_input
-        self.input_type['q'] = opmod.ref_type
-        self.input_type['I'] = opmod.ref_type
-        self.input_type['objfun'] = opmod.str_type
-        self.input_type['fit_params'] = opmod.str_type
-        self.input_type['features'] = opmod.ref_type
-        # TODO: establish a good default here.
+        self.input_doc['flags'] = 'dict of flags indicating what populations to fit'
+        self.input_doc['parameters'] = 'dict of initial values for the scattering equation parametersi '\
+            'for each of the populations specified in the input flags'
+        self.input_doc['fit_params'] = 'list of strings (keys) indicating which parameters to optimize'
+        self.input_doc['objfun'] = 'string indicating objective function for optimization: '\
+        + 'see documentation of saxstools.fit_spectrum() for supported objective functions'
+        self.output_doc['parameters'] = 'dict of scattering equation parameters copied from inputs, '\
+        'with values optimized for all keys specified in fit_params'
+        self.output_doc['q_I_opt'] = 'n-by-2 array of q and the optimized computed intensity spectrum'
+        self.input_type['q'] = opmod.workflow_item
+        self.input_type['I'] = opmod.workflow_item
+        self.input_type['flags'] = opmod.workflow_item
+        self.input_type['parameters'] = opmod.workflow_item
         self.inputs['objfun'] = 'chi2log' 
 
     def run(self):
-        f = copy.deepcopy(self.inputs['features'])
-        if not any([f['precursor_flag'],f['form_flag'],f['structure_flag']]):
-            self.outputs['features'] = f
+        f = self.inputs['flags']
+        p_opt = OrderedDict() 
+        if f['bad_data'] or not any([f['precursor_scattering'],f['form_factor_scattering'],f['diffraction_peaks']]):
+            self.outputs['parameters'] = p_opt 
             return
-        if f['bad_data_flag']: 
-            self.outputs['features'] = f
-            return
-        if f['structure_flag']:
-            f['ERROR_MESSAGE'] = '[{}] structure factor fitting not yet supported'.format(__name__)
-            self.outputs['features'] = f
+        if f['diffraction_peaks']:
+            p_opt['ERROR_MESSAGE'] = 'diffraction peak fitting not yet supported'
+            self.outputs['parameters'] = p_opt 
             return
         q, I = self.inputs['q'], self.inputs['I']
         m = self.inputs['objfun']
-        p = self.inputs['fit_params']
+        p = self.inputs['parameters']
 
         # Set up constraints as needed
         c = []
-        if f['form_flag'] or f['structure_flag']:
+        if f['form_factor_scattering'] or f['diffraction_peaks']:
             c = ['fix_I0']
 
         # Fitting happens here

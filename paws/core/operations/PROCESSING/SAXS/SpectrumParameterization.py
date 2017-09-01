@@ -17,11 +17,12 @@ class SpectrumParameterization(Operation):
     This operation uses a SAXS spectrum (I(q) vs. q), 
     along with some profiling information,
     to guess a set of parameters
-    for fitting the SAXS spectrum
+    for fitting a SAXS spectrum
     to theoretical scattering models. 
     TODO: document scattering models.
 
     A precursor is modeled by a dilute, monodisperse spherical form factor.
+    TODO: Implement Guinier-Porod.
     A spherical nanoparticle population is modeled by
     a discrete sum over a probability distribution
     of dilute, monodisperse spherical form factors. 

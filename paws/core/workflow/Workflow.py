@@ -71,6 +71,7 @@ class Workflow(TreeModel):
 
     def execute(self):
         stk,diag = self.execution_stack()
+        #self.write_log('beginning execution. execution stack: \n'+optools.print_stack(stk))
         for lst in stk:
             self.write_log('running: {}'.format(lst))
             for op_tag in lst: 
@@ -113,14 +114,17 @@ class Workflow(TreeModel):
     def n_ops(self):
         return self.n_children()
 
-    def break_wf_input(self,wf_input_name):
-        self.inputs.pop(wf_input_name)
-    
     def connect_wf_input(self,wf_input_name,op_input_uri):
         self.inputs[wf_input_name] = op_input_uri
 
     def connect_wf_output(self,wf_output_name,op_output_uri):
         self.outputs[wf_output_name] = op_output_uri
+
+    def break_wf_input(self,wf_input_name):
+        self.inputs.pop(wf_input_name)
+    
+    def break_wf_output(self,wf_output_name):
+        self.outputs.pop(wf_output_name)
 
     def wf_outputs_dict(self):
         d = OrderedDict()
@@ -241,15 +245,14 @@ class Workflow(TreeModel):
                     sz += 1
         return sz
 
-    def is_op_ready(self,op_tag,valid_wf_inputs,batch_routes=[]):
+    def is_op_ready(self,op_tag,valid_wf_inputs):
         op = self.get_data_from_uri(op_tag)
         inputs_rdy = []
         diagnostics = {} 
         for name,il in op.input_locator.items():
             msg = ''
             if (il.tp == opmod.workflow_item 
-            and not il.val in valid_wf_inputs
-            and il.val is not None): 
+            and not il.val in valid_wf_inputs): 
                 inp_rdy = False
                 msg = str('Operation input {}.inputs.{} (={}) '.format(op_tag,name,il.val)
                 + 'not found in valid Workflow input list: {}'.format(valid_wf_inputs)

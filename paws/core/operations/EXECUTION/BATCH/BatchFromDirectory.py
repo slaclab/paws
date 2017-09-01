@@ -41,60 +41,12 @@ class BatchFromDirectory(Operation):
         for i,filename in zip(range(n_batch),batch_list):
             inp_dict = OrderedDict() 
             inp_dict[inpname] = filename
-            #import pdb; pdb.set_trace()
             wf.set_wf_input(inpname,filename)
             wf.write_log('BATCH RUN {} / {}'.format(i+1,n_batch))
             wf.execute()
-            #stk,diag = wf.execution_stack()
-            #for lst in stk:
-            #    wf.write_log('batch {}/{}: running {}'.format(i,n_batch,op_list))
-            #    for op_tag in lst: 
-            #        op = self.workflows[wfname].get_data_from_uri(op_tag) 
-            #        optools.load_inputs(op,wf.wf_manager,wf.wf_manager.plugin_manager)
-            #    self.workflows[wfname].execute(op_list)
             input_dict_list.append(inp_dict)
             output_dict_list.append(wf.wf_outputs_dict())
         wf.write_log('BATCH FINISHED')
         self.outputs['batch_inputs'] = input_dict_list
         self.outputs['batch_outputs'] = output_dict_list 
-
-    def input_list(self):
-        return self.outputs['batch_inputs']
-
-    def output_list(self):
-        return self.outputs['batch_outputs']
-
-    def input_routes(self):
-        """Provide the input route- a list is expected"""
-        #return [self.input_locator['input_route'].val]
-        if isinstance(self.inputs['input_route'],list):
-            return self.inputs['input_route']
-        else:
-            return [self.inputs['input_route']]
-
-    def batch_ops(self):
-        """Provide a list of uri's of ops to be included in batch execution"""
-        if isinstance(self.inputs['batch_ops'],list):
-            return self.inputs['batch_ops']
-        else:
-            return [self.inputs['batch_ops']]
-
-    def saved_items(self):
-        """List uris to be saved/stored after execution"""
-        if isinstance(self.inputs['saved_items'],list):
-            return self.inputs['saved_items']
-        else:
-            return [self.inputs['saved_items']]
-
-    def batch_outputs_tag(self):
-        return 'batch_outputs'
-
-    def set_batch_ops(self,wf=None):
-        self.inputs['batch_ops'] = optools.locate_input(self.input_locator['batch_ops'],wf)
-
-    def set_input_routes(self,wf=None):
-        self.inputs['input_route'] = optools.locate_input(self.input_locator['input_route'],wf)
-
-
-
 

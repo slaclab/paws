@@ -11,20 +11,17 @@ class BuildListFromBatch(Operation):
     """
 
     def __init__(self):
-        input_names = ['batch_output','data_uri']
+        input_names = ['batch_output','output_key']
         output_names = ['data_list']
         super(BuildListFromBatch,self).__init__(input_names,output_names)        
         self.input_doc['batch_output'] = 'list of dicts produced by a batch execution'
-        self.input_doc['data_uri'] = 'uri for data to be packed into list- must be an item saved in batch_output'
-        self.input_src['batch_output'] = opmod.wf_input
-        self.input_src['data_uri'] = opmod.wf_input
-        self.input_type['batch_output'] = opmod.ref_type
-        self.input_type['data_uri'] = opmod.path_type
+        self.input_doc['output_key'] = 'dict key for batch_output data to be packed into list'
+        self.input_type['batch_output'] = opmod.workflow_item
         self.output_doc['data_list'] = 'list of the data fetched from batch_output using data_uri'
 
     def run(self):
         b_out = self.inputs['batch_output']
-        uri = self.inputs['data_uri']
-        data = [optools.get_uri_from_dict(uri,d) for d in b_out]
-        self.outputs['data_list'] = data 
+        k = self.inputs['output_key']
+        l = [d[k] for d in b_out]
+        self.outputs['data_list'] = l 
 
