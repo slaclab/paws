@@ -111,7 +111,7 @@ def profile_spectrum(q,I):
     log_fluctuation = fluc/logI_max
 
     ### bin-integrated log(intensity) analysis
-    q_bin_edges = np.arange(0.01,1.)
+    q_bin_edges = np.arange(0.01,1.01,0.01)
     q_bin_strengths = np.zeros(q_bin_edges.shape) 
     binfloor = 0
     for binmax in q_bin_edges:
@@ -122,7 +122,7 @@ def profile_spectrum(q,I):
             dqbin = qbin[1:]-qbin[:-1]
             Ibin = (Ii[1:]+Ii[:-1])/2
             q_bin_strengths[i] = np.sum(Ibin * dqi) / I_integral 
-
+        binfloor = binmax
     d_r['q_Imax'] = q_Imax
     d_r['Imax_over_Imean'] = Imax_over_Imean
     d_r['Imax_over_Ilowq'] = Imax_over_Ilowq 
@@ -130,9 +130,9 @@ def profile_spectrum(q,I):
     d_r['Imax_sharpness'] = Imax_sharpness
     d_r['low_q_ratio'] = low_q_ratio 
     d_r['high_q_ratio'] = high_q_ratio 
-    d_r['log_fluctuation'] = log_fluctuation 
     d_r['q_bin_edges'] = q_bin_edges
     d_r['q_bin_strengths'] = q_bin_strengths
+    d_r['log_fluctuation'] = log_fluctuation 
     return d_r
 
 def parameterize_spectrum(q,I,flags,fixed_params={}):
