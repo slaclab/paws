@@ -76,9 +76,9 @@ def profile_spectrum(q,I):
     idxmax = np.argmax(I)
     idxmin = np.argmin(I)
     Imin = I[idxmin]
-    Irange = Imax - Imin
     Imax = I[idxmax] 
     q_Imax = q[idxmax]
+    Irange = Imax - Imin
     # I_max peak shape analysis
     idx_around_max = ((q > 0.9*q_Imax) & (q < 1.1*q_Imax))
     Imean_around_max = np.mean(I[idx_around_max])
@@ -111,29 +111,33 @@ def profile_spectrum(q,I):
     log_fluctuation = fluc/logI_max
 
     ### bin-integrated log(intensity) analysis
-    q_bin_edges = np.arange(0.01,1.01,0.01)
+    nbins = 100
+    qbinmax = float(1.)
+    qbinstep = qbinmax/nbins
+    q_bin_edges = np.arange(qbinstep,qbinmax+qbinstep,qbinstep)
     q_bin_strengths = np.zeros(q_bin_edges.shape) 
     binfloor = 0
-    for binmax in q_bin_edges:
+    for ibin,binmax in zip(range(nbins),q_bin_edges):
         binidx = ((q>=binfloor) & (q<binmax))
         if any(binidx):
             qbin = q[ binidx ]
             Ibin = I[ binidx ]
             dqbin = qbin[1:]-qbin[:-1]
-            Ibin = (Ii[1:]+Ii[:-1])/2
-            q_bin_strengths[i] = np.sum(Ibin * dqi) / I_integral 
+            Ibin = (Ibin[1:]+Ibin[:-1])/2
+            q_bin_strengths[ibin] = np.sum(Ibin * dqbin) / I_integral 
         binfloor = binmax
-    d_r['q_Imax'] = q_Imax
-    d_r['Imax_over_Imean'] = Imax_over_Imean
-    d_r['Imax_over_Ilowq'] = Imax_over_Ilowq 
-    d_r['Imax_over_Ihighq'] = Imax_over_Ihighq 
-    d_r['Imax_sharpness'] = Imax_sharpness
-    d_r['low_q_ratio'] = low_q_ratio 
-    d_r['high_q_ratio'] = high_q_ratio 
-    d_r['q_bin_edges'] = q_bin_edges
-    d_r['q_bin_strengths'] = q_bin_strengths
-    d_r['log_fluctuation'] = log_fluctuation 
-    return d_r
+    d = OrderedDict()
+    d['q_Imax'] = q_Imax
+    d['Imax_over_Imean'] = Imax_over_Imean
+    d['Imax_over_Ilowq'] = Imax_over_Ilowq 
+    d['Imax_over_Ihighq'] = Imax_over_Ihighq 
+    d['Imax_sharpness'] = Imax_sharpness
+    d['low_q_ratio'] = low_q_ratio 
+    d['high_q_ratio'] = high_q_ratio 
+    d['q_bin_edges'] = q_bin_edges
+    d['q_bin_strengths'] = q_bin_strengths
+    d['log_fluctuation'] = log_fluctuation 
+    return d
 
 def parameterize_spectrum(q,I,flags,fixed_params={}):
     """
@@ -234,22 +238,22 @@ def parameterize_spectrum(q,I,flags,fixed_params={}):
         constraints=[{'type':'eq','fun':lambda x:np.sum(x)-I_at_0}]) 
         x_res = res.x
         I0_floor = x_res[0]
-        if pre_flag and f_flag:
+        if flags['precursor_scattering'] and flags['form_factor_scattering']:
             I0_pre = x_res[1] 
             I0_sphere = x_res[2]
             d['I0_precursor'] = I0_pre 
             d['I0_sphere'] = I0_sphere 
-        elif pre_flag:
+        elif flags['precursor_scattering']:
             I0_pre = x_res[1]
             d['I0_precursor'] = I0_pre 
-        elif f_flag:
+        elif flags['form_factor_scattering']:
             I0_form = x_res[1]
             d['I0_sphere'] = I0_form 
         d['I0_floor'] = I0_floor 
 
     #TODO: add parameters for diffraction peaks
 
-    I_guess = compute_saxs(q,d)
+    I_guess = compute_saxs(q,flags,d)
     q_I_guess = np.array([q,I_guess]).T
     nz = ((I>0)&(I_guess>0))
     logI_nz = np.log(I[nz])
