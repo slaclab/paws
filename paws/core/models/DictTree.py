@@ -136,8 +136,8 @@ class DictTree(object):
         Any whitespace or any character in the string.punctuation library
         (other than -, _, or .) results in an invalid uri.
         """
-        if (any(map(lambda s: s in uri,self.space_chars))
-            or any(map(lambda s: s in uri,self.bad_chars))):
+        if not uri or any(map(lambda s: s in uri,self.space_chars))\
+            or any(map(lambda s: s in uri,self.bad_chars)):
             return False 
         return True 
 
@@ -147,7 +147,9 @@ class DictTree(object):
         The conditions for a valid tag are the same as for a valid uri,
         except that a tag should not contain period (.) characters.
         """
-        if '.' in tag:
+        if not tag:
+            return False
+        elif '.' in tag:
             return False 
         else:
             return self.is_uri_valid(tag)
@@ -161,21 +163,20 @@ class DictTree(object):
     def uri_error_message(self,uri):
         """Provide a human-readable error message for bad uris."""
         if not uri:
-            err_msg = 'uri is blank.'
+            return 'error: entry is blank.'
         elif any(map(lambda s: s in uri,self.space_chars)):
-            err_msg = 'uri contains whitespace.'
+            return 'error: \n"{}" contains whitespace.'.format(uri)
         elif any(map(lambda s: s in uri,self.bad_chars)):
-            err_msg = 'uri contains special characters.'
+            return 'error: \n"{}" contains special characters.'.format(uri)
         else:
-            err_msg = 'Unforeseen uri error.'
-        return str('uri error for {}: \n{}\n'.format(uri,err_msg))
+            return 'error: \nunspecified error for "{}".'.format(uri)
 
     def tag_error_message(self,tag):
         """Provide a human-readable error message for bad tags."""
         if '.' in tag:
-            return 'tag error for {}: \ntag contains a period (.)\n'.format(tag)
+            return 'error: \n"{}" contains a period (.)\n'.format(tag)
         else:
-            return self.uri_error(tag)
+            return self.uri_error_message(tag)
 
     def contains_uri(self,uri):
         """Returns whether or not input uri points to an item in this tree."""

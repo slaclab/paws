@@ -91,13 +91,14 @@ class UiManager(QtCore.QObject):
         + self.ui.wf_name_header.styleSheet() )
         self.ui.wf_name_header.setStyleSheet( "QLineEdit { border: none }" 
         + self.ui.wf_name_header.styleSheet() )
+        # workflow name entry size policies
+        self.ui.wf_name_header.setSizePolicy(QtGui.QSizePolicy.Maximum,
+        self.ui.wf_name_header.sizePolicy().verticalPolicy())
         self.ui.wf_name_entry.setSizePolicy(QtGui.QSizePolicy.Minimum,
         self.ui.wf_name_entry.sizePolicy().verticalPolicy())
-        self.ui.wf_name_header.setSizePolicy(QtGui.QSizePolicy.Minimum,
-        self.ui.wf_name_header.sizePolicy().verticalPolicy())
         self.ui.add_workflow_button.setText('Add')
         self.ui.add_workflow_button.clicked.connect( self.add_wf )
-        lm = ListModel(['(select workflow)']+self.paw.list_wf_tags())
+        lm = ListModel(self.paw.list_wf_tags())
         self.ui.wf_selector.setModel(lm)
         self.ui.wf_selector.currentIndexChanged.connect( partial(self.set_wf) )
         self.ui.run_wf_button.setText("&Run")
@@ -120,11 +121,15 @@ class UiManager(QtCore.QObject):
         + self.ui.add_plugin_header.styleSheet() )
         self.ui.add_plugin_header.setStyleSheet( "QLineEdit { border: none }" 
         + self.ui.add_plugin_header.styleSheet() )
-        self.ui.plugin_name_entry.setSizePolicy(QtGui.QSizePolicy.Minimum,
-        self.ui.plugin_name_entry.sizePolicy().verticalPolicy())
-        self.ui.add_plugin_header.setSizePolicy(QtGui.QSizePolicy.Minimum,
+        # plugin name entry size policies
+        self.ui.add_plugin_header.setSizePolicy(QtGui.QSizePolicy.Maximum,
         self.ui.add_plugin_header.sizePolicy().verticalPolicy())
-        pgin_lm = ListModel(['(select plugin)']+pgns.plugin_name_list)
+        self.ui.plugin_name_entry.setSizePolicy(QtGui.QSizePolicy.Maximum,
+        self.ui.plugin_name_entry.sizePolicy().verticalPolicy())
+        self.ui.plugin_selector.setMinimumWidth(160)
+        self.ui.plugin_selector.setSizePolicy(QtGui.QSizePolicy.MinimumExpanding,
+        self.ui.plugin_selector.sizePolicy().verticalPolicy())
+        pgin_lm = ListModel(pgns.plugin_name_list)
         self.ui.plugin_selector.setModel(pgin_lm)
         self.ui.add_plugin_button.setText('Add')
         self.ui.plugin_tree.hideColumn(1)
@@ -142,9 +147,10 @@ class UiManager(QtCore.QObject):
         self.ui.op_info_box.insertPlainText('Operation info: click an Operation above to see its documentation here')
         self.msg_board_log('paws is ready') 
         self.ui.op_tree.setColumnWidth(0,200)
-        self.ui.hsplitter.setStretchFactor(0,2)    
-        self.ui.hsplitter.setStretchFactor(1,3)    
-        self.ui.hsplitter.setStretchFactor(2,1)    
+        # UI splitter sizing
+        self.ui.hsplitter.setStretchFactor(0,3)    
+        self.ui.hsplitter.setStretchFactor(1,5)    
+        self.ui.hsplitter.setStretchFactor(2,2)    
         self.ui.left_vsplitter.setStretchFactor(0,1)    
         self.ui.left_vsplitter.setStretchFactor(1,3)    
         self.ui.left_vsplitter.setStretchFactor(2,3)    
@@ -185,6 +191,7 @@ class UiManager(QtCore.QObject):
                 msg_ui.setWindowTitle("Plugin Name Error")
                 msg_ui.message_box.setPlainText(ex.message)
                 msg_ui.show()
+        self.ui.wf_name_entry.clear()
 
     def add_wf(self):
         """
@@ -205,17 +212,18 @@ class UiManager(QtCore.QObject):
             try:
                 self.paw.add_wf(wfname)
             except pawstools.WfNameError as ex:
-                # Request a different tag 
                 msg_ui = uitools.message_ui(self.ui)
                 msg_ui.setWindowTitle("Workflow Name Error")
                 msg_ui.message_box.setPlainText(ex.message)
                 msg_ui.show()
+                return
             self.ui.wf_selector.model().append_item(wfname)
-            self.ui.wf_selector.setCurrentIndex(self.paw.n_wf())
+            self.ui.wf_selector.setCurrentIndex(self.paw.n_wf()-1)
             # if this is the first workflow loaded, hide the selection flag column.
             if self.paw.n_wf() == 1:
                 self.ui.wf_tree.hideColumn(1)
                 self.ui.wf_tree.setColumnWidth(0,200)
+        self.ui.wf_name_entry.clear()
 
     def display_op_item(self,idx):
         """

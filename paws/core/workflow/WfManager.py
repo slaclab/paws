@@ -63,7 +63,7 @@ class WfManager(object):
         """
         wf = Workflow(self)
         if not wf.is_tag_valid(wfname): 
-            raise pawstools.WfNameError(self.tag_error(wfname))
+            raise pawstools.WfNameError(wf.tag_error_message(wfname))
         self.workflows[wfname] = wf
 
     def run_wf(self,wfname):

@@ -1,6 +1,7 @@
-import numpy as np
+from collections import OrderedDict
 import copy
 
+import numpy as np
 from scipy.optimize import curve_fit
 
 from ... import Operation as opmod 
@@ -33,39 +34,39 @@ class SpectrumFit(Operation):
     """
 
     def __init__(self):
-        input_names = ['q','I','flags','parameters','fit_params','objfun']
-        output_names = ['parameters','q_I_opt']
+        input_names = ['q','I','flags','params','fit_params','objfun']
+        output_names = ['params','q_I_opt']
         super(SpectrumFit, self).__init__(input_names, output_names)
         self.input_doc['q'] = '1d array of wave vector values in 1/Angstrom units'
         self.input_doc['I'] = '1d array of intensity values I(q)'
         self.input_doc['flags'] = 'dict of flags indicating what populations to fit'
-        self.input_doc['parameters'] = 'dict of initial values for the scattering equation parametersi '\
+        self.input_doc['params'] = 'dict of initial values for the scattering equation parameters '\
             'for each of the populations specified in the input flags'
         self.input_doc['fit_params'] = 'list of strings (keys) indicating which parameters to optimize'
         self.input_doc['objfun'] = 'string indicating objective function for optimization: '\
         + 'see documentation of saxstools.fit_spectrum() for supported objective functions'
-        self.output_doc['parameters'] = 'dict of scattering equation parameters copied from inputs, '\
+        self.output_doc['params'] = 'dict of scattering equation parameters copied from inputs, '\
         'with values optimized for all keys specified in fit_params'
         self.output_doc['q_I_opt'] = 'n-by-2 array of q and the optimized computed intensity spectrum'
         self.input_type['q'] = opmod.workflow_item
         self.input_type['I'] = opmod.workflow_item
         self.input_type['flags'] = opmod.workflow_item
-        self.input_type['parameters'] = opmod.workflow_item
+        self.input_type['params'] = opmod.workflow_item
         self.inputs['objfun'] = 'chi2log' 
 
     def run(self):
         f = self.inputs['flags']
-        p_opt = OrderedDict() 
         if f['bad_data'] or not any([f['precursor_scattering'],f['form_factor_scattering'],f['diffraction_peaks']]):
-            self.outputs['parameters'] = p_opt 
+            self.outputs['params'] = {} 
             return
         if f['diffraction_peaks']:
-            p_opt['ERROR_MESSAGE'] = 'diffraction peak fitting not yet supported'
-            self.outputs['parameters'] = p_opt 
+            self.outputs['params'] = {'ERROR_MESSAGE':'diffraction peak fitting not yet supported'}
             return
         q, I = self.inputs['q'], self.inputs['I']
         m = self.inputs['objfun']
-        p = self.inputs['parameters']
+        p = self.inputs['params']
+        fitkeys = self.inputs['fit_params']
+        #p_opt = copy.deepcopy(p)
 
         # Set up constraints as needed
         c = []
@@ -73,13 +74,9 @@ class SpectrumFit(Operation):
             c = ['fix_I0']
 
         # Fitting happens here
-        #print 'fitting {}'.format(p)
-        #print 'init: {}'.format([f[k] for k in p])
-        d_opt = saxstools.fit_spectrum(q,I,m,f,p,c)
-        #print 'final: {}'.format([d_opt[k] for k in p])
+        p_opt = saxstools.fit_spectrum(q,I,m,f,p,fitkeys,c)
 
-        f.update(d_opt)
-        I_opt = saxstools.compute_saxs(q,f)
+        I_opt = saxstools.compute_saxs(q,f,p_opt)
 
         nz = ((I>0)&(I_opt>0))
         logI_nz = np.log(I[nz])

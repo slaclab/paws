@@ -1,5 +1,6 @@
 from __future__ import print_function
 from collections import OrderedDict
+import copy
 
 import numpy as np
 from scipy.optimize import minimize as scipimin
@@ -150,7 +151,6 @@ def parameterize_spectrum(q,I,flags,fixed_params={}):
     """
     fix_keys = fixed_params.keys()
     d = OrderedDict()
-    d.update(flags)
     if flags['bad_data']:
         # stop
         return d 
@@ -181,7 +181,7 @@ def parameterize_spectrum(q,I,flags,fixed_params={}):
 
     if flags['form_factor_scattering']:
         # TODO: insert cases for non-spherical form factors
-        if flags['form_factor_id'] == 'sphere':
+        #if flags['form_factor_id'] == 'sphere':
             if ('r0_sphere' in fix_keys and 'sigma_sphere' in fix_keys):
                 r0_sphere = fixed_params['r0_sphere']
                 sigma_sphere = fixed_params['sigma_sphere']
@@ -200,8 +200,7 @@ def parameterize_spectrum(q,I,flags,fixed_params={}):
             r0_pre = fixed_params['r0_precursor']
         else:
             # TODO: This should employ a Guinier-Porod or similar fit
-            # TODO: This approach will have to change,
-            # depending on what other populations are flagged. 
+            # TODO: This approach will have to respect whatever other populations are flagged. 
             r0_pre = precursor_heuristics(q,I,I_at_0=I_at_0)
         d['r0_precursor'] = r0_pre 
 
@@ -211,13 +210,13 @@ def parameterize_spectrum(q,I,flags,fixed_params={}):
         # TODO: This should be a Guinier-Porod or similar fit
         I_pre = compute_spherical_normal_saxs(q,r0_pre,0)
     if flags['form_factor_scattering']:
-        if flags['form_factor_id'] == 'sphere':
-            I_form = compute_spherical_normal_saxs(q,r0_sphere,sigma_sphere)
+        #if flags['form_factor_id'] == 'sphere':
+        # TODO: form factors other than sphere
+        I_form = compute_spherical_normal_saxs(q,r0_sphere,sigma_sphere)
     #if flags['diffraction_peaks']:
     #   I_structure = .....
 
-    # depending on flagged populations, set up an objective function
-    # with the intensity prefactors as inputs
+    # Run a quick least-squares to get initial guesses for intensity prefactors
     if flags['precursor_scattering'] and flags['form_factor_scattering']:
         x_init = [I_at_0,0.0,0.0]
         x_bounds = [(0.0,None),(0.0,None),(0.0,None)]
@@ -230,7 +229,6 @@ def parameterize_spectrum(q,I,flags,fixed_params={}):
         x_init = [I_at_0,0.0]
         x_bounds = [(0.0,None),(0.0,None)]
         Ifunc = lambda x: x[0]*I_floor + x[1]*I_form 
-    # Run the optimization of intensity prefactors
     if flags['precursor_scattering'] or flags['form_factor_scattering']:
         I_nz = np.invert((I<=0))
         I_error = lambda x: np.sum( (np.log(Ifunc(x))[I_nz] - np.log(I[I_nz]))**2 )
@@ -266,14 +264,14 @@ def parameterize_spectrum(q,I,flags,fixed_params={}):
     d['chi2log_guess'] = compute_chi2(logI_nz_s,logIguess_nz_s)
     return d
 
-def fit_spectrum(q,I,objfun,flags,params,x_keys,constraints=[]):
+def fit_spectrum(q,I,objfun,flags,params,fit_params,constraints=[]):
     """
     Fit a saxs spectrum (I(q) vs q) to the theoretical spectrum 
     for one or several scattering populations.
     Input objfun (string) specifies objective function to use in optimization.
     Inputs flags (dict) and params (dict) describe flagged scatterer populations
-    and corresponding parameters for the scattering equation.
-    Input x_keys (list of strings) indicate the parameters that will be optimized. 
+    and initial guesses for the corresponding parameters for the scattering equation.
+    Input fit_params (list of strings) indicate the parameters that will be optimized. 
     Input constraints (list of strings) to specify constraints.
     
     Supported objective functions: 
@@ -296,92 +294,95 @@ def fit_spectrum(q,I,objfun,flags,params,x_keys,constraints=[]):
     form_flag = flags['form_factor_scattering']
     structure_flag = flags['diffraction_peaks']
 
-    x_keys = copy.deepcopy(x_keys)
-    # trim non-flagged populations out of x_keys
+    fit_params = copy.deepcopy(fit_params)
+    # trim non-flagged populations out of fit_params:
+    # fit as few of the requested fit_params as possible
     if not pre_flag:
-        if 'I0_pre' in x_keys:
-            x_keys.pop(x_keys.index('I0_precursor')) 
-        if 'r0_pre' in x_keys:
-            x_keys.pop(x_keys.index('r0_precursor')) 
+        if 'I0_precursor' in fit_params:
+            fit_params.pop(fit_params.index('I0_precursor')) 
+        if 'r0_precursor' in fit_params:
+            fit_params.pop(fit_params.index('r0_precursor')) 
     if not form_flag:
-        if 'I0_form' in x_keys:
-            x_keys.pop(x_keys.index('I0_sphere')) 
-        if 'r0_form' in x_keys:
-            x_keys.pop(x_keys.index('r0_sphere')) 
-        if 'sigma_form' in x_keys:
-            x_keys.pop(x_keys.index('sigma_sphere')) 
-    if not structure_flag:
-        if 'I0_structure' in x_keys:
-            x_keys.pop(x_keys.index('I0_structure')) 
-        if 'q0_structure' in x_keys:
-            x_keys.pop(x_keys.index('q0_structure')) 
-        if 'sigma_structure' in x_keys:
-            x_keys.pop(x_keys.index('sigma_structure')) 
+        if 'I0_sphere' in fit_params:
+            fit_params.pop(fit_params.index('I0_sphere')) 
+        if 'r0_sphere' in fit_params:
+            fit_params.pop(fit_params.index('r0_sphere')) 
+        if 'sigma_sphere' in fit_params:
+            fit_params.pop(fit_params.index('sigma_sphere')) 
+    #if not structure_flag:
+    #    if 'I0_structure' in fit_params:
+    #        fit_params.pop(fit_params.index('I0_structure')) 
+    #    if 'q0_structure' in fit_params:
+    #        fit_params.pop(fit_params.index('q0_structure')) 
+    #    if 'sigma_structure' in fit_params:
+    #        fit_params.pop(fit_params.index('sigma_structure')) 
 
     c = []
     if 'fix_I0' in constraints: 
         I_keys = []
-        if 'I0_pre' in x_keys:
-            I_keys.append('I0_pre')
-        if 'I0_form' in x_keys:
-            I_keys.append('I0_form')
-        #if 'I0_structure' in x_keys:
+        if 'I0_floor' in fit_params:
+            I_keys.append('I0_floor')
+        if 'I0_precursor' in fit_params:
+            I_keys.append('I0_precursor')
+        if 'I0_sphere' in fit_params:
+            I_keys.append('I0_sphere')
+        #if 'I0_structure' in fit_params:
         #    I_keys.append('I0_structure')
         if len(I_keys) == 0:
             # constraint inherently satisfied: do nothing.
             pass
         elif len(I_keys) == 1:
-            # overconstrained: skip the constraint, reduce dimensionality. 
-            x_keys.pop(x_keys.index(I_keys[0])) 
+            # satisfy constraint by removing this key from fit_params. 
+            fit_params.pop(fit_params.index(I_keys[0])) 
         else:
-            # find the indices of the relevant x_keys and form a constraint function.
+            # find the indices of the relevant fit_params and form a constraint function.
             iargs = []
             Icons = 0
-            for ik,k in zip(range(len(x_keys)),x_keys):
+            for ik,k in zip(range(len(fit_params)),fit_params):
                 if k in I_keys:
                     iargs.append(ik)
-                    Icons += features[k]
+                    Icons += params[k]
             cfun = lambda x: sum([x[i] for i in iargs]) - Icons 
             c_fixI0 = {'type':'eq','fun':cfun}
             c.append(c_fixI0)
 
     x_init = [] 
     x_bounds = [] 
-    for k in x_keys:
-        x_init.append(features[k])
+    for k in fit_params:
+        x_init.append(params[k])
         if k in ['r0_precursor','r0_sphere']:
             x_bounds.append((1E-3,None))
-        elif k in ['I0_precursor','I0_sphere']:
-            x_bounds.append((0,None))
+        elif k in ['I0_precursor','I0_sphere','I0_floor']:
+            x_bounds.append((0.0,None))
         elif k in ['sigma_sphere']:
             x_bounds.append((0.0,0.5))
 
-    d_opt = OrderedDict()
+    d_opt = copy.deepcopy(params) 
     x_opt = []
     # Only proceed if there is still work to do.
     if any(x_init):
-        saxs_fun = lambda q,x,d: compute_saxs_with_substitutions(q,d,x_keys,x)
+        saxs_fun = lambda q,x,d: compute_saxs_with_substitutions(q,flags,d,fit_params,x)
         I_nz = (I>0)
         n_q = len(q)
         idx_lowq = (q<0.4)
         if objfun == 'chi2':
-            fit_obj = lambda x: compute_chi2( saxs_fun(q,x,features) , I )
+            fit_obj = lambda x: compute_chi2( saxs_fun(q,x,params) , I )
         elif objfun == 'chi2log':
-            fit_obj = lambda x: compute_chi2( np.log(saxs_fun(q[I_nz],x,features)) , np.log(I[I_nz]) )
+            fit_obj = lambda x: compute_chi2( np.log(saxs_fun(q[I_nz],x,params)) , np.log(I[I_nz]) )
         elif objfun == 'chi2norm':
-            fit_obj = lambda x: compute_chi2( saxs_fun(q[I_nz],x,features) , I[I_nz] , weights=float(1)/I[I_nz] )
+            fit_obj = lambda x: compute_chi2( saxs_fun(q[I_nz],x,params) , I[I_nz] , weights=float(1)/I[I_nz] )
         elif objfun == 'low_q_chi2':
-            fit_obj = lambda x: compute_chi2( saxs_fun(q[idx_lowq],x,features) , I[idx_lowq] )
+            fit_obj = lambda x: compute_chi2( saxs_fun(q[idx_lowq],x,params) , I[idx_lowq] )
         elif objfun == 'pearson':
-            fit_obj = lambda x: -1*compute_pearson( saxs_fun(q,x,features) , I )
+            fit_obj = lambda x: -1*compute_pearson( saxs_fun(q,x,params) , I )
         elif objfun == 'low_q_pearson':
-            fit_obj = lambda x: -1*compute_pearson( saxs_fun(q[idx_lowq],x,features) , I[idx_lowq] )
+            fit_obj = lambda x: -1*compute_pearson( saxs_fun(q[idx_lowq],x,params) , I[idx_lowq] )
         elif objfun == 'low_q_chi2log':
-            fit_obj = lambda x: compute_chi2( np.log(saxs_fun(q[I_nz][idx_lowq[I_nz]],x,features)) , np.log(I[I_nz][idx_lowq[I_nz]]) ) 
+            fit_obj = lambda x: compute_chi2( np.log(saxs_fun(q[I_nz][idx_lowq[I_nz]],x,params)) , np.log(I[I_nz][idx_lowq[I_nz]]) ) 
         elif objfun == 'pearson_log':
-            fit_obj = lambda x: -1*compute_pearson( np.log(saxs_fun(q[I_nz],x,features)) , np.log(I[I_nz]) ) 
+            fit_obj = lambda x: -1*compute_pearson( np.log(saxs_fun(q[I_nz],x,params)) , np.log(I[I_nz]) ) 
         elif objfun == 'low_q_pearson_log':
-            fit_obj = lambda x: -1*compute_pearson( np.log(saxs_fun(q[I_nz][idx_lowq[I_nz]],x,features)) , np.log(I[I_nz][idx_lowq[I_nz]]) ) 
+            fit_obj = lambda x: -1*compute_pearson( np.log(saxs_fun(q[I_nz][idx_lowq[I_nz]],x,params)) , np.log(I[I_nz][idx_lowq[I_nz]]) ) 
         else:
             msg = 'objective function {} not supported'.format(objfun)
             raise ValueError(msg)
@@ -398,7 +399,7 @@ def fit_spectrum(q,I,objfun,flags,params,x_keys,constraints=[]):
             print('x_opt: {}'.format(x_opt))
             print('obj_opt: {}'.format(d_opt['objective_after']))
             x_opt = x_init
-        for k,xk in zip(x_keys,x_opt):
+        for k,xk in zip(fit_params,x_opt):
             d_opt[k] = xk
     return d_opt    
 
@@ -441,7 +442,7 @@ def precursor_heuristics(q,I,I_at_0=None):
     """
     Makes an educated guess for the radius of a small scatterer
     that would produce the input q, I(q).
-    Result is bounded between 0 and 10 Angstroms.
+    Result is bounded between 0.1 and 10 Angstroms.
     """
     # TODO: This should employ a Guinier-Porod or similar fit.
     n_q = len(q)
@@ -449,7 +450,7 @@ def precursor_heuristics(q,I,I_at_0=None):
     nz = (I[n_q/2:]>0)
     fit_obj = lambda r: -1*compute_pearson(np.log(compute_spherical_normal_saxs(q[n_q/2:],r,0)[nz]),np.log(I[n_q/2:][nz]))
     #res = scipimin(fit_ojb,[0.1],bounds=[(0,0.3)]) 
-    res = scipimin(fit_obj,[5],bounds=[(0,10)])
+    res = scipimin(fit_obj,[5],bounds=[(1E-3,10)])
     r_opt = res.x[0]
     return r_opt
 
@@ -496,11 +497,6 @@ def spherical_normal_heuristics(q,I,I_at_0=None):
     # TODO: make the objective function weight all errors equally
     heuristics_error = lambda x: width_error(x) + intensity_error(x)
     res = scipimin(heuristics_error,[0.1],bounds=[(0,0.3)]) 
-    if not res.success:
-        self.outputs['return_code'] = 2 
-        msg = str('[{}] function minimization failed during '
-        + 'form factor parameter extraction.'.format(__name__))
-        self.outputs['features']['message'] = msg
     sigma_over_r = res.x[0]
     qr0_focus = np.polyval(p_qr0_focus,sigma_over_r)
     # qr0_focus = x1  ==>  r0 = x1 / q1
@@ -610,11 +606,11 @@ def saxs_Iq4_metrics(q,I):
     #######
     return d
 
-def compute_saxs_with_substitutions(q,d,x_keys,x_vals):
-    d_sub = copy.deepcopy(d)
+def compute_saxs_with_substitutions(q,flags,params,x_keys,x_vals):
+    p_sub = copy.deepcopy(params)
     for k,v in zip(x_keys,x_vals):
-        d_sub[k] = copy(v)
-    return compute_saxs(q,d_sub)
+        p_sub[k] = copy.copy(v)
+    return compute_saxs(q,flags,p_sub)
 
 def compute_chi2(y1,y2,weights=None):
     """

@@ -142,8 +142,8 @@ class TreeModel(object):
     def root_tags(self):
         return self._tree.root_keys()
 
-    def tag_error(self,tag):
-        return self._tree.tag_error(tag)
+    def tag_error_message(self,tag):
+        return self._tree.tag_error_message(tag)
 
     def is_uri_valid(self,uri):
         return self._tree.is_uri_valid(uri)

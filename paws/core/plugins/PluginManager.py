@@ -7,6 +7,7 @@ from ..operations.Operation import Operation
 from ..workflow.Workflow import Workflow
 from ..models.TreeModel import TreeModel
 from .. import plugins as pgns
+from .. import pawstools
 from .PawsPlugin import PawsPlugin
 
 class PluginManager(TreeModel):
@@ -71,7 +72,7 @@ class PluginManager(TreeModel):
         this method will overwrite the existing plugin with a new one.
         """
         if not self.is_tag_valid(pgin_name): 
-            raise pawstools.PluginNameError(self.tag_error(pgin_name))
+            raise pawstools.PluginNameError(self.tag_error_message(pgin_name))
         self.set_item(pgin_name,pgin)
 
     def build_tree(self,x):
@@ -101,16 +102,16 @@ class PluginManager(TreeModel):
     def get_plugin(self,pgin_type):    
         try:
             mod = importlib.import_module('.'+pgin_type,pgns.__name__)
-            if pgin_type in mod.__dict__.keys():
-                return mod.__dict__[pgin_type]
-            else:
-                msg = str('Did not find plugin {} in module {}'
-                .format(pgin_type,mod.__name__))
-                self.write_log(msg)
-                return None 
+            #if pgin_type in mod.__dict__.keys():
+            return mod.__dict__[pgin_type]
+            #else:
+            #    msg = str('Did not find plugin {} in module {}'
+            #    .format(pgin_type,mod.__name__))
+            #    self.write_log(msg)
+            #    return None 
         except Exception as ex:
-            msg = str('Trouble loading module for plugin {}. '
-            .format(pgin_name) + 'Error message: ' + ex.message)
+            msg = str('Exception occurred while loading plugin {}. '
+            .format(pgin_type) + 'Error message: ' + ex.message)
             self.write_log(msg)
             raise pawstools.PluginLoadError(msg)   
  
