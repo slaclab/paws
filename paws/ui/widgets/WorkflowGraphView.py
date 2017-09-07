@@ -61,7 +61,7 @@ class WorkflowGraphWidget(QtGui.QWidget):
         self.set_scale(self._scale/1.2)
 
     def update_coords(self):
-        stk,diag = optools.execution_stack(self.wf)
+        stk,diag = self.wf.execution_stack()
         self.op_coords, self.inp_coords, self.out_coords = self.get_op_coords(stk)
         if any(self.op_coords):
             stk_height = max([coords[1][1] for coords in self.op_coords.values()]) + self._scale*self.vspace
@@ -81,30 +81,14 @@ class WorkflowGraphWidget(QtGui.QWidget):
         v = self._scale*self.vspace 
         for lst in stk:
             v = self._scale*self.vspace
-            first_op = self.wf.get_data_from_uri(lst[0])
-            if isinstance(first_op,opmod.Batch) or isinstance(first_op,opmod.Realtime):
-                b_coords, b_inp_coords, b_out_coords = self.get_op_coords(lst[1])
-                for name,coords in b_coords.items():
-                    topleft = coords[0]
-                    bottomright = coords[1]
-                    c[name] = [(h+topleft[0],v+topleft[1]),(h+bottomright[0],v+bottomright[1])] 
-                if any(b_coords):
-                    b_width = max([coords[1][0] for coords in b_coords.values()]) + self._scale*self.hspace 
-                    b_height = max([coords[1][1] for coords in b_coords.values()]) + self._scale*self.vspace
-                else:
-                    b_width = 10 * len(lst[0].tag()) 
-                    b_height = b_width 
-                c[lst[0]] = [(h,v),(h+b_width,v+b_height)]
-                h += b_width + self._scale*self.hspace
-            else:
-                layer_width = 0
-                for name in lst:
-                    op = self.wf.get_data_from_uri(name)
-                    d = self.op_dims(op)
-                    c[name] = [(h,v),(h+d[0],v+d[1])]
-                    v += d[1] + self._scale*self.vspace
-                    layer_width = max([layer_width,d[0]])
-                h += layer_width + self._scale*self.hspace
+            layer_width = 0
+            for name in lst:
+                op = self.wf.get_data_from_uri(name)
+                d = self.op_dims(op)
+                c[name] = [(h,v),(h+d[0],v+d[1])]
+                v += d[1] + self._scale*self.vspace
+                layer_width = max([layer_width,d[0]])
+            h += layer_width + self._scale*self.hspace
         return c, inp_c, out_c
 
     def op_dims(self,op):

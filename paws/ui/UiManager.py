@@ -17,6 +17,7 @@ from ..core.models.ListModel import ListModel
 from ..qt.QWfManager import QWfManager
 from ..qt.QOpManager import QOpManager
 from ..qt.QPluginManager import QPluginManager
+from .widgets import WorkflowGraphView
 
 class UiManager(QtCore.QObject):
     """
@@ -230,7 +231,9 @@ class UiManager(QtCore.QObject):
             self.add_wf_tab(wfname)
 
     def add_wf_tab(self,wfname):
-        pass    
+        wf = self.paw.get_wf(wfname)
+        g = WorkflowGraphView(wf,self.ui)
+        tab_idx = self.ui.viewer_tabwidget.addTab(g,wfname) 
 
     def display_op_item(self,idx):
         """
