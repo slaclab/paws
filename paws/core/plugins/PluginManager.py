@@ -99,7 +99,10 @@ class PluginManager(TreeModel):
             return super(PluginManager,self).build_tree(x) 
         return d
 
-    def get_plugin(self,pgin_type):    
+    def get_plugin(self,pgin_tag):
+        return self.get_data_from_uri(pgin_tag)
+
+    def load_plugin(self,pgin_type):    
         try:
             mod = importlib.import_module('.'+pgin_type,pgns.__name__)
             #if pgin_type in mod.__dict__.keys():

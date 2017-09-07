@@ -179,7 +179,7 @@ class UiManager(QtCore.QObject):
             try:
                 idx = self.ui.plugin_selector.currentIndex()
                 pgin_uri = self.ui.plugin_selector.model().list_data()[idx]
-                pgin = self.paw.get_plugin(pgin_uri)
+                pgin = self.paw.load_plugin(pgin_uri)
             except pawstools.PluginLoadError as ex:
                 msg_ui = uitools.message_ui(self.ui)
                 msg_ui.setWindowTitle("Plugin Load Error")

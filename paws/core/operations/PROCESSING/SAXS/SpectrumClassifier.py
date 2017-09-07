@@ -23,6 +23,7 @@ class SpectrumClassifier(Operation):
         x = self.inputs['profiler_output']
         clsfr = self.inputs['classifier']
         flags = OrderedDict()
+        flags['test'] = True
 
         ### Classify the spectrum
         # (1) Apply model to input

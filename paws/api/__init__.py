@@ -153,8 +153,9 @@ class PawsAPI(object):
         if not self._current_wf_name:
             self.select_wf(wfname)
 
-    def add_plugin(self,pgin_tag,pgin):
-        self._plugin_manager.add_plugin(pgin_tag,pgin)
+    def add_plugin(self,pgin_tag,pgin_name):
+        pgin = self._plugin_manager.load_plugin(pgin_name)
+        self._plugin_manager.add_plugin(pgin_tag,pgin())
 
     def set_plugin_input(self,pgin_tag,input_name,val=None,tp=None):
         pgin = self._plugin_manager.get_data_from_uri(pgin_tag)
@@ -179,8 +180,7 @@ class PawsAPI(object):
         pgin.start()
 
     def get_plugin(self,pgin_name):
-        pgin = self._plugin_manager.get_plugin(pgin_name)
-        return pgin()
+        return self._plugin_manager.get_plugin(pgin_name)
 
     def remove_op(self,op_tag,wfname=None):
         wf = self.get_wf(wfname)
