@@ -43,7 +43,7 @@ class QOpManager(OpManager,QTreeSelectionModel):
                 + 'Error message: {}'.format(ex.message))
                 self.write_log(msg)
                 return False
-            self.set_flagged(itm,self._tree.default_flags.keys()[idx.column()-1],val)
+            self.set_flagged(itm,self.default_flags.keys()[idx.column()-1],val)
             self.dataChanged.emit(idx,idx)
             return True
         else:

@@ -4,27 +4,10 @@ This runs various widgets built on the paws.api.
 
 import sys
 
-import paws.api
+from paws.qt import qtapi
 import paws.ui
+from paws.ui.UiManager import UiManager
 from paws.ui.widgets.PipelineWidget import PipelineWidget
-
-def pipeline():
-    """
-    Entry point for paws pipeline interface.
-    """
-    # start QtGui.QApplication
-    app = paws.ui.ui_app(sys.argv)
-    # start paws objects 
-    corepaw = paws.api.start()
-
-    # start pipeline widget manager
-    widg = PipelineWidget(corepaw)
-    widg.ui.show()
-
-    ### LAUNCH ###
-    ret = app.exec_()
-    corepaw.save_config()
-    sys.exit(ret)
 
 def main():   
     """
@@ -33,10 +16,10 @@ def main():
     # start QtGui.QApplication
     app = paws.ui.ui_app(sys.argv)
     # start paws objects 
-    corepaw = paws.api.start()
+    corepaw = qtapi.start(app)
 
     # start a ui manager
-    ui_manager = paws.ui.UiManager.UiManager(corepaw,app)
+    ui_manager = UiManager(corepaw)
 
     ### LAUNCH ###
     ui_manager.ui.show()
@@ -47,8 +30,21 @@ def main():
     corepaw.save_config()
     sys.exit(ret)
     
-# Run the main() function if this module is invoked 
-#if __name__ == '__main__':
-#    # TODO: collect sys.argv to determine which widget to launch
-#    main()
+def pipeline():
+    """
+    Entry point for paws pipeline interface.
+    """
+    # start QtGui.QApplication
+    app = paws.ui.ui_app(sys.argv)
+    # start paws objects 
+    corepaw = qtapi.start(app)
+
+    # start pipeline widget manager
+    widg = PipelineWidget(corepaw)
+    widg.ui.show()
+
+    ### LAUNCH ###
+    ret = app.exec_()
+    corepaw.save_config()
+    sys.exit(ret)
 

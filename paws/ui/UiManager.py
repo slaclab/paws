@@ -23,7 +23,7 @@ class UiManager(QtCore.QObject):
     Uses the QPawsAPI and PySide Qt to provide a widget that controls PAWS.
     """
 
-    def __init__(self,qpaw,app):
+    def __init__(self,qpaw):
         super(UiManager,self).__init__()
         ui_file = QtCore.QFile(pawstools.sourcedir+"/ui/qtui/basic.ui")
         ui_file.open(QtCore.QFile.ReadOnly)
@@ -63,7 +63,7 @@ class UiManager(QtCore.QObject):
         logo_view = QtGui.QGraphicsView()
         logo_view.setScene(scene)
         self.ui.viewer_tabwidget.clear()
-        tab_idx = self.ui.viewer_tabwidget.addTab(logo_view,'paws viewer') 
+        tab_idx = self.ui.viewer_tabwidget.addTab(logo_view,'main viewer') 
         self.ui.setWindowTitle("paws v{}".format(pawstools.version))
         self.ui.setWindowIcon(pixmap)
 
@@ -184,6 +184,7 @@ class UiManager(QtCore.QObject):
                 msg_ui.setWindowTitle("Plugin Load Error")
                 msg_ui.message_box.setPlainText(ex.message)
                 msg_ui.show()
+                return
             try:
                 self.paw.add_plugin(pgin_name,pgin)
             except pawstools.PluginNameError as ex:
@@ -191,7 +192,8 @@ class UiManager(QtCore.QObject):
                 msg_ui.setWindowTitle("Plugin Name Error")
                 msg_ui.message_box.setPlainText(ex.message)
                 msg_ui.show()
-        self.ui.wf_name_entry.clear()
+                return
+            self.ui.plugin_name_entry.clear()
 
     def add_wf(self):
         """
@@ -223,39 +225,41 @@ class UiManager(QtCore.QObject):
             if self.paw.n_wf() == 1:
                 self.ui.wf_tree.hideColumn(1)
                 self.ui.wf_tree.setColumnWidth(0,200)
-        self.ui.wf_name_entry.clear()
+            self.ui.wf_name_entry.clear()
+            # Add a tab to the viewer for this workflow 
+            self.add_wf_tab(wfname)
+
+    def add_wf_tab(self,wfname):
+        pass    
 
     def display_op_item(self,idx):
         """
         Display selected item from the op tree in viewer layout 
         """
         if idx.isValid(): 
-            # If the user is clicking a check box (idx.column()!=0),
-            # leave the central display unchanged... ?
-            #if idx.column() == 0:
-                itm_data = self.paw.get_op_from_index(idx)
-                itm_uri = self.paw.get_op_uri_from_index(idx)
-                op_widg = None
-                if itm_data is None:
-                    # this should be the condition for a not-enabled Operation
-                    t = str('selected Operation: {} \n'.format(itm_uri)
-                    + 'This Operation is not currently enabled. '
-                    + 'Click the "enable" box to enable it. ')
-                elif isinstance(itm_data,dict):
-                    # this should be the condition for a category
-                    t = str('selected category: {} \n\n'.format(itm_uri)
-                    + '{}: '.format(itm_uri)) 
-                    t = t + self.paw._op_manager.print_cat(itm_uri) 
-                else:
-                    # the only remaining case is an enabled Operation
-                    op = itm_data()
-                    t = op.description()
-                    op_widg = widgets.make_widget(op)
-                    self.display_widget(op_widg)
-                w = QtGui.QTextEdit()
-                w.setText(t)
-                self.ui.op_info_box.setText(t)
-                self.display_widget(op_widg)
+            # Change the current selection to this index
+            self.ui.op_tree.setCurrentIndex(idx.sibling(idx.row(),0))
+            itm_data = self.paw.get_op_from_index(idx)
+            itm_uri = self.paw.get_op_uri_from_index(idx)
+            op_widg = None
+            if itm_data is None:
+                # this should be the condition for a not-enabled Operation
+                t = str('selected Operation: {} \n'.format(itm_uri)
+                + 'This Operation is not currently enabled. '
+                + 'Click the "enable" box to enable it. ')
+            elif isinstance(itm_data,dict):
+                # this should be the condition for a category
+                t = str('selected category: {} \n\n'.format(itm_uri)
+                + '{}: '.format(itm_uri)) 
+                t = t + self.paw._op_manager.print_cat(itm_uri) 
+            else:
+                # the only remaining case is an enabled Operation
+                op = itm_data()
+                t = op.description()
+                op_widg = widgets.make_widget(op)
+            w = QtGui.QTextEdit()
+            w.setText(t)
+            self.ui.op_info_box.setText(t)
 
     def display_plugin_item(self,idx):
         """
