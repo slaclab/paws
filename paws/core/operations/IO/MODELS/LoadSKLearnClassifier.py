@@ -1,4 +1,5 @@
 import numpy as np
+import pickle
 
 from ... import Operation as opmod 
 from ...Operation import Operation
@@ -12,7 +13,7 @@ class LoadSKLearnClassifier(Operation):
         input_names = ['file_path']
         output_names = ['classifier']
         super(LoadSKLearnClassifier, self).__init__(input_names, output_names)
-        self.input_doc['file_path'] = 'path to a file (yaml?) containing the data needed to build the classifier'
+        self.input_doc['file_path'] = 'path to a pickle file containing the data needed to build the classifier'
         self.output_doc['classifier'] = 'a sklearn classifier built from the data in the input file' 
 
     def run(self):
@@ -20,11 +21,12 @@ class LoadSKLearnClassifier(Operation):
         f = open(p,'r')
         #ds = yaml.load(f)
         # (1) Load the data from the file
+
         f.close()
         
         # (2) Use the data to build a classifier
 
         # (3) save the classifier object as output
-        #self.outputs['classifier'] =  
+        #self.outputs['classifier'] =  bad_data_model
 
 
