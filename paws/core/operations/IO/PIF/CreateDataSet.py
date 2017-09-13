@@ -14,17 +14,10 @@ class CreateDataSet(Operation):
         self.input_doc['client'] = 'A reference to a running Citrination client.'
         self.input_doc['name'] = 'Name for the new data set.'
         self.input_doc['description'] = 'Description for the new data set.'
-        self.input_doc['share'] = 'Flag whether or not dataset should be shared with all users on the instance.'
+        self.input_doc['share'] = 'Flag for whether or not dataset should be public.'
         self.output_doc['ok_flag'] = 'Indicator of whether or not the data set was created successfully.'
         self.output_doc['dsid'] = 'The index of the new data set, if created successfully.'
-        self.input_src['client'] = opmod.plugin_input
-        self.input_src['name'] = opmod.text_input
-        self.input_src['description'] = opmod.text_input
-        self.input_src['share'] = opmod.text_input
-        self.input_type['client'] = opmod.ref_type
-        self.input_type['name'] = opmod.str_type
-        self.input_type['description'] = opmod.str_type
-        self.input_type['share'] = opmod.bool_type
+        self.input_type['client'] = opmod.workflow_item
         self.inputs['description'] = 'New Citrination data set'
         self.inputs['share'] = False
 

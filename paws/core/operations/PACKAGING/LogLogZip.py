@@ -6,7 +6,7 @@ from ..Operation import Operation
 class LogLogZip(Operation):
     """
     Take the base-10 logarithm of two 1d arrays, then zip them together.
-    Any elements with non-positive values are removed. 
+    Any elements with non-positive or nan values are removed. 
     """
 
     def __init__(self):
@@ -16,10 +16,8 @@ class LogLogZip(Operation):
         self.input_doc['x'] = '1d array'
         self.input_doc['y'] = '1d array, same size as x'
         self.output_doc['logx_logy'] = 'n x 2 array containing log(x) and log(y)'
-        self.input_src['x'] = opmod.wf_input
-        self.input_src['y'] = opmod.wf_input
-        self.input_type['x'] = opmod.ref_type
-        self.input_type['y'] = opmod.ref_type
+        self.input_type['x'] = opmod.workflow_item
+        self.input_type['y'] = opmod.workflow_item
 
     def run(self):
         x = self.inputs['x']

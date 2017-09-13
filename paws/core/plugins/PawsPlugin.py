@@ -74,6 +74,5 @@ class PawsPlugin(object):
         for name,desc,input_type,source,default in inputs:
             self.input_doc[name] = desc
             self.input_type[name] = input_type
-            self.input_src[name] = source
             self.inputs[name] = default
 

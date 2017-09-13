@@ -24,8 +24,8 @@ class FileSystemIterator(Iterator):
         for path in batch_list:
             if not path in self.paths_done:
                 self.paths_done.append(path)
-                return [path]
-        return [None]
+                return path
+        return None
 
 class ExecutionError(Exception):
     def __init__(self,msg):

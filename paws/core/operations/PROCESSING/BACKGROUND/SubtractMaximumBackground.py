@@ -25,14 +25,8 @@ class SubtractMaximumBackground(Operation):
         self.output_doc['bg_factor'] = str('the factor the background was multiplied by '
         + ' before subraction to ensure positive values for output intensity')
         # source & type
-        self.input_src['q_I'] = opmod.wf_input
-        self.input_src['q_I_bg'] = opmod.wf_input
-        self.input_src['dI'] = opmod.wf_input
-        self.input_src['dI_bg'] = opmod.wf_input
-        self.input_type['q_I'] = opmod.ref_type
-        self.input_type['q_I_bg'] = opmod.ref_type
-        self.input_type['dI'] = opmod.none_type
-        self.input_type['dI_bg'] = opmod.none_type
+        self.input_type['q_I'] = opmod.workflow_item
+        self.input_type['q_I_bg'] = opmod.workflow_item
 
     def run(self):
         q_I = self.inputs['q_I']

@@ -17,16 +17,12 @@ class FindPeaksByWindow(Operation):
         super(FindPeaksByWindow,self).__init__(input_names, output_names)
         self.input_doc['x'] = '1d array of x values (domain- optional)'
         self.input_doc['y'] = '1d array of y values (amplitudes)'
-        self.input_doc['windowsize'] = 'the window is this many points in either direction of a given point'
-        self.input_doc['threshold'] = 'threshold on Ipk/I(window) for being counted as a peak: set to zero to deactivate'
-        self.input_src['x'] = opmod.wf_input
-        self.input_src['y'] = opmod.wf_input
-        self.input_src['windowsize'] = opmod.text_input
-        self.input_src['threshold'] = opmod.text_input
-        self.input_type['x'] = opmod.ref_type
-        self.input_type['y'] = opmod.ref_type
-        self.input_type['windowsize'] = opmod.int_type
-        self.input_type['threshold'] = opmod.float_type
+        self.input_doc['windowsize'] = 'the window is this many points '\
+            'in either direction of a given point'
+        self.input_doc['threshold'] = 'threshold on Ipk/I(window) '\
+            'for being counted as a peak: set to zero to deactivate'
+        self.input_type['x'] = opmod.workflow_item
+        self.input_type['y'] = opmod.workflow_item
         self.inputs['windowsize'] = 10
         self.inputs['threshold'] = 0 
         self.output_doc['pk_idx'] = 'q values of found peaks'

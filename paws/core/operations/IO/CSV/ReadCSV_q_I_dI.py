@@ -17,9 +17,6 @@ class ReadCSV_q_I_dI(Operation):
         self.output_doc['q'] = "1d array, first column of csv, presumed to be scattering vector q"
         self.output_doc['I'] = "1d array, second column of csv, presumed to be scattering intensity I"
         self.output_doc['dI'] = "1d array, third column of csv, presumed to be error estimate of I"
-        # source & type
-        self.input_src['path'] = opmod.fs_input
-        self.input_type['path'] = opmod.path_type
 
     def run(self):
         path = self.inputs['path']

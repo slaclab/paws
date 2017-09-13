@@ -272,7 +272,7 @@ class PawsAPI(object):
         d['OP_LOAD_FLAGS'] = ops.load_flags
         d['PAWS_VERSION'] = pawstools.version 
         wfman_dict = OrderedDict()
-        for wfname,wf in self._wf_manager.workflows:
+        for wfname,wf in self._wf_manager.workflows.items():
             wf_dict = OrderedDict() 
             for opname in wf.list_op_tags():
                 op = wf.get_data_from_uri(opname)

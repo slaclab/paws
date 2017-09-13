@@ -16,10 +16,8 @@ class Zip(Operation):
         self.input_doc['y'] = '1d array, same size as x'
         self.output_doc['x_y'] = 'n x 2 array containing x and y'
         # source & type
-        self.input_src['x'] = opmod.wf_input
-        self.input_src['y'] = opmod.wf_input
-        self.input_type['x'] = opmod.ref_type
-        self.input_type['y'] = opmod.ref_type
+        self.input_type['x'] = opmod.workflow_item
+        self.input_type['y'] = opmod.workflow_item
 
     def run(self):
         x = self.inputs['x']

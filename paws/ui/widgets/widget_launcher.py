@@ -7,7 +7,6 @@ import sys
 from paws.qt import qtapi
 import paws.ui
 from paws.ui.UiManager import UiManager
-from paws.ui.widgets.PipelineWidget import PipelineWidget
 
 def main():   
     """
@@ -30,21 +29,15 @@ def main():
     corepaw.save_config()
     sys.exit(ret)
     
-def pipeline():
-    """
-    Entry point for paws pipeline interface.
-    """
-    # start QtGui.QApplication
-    app = paws.ui.ui_app(sys.argv)
-    # start paws objects 
-    corepaw = qtapi.start(app)
+# TODO: entry points for alternative/simplified interfaces, e.g.:
+# def specialwidget():
+#
+#    Load an app and start a paw
+#
+#    Set up a UI for this special case
+#
+#    Launch 
 
-    # start pipeline widget manager
-    widg = PipelineWidget(corepaw)
-    widg.ui.show()
 
-    ### LAUNCH ###
-    ret = app.exec_()
-    corepaw.save_config()
-    sys.exit(ret)
+
 

@@ -1,44 +1,42 @@
+from collections import OrderedDict
+
+from ...Operation import Operation
 from ... import Operation as opmod 
-from ...Operation import Realtime 
 from ... import optools
 
-class RealtimeFromFiles(Realtime):
+class RealtimeFromFiles(Operation):
     """
-    Provides inputs to be used in repeated execution of a workflow
-    from files with names matching a regex, as they arrive in a specified directory.
+    Use file paths matching a regex to generate
+    inputs for repeated execution of a workflow, 
+    as the files arrive in a specified directory.
     Collects the outputs produced for each of the inputs.
     """
 
     def __init__(self):
-        input_names = ['dir_path','regex','new_files_only','input_route','realtime_ops','saved_items']
+        input_names = ['dir_path','regex','workflow','input_name','new_files_only','delay']
         output_names = ['realtime_inputs','realtime_outputs']
         super(RealtimeFromFiles,self).__init__(input_names,output_names)
-        self.input_doc['dir_path'] = 'path to directory where files will be written and then used as input'
-        self.input_doc['regex'] = 'string with * wildcards used to filter or locate input files'
-        self.input_doc['new_files_only'] = 'if true, ignore existing files and only process new arrivals'
-        self.input_doc['input_route'] = 'inputs constructed by the realtime executor are directed to this uri'
-        self.input_doc['realtime_ops'] = str('list of ops to be included in the realtime execution- '
-        + 'the order of operations in realtime_ops is unimportant, as the proper execution stack is resolved at runtime')
-        self.input_doc['saved_items'] = 'list of ops to be saved in the realtime_outputs'
-        self.output_doc['realtime_inputs'] = str('iterator over dicts of [input_route:input_value] '
-        + 'generated in real time from the local filesystem')
-        self.output_doc['realtime_outputs'] = 'list of dicts of [output_route:output_value]'
-        self.input_src['dir_path'] = opmod.fs_input
-        self.input_src['regex'] = opmod.text_input 
-        self.input_src['new_files_only'] = opmod.text_input 
-        self.input_src['input_route'] = opmod.wf_input 
-        self.input_src['realtime_ops'] = opmod.wf_input 
-        self.input_src['saved_items'] = opmod.wf_input 
-        self.input_type['dir_path'] = opmod.path_type
-        self.input_type['regex'] = opmod.str_type
-        self.input_type['new_files_only'] = opmod.bool_type
-        self.input_type['input_route'] = opmod.path_type
-        self.input_type['realtime_ops'] = opmod.path_type 
-        self.input_type['saved_items'] = opmod.path_type 
+        self.input_doc['dir_path'] = 'path to directory of input files'
+        self.input_doc['regex'] = 'regular expression with wildcards, '\
+            'used to filter or locate input files'
+        self.input_doc['workflow'] = 'the Workflow to be executed'
+        self.input_doc['input_name'] = 'name of the workflow input '\
+            'where the file paths will be used'
+        self.input_doc['new_files_only'] = 'if true, '\
+            'ignore existing files and only process new arrivals'
+        self.input_doc['delay'] = 'delay in milliseconds '\
+            'before searching again when new files were not found '\
+            'in the previous search'
+        self.output_doc['realtime_inputs'] = 'list of dicts '\
+            'containing [input_name:input_value] '\
+            'for each file path used as workflow input'
+        self.output_doc['realtime_outputs'] = 'list of dicts '\
+            'containing [output_name:output_value] '\
+            'for all of the workflow.outputs'
+        self.input_type['workflow'] = opmod.entire_workflow
         self.inputs['regex'] = '*.tif' 
         self.inputs['new_files_only'] = True 
-        self.inputs['realtime_ops'] = []
-        self.inputs['saved_items'] = []
+        self.inputs['delay'] = 100 
         
     def run(self):
         """
@@ -48,54 +46,37 @@ class RealtimeFromFiles(Realtime):
         """
         dirpath = self.inputs['dir_path']
         rx = self.inputs['regex']
-        inproute = self.inputs['input_route']
+        inpnm = self.inputs['input_name']
+        dly = self.inputs['delay']
         process_existing_files = not self.inputs['new_files_only']
-        self.outputs['realtime_inputs'] = optools.FileSystemIterator(dirpath,rx,process_existing_files)
+        it = optools.FileSystemIterator(dirpath,rx,process_existing_files) 
+        self.outputs['realtime_inputs'] = it
         self.outputs['realtime_outputs'] = [] 
-
-    def input_iter(self):
-        return self.outputs['realtime_inputs']
-
-    def output_list(self):
-        return self.outputs['realtime_outputs']
-
-    def input_routes(self):
-        """Use the Realtime.input_locators to list uri's of all input routes- must return list."""
-        if isinstance(self.inputs['input_route'],list):
-            return self.inputs['input_route']
-        else:
-            return [self.inputs['input_route']]
-
-    def batch_ops(self):
-        """Use the Realtime.input_locator to list uri's of ops to be saved/stored after execution"""
-        if isinstance(self.inputs['realtime_ops'],list):
-            return self.inputs['realtime_ops']
-        else:
-            return [self.inputs['realtime_ops']]
-
-    def saved_items(self):
-        """Use the Realtime.input_locator to list uri's of ops to be included in realtime execution"""
-        if isinstance(self.inputs['saved_items'],list):
-            return self.inputs['saved_items']
-        else:
-            return [self.inputs['saved_items']]
-
-    def batch_outputs_tag(self):
-        return 'realtime_outputs'
-
-    @staticmethod
-    def delay():
-        """Amount of time to wait between execution attempts, in milliseconds"""
-        return 1000
-
-    def set_batch_ops(self,wf=None):
-        data = optools.locate_input(self.input_locator['realtime_ops'],wf)
-        self.inputs['realtime_ops'] = data
-        #self.input_locator['realtime_ops'].data = data 
-
-    def set_input_routes(self,wf=None):
-        data = optools.locate_input(self.input_locator['input_route'],wf)
-        self.inputs['input_route'] = data
-        #self.input_locator['input_route'].data = data 
+        wf = self.inputs['workflow'] 
+        nx = 0 # total number of executions
+        nd = 0 # number of consecutive delays
+        keep_going = True
+        wf.write_log('STARTING REALTIME EXECUTION')
+        while keep_going:
+            p = it.next()
+            if p is None:
+                # delay
+                if nd == 0:
+                    wf.write_log('WAITING FOR FILES...')
+                time.sleep(float(dly)/1000.) 
+                nd+=1
+                if nd == 1000:
+                    wf.write_log('ABORTING')
+                    keep_going = False 
+           else:
+                nd = 0
+                #input_dict_list.append( {inpname:filename} )
+                wf.set_wf_input(inpname,filename)
+                wf.write_log('EXECUTION {}'.format(nx)
+                nx+=1
+                wf.execute()
+                self.outputs['realtime_outputs'].append(wf.wf_outputs_dict())
+        wf.write_log('REALTIME EXECUTION STOPPED')
+                
 
 
