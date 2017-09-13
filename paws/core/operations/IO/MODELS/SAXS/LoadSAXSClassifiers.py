@@ -1,8 +1,8 @@
 import numpy as np
 import pickle
 
-from ... import Operation as opmod 
-from ...Operation import Operation
+from .... import Operation as opmod 
+from ....Operation import Operation
 
 class LoadSAXSClassifiers(Operation):
     """
