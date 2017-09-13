@@ -19,7 +19,6 @@ def display_text(itm,indent=unit_indent):
             t += '<br>' + indent + '{}: {}'.format(i,display_text(itm[i],indent+unit_indent))
     elif isinstance(itm,opmod.InputLocator):
         t = '(InputLocator)'
-        t += '<br>' + indent + 'src: {}'.format(opmod.input_sources[itm.src])
         t += '<br>' + indent + 'type: {}'.format(opmod.input_types[itm.tp])
         t += '<br>' + indent + 'val: {}'.format(itm.val)
         t += '<br>' + indent + 'data: {}'.format(type(itm.data).__name__)
@@ -60,7 +59,6 @@ def display_text_fast(itm,indent=unit_indent):
         t += suffix 
     elif isinstance(itm,opmod.InputLocator):
         t = '(InputLocator)'
-        t += '<br>' + indent + 'src: {}'.format(opmod.input_sources[itm.src])
         t += '<br>' + indent + 'type: {}'.format(opmod.input_types[itm.tp])
         t += '<br>' + indent + 'val: {}'.format(itm.val)
         t += '<br>' + indent + 'data: {}'.format(type(itm.data).__name__)

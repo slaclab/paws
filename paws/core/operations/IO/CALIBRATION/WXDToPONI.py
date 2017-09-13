@@ -27,14 +27,6 @@ class WXDToPONI(Operation):
         self.input_doc['wxd_file'] = '.calib file produced by WXDIFF calibration'
         self.input_doc['pixel_size_um'] = 'pixel size in microns'
         self.input_doc['fpolz'] = 'polarization factor'
-        self.input_src['wxd_file'] = opmod.fs_input
-        self.input_src['pixel_size_um'] = opmod.text_input 
-        self.input_src['fpolz'] = opmod.text_input
-        self.input_type['wxd_file'] = opmod.path_type
-        self.input_type['pixel_size_um'] = opmod.float_type
-        self.input_type['fpolz'] = opmod.float_type
-        self.inputs['pixel_size_um'] = 79 
-        self.inputs['fpolz'] = 0.95 
         self.output_doc['poni_dict'] = 'Dict of pyFAI calibration parameters, as found in a .poni file'
 
     def run(self):

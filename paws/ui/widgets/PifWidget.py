@@ -39,7 +39,7 @@ class PifWidget(QtGui.QTextEdit):
             t += '<br>' + indent + 'quantity: {}'.format(self.print_qty(itm.quantity,indent+unit_indent))
         if itm.source: 
             #pypif.obj.Source
-            t += '<br>' + indent + 'source: {}'.format(self.print_src(itm.source,indent+unit_indent))
+            t += '<br>' + indent + 'source: {}'.format(self.print_pifsrc(itm.source,indent+unit_indent))
         if itm.preparation is not None: 
             #array of pypif.obj.ProcessStep
             t += '<br>' + indent + 'preparation: (array)'
@@ -84,7 +84,7 @@ class PifWidget(QtGui.QTextEdit):
         t = '(pypif.obj.Quantity)'
         return t
 
-    def print_src(self,itm,indent):    
+    def print_pifsrc(self,itm,indent):    
         t = '(pypif.obj.Source)'
         return t
 

@@ -12,8 +12,6 @@ class BigLoad(Operation):
         super(BigLoad,self).__init__(input_names,output_names) 
         self.input_doc['size'] = 'dimension of big array'
         self.output_doc['big_array'] = 'a big array of noise'
-        self.input_src['size'] = opmod.text_input    
-        self.input_type['size'] = opmod.int_type
         self.inputs['size'] = 10000 
     
     def run(self):

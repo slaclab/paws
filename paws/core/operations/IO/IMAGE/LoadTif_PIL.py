@@ -15,8 +15,6 @@ class LoadTif_PIL(Operation):
         output_names = ['image_data','metadata']
         super(LoadTif_PIL,self).__init__(input_names,output_names)
         self.input_doc['path'] = 'path to a .tif image'
-        self.input_src['path'] = opmod.fs_input
-        self.input_type['path'] = opmod.path_type
         self.output_doc['image_data'] = '2D array representing pixel values'
         self.output_doc['metadata'] = 'Dictionary of image metadata'
         

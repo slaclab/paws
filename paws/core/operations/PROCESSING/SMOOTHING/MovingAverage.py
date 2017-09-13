@@ -18,14 +18,7 @@ class MovingAverage(Operation):
         self.input_doc['shape'] = 'window shape for weighting- triangular or square (default)'
         self.input_doc['error'] = '1d array, same shape as data, optional (default None)'
         self.output_doc['smoothdata'] = 'smoothed 1d array'
-        self.input_src['data'] = opmod.wf_input
-        self.input_src['window'] = opmod.text_input
-        self.input_src['shape'] = opmod.text_input
-        self.input_src['error'] = opmod.wf_input
-        self.input_type['data'] = opmod.ref_type
-        self.input_type['window'] = opmod.int_type
-        self.input_type['shape'] = opmod.str_type
-        self.input_type['error'] = opmod.none_type
+        self.input_type['data'] = opmod.workflow_item
         self.inputs['window'] = 3
         self.inputs['shape'] = 'square' 
 

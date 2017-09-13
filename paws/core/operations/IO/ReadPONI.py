@@ -19,8 +19,6 @@ class ReadPONI(Operation):
         output_names = ['poni_dict']
         super(ReadPONI,self).__init__(input_names,output_names)
         self.input_doc['poni_file'] = 'path to the .poni file' 
-        self.input_src['poni_file'] = opmod.fs_input
-        self.input_type['poni_file'] = opmod.path_type
         self.output_doc['poni_dict'] = 'Dict of pyFAI calibration parameters'
 
     def run(self):

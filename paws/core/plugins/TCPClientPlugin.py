@@ -11,10 +11,6 @@ class TCPClientPlugin(PawsPlugin):
     def __init__(self):
         input_names = ['host','port']
         super(TCPClientPlugin,self).__init__(input_names)
-        self.input_src['host'] = opmod.text_input
-        self.input_src['port'] = opmod.text_input
-        self.input_type['host'] = opmod.str_type
-        self.input_type['port'] = opmod.int_type
         self.input_doc['host'] = 'string representing host name or IP address'
         self.input_doc['port'] = 'integer port number at which some server will be listening' 
        

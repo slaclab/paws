@@ -14,9 +14,6 @@ class CSVToArray(Operation):
         super(CSVToArray, self).__init__(input_names, output_names)
         self.input_doc['path'] = "path to .csv file"
         self.output_doc['array'] = "numpy array built from csv file contents"
-        # source & type
-        self.input_src['path'] = opmod.fs_input
-        self.input_type['path'] = opmod.path_type
 
     def run(self):
         path = self.inputs['path']

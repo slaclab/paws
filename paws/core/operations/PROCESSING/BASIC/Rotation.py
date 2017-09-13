@@ -10,15 +10,11 @@ class Rotation(Operation):
         input_names = ['image_data','rotation_deg']
         output_names = ['image_data']
         super(Rotation,self).__init__(input_names,output_names)        
-        self.input_src['rotation_deg'] = opmod.text_input
         self.input_type['rotation_deg'] = opmod.int_type
         self.input_doc['image_data'] = '2d array representing intensity for each pixel'
-        self.input_doc['rotation_deg'] = str('rotation in degrees counter-clockwise, '
-                                    + 'must be either 90, 180, or 270')
+        self.input_doc['rotation_deg'] = 'rotation in degrees counter-clockwise: '\
+            'must be one of 90, 180, or 270'
         self.output_doc['image_data'] = '2d array representing rotated image'
-        self.input_src['image_data'] = opmod.wf_input
-        self.input_src['rotation_deg'] = opmod.text_input
-        self.input_type['rotation_deg'] = opmod.int_type
         self.inputs['rotation_deg'] = 90 
 
     def run(self):

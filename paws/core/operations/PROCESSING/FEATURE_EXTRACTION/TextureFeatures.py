@@ -24,12 +24,9 @@ class TextureFeatures(Operation):
         self.input_doc['q'] = '1d array of momentum transfer values'
         self.input_doc['chi'] = '1d array of out-of-plane diffraction angles'
         self.input_doc['I'] = '2d array representing intensities at q,chi points'
-        self.input_src['q'] = opmod.wf_input
-        self.input_src['chi'] = opmod.wf_input
-        self.input_src['I'] = opmod.wf_input 
-        self.input_type['q'] = opmod.ref_type
-        self.input_type['chi'] = opmod.ref_type
-        self.input_type['I'] = opmod.ref_type 
+        self.input_type['q'] = opmod.workflow_item
+        self.input_type['chi'] = opmod.workflow_item
+        self.input_type['I'] = opmod.workflow_item 
         self.output_doc['q_texture'] = 'q values at which the texture is analyzed'
         self.output_doc['texture'] = 'quantification of texture for each q'
         self.output_doc['int_sqr_texture'] = 'integral over q of the texture squared'
@@ -46,6 +43,7 @@ class TextureFeatures(Operation):
         texsum = np.bincount((q.ravel()*100).astype(int), (I*np.cos(chi)).ravel())
         chi_count = np.bincount((q.ravel()*100).astype(int), (keep*np.cos(chi)).ravel())
         texture = np.array(texsum) / np.array(I_ave) / np.array(chi_count) - 1
+        # TODO: remove this hard code
         step = 0.01
         q_texture = np.arange(step,np.max(q)+step,step)
         tsqr_int = np.nansum(texture ** 2)/float(q_texture[-1]-q_texture[0])

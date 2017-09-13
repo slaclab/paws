@@ -154,7 +154,7 @@ class WorkflowGraphWidget(QtGui.QWidget):
         #    p.drawLine(QtCore.QPoint(-1*(recthorz+10),vcrd-10),QtCore.QPoint(-1*(recthorz+10),vcrd+10))
         #    ilrec = QtCore.QRectF(QtCore.QPoint(-100,vcrd-10),QtCore.QPoint(-1*(recthorz+12),vcrd+10))
         #    p.drawText(ilrec,QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter,#|QtCore.Qt.TextWordWrap,
-        #    'source: {} \ntype: {} \nvalue: {}'.format(op.input_sources[il.src],op.input_types[il.tp],il.val))
+        #    'type: {} \nvalue: {}'.format(op.input_types[il.tp],il.val))
         #    vcrd += 2*ispc
         ## Label the outputs
         #n_out = len(self.op.outputs)
