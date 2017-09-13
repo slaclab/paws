@@ -11,8 +11,7 @@ class SpectrumClassifier(Operation):
     """
 
     def __init__(self):
-        input_names = ['profiler_output', 'scaler_bad_data', 'scaler_form', 'scaler_prec_struc', 'classifier_bad_data',
-                       'classifier_form','classifier_prec', 'classifier_struc' ]
+        input_names = ['profiler_output', 'scalers', 'classifiers']
         output_names = ['population_flags'] # add propability
         super(SpectrumClassifier, self).__init__(input_names, output_names)
         self.input_doc['profiler_output'] = 'Dict of scalar features as produced by PROCESSING.SAXS.SpectrumProfiler.'
@@ -22,10 +21,12 @@ class SpectrumClassifier(Operation):
 
     def run(self):
         x = self.inputs['profiler_output']
-        clsfr = self.inputs['classifier_bad_data'] # bad_data
-        clsfr2 = self.inputs['classifier_form'] # form
-        clsfr3 = self.inputs['classifier_prec'] # precursor
-        clsfr4 = self.inputs['classifier_struc'] # structure
+
+        clsfr = self.inputs['classifiers']['model_for_bad_data'] # bad_data
+        clsfr2 = self.inputs['classifiers']['model_for_form'] # form
+        clsfr3 = self.inputs['classifiers']['model_for_precursor'] # precursor
+        clsfr4 = self.inputs['classifiers']['model_for_structure'] # structure
+
         flags = OrderedDict()
         flags['test'] = True
 
@@ -64,7 +65,7 @@ class SpectrumClassifier(Operation):
         for item in features60:
             input_features2.append(x[item])
 
-        bad_data_scaler = self.inputs['scaler_bad_data']
+        bad_data_scaler = self.inputs['scalers']['analitical_features_and_60bins_for_bad_data']
         transformed_input_features = bad_data_scaler.transform([input_features1])
 
         flags['bad_data'] = clsfr.predict(transformed_input_features)[0] # [0] since we have only one sample
@@ -75,12 +76,12 @@ class SpectrumClassifier(Operation):
             flags['diffraction_peaks'] = False
         else:
             #form label
-            form_scaler = self.inputs['scaler_form']
+            form_scaler = self.inputs['scalers']['scaler_60bins_no_bad_data']
             transformed_input_features = form_scaler.transform([input_features2])
             flags['form_factor_scattering'] = clsfr2.predict(transformed_input_features)[0]
 
             # precursor label
-            precur_struct_scaler = self.inputs['scaler_prec_struc']
+            precur_struct_scaler = self.inputs['scalers']['scaler_features_analytical_and_60_no_bad_data']
             transformed_input_features = precur_struct_scaler.transform([input_features1])
             flags['precursor_scattering'] = clsfr3.predict(transformed_input_features)[0]
 
