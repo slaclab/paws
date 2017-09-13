@@ -135,9 +135,9 @@ def profile_spectrum(q,I):
     d['Imax_sharpness'] = Imax_sharpness
     d['low_q_ratio'] = low_q_ratio 
     d['high_q_ratio'] = high_q_ratio 
-    d['q_bin_edges'] = q_bin_edges
-    d['q_bin_strengths'] = q_bin_strengths
-    d['log_fluctuation'] = log_fluctuation 
+    #d['q_bin_edges'] = q_bin_edges # I think, we do not need it
+    d['log_fluctuation'] = log_fluctuation
+    d['q_bin_strengths'] = q_bin_strengths 
     return d
 
 def parameterize_spectrum(q,I,flags,fixed_params={}):
