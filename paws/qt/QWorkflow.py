@@ -33,10 +33,10 @@ class QWorkflow(Workflow,QTreeSelectionModel):
     #    self.opChanged.emit(op_tag)
     #    self.opFinished.emit(op_tag)
 
-    def execute(self):
-        stk,diag = self.execution_stack()
-        self.execute_from_layer(stk,0)
-        self.write_log('execution finished')
+    #def execute(self):
+    #    stk,diag = self.execution_stack()
+    #    self.execute_from_layer(stk,0)
+    #    self.write_log('execution finished')
           
     def execute_from_layer(self,stk,layer_index):
         self.write_log('running: {}'.format(stk[layer_index]))
