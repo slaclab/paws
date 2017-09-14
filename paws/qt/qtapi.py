@@ -28,7 +28,8 @@ class QPawsAPI(pawsapi.PawsAPI,QtCore.QObject):
         # with the Qt-enabled variants.
         self._op_manager = QOpManager()
         self._plugin_manager = QPluginManager()
-        self._wf_manager = QWfManager(self._plugin_manager,app)
+        self._wf_manager = QWfManager(app)
+        self._wf_manager.plugin_manager = self._plugin_manager
         # TODO: load_cats and load_ops should happen outside the api.__init__
         # so that different api instances can have different operations loaded
         self._op_manager.load_cats(ops.cat_list) 

@@ -14,6 +14,11 @@ if os.path.exists(cfg_file):
     load_flags = pawstools.load_cfg(cfg_file)
 else:
     load_flags = OrderedDict() 
+
+# Keep track of keys that get loaded in this run.
+# These keys are used to remove load_flags automatically
+# in case Operations or categories have been renamed or removed.
+load_keys = []
     
 def save_config():
     """
@@ -25,11 +30,6 @@ def save_config():
     for k in load_keys:
         od_load_flags[k] = load_flags[k]
     pawstools.save_cfg(od_load_flags,cfg_file)
-
-# Keep track of keys that get loaded in this run.
-# These keys are used to remove load_flags automatically
-# in case Operations or categories have been renamed or removed.
-load_keys = []
 
 def update_load_flags():
     for k in load_flags.keys():
@@ -47,7 +47,9 @@ def load_ops_from_path(path_,pkg,cat_root=''):
             mod_root = modname 
         else:
             mod_root = cat_root+'.'+modname
-        load_keys.append(mod_root)
+        if not ispkg:
+            # Only load non-packages
+            load_keys.append(mod_root)
         if mod_root in load_flags.keys():
             load_mod = bool(load_flags[mod_root])
         else:
@@ -69,9 +71,9 @@ def load_ops_from_path(path_,pkg,cat_root=''):
         else:
             # assume that there is an Operation in this module
             # whose class name is the same as the module name.
-            ops.append( (cat_root,modname) )
             if not cat_root in cats:
                 cats.append(cat_root)
+            ops.append( (cat_root,modname) )
     return ops, cats
         #if load_mod:
         #    # Assume Operation name is same as module name.

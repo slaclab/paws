@@ -3,8 +3,8 @@ import os
 import numpy as np
 import pyFAI
 
-from ... import Operation as opmod 
-from ...Operation import Operation
+from .. import Operation as opmod 
+from ..Operation import Operation
 
 class ReadPONI(Operation):
     """

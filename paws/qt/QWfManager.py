@@ -20,14 +20,35 @@ class QWfManager(WfManager,QtCore.QObject):
     """
     A Qt Signal-slot manager for paws Workflows.
     """
+    # this signal should emit the name
+    # of the new workflow 
+    wf_added = QtCore.Signal(str)
 
-    def __init__(self,qapp,qpluginmanager):
-        # NOTE: what happens when qpluginmanager gets passed to QObject.__init__?
-        super(QWfManager,self).__init__(qpluginmanager)
+    # this signal should emit the name
+    # of the workflow that has been updated 
+    wf_updated = QtCore.Signal(str)
+
+    # this signal should emit the name
+    # of the workflow that finished.
+    wfdone = QtCore.Signal(str)
+
+    @QtCore.Slot(str)
+    def launchWorkflow(self,wfname):
+        self.run_wf_threaded(wfname)
+
+    def run_wf(self,wfname):
+        """
+        Call QWorkflow.execute_threaded() 
+        """
+        self.workflows[wfname].execute()
+
+    @QtCore.Slot(str)
+    def stopWorkflow(self,wfname):
+        self.stop_wf(wfname)
+
+    def __init__(self,qapp):
+        super(QWfManager,self).__init__()
         self.app = qapp 
-        self._n_threads = QtCore.QThread.idealThreadCount()
-        self._n_wf_threads = 1
-        self._wf_threads = dict.fromkeys(range(self._n_threads)[:self._n_wf_threads]) 
         self.wf_running = OrderedDict()
 
     def add_wf(self,wfname):
@@ -41,22 +62,7 @@ class QWfManager(WfManager,QtCore.QObject):
             raise pawstools.WfNameError(wf.tag_error_message(wfname))
         self.workflows[wfname] = wf
         self.wf_running[wfname] = False
-
-    # this signal should emit the name
-    # of the workflow that has been updated 
-    wf_updated = QtCore.Signal(str)
-
-    # this signal should emit the name
-    # of the workflow that finished.
-    wfdone = QtCore.Signal(str)
-
-    @QtCore.Slot(str)
-    def runWorkflow(self,wfname):
-        self.run_wf(wfname)
-
-    @QtCore.Slot(str)
-    def stopWorkflow(self,wfname):
-        self.stop_wf(wfname)
+        self.wf_added.emit(wfname)
 
     def stop_wf(self,wfname):
         self.wf_running[wfname] = False

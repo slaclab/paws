@@ -18,14 +18,16 @@ class OpManager(TreeModel):
         super(OpManager,self).__init__(default_flags)
         self.logmethod = print 
         self._n_ops = 0
-        self._n_cats = 0
+        #self._n_cats = 0
 
     # override TreeModel.create_tree_item() to add 
     # the correct enable/disable flags. 
     def create_tree_item(self,parent_itm,itm_tag):
         itm = TreeItem(parent_itm,itm_tag)
         op_uri = self.build_uri(itm)
-        itm.flags['enable'] = ops.load_flags[op_uri]
+        itm.flags['enable'] = False
+        if op_uri in ops.load_flags.keys():
+            itm.flags['enable'] = ops.load_flags[op_uri]
         return itm
 
     def write_log(self,msg):
@@ -41,7 +43,7 @@ class OpManager(TreeModel):
             cat_uri = cat_tags[0]
             if not self.contains_uri(cat_uri):
                 self.set_item(cat_uri,{})
-                self._n_cats += 1
+                #self._n_cats += 1
             if len(cat_tags) > 1:
                 for cat_tag in cat_tags[1:]:
                     #if not cat_tag in self.list_child_tags(cat_uri):
@@ -49,7 +51,7 @@ class OpManager(TreeModel):
                     if not self.contains_uri(cat_uri):
                         #print('set cat {}'.format(cat_uri))
                         self.set_item(cat_uri,{})
-                        self._n_cats += 1
+                        #self._n_cats += 1
 
     def load_ops(self,cat_op_list):
         """

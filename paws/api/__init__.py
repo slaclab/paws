@@ -3,6 +3,10 @@ from __future__ import print_function
 import os
 from functools import partial
 from collections import OrderedDict
+import re
+import importlib
+
+import yaml
 
 from ..core import pawstools
 from ..core import operations as ops
@@ -37,7 +41,9 @@ class PawsAPI(object):
         self.logmethod = print 
         self._op_manager = OpManager()
         self._plugin_manager = PluginManager()
-        self._wf_manager = WfManager(self._plugin_manager)
+        self._wf_manager = WfManager()
+        self._wf_manager.plugin_manager = self._plugin_manager
+
         # TODO: load_cats and load_ops should happen outside the api.__init__
         # so that different api instances can have different operations loaded
         self._op_manager.load_cats(ops.cat_list) 
@@ -156,6 +162,9 @@ class PawsAPI(object):
     def add_plugin(self,pgin_tag,pgin_name):
         pgin = self._plugin_manager.load_plugin(pgin_name)
         self._plugin_manager.add_plugin(pgin_tag,pgin())
+
+    def load_plugin(self,pgin_module):
+        return self._plugin_manager.load_plugin(pgin_module)
 
     def set_plugin_input(self,pgin_tag,input_name,val=None,tp=None):
         pgin = self._plugin_manager.get_data_from_uri(pgin_tag)
@@ -277,10 +286,12 @@ class PawsAPI(object):
             for opname in wf.list_op_tags():
                 op = wf.get_data_from_uri(opname)
                 wf_dict[opname] = self._wf_manager.op_setup_dict(op)
+                wf_dict['WORKFLOW_INPUTS'] = wf.inputs
+                wf_dict['WORKFLOW_OUTPUTS'] = wf.outputs
             wfman_dict[wfname] = wf_dict
         d['WORKFLOWS'] = wfman_dict
         pgin_dict = OrderedDict() 
-        for pgin_name in self._plugin_manager.list_plugins():
+        for pgin_name in self._plugin_manager.list_plugin_tags():
             pgin = self._plugin_manager.get_data_from_uri(pgin_name)
             pgin_dict[pgin_name] = self._plugin_manager.plugin_setup_dict(pgin)
         d['PLUGINS'] = pgin_dict
@@ -308,15 +319,18 @@ class PawsAPI(object):
             'until the workflows and plugins are reviewed/refactored '\
             'under the current version.'.format(pawstools.version,wfl_version))  
         if 'OP_LOAD_FLAGS' in d.keys():
-            ops.load_flags.update(d['OP_LOAD_FLAGS'])
+            for opname,flag in d['OP_LOAD_FLAGS'].items():
+                if opname in ops.load_flags.keys():
+                    if ops.load_flags[opname]:
+                        self.activate_op(opname)
         if 'WORKFLOWS' in d.keys():
             wf_dict = d['WORKFLOWS']
-            for wfname,wfspec in wf_dict:
-                self._wf_manager.load_from_dict(wfname,self._op_manager,wfspec)
+            for wfname,wfspec in wf_dict.items():
+                self._wf_manager.load_from_dict(wfname,wfspec,self._op_manager)
         if 'PLUGINS' in d.keys():
             pgin_dict = d['PLUGINS']
-            for pgin_name,pginspec in pgin_dict:
-                self._plugin_manager.load_from_dict(pgin_name,pgin_dict)
+            for pgin_name,pgin_spec in pgin_dict.items():
+                self._plugin_manager.load_from_dict(pgin_name,pgin_spec)
     
     def op_count(self,wfname=None):
         return self.get_wf(wfname).n_children()

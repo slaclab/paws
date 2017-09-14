@@ -40,8 +40,8 @@ class PluginManager(TreeModel):
         Load plugins from a dict that specifies their setup parameters.
         """
         #for tag, pgin_spec in plugin_dict.items():
-        pgin_uri = pgin_spec['plugin_module']
-        pgin = self.get_plugin(pgin_uri)
+        pgin_module = pgin_spec['plugin_module']
+        pgin = self.load_plugin(pgin_module)
         if pgin is not None:
             if not issubclass(pgin,PawsPlugin):
                 self.write_log('Did not find Plugin {} - skipping.'.format(pgin_uri))
@@ -102,19 +102,13 @@ class PluginManager(TreeModel):
     def get_plugin(self,pgin_tag):
         return self.get_data_from_uri(pgin_tag)
 
-    def load_plugin(self,pgin_type):    
+    def load_plugin(self,pgin_module):    
         try:
-            mod = importlib.import_module('.'+pgin_type,pgns.__name__)
-            #if pgin_type in mod.__dict__.keys():
-            return mod.__dict__[pgin_type]
-            #else:
-            #    msg = str('Did not find plugin {} in module {}'
-            #    .format(pgin_type,mod.__name__))
-            #    self.write_log(msg)
-            #    return None 
+            mod = importlib.import_module('.'+pgin_module,pgns.__name__)
+            return mod.__dict__[pgin_module]
         except Exception as ex:
             msg = str('Exception occurred while loading plugin {}. '
-            .format(pgin_type) + 'Error message: ' + ex.message)
+            .format(pgin_module) + 'Error message: ' + ex.message)
             self.write_log(msg)
             raise pawstools.PluginLoadError(msg)   
  

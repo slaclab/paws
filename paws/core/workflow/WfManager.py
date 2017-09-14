@@ -20,11 +20,11 @@ class WfManager(object):
     for access to PawsPlugins.
     """
 
-    def __init__(self,plugin_manager):
-        #super(WfManager,self).__init__()
+    def __init__(self):
+        super(WfManager,self).__init__()
         self.workflows = OrderedDict() 
-        self.plugin_manager = plugin_manager
         self.logmethod = print 
+        self.plugin_manager = None
 
     #def __getitem__(self,key):
     #    if key in self.workflows.keys():
@@ -84,18 +84,22 @@ class WfManager(object):
                 d[k] = v
         return d
 
-    def load_from_dict(self,wfname,opman,opdict):
+    def load_from_dict(self,wfname,wf_spec,op_manager):
         """
         Create a workflow with name wfname.
         If wfname is not unique, self.workflows[wfname] is overwritten.
-        Input opdict specifies operation setup,
-        where each item in opdict provides enough information
-        to get an Operation from OpManager opman
-        and set up its Operation.input_locators.
+        Input dict wf_spec specifies Workflow setup,
+        including all operations, Workflow.inputs, and Workflow.outputs.
         """
         self.add_wf(wfname)
-        for opname, op_setup in opdict.items():
-            op = self.build_op_from_dict(op_setup,opman)
+        wfin_spec = wf_spec.pop('WORKFLOW_INPUTS')
+        wfout_spec = wf_spec.pop('WORKFLOW_OUTPUTS')
+        for inpname,inpval in wfin_spec.items():
+            self.workflows[wfname].connect_wf_input(inpname,inpval)
+        for outname,outval in wfout_spec.items():
+            self.workflows[wfname].connect_wf_output(outname,outval)
+        for opname, op_setup in wf_spec.items():
+            op = self.build_op_from_dict(op_setup,op_manager)
             if isinstance(op,Operation):
                 self.workflows[wfname].set_item(opname,op)
             else:
@@ -113,11 +117,11 @@ class WfManager(object):
         dct[opmod.inputs_tag] = inp_dct 
         return dct
 
-    def build_op_from_dict(self,op_setup,opman):
+    def build_op_from_dict(self,op_setup,op_manager):
         op_uri = op_setup['op_module']
         if not ops.load_flags[op_uri]:
-            opman.set_op_enabled(op_uri)
-        op = opman.get_data_from_uri(op_uri)
+            op_manager.set_op_enabled(op_uri)
+        op = op_manager.get_data_from_uri(op_uri)
         if issubclass(op,Operation):
             op = op()
             op.load_defaults()

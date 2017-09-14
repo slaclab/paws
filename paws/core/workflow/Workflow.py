@@ -76,9 +76,6 @@ class Workflow(TreeModel):
             self.write_log('running: {}'.format(lst))
             for op_tag in lst: 
                 try:
-                    #op = self.get_data_from_uri(op_tag) 
-                    #self.load_inputs(op,self.wf_manager,self.wf_manager.plugin_manager)
-                    #op.run() 
                     self.execute_op(op_tag)
                 except Exception as ex:
                     tb = traceback.format_exc()

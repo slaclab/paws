@@ -10,13 +10,7 @@ from . import uitools
 from . import widgets 
 from ..core import pawstools
 from ..core import plugins as pgns
-from .WfUiManager import WfUiManager
-from .OpUiManager import OpUiManager
-from .PluginUiManager import PluginUiManager
 from ..core.models.ListModel import ListModel
-from ..qt.QWfManager import QWfManager
-from ..qt.QOpManager import QOpManager
-from ..qt.QPluginManager import QPluginManager
 from .widgets import WorkflowGraphView
 
 class UiManager(QtCore.QObject):
@@ -32,7 +26,6 @@ class UiManager(QtCore.QObject):
         ui_file.close()
         self.ui.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         qpaw.set_logmethod( self.msg_board_log )
-
         self.paw = qpaw
         self.make_title()
         self.build()
@@ -99,6 +92,7 @@ class UiManager(QtCore.QObject):
         self.ui.wf_name_entry.sizePolicy().verticalPolicy())
         self.ui.add_workflow_button.setText('Add')
         self.ui.add_workflow_button.clicked.connect( self.add_wf )
+        self.paw._wf_manager.wf_added.connect(self.append_to_wf_selector)
         lm = ListModel(self.paw.list_wf_tags())
         self.ui.wf_selector.setModel(lm)
         self.ui.wf_selector.currentIndexChanged.connect( partial(self.set_wf) )
@@ -157,12 +151,18 @@ class UiManager(QtCore.QObject):
         self.ui.left_vsplitter.setStretchFactor(2,3)    
         self.ui.center_vsplitter.setStretchFactor(0,1)    
 
+    def append_to_wf_selector(self,new_wfname):
+        self.ui.wf_selector.model().append_item(new_wfname)
+
     def set_wf(self,wf_selector_idx):
         wfname = self.ui.wf_selector.model().list_data()[wf_selector_idx]
         self.paw.select_wf(wfname)
         wf = self.paw.get_wf(wfname)
         self.ui.wf_tree.setModel(wf)
         self.ui.wf_tree.setRootIndex(wf.root_index())
+        # hide the selection flag column.
+        self.ui.wf_tree.hideColumn(1)
+        self.ui.wf_tree.setColumnWidth(0,200)
         self.update_run_wf_button()
 
     def add_plugin(self):
@@ -220,12 +220,8 @@ class UiManager(QtCore.QObject):
                 msg_ui.message_box.setPlainText(ex.message)
                 msg_ui.show()
                 return
-            self.ui.wf_selector.model().append_item(wfname)
+            self.append_to_wf_selector(wfname)
             self.ui.wf_selector.setCurrentIndex(self.paw.n_wf()-1)
-            # if this is the first workflow loaded, hide the selection flag column.
-            if self.paw.n_wf() == 1:
-                self.ui.wf_tree.hideColumn(1)
-                self.ui.wf_tree.setColumnWidth(0,200)
             self.ui.wf_name_entry.clear()
             # Add a tab to the viewer for this workflow 
             self.add_wf_tab(wfname)
@@ -345,4 +341,5 @@ class UiManager(QtCore.QObject):
     def finish_load_state(self,ui):
         fname = ui.tree.model().filePath(ui.tree.currentIndex())
         self.paw.load_from_wfl(fname)
+        ui.close()
 
