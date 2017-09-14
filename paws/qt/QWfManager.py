@@ -36,12 +36,6 @@ class QWfManager(WfManager,QtCore.QObject):
     def launchWorkflow(self,wfname):
         self.run_wf_threaded(wfname)
 
-    def run_wf(self,wfname):
-        """
-        Call QWorkflow.execute_threaded() 
-        """
-        self.workflows[wfname].execute()
-
     @QtCore.Slot(str)
     def stopWorkflow(self,wfname):
         self.stop_wf(wfname)
@@ -50,6 +44,12 @@ class QWfManager(WfManager,QtCore.QObject):
         super(QWfManager,self).__init__()
         self.app = qapp 
         self.wf_running = OrderedDict()
+
+    def run_wf(self,wfname):
+        """
+        Call QWorkflow.execute_threaded() 
+        """
+        self.workflows[wfname].execute()
 
     def add_wf(self,wfname):
         """
