@@ -12,7 +12,7 @@ class SpectrumClassifier(Operation):
 
     def __init__(self):
         input_names = ['profiler_output', 'scalers', 'classifiers']
-        output_names = ['population_flags'] # add propability
+        output_names = ['population_flags']
         super(SpectrumClassifier, self).__init__(input_names, output_names)
         self.input_doc['profiler_output'] = 'Dict of scalar features as produced by PROCESSING.SAXS.SpectrumProfiler.'
         self.input_doc['classifier'] = 'A classification model that has been imported or trained before executing this operation.'
@@ -36,6 +36,16 @@ class SpectrumClassifier(Operation):
         # transform the ordered dictionary into an array of features:
         bin_strengths = x['q_bin_strengths']
         del x['q_bin_strengths']
+
+        #edges = x['q_bin_edges']
+        del x['q_bin_edges']
+
+        '''
+        # we can use edges instead to indexes, but it could cause a problem
+        # when not all samples have a specific edge
+        for i in range(len(edges)):
+            x[str(edges[i])] = bin_strengths[i]
+        '''
 
         # should we do it in profile_spectrum()?
         for i in range(100):
@@ -68,25 +78,46 @@ class SpectrumClassifier(Operation):
         bad_data_scaler = self.inputs['scalers']['analitical_features_and_60bins_for_bad_data']
         transformed_input_features = bad_data_scaler.transform([input_features1])
 
-        flags['bad_data'] = clsfr.predict(transformed_input_features)[0] # [0] since we have only one sample
+        bad_data = clsfr.predict(transformed_input_features)[0] # [0] since we have only one sample
+        if bad_data:
+            pr_bad_data = clsfr.predict_proba(transformed_input_features)[0, 1]
+        else:
+            pr_bad_data = clsfr.predict_proba(transformed_input_features)[0, 0]
 
-        if flags['bad_data'] == True:
-            flags['precursor_scattering'] = False
-            flags['form_factor_scattering'] = False
-            flags['diffraction_peaks'] = False
+        flags['bad_data'] = (bad_data, pr_bad_data) # label and propability to have this label
+
+        if bad_data == True:
+            flags['precursor_scattering'] = (False, None)
+            flags['form_factor_scattering'] = (False, None)
+            flags['diffraction_peaks'] = (False, None)
         else:
             #form label
             form_scaler = self.inputs['scalers']['scaler_60bins_no_bad_data']
             transformed_input_features = form_scaler.transform([input_features2])
-            flags['form_factor_scattering'] = clsfr2.predict(transformed_input_features)[0]
+            form = clsfr2.predict(transformed_input_features)[0]
+            if form:
+                pr_form = clsfr2.predict_proba(transformed_input_features)[0, 1]
+            else:
+                pr_form = clsfr2.predict_proba(transformed_input_features)[0, 0]
+            flags['form_factor_scattering'] = (form, pr_form) # label and propability to have this label
 
             # precursor label
             precur_struct_scaler = self.inputs['scalers']['scaler_features_analytical_and_60_no_bad_data']
             transformed_input_features = precur_struct_scaler.transform([input_features1])
-            flags['precursor_scattering'] = clsfr3.predict(transformed_input_features)[0]
+            prec = clsfr3.predict(transformed_input_features)[0]
+            if prec:
+                pr_prec = clsfr3.predict_proba(transformed_input_features)[0, 1]
+            else:
+                pr_prec = clsfr3.predict_proba(transformed_input_features)[0, 0]
+            flags['precursor_scattering'] = (prec, pr_prec)
 
             # structure label
-            flags['diffraction_peaks'] = clsfr4.predict(transformed_input_features)[0]
+            picks = clsfr4.predict(transformed_input_features)[0]
+            if picks:
+                pr_picks = clsfr4.predict_proba(transformed_input_features)[0, 1]
+            else:
+                pr_picks = clsfr4.predict_proba(transformed_input_features)[0, 0]
+            flags['diffraction_peaks'] = (picks, pr_picks)
 
         # problems for later:
         # if flags['form_factor_scattering']:
