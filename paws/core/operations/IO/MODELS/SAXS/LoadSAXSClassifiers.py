@@ -20,16 +20,33 @@ class LoadSAXSClassifiers(Operation):
         'classifiers and scalers designed for 1-d SAXS spectra, '\
         'intended for input to PROCESSING.SAXS.SpectrumClassifier.'
 
+        print("TEST: in LOadSAXS: init__")
+
     def run(self):
-        p = self.inputs['file_path']
-        f = open(p,'r')
+        print("TEST: in LOadSAXS: 11111111111111")
+        #p = self.inputs['file_path']
+        #f = open(p,'r')
         #ds = yaml.load(f)
         # (1) Load the data from the file
 
-        f.close()
+        #f.close()
         
         # (2) Use the data to build the set of classifiers and scalers
-        classifier_dict = None
+        # classifier_dict = None
+
+        # (2) or load the classifiers and scalers from a file
+        s_and_m_file = open('../../../../..core/tools/modeling_data/scalers_and_models.pickle​','r')
+        s_and_m = pickle.load(s_and_m_file)
+        scalers_dict = s_and_m['scalers'] # dict of scalers
+        classifier_dict = s_and_m['models'] # dict of models
+
 
         # (3) save the dict of classifiers and scalers as output
-        self.outputs['classifiers'] = classifier_dict 
+        self.outputs['classifiers'] = classifier_dict
+        self.outputs['scalers'] = scalers_dict
+
+        print("TEST: in LOadSAXS: ", classifier_dict)
+
+        #self.inputs['classifiers'] = classifier_dict
+        #self.inputs['scalers'] = scalers_dict
+

@@ -22,6 +22,10 @@ class SpectrumClassifier(Operation):
     def run(self):
         x = self.inputs['profiler_output']
 
+        print("TEST: in SpectrumClassifier: 111111111111")
+
+        print("TEST: in SpectrumClassifier: ", self.inputs['classifiers'])
+
         clsfr = self.inputs['classifiers']['model_for_bad_data'] # bad_data
         clsfr2 = self.inputs['classifiers']['model_for_form'] # form
         clsfr3 = self.inputs['classifiers']['model_for_precursor'] # precursor
