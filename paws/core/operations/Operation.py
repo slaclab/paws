@@ -1,6 +1,7 @@
 import abc
 import re
 from collections import OrderedDict
+import copy
 
 # Enumeration of valid types for workflow and plugin inputs
 no_input = 0
@@ -96,6 +97,16 @@ class Operation(object):
         """
         pass
 
+    def copy(self):
+        new_op = copy.copy(self)
+        for nm,il in self.input_locator.items():
+            if il.tp in [workflow_item,plugin_item,auto_type]:
+                # Hope that copy.deepcopy() does the trick
+                new_op.inputs[nm] = copy.deepcopy(self.inputs[nm])
+            elif il.tp == entire_workflow:
+                new_op.inputs[nm] = self.inputs[nm].copy() 
+        return new_op
+    
     def clear_outputs(self):
         for k,v in self.outputs.items():
             self.outputs[k] = None
@@ -134,6 +145,7 @@ class Operation(object):
         for name,val in self.outputs.items(): 
             a = a + '\n\n'+parameter_doc(name,val,self.output_doc[name])
         return a
+    
 
 def parameter_doc(name,value,doc):
     if isinstance(value, InputLocator):

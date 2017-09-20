@@ -28,6 +28,7 @@ class UiManager(QtCore.QObject):
         qpaw.set_logmethod( self.msg_board_log )
         self.paw = qpaw
         self.make_title()
+        self.threads = QtCore.QThreadPool()
         self.build()
 
     def msg_board_log(self,msg):
@@ -294,13 +295,15 @@ class UiManager(QtCore.QObject):
             wfname = self.paw.current_wf_name()
         if wfname is not None:
             wf = self.paw.get_wf(wfname)
-            if self.paw.is_wf_running(wfname): 
+            if self.paw.is_wf_running(wfname):
+                # TODO: the interruption will have to be carried out by signals and slots 
                 self.paw.stop_wf(wfname)
                 self.ui.run_wf_button.setText("&Run")
                 #self.requestStopWorkflow.emit(wfname)
             else:
                 self.ui.run_wf_button.setText("S&top")
-                self.paw.execute(wfname)
+                self.paw.run_wf(wfname)
+                #wf.run_in_threadpool(self.threads)
 
     def update_run_wf_button(self):
         wfname = self.paw.current_wf_name() 

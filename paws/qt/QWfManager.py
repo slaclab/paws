@@ -34,7 +34,7 @@ class QWfManager(WfManager,QtCore.QObject):
 
     @QtCore.Slot(str)
     def launchWorkflow(self,wfname):
-        self.run_wf_threaded(wfname)
+        self.run_wf(wfname)
 
     @QtCore.Slot(str)
     def stopWorkflow(self,wfname):

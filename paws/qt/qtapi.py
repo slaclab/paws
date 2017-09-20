@@ -48,5 +48,8 @@ class QPawsAPI(pawsapi.PawsAPI,QtCore.QObject):
     def stop_wf(self,wfname):
         self._wf_manager.stop_wf(wfname)
 
+    def run_wf(self,wfname):
+        self._wf_manager.run_wf(wfname)
+
     def is_wf_running(self,wfname):
         return self._wf_manager.wf_running[wfname]
