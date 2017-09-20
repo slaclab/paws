@@ -15,9 +15,12 @@ class SpectrumClassifier(Operation):
         output_names = ['population_flags']
         super(SpectrumClassifier, self).__init__(input_names, output_names)
         self.input_doc['profiler_output'] = 'Dict of scalar features as produced by PROCESSING.SAXS.SpectrumProfiler.'
-        self.input_doc['classifier'] = 'A classification model that has been imported or trained before executing this operation.'
+        self.input_doc['scalers'] = 'A classification model that has been imported or trained before executing this operation.'
+        self.input_doc['classifiers'] = 'A classification model that has been imported or trained before executing this operation.'
         self.output_doc['population_flags'] = 'Dict of flags indicating the presence of various scattering populations'
         self.input_type['profiler_output'] = opmod.workflow_item
+        self.input_type['scalers'] = opmod.workflow_item
+        self.input_type['classifiers'] = opmod.workflow_item
 
     def run(self):
         x = self.inputs['profiler_output']
@@ -26,6 +29,8 @@ class SpectrumClassifier(Operation):
 
         print("TEST: in SpectrumClassifier: ", self.inputs['classifiers'])
 
+        # TODO: use keys: 'bad_data', 'precursor_scattering', 'form_factor_scattering', and 'diffraction_peaks',
+        # i.e. same keys as population_flags output dict
         clsfr = self.inputs['classifiers']['model_for_bad_data'] # bad_data
         clsfr2 = self.inputs['classifiers']['model_for_form'] # form
         clsfr3 = self.inputs['classifiers']['model_for_precursor'] # precursor
