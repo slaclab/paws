@@ -3,6 +3,7 @@ import pickle
 
 from .... import Operation as opmod 
 from ....Operation import Operation
+from ..... import pawstools
 
 class LoadSAXSClassifiers(Operation):
     """
@@ -19,6 +20,7 @@ class LoadSAXSClassifiers(Operation):
         self.output_doc['classifiers'] = 'a dict of sklearn '\
         'classifiers and scalers designed for 1-d SAXS spectra, '\
         'intended for input to PROCESSING.SAXS.SpectrumClassifier.'
+        self.inputs['file_path'] = os.path.join(pawstools.sourcedir,'core','tools','modeling_data','scalers_and_models.pkl')
 
         print("TEST: in LOadSAXS: init__")
 
@@ -35,7 +37,8 @@ class LoadSAXSClassifiers(Operation):
         # classifier_dict = None
 
         # (2) or load the classifiers and scalers from a file
-        s_and_m_file = open('../../../../..core/tools/modeling_data/scalers_and_models.pickle​','r')
+        #s_and_m_file = open('../../../../..core/tools/modeling_data/scalers_and_models.pickle​','r')
+        s_and_m_file = open(self.inputs['file_path'],'r') 
         s_and_m = pickle.load(s_and_m_file)
         scalers_dict = s_and_m['scalers'] # dict of scalers
         classifier_dict = s_and_m['models'] # dict of models
