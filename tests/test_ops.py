@@ -2,7 +2,7 @@ import unittest
 
 import paws.api
 
-class TestAPI(unittest.TestCase):
+class TestOps(unittest.TestCase):
 
     def test_activate_ops(self):
         paw = paws.api.start()
