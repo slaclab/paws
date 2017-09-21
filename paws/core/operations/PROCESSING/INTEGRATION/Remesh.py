@@ -8,7 +8,8 @@ the Ewald's sphere.
 
 import numpy as np
 from pyFAI.geometry import Geometry
-from pipeline import remesh
+# TODO: this op shouldn't depend on Xicam's pipeline module
+#from pipeline import remesh
 
 from ... import Operation as opmod 
 from ...Operation import Operation
@@ -36,7 +37,8 @@ class Remesh(Operation):
         img = self.inputs['image_data']
         geometry = self.inputs['pyFAI_geometory']
         alphai = self.inputs['alphai']
-        qpar, qvrt, intensity = remesh.remesh(img, geometry, alphai)
+        #qpar, qvrt, intensity = remesh.remesh(img, geometry, alphai)
+        qpar, qvrt, intensity = None, None, None
         # save results to self.outputs
         self.outputs['qpar'] = qpar
         self.outputs['qvrt'] = qvrt

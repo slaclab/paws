@@ -51,10 +51,10 @@ class BgSubtractByTemperature(Operation):
         if not all(q_I[:,0] == q_I_bg[:,0]):
             msg = 'SPECTRUM AND BACKGROUND ON DIFFERENT q DOMAINS'
             raise ValueError(msg)
-        bad_data = (q_I_meas[:,1] <= 0) 
+        bad_data = ( (q_I_meas[:,1] <= 0) 
             | (qI_bg[:,1] <= 0) 
             | np.isnan(q_I_meas[:,1]) 
-            | np.isnan(qI_bg[:,1])
+            | np.isnan(qI_bg[:,1]) )
         I_floor = 0 
         #I_floor = 1E-6 * np.max(q_I_meas[:,1])
         bg_factor = np.min((q_I_meas[:,1][~bad_data]-I_floor) / I_bg[~bad_data])

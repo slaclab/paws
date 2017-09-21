@@ -68,11 +68,11 @@ class RealtimeFromFiles(Operation):
                 if nd == 1000:
                     wf.write_log('ABORTING')
                     keep_going = False 
-           else:
+            else:
                 nd = 0
                 #input_dict_list.append( {inpname:filename} )
                 wf.set_wf_input(inpname,filename)
-                wf.write_log('EXECUTION {}'.format(nx)
+                wf.write_log('EXECUTION {}'.format(nx))
                 nx+=1
                 wf.execute()
                 self.outputs['realtime_outputs'].append(wf.wf_outputs_dict())

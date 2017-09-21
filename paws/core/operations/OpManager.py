@@ -36,6 +36,9 @@ class OpManager(TreeModel):
     def n_ops(self):
         return self._n_ops
 
+    def list_ops(self):
+        return [catnm+'.'+opnm for catnm,opnm in ops.cat_op_list] 
+
     def load_cats(self,cat_list):
         for cat in cat_list:
             itm = self._root_item

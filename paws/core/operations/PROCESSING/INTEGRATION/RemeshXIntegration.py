@@ -4,7 +4,8 @@ Integrate an ROI on image in X-direction
 """
 
 import numpy as np
-from pipeline import remesh_integ
+# TODO: this shouldn't depend on xicam's pipeline module
+#from pipeline import remesh_integ
 
 from ... import Operation as opmod 
 from ...Operation import Operation
@@ -33,6 +34,7 @@ class RemeshXIntegration(Operation):
         cut = self.inputs['ROI_mask']
         qv = self.inputs['qvrt']
         qp = self.inputs['qpar']
-        qx, xprof = remesh_integ.remeshzintegrate(data, mask, cut = cut, qvrt = qv, qpar = ap)
+        #qx, xprof = remesh_integ.remeshzintegrate(data, mask, cut = cut, qvrt = qv, qpar = ap)
+        qx, xprof = None, None
         self.outputs['qx'] = qx
         self.outputs['xprofile'] = xprof

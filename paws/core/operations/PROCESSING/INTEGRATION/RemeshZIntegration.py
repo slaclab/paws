@@ -4,7 +4,8 @@ Integrate an ROI on image in Z-direction
 """
 
 import numpy as np
-from pipeline import remesh_integ
+# TODO: this shouldn't depend on xicam's pipeline
+#from pipeline import remesh_integ
 
 from ... import Operation as opmod 
 from ...Operation import Operation
@@ -33,6 +34,7 @@ class RemeshZIntegration(Operation):
         cut = self.inputs['ROI_mask']
         qv = self.inputs['qvrt']
         qp = self.inputs['qpar']
-        qz, zprof = remesh_integ.remeshzintegrate(data, mask, cut = cut, qvrt = qv, qpar = ap)
+        qz, zprof = None, None
+        #qz, zprof = remesh_integ.remeshzintegrate(data, mask, cut = cut, qvrt = qv, qpar = ap)
         self.outputs['qz'] = qz
         self.outputs['zprofile'] = zprof
