@@ -23,12 +23,14 @@ class WriteArrayCSV(Operation):
 
     def run(self):
         #import pdb; pdb.set_trace()
-        h = self.inputs['headers']
         a = self.inputs['array']
-        tag = ''
-        if self.inputs['filetag']:
-            tag = self.inputs['filetag']
-        csv_path = self.inputs['dir_path']+'/'+self.inputs['filename']+tag+'.csv'
+        h = self.inputs['headers']
+        p = self.inputs['dir_path']
+        fnm = self.inputs['filename']
+        tag = self.inputs['filetag']
+        if p is None or a is None or fnm is None:
+            return 
+        csv_path = os.path.join(p,self.inputs['filename']+tag+'.csv')
         self.outputs['file_path'] = csv_path
         if h is not None:
             h_str = ''

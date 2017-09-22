@@ -28,13 +28,15 @@ class BuildFilePath(Operation):
         self.output_doc['file_path'] = 'file_path will be <path><prefix><filename><suffix>.<ext>' 
 
     def run(self):
+        p = self.inputs['dir_path']
+        fn = self.inputs['filename']
+        if p is None or fn is None:
+            return
         ext = self.inputs['ext']
         if not ext[0] == '.' and not ext == '':
             ext = '.'+ext
-        p = self.inputs['dir_path']
         #if not p[-1] == '/':
         #    p = p + '/'
-        fn = self.inputs['filename']
         pf = self.inputs['prefix']
         sf = self.inputs['suffix']
         self.outputs['filename'] = str(pf+fn+sf) 

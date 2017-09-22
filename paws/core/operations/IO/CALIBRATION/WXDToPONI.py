@@ -27,11 +27,14 @@ class WXDToPONI(Operation):
         self.input_doc['wxd_file'] = '.calib file produced by WXDIFF calibration'
         self.input_doc['pixel_size_um'] = 'pixel size in microns'
         self.input_doc['fpolz'] = 'polarization factor'
+        self.inputs['fpolz'] = float(1.)
         self.output_doc['poni_dict'] = 'Dict of pyFAI calibration parameters, as found in a .poni file'
 
     def run(self):
         fpath = self.inputs['wxd_file']
         pxsz_um = self.inputs['pixel_size_um']
+        if fpath is None or pxsz_um is None:
+            return
         pxsz_m = pxsz_um*1E-6
         fpolz = self.inputs['fpolz']
         for line in open(fpath,'r'):

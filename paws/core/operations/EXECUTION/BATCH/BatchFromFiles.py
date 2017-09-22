@@ -27,6 +27,8 @@ class BatchFromFiles(Operation):
         batch_list = self.inputs['file_list'] 
         inpname = self.inputs['input_name'] 
         wf = self.inputs['workflow'] 
+        if (wf is None or batch_list is None or not inpname):
+            return
         n_batch = len(batch_list)
         wf.write_log('STARTING BATCH')
         for i,filename in zip(range(n_batch),batch_list):

@@ -30,11 +30,6 @@ with open(os.path.join(sourcedir,'paws_config.py')) as f:
     exec(f.read())
 version=__version__
 
-class LazyCodeError(Exception):
-    pass
-    #def __init__(self,msg):
-    #    super(LazyCodeError,self).__init__(self,msg)
-
 class WorkflowAborted(Exception):
     pass
     #def __init__(self,msg):

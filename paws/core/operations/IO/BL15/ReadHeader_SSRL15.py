@@ -19,6 +19,8 @@ class ReadHeader_SSRL15(Operation):
 
     def run(self):
         file_path = self.inputs['file_path']
+        if file_path is None:
+            return
         filename = split(file_path)[1]
         filename_noext = splitext(filename)[0]
         self.outputs['filename'] = filename_noext 

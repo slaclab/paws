@@ -34,7 +34,6 @@ class RealtimeFromFiles(Operation):
             'containing [output_name:output_value] '\
             'for all of the workflow.outputs'
         self.input_type['workflow'] = opmod.entire_workflow
-        self.inputs['regex'] = '*.tif' 
         self.inputs['new_files_only'] = True 
         self.inputs['delay'] = 100 
         
@@ -46,13 +45,15 @@ class RealtimeFromFiles(Operation):
         """
         dirpath = self.inputs['dir_path']
         rx = self.inputs['regex']
+        wf = self.inputs['workflow'] 
         inpnm = self.inputs['input_name']
+        if wf is None or not dirpath or not rx or not inpnm:
+            return
         dly = self.inputs['delay']
         process_existing_files = not self.inputs['new_files_only']
         it = optools.FileSystemIterator(dirpath,rx,process_existing_files) 
         self.outputs['realtime_inputs'] = it
         self.outputs['realtime_outputs'] = [] 
-        wf = self.inputs['workflow'] 
         nx = 0 # total number of executions
         nd = 0 # number of consecutive delays
         keep_going = True

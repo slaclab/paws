@@ -33,6 +33,8 @@ class BatchFromDirectory(Operation):
         dirpath = self.inputs['dir_path']
         rx = self.inputs['regex']
         inpname = self.inputs['input_name']
+        if (wf is None or not dirpath or not regex or not inpname):
+            return
         batch_list = glob.glob(os.path.join(dirpath,rx))
         input_dict_list = []
         output_dict_list = []

@@ -32,18 +32,23 @@ class FabIOWrite(Operation):
         self.input_type['header'] = opmod.workflow_item
         self.input_type['filename'] = opmod.workflow_item
 
-        self.inputs['ext'] = '.tif'
         self.inputs['filetag'] = ''
+        self.inputs['ext'] = '.tif'
         self.inputs['overwrite'] = False
 
     def run(self):
         """
         Call on fabIO to extract image data
         """
+        img = self.inputs['image_data']
+        p = self.inputs['dir_path']
+        fnm = self.inputs['filename'] 
+        if p is None or fnm is None or img is None:
+            return
         ext = self.inputs['ext'].lower()
         tg = self.inputs['filetag']
-
-        outfile = self.inputs['filename'] + tg + ext
+        hdr = self.inputs['header']
+        outfile = fnm + tg + ext
         filepath = os.path.join(self.inputs['dir_path'],outfile)
         self.outputs['file_path'] = filepath
         if os.path.isfile(filepath) and not self.inputs['overwrite']:
@@ -57,6 +62,6 @@ class FabIOWrite(Operation):
 
         if not cls: raise ValueError('Extension not supported.')
 
-        cls(self.inputs['image_data'],header=self.inputs['header']).write(filepath)
+        cls(img,header=hdr).write(filepath)
 
 

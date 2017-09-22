@@ -20,6 +20,8 @@ class CSVToXYData(Operation):
 
     def run(self):
         p = self.inputs['file_path']
+        if p is None:
+            return
         x = np.loadtxt(p, dtype=float, delimiter=',', usecols=[0])
         y = np.loadtxt(p, dtype=float, delimiter=',', usecols=[1])
         self.outputs['x'] = x

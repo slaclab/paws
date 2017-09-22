@@ -26,22 +26,22 @@ class BatchPostProcess(Operation):
         self.output_doc['batch_outputs'] = 'list of dicts of workflow outputs'
         self.input_type['workflow'] = opmod.entire_workflow
         self.input_type['batch_output'] = opmod.workflow_item
-        self.inputs['output_keys'] = []
-        self.inputs['input_keys'] = []
         
     def run(self):
         """
         Build a list of [uri:value] dicts to be used in the workflow.
         """
-        out_list = self.inputs['batch_output']
+        batch_output = self.inputs['batch_output']
         out_keys = self.inputs['output_keys']
         inp_keys = self.inputs['input_keys']
         wf = self.inputs['workflow']
+        if (wf is None or batch_output is None or out_keys is None or inp_keys is None):
+            return
         inp_dict_list = []
         out_dict_list = []
-        n_batch = len(out_list)
+        n_batch = len(batch_output)
         wf.write_log('STARTING BATCH')
-        for d_out in out_list:
+        for d_out in batch_output:
             inp_dict = OrderedDict() 
             for kout,kin in zip(out_keys,inp_keys):
                 inp_dict[kin] = d_out[kout]

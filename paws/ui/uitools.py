@@ -68,15 +68,6 @@ def type_selection_widget(src,widg=None):
         #widg.model().set_disabled(tp)
     return widg 
 
-def src_selection_widget():
-    widg = QtGui.QComboBox()
-    lm = ListModel(opmod.input_sources,widg)
-    #widg.addItems(op.input_sources)
-    widg.setModel(lm)
-    maxlen = max([len(srctext) for srctext in opmod.input_sources])
-    widg.setMinimumWidth(20*maxlen)
-    return widg 
-        
 def r_hdr_widget(text):
     widg = QtGui.QLineEdit(text)
     widg.setReadOnly(True)

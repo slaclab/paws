@@ -47,6 +47,8 @@ class NikaToPONI(Operation):
     def run(self):
         fpath = self.inputs['nika_file']
         fpolz = self.inputs['fpolz']
+        if fpath is None:
+            return
         for line in open(fpath,'r'):
             kv = line.strip().split('=')
             if kv[0] == 'sample_to_CCD_mm':

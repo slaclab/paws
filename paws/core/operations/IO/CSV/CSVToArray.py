@@ -17,6 +17,8 @@ class CSVToArray(Operation):
 
     def run(self):
         path = self.inputs['path']
+        if path is None:
+            return
         self.outputs['array'] = np.loadtxt(path, dtype=float, delimiter=',')
 
 

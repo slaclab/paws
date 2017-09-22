@@ -22,6 +22,8 @@ class LoadTif(Operation):
         
     def run(self):
         p = self.inputs['file_path']
+        if p is None:
+            return
         dir_path = os.path.split(p)[0]
         file_nopath = os.path.split(p)[1]
         file_noext = os.path.splitext(file_nopath)[0]

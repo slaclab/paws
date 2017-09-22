@@ -6,18 +6,20 @@ from ...Operation import Operation
 class ReadNPSynthRecipe(Operation):
     """
     Read in a text file describing nanoparticle synthesis parameters.
-    Package the description in a dict. 
+    Package the recipe description in a dict. 
     """
     
     def __init__(self):
-        input_names = ['recipe_file']
+        input_names = ['file_path']
         output_names = ['recipe_dict']
         super(ReadNPSynthRecipe,self).__init__(input_names,output_names)
-        self.input_doc['recipe_file'] = 'plain text file describing a synthesis recipe'
+        self.input_doc['file_path'] = 'plain text file describing a synthesis recipe'
         self.output_doc['recipe_dict'] = 'dict describing the synthesis recipe'
 
     def run(self):
-        fpath = self.inputs['recipe_file']
+        fpath = self.inputs['file_path']
+        if fpath is None:
+            return
         rdict = OrderedDict()
         ln = 0
         for line in open(fpath,'r'):
