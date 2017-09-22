@@ -40,21 +40,15 @@ setup(
 
     # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
-
         'Development Status :: 3 - Alpha',
-        #'Development Status :: 4 - Beta',
-        #'Development Status :: 5 - Production/Stable',
-        #'Development Status :: 6 - Mature',
-
-        'Intended Audience :: Science/Research',
-        'Topic :: Scientific/Engineering',
-
-        # Pick your license as you wish (should match "license" above)
         'License :: OSI Approved :: BSD License',
 
-        # Specify the Python versions you support here. In particular, ensure
-        # that you indicate whether you support Python 2, Python 3 or both.
+        'Intended Audience :: Science/Research',
+        'Intended Audience :: Developers',
+        'Topic :: Scientific/Engineering',
+        
         'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3.5',
     ],
 
     keywords='data analysis workflow',
