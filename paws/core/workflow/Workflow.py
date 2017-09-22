@@ -93,7 +93,7 @@ class Workflow(TreeModel):
                 except Exception as ex:
                     tb = traceback.format_exc()
                     self.write_log(str('Operation {} threw an error. '
-                    + '\nMessage: {} \nTrace: {}').format(op_tag,ex.message,tb)) 
+                    + '\nTrace: {}').format(op_tag,tb)) 
         self.write_log('execution finished')
 
     def execute_op(self,op_tag):
