@@ -23,4 +23,9 @@ class TestOp(unittest.TestCase):
         op = op()
         self.assertIsInstance(op,Operation)
     
+    def test_run(self):
+        op = self.paw._op_manager.get_data_from_uri(self.op_uri)
+        op = op()
+        op.load_defaults()
+        op.run() 
 
