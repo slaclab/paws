@@ -20,6 +20,8 @@ class CheckDataSet(Operation):
     def run(self):
         c = self.inputs['client']
         dsid = self.inputs['dsid'] 
+        if c is None or dsid is None:
+            return
         f = True
         try:
             r = c.get_dataset_files(dsid)
