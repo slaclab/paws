@@ -28,6 +28,8 @@ class LoadSAXSClassifiers(Operation):
 
     def run(self):
         p = self.inputs['file_path']
+        if p is None:
+            return
 
         # load the classifiers and scalers from a file
         s_and_m_file = open(self.inputs['file_path'],'r') 
