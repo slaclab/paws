@@ -86,7 +86,7 @@ class OpManager(TreeModel):
         cat = op_uri[:op_uri.rfind('.')]
         opname = op_uri.split('.')[-1]
         if flag:
-            self.write_log('Enabling Operation {}...'.format(op_uri))
+            #self.write_log('Enabling Operation {}...'.format(op_uri))
             mod = importlib.import_module('.'+op_uri,ops.__name__)
             op = getattr(mod,opname)
             optest = op()
@@ -95,11 +95,11 @@ class OpManager(TreeModel):
         else:
             # disable the op: set ops.load_flags so that
             # add_op() replaces the treedata with None
-            self.write_log('Disabling Operation {}'.format(op_uri))
+            #self.write_log('Disabling Operation {}'.format(op_uri))
             ops.load_flags[op_uri] = False
             self.set_item(op_uri,None)
-        if flag:
-            self.write_log('Finished enabling {}'.format(op_uri))
+        #if flag:
+        #    self.write_log('Finished enabling {}'.format(op_uri))
 
     def remove_op(self,op_uri):
         """Remove op from the tree by its full category.opname uri"""
