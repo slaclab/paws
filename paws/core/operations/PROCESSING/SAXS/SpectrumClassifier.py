@@ -24,17 +24,17 @@ class SpectrumClassifier(Operation):
 
     def run(self):
         x = self.inputs['profiler_output']
-
-        print("TEST: in SpectrumClassifier: 111111111111")
-
-        print("TEST: in SpectrumClassifier: ", self.inputs['classifiers'])
+        clsfrs = self.inputs['classifiers'] 
+        sclrs = self.inputs['scalers'] 
+        if x is None or clsfrs is None or sclrs is None:
+            return
 
         # TODO: use keys: 'bad_data', 'precursor_scattering', 'form_factor_scattering', and 'diffraction_peaks',
         # i.e. same keys as population_flags output dict
-        clsfr = self.inputs['classifiers']['model_for_bad_data'] # bad_data
-        clsfr2 = self.inputs['classifiers']['model_for_form'] # form
-        clsfr3 = self.inputs['classifiers']['model_for_precursor'] # precursor
-        clsfr4 = self.inputs['classifiers']['model_for_structure'] # structure
+        clsfr = clsfrs['model_for_bad_data'] # bad_data
+        clsfr2 = clsfrs['model_for_form'] # form
+        clsfr3 = clsfrs['model_for_precursor'] # precursor
+        clsfr4 = clsfrs['model_for_structure'] # structure
 
         flags = OrderedDict()
         flags['test'] = True
@@ -49,12 +49,10 @@ class SpectrumClassifier(Operation):
         #edges = x['q_bin_edges']
         del x['q_bin_edges']
 
-        '''
         # we can use edges instead to indexes, but it could cause a problem
         # when not all samples have a specific edge
-        for i in range(len(edges)):
-            x[str(edges[i])] = bin_strengths[i]
-        '''
+        #for i in range(len(edges)):
+        #    x[str(edges[i])] = bin_strengths[i]
 
         # should we do it in profile_spectrum()?
         for i in range(100):
@@ -84,7 +82,7 @@ class SpectrumClassifier(Operation):
         for item in features60:
             input_features2.append(x[item])
 
-        bad_data_scaler = self.inputs['scalers']['analitical_features_and_60bins_for_bad_data']
+        bad_data_scaler = sclrs['analitical_features_and_60bins_for_bad_data']
         transformed_input_features = bad_data_scaler.transform([input_features1])
 
         bad_data = clsfr.predict(transformed_input_features)[0] # [0] since we have only one sample
@@ -101,7 +99,7 @@ class SpectrumClassifier(Operation):
             flags['diffraction_peaks'] = (False, None)
         else:
             #form label
-            form_scaler = self.inputs['scalers']['scaler_60bins_no_bad_data']
+            form_scaler = sclrs['scaler_60bins_no_bad_data']
             transformed_input_features = form_scaler.transform([input_features2])
             form = clsfr2.predict(transformed_input_features)[0]
             if form:
@@ -111,7 +109,7 @@ class SpectrumClassifier(Operation):
             flags['form_factor_scattering'] = (form, pr_form) # label and propability to have this label
 
             # precursor label
-            precur_struct_scaler = self.inputs['scalers']['scaler_features_analytical_and_60_no_bad_data']
+            precur_struct_scaler = sclrs['scaler_features_analytical_and_60_no_bad_data']
             transformed_input_features = precur_struct_scaler.transform([input_features1])
             prec = clsfr3.predict(transformed_input_features)[0]
             if prec:

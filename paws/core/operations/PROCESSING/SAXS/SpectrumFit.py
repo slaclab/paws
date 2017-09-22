@@ -56,16 +56,18 @@ class SpectrumFit(Operation):
 
     def run(self):
         f = self.inputs['flags']
+        q, I = self.inputs['q'], self.inputs['I']
+        m = self.inputs['objfun']
+        p = self.inputs['params']
+        fitkeys = self.inputs['fit_params']
+        if f is None or q is None or I is None or fitkeys is None:
+            return
         if f['bad_data'] or not any([f['precursor_scattering'],f['form_factor_scattering'],f['diffraction_peaks']]):
             self.outputs['params'] = {} 
             return
         if f['diffraction_peaks']:
             self.outputs['params'] = {'ERROR_MESSAGE':'diffraction peak fitting not yet supported'}
             return
-        q, I = self.inputs['q'], self.inputs['I']
-        m = self.inputs['objfun']
-        p = self.inputs['params']
-        fitkeys = self.inputs['fit_params']
         #p_opt = copy.deepcopy(p)
 
         # Set up constraints as needed

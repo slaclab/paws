@@ -22,6 +22,8 @@ class BuildListFromBatch(Operation):
     def run(self):
         b_out = self.inputs['batch_output']
         k = self.inputs['output_key']
+        if b_out is None or k is None:
+            return
         l = [d[k] for d in b_out]
         self.outputs['data_list'] = l 
 

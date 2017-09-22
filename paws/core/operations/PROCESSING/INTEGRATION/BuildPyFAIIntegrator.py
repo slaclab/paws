@@ -27,6 +27,7 @@ class BuildPyFAIIntegrator(Operation):
     def run(self):
         pd = self.inputs['poni_dict']
         p = pyFAI.AzimuthalIntegrator()
-        p.setPyFAI(**pd)
+        if pd is not None:
+            p.setPyFAI(**pd)
         self.outputs['integrator'] = p
 

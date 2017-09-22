@@ -22,8 +22,8 @@ class LogLogZip(Operation):
     def run(self):
         x = self.inputs['x']
         y = self.inputs['y']
-        if (x.shape != y.shape):
-            raise ValueError("x and y arrays must have the same shape")
+        if x is None or y is None:
+            return
         # good_vals = elements for which both x and y have defined logarithm
         good_vals = ((x > 0) & (y > 0) & (~np.isnan(x)) & (~np.isnan(y)))
         xy = zip(np.log10(x[good_vals]), np.log10(y[good_vals]))

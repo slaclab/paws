@@ -26,9 +26,9 @@ class ApplyIntegrator2d(Operation):
     Output arrays containing q, chi, and I(q,chi) 
     """
     def __init__(self):
-        input_names = list(['data','integrator','mask','ROI_mask','dark','flat',
-        'radial_range','azimuth_range','npt_rad','npt_azim','polarization_factor',
-        'normalization_factor','unit','method','integration_mode'])
+        input_names = ['data','integrator','mask','ROI_mask','dark','flat',\
+        'radial_range','azimuth_range','npt_rad','npt_azim','polarization_factor',\
+        'normalization_factor','unit','method','integration_mode']
         output_names = ['q','chi','I_at_q_chi']
         super(ApplyIntegrator2d,self).__init__(input_names,output_names)
         self.input_doc['data'] = '2d array representing intensity for each pixel'
@@ -60,6 +60,10 @@ class ApplyIntegrator2d(Operation):
         self.output_doc['I_at_q_chi'] = '2d array of integrated intensity at q,chi.'
 
     def run(self):
+        img = self.inputs['data']
+        intgtr = self.inputs['integrator']
+        if img is None or intgtr is None:
+            return
         m = None
         if self.inputs['mask'] is not None and self.inputs['ROI_mask'] is not None: 
             m = self.inputs['mask'] | self.inputs['ROI_mask']
@@ -73,8 +77,8 @@ class ApplyIntegrator2d(Operation):
         kwargexcludemask = kwargexcludemask + ['ROI_mask','integrator','integration_mode']
         kwargs = {key:val for key,val in self.inputs.items() if key not in kwargexcludemask}
 
-        I_at_q_chi,q,chi = self.inputs['integrator'].integrate2d(**kwargs)
-        #integ_result = self.inputs['integrator'].integrate2d(**kwargs)
+        I_at_q_chi,q,chi = intgtr.integrate2d(**kwargs)
+        #integ_result = intgtr.integrate2d(**kwargs)
         #q = integ_result.radial
         #chi = integ_result.chi
         #I_at_q_chi = integ_result.intensity

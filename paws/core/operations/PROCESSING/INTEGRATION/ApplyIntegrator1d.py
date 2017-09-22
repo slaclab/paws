@@ -26,8 +26,8 @@ class ApplyIntegrator1d(Operation):
     Output arrays containing q and I(q) 
     """
     def __init__(self):
-        input_names = list(['data','integrator','mask','ROI_mask','dark','flat',
-        'radial_range','azimuth_range','npt','polarization_factor','unit','method','integration_mode'])
+        input_names = ['data','integrator','mask','ROI_mask','dark','flat',\
+        'radial_range','azimuth_range','npt','polarization_factor','unit','method','integration_mode']
         output_names = ['q','I','q_I']
         super(ApplyIntegrator1d,self).__init__(input_names,output_names)
         self.input_doc['data'] = '2d array representing intensity for each pixel'
@@ -56,6 +56,10 @@ class ApplyIntegrator1d(Operation):
         self.output_doc['q_I'] = 'q and I zipped together an a n-by-2 numpy array.'
 
     def run(self):
+        img = self.inputs['data']
+        intgtr = self.inputs['integrator']
+        if img is None or intgtr is None:
+            return
         m = None
         if self.inputs['mask'] is not None and self.inputs['ROI_mask'] is not None: 
             m = self.inputs['mask'] | self.inputs['ROI_mask']
@@ -69,11 +73,11 @@ class ApplyIntegrator1d(Operation):
         kwargexcludemask = kwargexcludemask + ['ROI_mask','integrator','integration_mode']
         kwargs = {key:val for key,val in self.inputs.items() if key not in kwargexcludemask}
 
-        #integ_result = self.inputs['integrator'].integrate1d(**kwargs)
+        q,I = intgtr.integrate1d(**kwargs)
+        #integ_result = intgtr.integrate1d(**kwargs)
         # save results to self.outputs
         #q = integ_result.radial
         #I = integ_result.intensity
-        q,I = self.inputs['integrator'].integrate1d(**kwargs)
 
         self.outputs['q'] = q 
         self.outputs['I'] = I

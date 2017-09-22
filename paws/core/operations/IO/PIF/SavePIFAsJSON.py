@@ -26,9 +26,11 @@ class SavePIFAsJSON(Operation):
     def run(self):
         p = self.inputs['pif']        
         dp = self.inputs['dirpath']
-        fn = self.inputs['filename']+'.json'
-        #if not os.path.splitext(fn)[1] == 'json':
-        #    fn = fn+'.json'
+        fn = self.inputs['filename']
+        if dp is None or fn is None or p is None:
+            return
+        if not os.path.splitext(fn)[1] == 'json':
+            fn = fn+'.json'
         json_file = os.path.join(dp,fn)
         pif.dump(p, open(json_file,'w'))
 

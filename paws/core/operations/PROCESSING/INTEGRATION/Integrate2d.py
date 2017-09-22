@@ -36,6 +36,8 @@ class Integrate2d(Operation):
     def run(self):
         img = self.inputs['image_data']
         pd = self.inputs['poni_dict']
+        if img is None or pd is None:
+            return
         p = pyFAI.AzimuthalIntegrator()
         p.setPyFAI(**pd)
         fpolz = pd['fpolz']

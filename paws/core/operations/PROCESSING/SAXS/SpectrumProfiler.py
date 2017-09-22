@@ -23,15 +23,15 @@ class SpectrumProfiler(Operation):
         super(SpectrumProfiler, self).__init__(input_names, output_names)
         self.input_doc['q'] = '1d array of wave vector values in 1/Angstrom units'
         self.input_doc['I'] = '1d array of intensity values I(q)'
-        self.input_doc['dI'] = 'optional- 1d array of intensity uncertainty values I(q)'
-        self.output_doc['features'] = str('dict profiling the input spectrum. '
-        + 'See the documentation of paws.core.tools.saxstools.profile_spectrum().')
+        self.output_doc['features'] = 'dict profiling the input spectrum. '\
+        'See the documentation of paws.core.tools.saxstools.profile_spectrum().'
         self.input_type['q'] = opmod.workflow_item
         self.input_type['I'] = opmod.workflow_item
 
     def run(self):
         q, I = self.inputs['q'], self.inputs['I']
-        dI = self.inputs['dI']
+        if q is None or I is None:
+            return
         d_r = saxstools.profile_spectrum(q,I)
         self.outputs['features'] = d_r 
 

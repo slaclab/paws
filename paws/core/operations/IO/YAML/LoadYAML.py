@@ -18,6 +18,8 @@ class LoadYAML(Operation):
 
     def run(self):
         p = self.inputs['file_path']
+        if p is None:
+            return
         f = open(p,'r')
         ds = yaml.load(f)
         f.close()

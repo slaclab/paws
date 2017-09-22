@@ -9,10 +9,10 @@ class EmptyPif(Operation):
     """
 
     def __init__(self):
-        input_names = ['uid_prefix','date_time','t_utc']
+        input_names = ['uid','date_time','t_utc']
         output_names = ['pif']
         super(EmptyPif,self).__init__(input_names,output_names)
-        self.input_doc['uid_prefix'] = 'text string to prepend to pif uid (pif uid = uid_prefix+t_utc)'
+        self.input_doc['uid'] = 'text string to use as pif record uid'
         self.input_doc['date_time'] = 'string date/time for pif record tags'
         self.input_doc['t_utc'] = 'time of record creation in utc'
         self.output_doc['pif'] = 'an empty pif object'
@@ -20,14 +20,18 @@ class EmptyPif(Operation):
         self.input_type['t_utc'] = opmod.workflow_item
 
     def run(self):
-        uid_pre = self.inputs['uid_prefix']
+        uid = self.inputs['uid']
         t_str = self.inputs['date_time']
         t_utc = self.inputs['t_utc']
-        uid_full = uid_pre+'_'+str(int(t_utc))
-        # TODO: Quantity information for subsystems
+        if uid is None:
+            return
         main_sys = pifobj.ChemicalSystem()
-        main_sys.uid = uid_full
-        main_sys.tags = ['experiment id: '+uid_pre,'date: '+t_str,'utc: '+str(int(t_utc))]
+        main_sys.uid = uid
+        main_sys.tags = ['experiment id: '+uid]
+        if t_str is not None:
+            main_sys.tags.append('date: '+t_str)
+        if t_utc is not None:
+            main_sys.tags.append('utc: '+str(int(t_utc)))
         self.outputs['pif'] = main_sys
 
     def saxs_to_pif_properties(self,q_I,T_C):

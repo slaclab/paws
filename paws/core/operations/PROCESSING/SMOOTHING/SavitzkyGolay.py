@@ -25,9 +25,11 @@ class SavitzkyGolay(Operation):
     def run(self):
         x = self.inputs['x']
         y = self.inputs['y']
+        o = self.inputs['order']
+        b = self.inputs['base']
+        if None in [x,y,o,b]:
+            return
         err = self.inputs['dy']
-        o = int(self.inputs['order'])
-        b = int(self.inputs['base'])
         nx = x.size
         if err is None:
             err = np.ones(y.shape,dtype=float)        

@@ -22,8 +22,8 @@ class Zip(Operation):
     def run(self):
         x = self.inputs['x']
         y = self.inputs['y']
-        if (x.shape != y.shape):
-            raise ValueError("x and y must have the same shape")
+        if x is None or y is None:
+            return
         xy = np.array(zip(x, y))
         self.outputs['x_y'] = xy
 

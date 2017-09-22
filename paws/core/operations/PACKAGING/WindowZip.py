@@ -27,6 +27,8 @@ class WindowZip(Operation):
     def run(self):
         xvals = self.inputs['x']
         yvals = self.inputs['y']
+        if xvals is None or yvals is None:
+            return
         x_min = self.inputs['x_min']
         x_max = self.inputs['x_max']
         good = ((xvals >= x_min) & (xvals <= x_max))

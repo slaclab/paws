@@ -1,10 +1,3 @@
-"""
-Integrate an image, given calibration parameters.
-
-This module builds a PyFAI.AzimuthalIntegrator 
-to integrate an input image to I(q).
-"""
-
 import numpy as np
 import pyFAI
 
@@ -13,6 +6,8 @@ from ...Operation import Operation
 
 class Integrate1d(Operation):
     """
+    Integrate an image, given calibration parameters.
+
     Input image data (ndarray) and a dict of .poni format calibration parameters
     Output q, I(q) 
     """
@@ -36,6 +31,8 @@ class Integrate1d(Operation):
     def run(self):
         img = self.inputs['image_data']
         pd = self.inputs['poni_dict']
+        if img is None or pd is None:
+            return
         p = pyFAI.AzimuthalIntegrator()
         p.setPyFAI(**pd)
         fpolz = self.inputs['fpolz']

@@ -75,7 +75,8 @@ class SpectrumParameterization(Operation):
     def run(self):
         q, I = self.inputs['q'], self.inputs['I']
         f = self.inputs['flags'] 
-
+        if q is None or I is None or f is None:
+            return
         fix_keys = self.inputs['fixed_params']
         fix_vals = self.inputs['fixed_param_values']
         p_fix = {}

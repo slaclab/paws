@@ -19,6 +19,8 @@ class LogY(Operation):
 
     def run(self):
         x_y = self.inputs['x_y']
+        if x_y is None:
+            return
         # good_vals = elements for which y has defined logarithm
         idx_ok = ((x_y[:,1] > 0) & (~np.isnan(x_y[:,1])))
         x_logy = np.zeros(x_y.shape)

@@ -19,6 +19,8 @@ class ArrayLog(Operation):
 
     def run(self):
         x = self.inputs['x']
+        if x is None:
+            return 
         # good_vals = elements for which both x and y have defined logarithm
         idx_ok = ((x > 0) & (~np.isnan(x)))
         logx = np.zeros(x.shape)

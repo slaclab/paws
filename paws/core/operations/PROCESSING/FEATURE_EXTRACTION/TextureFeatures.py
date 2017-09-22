@@ -1,12 +1,3 @@
-"""
-Created on Mon Jun 06 18:02:32 2016
-
-author(s): Fang Ren, Apurva Mehta
-Module originally contributed by Fang Ren.
-For details, refer to the recent paper submitted to ACS Combinatorial Science.
-TODO: Get this citation
-"""
-
 import numpy as np
 
 from ... import Operation as opmod 
@@ -14,7 +5,15 @@ from ...Operation import Operation
 
 class TextureFeatures(Operation):
     """
-    Analyze the texture 
+    Analyzes the texture of an integrated diffractogram
+    (q, chi, and I(q,chi)).
+
+    Created on Mon Jun 06 2016.
+    
+    Originally contributed by Fang Ren.
+    Citation:
+    Fang Ren, et al.
+    ACS Comb. Sci., 2017, 19(6), pp 377-385.
     """
 
     def __init__(self):
@@ -32,7 +31,12 @@ class TextureFeatures(Operation):
         self.output_doc['int_sqr_texture'] = 'integral over q of the texture squared'
 
     def run(self):
-        q, chi = np.meshgrid(self.inputs['q'], self.inputs['chi']*np.pi/float(180))
+        q = self.inputs['q']
+        chi = self.inputs['chi']
+        I = self.inputs['I']
+        if q is None or chi is None or I is None:
+            return
+        q, chi = np.meshgrid(q,chi*np.pi/float(180))
         keep = (self.inputs['I'] != 0)
         I = keep.astype(int) * self.inputs['I']
         # TODO: This appears to be a binning operation.

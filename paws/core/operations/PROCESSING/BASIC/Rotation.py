@@ -18,7 +18,9 @@ class Rotation(Operation):
 
     def run(self):
         """Rotate self.inputs['image_data'] and save as self.outputs['image_data']"""
-        img = np.array(self.inputs['image_data'])
+        img = self.inputs['image_data']
+        if img is None:
+            return
         rot_deg = int(self.inputs['rotation_deg'])
         if rot_deg==90:
             img_rot = np.rot90(img)

@@ -22,6 +22,8 @@ class EasyZingers1D(Operation):
 
     def run(self):
         q_I = self.inputs['q_I']
+        if q_I is None:
+            return
         q = q_I[:,0]
         I = q_I[:,1]
         I_dz = np.array(I)

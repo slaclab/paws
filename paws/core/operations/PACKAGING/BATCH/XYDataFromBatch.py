@@ -29,6 +29,8 @@ class XYDataFromBatch(Operation):
         b_out = self.inputs['batch_outputs']
         kx = self.inputs['x_key']
         ky = self.inputs['y_key']
+        if b_out is None or kx is None or ky is None:
+            return
         #x_all = np.array([optools.get_uri_from_dict(kx,d) for d in b_out],dtype=float)
         #y_all = np.array([optools.get_uri_from_dict(ky,d) for d in b_out],dtype=float)
         x_list = [d[kx] for d in b_out]

@@ -26,8 +26,12 @@ class TimeTempFromHeader(Operation):
 
     def run(self):
         d = self.inputs['header_dict']
-        time_str = str(d[self.inputs['time_key']])
-        temp = float(d[self.inputs['temp_key']])
+        ktime = self.inputs['time_key']
+        ktemp = self.inputs['temp_key']
+        if d is None or ktime is None or ktemp is None:
+            return
+        time_str = str(d[ktime])
+        temp = float(d[ktemp])
         # process the UTC time in seconds assuming %a %b %d %H:%M:%S %Y format
         # set local time zone for utc-awareness 
         tz = tzlocal.get_localzone()

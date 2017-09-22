@@ -17,6 +17,9 @@ class ArrayMirrorHorizontal(Operation):
         self.output_doc['array_out'] = 'input array mirrored horizontally'
 
     def run(self):
-        self.outputs['array_out'] = self.inputs['array_in'][::-1,:]
+        x = self.inputs['array_in']
+        if x is None:
+            return
+        self.outputs['array_out'] = x[::-1,:]
 
 

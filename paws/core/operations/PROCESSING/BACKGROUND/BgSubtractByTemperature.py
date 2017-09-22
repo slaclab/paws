@@ -39,11 +39,12 @@ class BgSubtractByTemperature(Operation):
 
     def run(self):
         q_I_meas = self.inputs['q_I_meas']
-        q_I_bgsub = np.array(q_I_meas)
         T_meas = self.inputs['T_meas']
         qIkey = self.inputs['q_I_bg_key']
         Tkey = self.inputs['T_bg_key']
         bg_out = self.inputs['bg_batch_output']
+        if q_I_meas is None or bg_out is None or not all([qIkey,Tkey]) or T_meas is None:
+            return
         T_allbg = [d[Tkey] for d in bg_out]
         closest_T_idx = np.argmin(np.abs([T_bg - T_meas for T_bg in T_allbg]))
         T_bg = T_allbg[closest_T_idx]
@@ -57,7 +58,8 @@ class BgSubtractByTemperature(Operation):
             | np.isnan(qI_bg[:,1]) )
         I_floor = 0 
         #I_floor = 1E-6 * np.max(q_I_meas[:,1])
-        bg_factor = np.min((q_I_meas[:,1][~bad_data]-I_floor) / I_bg[~bad_data])
+        bg_factor = np.min((q_I_meas[:,1][~bad_data]-I_floor) / qI_bg[:,1][~bad_data])
+        q_I_bgsub = np.array(q_I_meas)
         q_I_bgsub[:,1] = q_I_meas[:,1] - bg_factor * I_bg
 
         self.outputs['q_I_bgsub'] = q_I_bgsub

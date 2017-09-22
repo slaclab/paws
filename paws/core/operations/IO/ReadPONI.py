@@ -23,6 +23,8 @@ class ReadPONI(Operation):
 
     def run(self):
         fpath = self.inputs['poni_file']
+        if fpath is None:
+            return
         g = pyFAI.geometry.Geometry()
         g.read(fpath)
         self.outputs['poni_dict'] = g.getPyFAI() 
