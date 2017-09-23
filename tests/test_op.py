@@ -1,3 +1,4 @@
+from __future__ import print_function
 import unittest
 
 import paws.api
@@ -11,6 +12,7 @@ class TestOp(unittest.TestCase):
         self.paw = paw
 
     def test_activate_op(self):
+        print('testing {}'.format(self.op_uri))
         try:
             self.paw.activate_op(self.op_uri) 
         except ImportError as ex:
@@ -19,11 +21,13 @@ class TestOp(unittest.TestCase):
             self.skipTest(msg)            
 
     def test_op(self):
+        print('testing {}'.format(self.op_uri))
         op = self.paw._op_manager.get_data_from_uri(self.op_uri)
         op = op()
         self.assertIsInstance(op,Operation)
     
     def test_run(self):
+        print('testing {}'.format(self.op_uri))
         op = self.paw._op_manager.get_data_from_uri(self.op_uri)
         op = op()
         op.load_defaults()
