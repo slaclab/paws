@@ -6,6 +6,10 @@ from .... import Operation as opmod
 from ....Operation import Operation
 from ..... import pawstools
 
+# this module implicitly uses sklearn.
+# import here for insurance. 
+import sklearn
+
 class LoadSAXSClassifiers(Operation):
     """
     Read files to load a set of classifiers to be used on 1-d saxs spectra. 
@@ -24,13 +28,17 @@ class LoadSAXSClassifiers(Operation):
         self.output_doc['scalers'] = 'a dict of sklearn '\
         'classifiers and scalers designed for 1-d SAXS spectra, '\
         'intended for input to PROCESSING.SAXS.SpectrumClassifier.'
-        self.inputs['file_path'] = os.path.join(pawstools.sourcedir,'core','tools','modeling_data','scalers_and_models.pkl')
+        self.inputs['file_path'] = os.path.join(pawstools.sourcedir,
+        'core','tools','modeling_data','scalers_and_models.pkl')
 
     def run(self):
         p = self.inputs['file_path']
 
         # load the classifiers and scalers from a file
         s_and_m_file = open(p,'rb')
+
+        # this pickle call implies sklearn and scipy dependencies
+        # 
         s_and_m = pickle.load(s_and_m_file)
         scalers_dict = s_and_m['scalers'] # dict of scalers
         classifier_dict = s_and_m['models'] # dict of models
