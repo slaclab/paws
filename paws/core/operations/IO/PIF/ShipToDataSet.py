@@ -12,13 +12,14 @@ class ShipToDataSet(Operation):
     """
 
     def __init__(self):
-        input_names = ['pif','client','dsid','json_path','keep_json','ship_flag']
+        input_names = ['pif','client','dsid','json_dirpath','json_filename','keep_json','ship_flag']
         output_names = ['response']
         super(ShipToDataSet,self).__init__(input_names,output_names)
         self.input_doc['pif'] = 'A pypif.obj.System object or an array/list thereof'
         self.input_doc['client'] = 'A running Citrination client' 
         self.input_doc['dsid'] = 'Data set ID where the pif record(s) will be stored on Citrination' 
-        self.input_doc['json_path'] = 'Filesystem path where the json of the pif(s) will be saved' 
+        self.input_doc['json_dirpath'] = 'Filesystem path where a json file of the pif(s) will be saved' 
+        self.input_doc['json_filename'] = 'Name of the .json file where the pif(s) will be saved' 
         self.input_doc['keep_json'] = 'Flag for whether or not to keep the json file' 
         self.input_doc['ship_flag'] = 'Flag for shipping the pif- set to False for a dry run' 
         self.output_doc['response'] = 'The Citrination server response to the shipment'
@@ -31,14 +32,18 @@ class ShipToDataSet(Operation):
         cl = self.inputs['client'] 
         dsid = self.inputs['dsid'] 
         p = self.inputs['pif']        
-        json_path = self.inputs['json_path']
+        json_dir = self.inputs['json_dirpath']
+        json_file = self.inputs['json_filename']
+        if cl is None or dsid is None or p is None \
+        or json_dir is None or json_file is None:
+            return
+        if not os.path.splitext(json_file)[1] == 'json':
+            json_file = json_file+'.json'
+        json_file = os.path.join(json_dir,json_file)
+
         json_flag = self.inputs['keep_json']
         ship_flag = self.inputs['ship_flag']
         try:
-            if isinstance(p,pifobj.ChemicalSystem):
-                json_file = json_path+'/'+p.uid+'.json'
-            else:
-                json_file = json_path+'/pif.json'
             # make p an array of pifs to get a big json that has all records
             pif.dump(p, open(json_file,'w'))
             if ship_flag:

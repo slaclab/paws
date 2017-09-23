@@ -1,6 +1,7 @@
-import tifffile
 from os.path import splitext, split
 from collections import OrderedDict
+
+import tifffile
 
 from ... import Operation as opmod 
 from ...Operation import Operation
