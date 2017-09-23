@@ -299,7 +299,6 @@ class PawsAPI(object):
         pawstools.save_file(wfl_filename,d)
 
     def load_from_wfl(self,wfl_filename):
-        # NOTE: code duplication with paws.ui.UiManager
         f = open(wfl_filename,'r')
         d = yaml.load(f)
         f.close()
