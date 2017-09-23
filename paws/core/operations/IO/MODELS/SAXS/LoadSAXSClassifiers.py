@@ -30,7 +30,7 @@ class LoadSAXSClassifiers(Operation):
         p = self.inputs['file_path']
 
         # load the classifiers and scalers from a file
-        s_and_m_file = open(self.inputs['file_path'],'r') 
+        s_and_m_file = open(p,'rb')
         s_and_m = pickle.load(s_and_m_file)
         scalers_dict = s_and_m['scalers'] # dict of scalers
         classifier_dict = s_and_m['models'] # dict of models
