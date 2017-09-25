@@ -30,6 +30,8 @@ class QWorkflow(Workflow,QTreeSelectionModel):
     def execute_op(self,op_tag,pool=None):
         if pool is None:
             super(QWorkflow,self).execute_op(op_tag)
+            self.opChanged.emit(op_tag)
+            self.opFinished.emit(op_tag)
         else:
             op = self.get_data_from_uri(op_tag) 
             self.load_inputs(op,self.wf_manager,self.wf_manager.plugin_manager)
@@ -38,6 +40,7 @@ class QWorkflow(Workflow,QTreeSelectionModel):
             qr = qttools.RunnableExecutor( op.copy() ) 
             # Call QThreadPool.start(QRunnable) - executes runnable.run()
             pool.start(qr)
+            # TODO: connect the qrunnable started signal to ProcessEvents()
             self.wf_manager.app.processEvents()
             self.set_item(op_tag,op)
             self.opChanged.emit(op_tag)

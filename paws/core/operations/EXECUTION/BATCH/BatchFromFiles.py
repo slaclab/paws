@@ -1,5 +1,3 @@
-from collections import OrderedDict
-
 from ...Operation import Operation
 from ... import Operation as opmod 
 from ... import optools
@@ -29,6 +27,8 @@ class BatchFromFiles(Operation):
         wf = self.inputs['workflow'] 
         if (wf is None or batch_list is None or not inpname):
             return
+        self.outputs['batch_inputs'] = [] 
+        self.outputs['batch_outputs'] = [] 
         n_batch = len(batch_list)
         wf.write_log('STARTING BATCH')
         for i,filename in zip(range(n_batch),batch_list):
