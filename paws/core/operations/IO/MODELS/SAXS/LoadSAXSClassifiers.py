@@ -1,6 +1,6 @@
 import os.path
 import numpy as np
-import pickle
+import yaml
 
 from .... import Operation as opmod 
 from ....Operation import Operation
@@ -28,18 +28,22 @@ class LoadSAXSClassifiers(Operation):
         self.output_doc['scalers'] = 'a dict of sklearn '\
         'classifiers and scalers designed for 1-d SAXS spectra, '\
         'intended for input to PROCESSING.SAXS.SpectrumClassifier.'
+
         self.inputs['file_path'] = os.path.join(pawstools.sourcedir,
-        'core','tools','modeling_data','scalers_and_models.pkl')
+        'core','tools','modeling_data','scalers_and_models.yml')
 
     def run(self):
         p = self.inputs['file_path']
 
         # load the classifiers and scalers from a file
+        #s_and_m_file = open(p,'rb')
         s_and_m_file = open(p,'rb')
+
 
         # this pickle call implies sklearn and scipy dependencies
         # 
-        s_and_m = pickle.load(s_and_m_file)
+        #s_and_m = pickle.load(s_and_m_file)
+        s_and_m = yaml.load(s_and_m_file)
         scalers_dict = s_and_m['scalers'] # dict of scalers
         classifier_dict = s_and_m['models'] # dict of models
 
