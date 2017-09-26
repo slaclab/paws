@@ -5,8 +5,6 @@ from ... import Operation as opmod
 from ...Operation import Operation
 from ....tools import saxstools
 
-from sklearn import preprocessing
-from sklearn import linear_model
 
 class SpectrumClassifier(Operation):
     """
@@ -25,14 +23,6 @@ class SpectrumClassifier(Operation):
         self.input_type['scalers'] = opmod.workflow_item
         self.input_type['classifiers'] = opmod.workflow_item
 
-    # helper function - to set parametrs for scalers and models
-    def set_param(self, m_s, param):
-        for k, v in param.items():
-            if isinstance(v, list):
-                setattr(m_s, k, np.array(v))
-            else:
-                setattr(m_s, k, v)
-
     def run(self):
         x = self.inputs['profiler_output']
         clsfrs = self.inputs['classifiers'] 
@@ -42,48 +32,16 @@ class SpectrumClassifier(Operation):
 
         # TODO: use keys: 'bad_data', 'precursor_scattering', 'form_factor_scattering', and 'diffraction_peaks',
         # i.e. same keys as population_flags output dict
-        '''
-        clsfr = clsfrs['model_for_bad_data'] # bad_data
-        clsfr2 = clsfrs['model_for_form'] # form
-        clsfr3 = clsfrs['model_for_precursor'] # precursor
-        clsfr4 = clsfrs['model_for_structure'] # structure
-        '''
-        model_param_bad_data = clsfrs['model_for_bad_data']
-        model_param_form = clsfrs['model_for_form_factor_scattering']
-        model_param_precur = clsfrs['model_for_precursor_scattering']
-        model_param_diff_peaks = clsfrs['model_for_diffraction_peaks']
 
-        scaler_param_bad_data = sclrs['scaler_for_bad_data']
-        scaler_param_form = sclrs['scaler_for_form_factor_scattering']
-        scaler_param_precur = sclrs['scaler_for_precursor_scattering']
-        scaler_param_diff_peaks = sclrs['scaler_for_diffraction_peaks']
+        model_bad_data = clsfrs['model_for_bad_data']
+        model_form = clsfrs['model_for_form_factor_scattering']
+        model_precur = clsfrs['model_for_precursor_scattering']
+        model_diff_peaks = clsfrs['model_for_diffraction_peaks']
 
-        # recreate the scalers
-        scaler_bad_data = preprocessing.StandardScaler()
-        self.set_param( scaler_bad_data, scaler_param_bad_data)
-
-        scaler_form = preprocessing.StandardScaler()
-        self.set_param( scaler_form, scaler_param_form)
-
-        scaler_precur = preprocessing.StandardScaler()
-        self.set_param( scaler_precur, scaler_param_precur)
-
-        scaler_diff_peaks = preprocessing.StandardScaler()
-        self.set_param( scaler_diff_peaks, scaler_param_diff_peaks)
-
-        # recreate the models
-        model_bad_data = linear_model.SGDClassifier()
-        self.set_param( model_bad_data, model_param_bad_data)
-
-        model_form = linear_model.SGDClassifier()
-        self.set_param( model_form, model_param_form)
-
-        model_precur = linear_model.SGDClassifier()
-        self.set_param( model_precur, model_param_precur)
-
-        model_diff_peaks = linear_model.SGDClassifier()
-        self.set_param( model_diff_peaks, model_param_diff_peaks)
-
+        scaler_bad_data = sclrs['scaler_for_bad_data']
+        scaler_form = sclrs['scaler_for_form_factor_scattering']
+        scaler_precur = sclrs['scaler_for_precursor_scattering']
+        scaler_diff_peaks = sclrs['scaler_for_diffraction_peaks']
 
         flags = OrderedDict()
         flags['test'] = True
@@ -132,7 +90,6 @@ class SpectrumClassifier(Operation):
             input_features2.append(x[item])
 
         transformed_input_features = scaler_bad_data.transform([input_features1])
-
         bad_data = model_bad_data.predict(transformed_input_features)[0] # [0] since we have only one sample
         if bad_data:
             pr_bad_data = model_bad_data.predict_proba(transformed_input_features)[0, 1]
