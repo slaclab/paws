@@ -33,22 +33,20 @@ class BatchFromDirectory(Operation):
         dirpath = self.inputs['dir_path']
         rx = self.inputs['regex']
         inpname = self.inputs['input_name']
-        if (wf is None or not dirpath or not regex or not inpname):
+        if (wf is None or not dirpath or not rx or not inpname):
             return
         batch_list = glob.glob(os.path.join(dirpath,rx))
-        input_dict_list = []
-        output_dict_list = []
+        self.outputs['batch_inputs'] = [] 
+        self.outputs['batch_outputs'] = [] 
         n_batch = len(batch_list)
-        wf.write_log('STARTING BATCH')
+        #wf.write_log('STARTING BATCH')
         for i,filename in zip(range(n_batch),batch_list):
             inp_dict = OrderedDict() 
             inp_dict[inpname] = filename
             wf.set_wf_input(inpname,filename)
-            wf.write_log('BATCH RUN {} / {}'.format(i+1,n_batch))
+        #    wf.write_log('BATCH RUN {} / {}'.format(i+1,n_batch))
             wf.execute()
-            input_dict_list.append(inp_dict)
-            output_dict_list.append(wf.wf_outputs_dict())
-        wf.write_log('BATCH FINISHED')
-        self.outputs['batch_inputs'] = input_dict_list
-        self.outputs['batch_outputs'] = output_dict_list 
+            self.outputs['batch_inputs'].append(inp_dict)
+            self.outputs['batch_outputs'].append(wf.wf_outputs_dict())
+        #wf.write_log('BATCH FINISHED')
 

@@ -104,7 +104,8 @@ class Operation(object):
                 # Hope that copy.deepcopy() does the trick
                 new_op.inputs[nm] = copy.deepcopy(self.inputs[nm])
             elif il.tp == entire_workflow:
-                new_op.inputs[nm] = self.inputs[nm].copy() 
+                if self.inputs[nm]:
+                    new_op.inputs[nm] = self.inputs[nm].clone_wf() 
         return new_op
     
     def clear_outputs(self):

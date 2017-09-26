@@ -35,11 +35,12 @@ def make_widget(itm):
     elif isinstance(itm,np.ndarray):
         #if itm.dtype == np.int_ or itm.dtype == np.float_:
         dims = np.shape(itm)
-        if len(dims) == 2 and dims[0] > 2 and dims[1] > 2:
-            w = plotmaker.array_plot_2d(itm)
-        elif len(dims) == 1 or (len(dims) == 2 and (dims[0]==2 or dims[1]==2)):
-            w = plotmaker.array_plot_1d(itm)
-        else:
+        try:
+            if len(dims) == 2 and dims[0] > 2 and dims[1] > 2:
+                w = plotmaker.array_plot_2d(itm)
+            elif len(dims) == 1 or (len(dims) == 2 and (dims[0]==2 or dims[1]==2)):
+                w = plotmaker.array_plot_1d(itm)
+        except:
             t = display_text_fast(itm)
             w = QtGui.QTextEdit(t)
         #else:

@@ -30,12 +30,12 @@ class BatchFromFiles(Operation):
         self.outputs['batch_inputs'] = [] 
         self.outputs['batch_outputs'] = [] 
         n_batch = len(batch_list)
-        wf.write_log('STARTING BATCH')
+        #wf.write_log('STARTING BATCH')
         for i,filename in zip(range(n_batch),batch_list):
             self.outputs['batch_inputs'].append( {inpname:filename} )
             wf.set_wf_input(inpname,filename)
-            wf.write_log('EXECUTION {} / {}'.format(i+1,n_batch))
+        #    wf.write_log('EXECUTION {} / {}'.format(i+1,n_batch))
             wf.execute()
             self.outputs['batch_outputs'].append(wf.wf_outputs_dict())
-        wf.write_log('BATCH FINISHED')
+        #wf.write_log('BATCH FINISHED')
 

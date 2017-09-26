@@ -26,13 +26,6 @@ class WfManager(object):
         self.logmethod = print 
         self.plugin_manager = None
 
-    #def __getitem__(self,key):
-    #    if key in self.workflows.keys():
-    #        return self.workflows[key]
-    #    else:
-    #        raise KeyError('[{}] WfManager does not recognize workflow name {}.'
-    #        .format(__name__,key))
-
     def get_op(self,wfname,opname):
         return self.workflows[wfname].get_data_from_uri(opname)
 
@@ -48,16 +41,63 @@ class WfManager(object):
         If wfname is not unique (i.e. a workflow with that name already exists),
         this method will overwrite the existing workflow with a new one.
         """
-        wf = Workflow(self)
+        wf = Workflow()
         if not wf.is_tag_valid(wfname): 
             raise pawstools.WfNameError(wf.tag_error_message(wfname))
         self.workflows[wfname] = wf
 
     def run_wf(self,wfname):
         """
-        Call the execute() method of self.workflows[wfname]
+        Execute the workflow indicated by input wfname
         """
-        self.workflows[wfname].execute()
+        wf = self.workflows[wfname]
+        self.write_log('preparing workflow {} for execution'.format(wfname))
+        stk,diag = wf.execution_stack()
+        self.prepare_wf(wf,stk)
+        wf.execute(self.write_log)
+        self.write_log('execution finished')
+
+    def prepare_wf(self,wf,stk):
+        """
+        For all of the operations in stack stk,
+        load all inputs that are not workflow items. 
+        """
+        for lst in stk:
+            for op_tag in lst:
+                op = wf.get_data_from_uri(op_tag)
+                for name,il in op.input_locator.items():
+                    if not il.tp == opmod.workflow_item:
+                        il.data = self.locate_input(il)
+                        op.inputs[name] = il.data
+
+    def locate_input(self,il):
+        """
+        Return the data pointed to by a given InputLocator object.
+        """
+        if il.tp == opmod.no_input or il.val is None:
+            return None
+        elif il.tp == opmod.entire_workflow:
+            wf = self.workflows[il.val]
+            stk,diag = wf.execution_stack()
+            self.prepare_wf(wf,stk)
+            return wf
+            #return self.workflows[il.val]
+        elif il.tp == opmod.plugin_item:
+            if isinstance(il.val,list):
+                return [self.plugin_manager.get_data_from_uri(v) for v in il.val]
+            else:
+                return self.plugin_manager.get_data_from_uri(il.val)
+        elif il.tp == opmod.auto_type:
+            return il.val
+
+    # TODO: the following
+    def check_wf(self,wf):
+        """
+        Check the dependencies of the workflow.
+        Ensure that all loaded operations have inputs that make sense.
+        Return a status code and message for each of the Operations.
+        """
+        pass
 
     def uri_to_embedded_dict(self,uri,data=None):
         path = uri.split('.')
@@ -134,4 +174,7 @@ class WfManager(object):
             return op
         else:
             return None
+
+
+
 

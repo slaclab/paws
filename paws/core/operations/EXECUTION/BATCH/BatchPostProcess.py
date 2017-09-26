@@ -37,19 +37,18 @@ class BatchPostProcess(Operation):
         wf = self.inputs['workflow']
         if (wf is None or batch_output is None or out_keys is None or inp_keys is None):
             return
-        inp_dict_list = []
-        out_dict_list = []
+        self.outputs['batch_inputs'] = []
+        self.outputs['batch_outputs'] = []
         n_batch = len(batch_output)
-        wf.write_log('STARTING BATCH')
+        #wf.write_log('STARTING BATCH')
         for d_out in batch_output:
             inp_dict = OrderedDict() 
             for kout,kin in zip(out_keys,inp_keys):
                 inp_dict[kin] = d_out[kout]
                 wf.set_wf_input(kin,d_out[kout])
-            wf.write_log('BATCH RUN {} / {}'.format(i+1,n_batch))
+        #    wf.write_log('BATCH RUN {} / {}'.format(i+1,n_batch))
             wf.execute()
-            inp_dict_list.append(inp_dict)
-            out_dict_list.append(wf.wf_outputs_dict())
-        self.outputs['batch_inputs'] = inp_dict_list
-        self.outputs['batch_outputs'] = out_dict_list 
+            self.outputs['batch_inputs'].append(inp_dict)
+            self.outputs['batch_outputs'].append(wf.wf_outputs_dict())
+        #wf.write_log('BATCH FINISHED')
 

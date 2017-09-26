@@ -27,9 +27,9 @@ class UiManager(QtCore.QObject):
         self.ui.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         qpaw.set_logmethod( self.msg_board_log )
         self.paw = qpaw
-        self.make_title()
-        self.threads = QtCore.QThreadPool()
+        self.make_viewer()
         self.build()
+        self.threads = QtCore.QThreadPool()
 
     def msg_board_log(self,msg):
         """Print timestamped message to msg board"""
@@ -44,8 +44,22 @@ class UiManager(QtCore.QObject):
             self.ui.message_board.verticalScrollBar().setValue(
             self.ui.message_board.verticalScrollBar().maximum())
 
-    def make_title(self):
-        """Display the paws logo in the image viewer"""
+    def make_viewer(self):
+        """
+        Set up the tab viewer widget 
+        and display the paws logo 
+        in the main viewer
+        """
+        self.ui.viewer_tabwidget.clear()
+        self.viewer_widgets = {}
+
+        self._viewer_frame = QtGui.QFrame()
+        self._viewer_layout = QtGui.QGridLayout()
+        self._viewer_frame.setLayout(self._viewer_layout)
+        self.viewer_widgets['main viewer'] = self._viewer_frame 
+        self.ui.viewer_tabwidget.addTab(self._viewer_frame,'main viewer')
+
+        # logo scene:
         img_file = os.path.join(pawstools.sourcedir, "ui/graphics/paws_icon_white.png")
         pixmap = QtGui.QPixmap(img_file)
         pixmap_item = QtGui.QGraphicsPixmapItem(pixmap)
@@ -57,8 +71,8 @@ class UiManager(QtCore.QObject):
         textitem.setDefaultTextColor(qwhite)
         logo_view = QtGui.QGraphicsView()
         logo_view.setScene(scene)
-        self.ui.viewer_tabwidget.clear()
-        tab_idx = self.ui.viewer_tabwidget.addTab(logo_view,'main viewer') 
+        self._viewer_layout.addWidget(logo_view,0,0)
+
         self.ui.setWindowTitle("paws v{}".format(pawstools.version))
         self.ui.setWindowIcon(pixmap)
 
@@ -74,6 +88,7 @@ class UiManager(QtCore.QObject):
         self.ui.load_state_button.clicked.connect(self.load_state)
 
         # Workflows ui stuff
+        self.paw._wf_manager.wfFinished.connect(self.update_run_wf_button)
         self.ui.workflows_box.setTitle('Workflows')
         if uitools.have_qt47:
             self.ui.wf_name_entry.setPlaceholderText('(enter a name)')
@@ -93,7 +108,7 @@ class UiManager(QtCore.QObject):
         self.ui.wf_name_entry.sizePolicy().verticalPolicy())
         self.ui.add_workflow_button.setText('Add')
         self.ui.add_workflow_button.clicked.connect( self.add_wf )
-        self.paw._wf_manager.wf_added.connect(self.append_to_wf_selector)
+        self.paw._wf_manager.wfAdded.connect(self.append_to_wf_selector)
         lm = ListModel(self.paw.list_wf_tags())
         self.ui.wf_selector.setModel(lm)
         self.ui.wf_selector.currentIndexChanged.connect( partial(self.set_wf) )
@@ -268,7 +283,7 @@ class UiManager(QtCore.QObject):
         if idx.isValid(): 
             itm_data = self.paw.get_plugin_from_index(idx)
             widg = widgets.make_widget(itm_data)
-            self.display_widget(widg)
+            self.main_display(widg)
 
     def display_wf_item(self,idx):
         """
@@ -277,18 +292,21 @@ class UiManager(QtCore.QObject):
         if idx.isValid(): 
             itm_data = self.paw.current_wf().get_data_from_index(idx)
             widg = widgets.make_widget(itm_data)
-            self.display_widget(widg)
+            self.main_display(widg)
 
-    def display_widget(self,widg=None):
+    def main_display(self,widg=None):
+        # Bring up the main viewer from the viewer_tabwidget
+        self.ui.viewer_tabwidget.setCurrentWidget(self._viewer_frame)
         # Loop through the viewer layout, last to first, clear the frame
-        n_widgets = self.ui.viewer_layout.count()
+        n_widgets = self._viewer_layout.count()
         for i in range(n_widgets-1,-1,-1):
             # QLayout.takeAt returns a LayoutItem
-            itm = self.ui.viewer_layout.takeAt(i)
+            itm = self._viewer_layout.takeAt(i)
             # get the QWidget of that LayoutItem and close it 
             itm.widget().close()
+            del itm
         if widg is not None:
-            self.ui.viewer_layout.addWidget(widg,0,0,1,1) 
+            self._viewer_layout.addWidget(widg,0,0) 
 
     def toggle_run_wf(self,wfname=None):
         if wfname is None:
@@ -296,21 +314,35 @@ class UiManager(QtCore.QObject):
         if wfname is not None:
             wf = self.paw.get_wf(wfname)
             if self.paw.is_wf_running(wfname):
-                # TODO: the interruption will have to be carried out by signals and slots 
-                self.paw.stop_wf(wfname)
-                self.ui.run_wf_button.setText("&Run")
-                #self.requestStopWorkflow.emit(wfname)
+                self.stop_wf(wfname)
             else:
-                self.ui.run_wf_button.setText("S&top")
-                self.paw.run_wf(wfname)
-                #wf.run_in_threadpool(self.threads)
+                self.start_wf(wfname)
 
-    def update_run_wf_button(self):
-        wfname = self.paw.current_wf_name() 
-        if self.paw.is_wf_running(wfname):
-            self.ui.run_wf_button.setText("S&top")
-        else:
-            self.ui.run_wf_button.setText("&Run")
+    def start_wf(self,wfname):
+        self.ui.run_wf_button.setText("S&top")
+        # NOTE: this is where we choose between threaded or not.
+        # TODO: consider exposing both run modes to the user.
+        #self.paw.run_wf(wfname,self.threads)
+        self.paw.run_wf(wfname,None)
+
+    def stop_wf(self,wfname):
+        # TODO: the interruption will have to be carried out by signals and slots.
+        # the signal should be emitted in QPawsAPI.stop_wf and the slot should be in QWorkflow.
+        # TODO: consider how to interrupt a running operation,
+        # e.g. a batch execution controller.
+        self.paw.stop_wf(wfname)
+        self.ui.run_wf_button.setText("&Run")
+
+    def update_run_wf_button(self,wfname=None):
+        """
+        If the input wfname indicates the currently selected workflow,
+        make the self.ui.run_wf_button sane wrt this workflow's status.
+        """
+        if self.paw.current_wf_name() == wfname:
+            if self.paw.is_wf_running(wfname):
+                self.ui.run_wf_button.setText("S&top")
+            else:
+                self.ui.run_wf_button.setText("&Run")
 
     def save_state(self):
         """

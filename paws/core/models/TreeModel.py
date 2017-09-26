@@ -33,23 +33,23 @@ class TreeModel(object):
         return itm.n_children()
 
     def set_item(self,itm_uri,itm_data=None):
-        try:
-            if '.' in itm_uri:
-                parent_uri = itm_uri[:itm_uri.rfind('.')]
-                parent_itm = self.get_from_uri(parent_uri)
-                itm_tag = itm_uri.split('.')[-1]
-            else:
-                parent_itm = self._root_item
-                itm_tag = itm_uri
-            # add TreeItems to index the new TreeModel content 
-            treedata = self.build_tree(itm_data)
-            self.tree_update(parent_itm,itm_tag,treedata)
-            # store the data 
-            self._tree.set_uri(itm_uri,itm_data)
-        except Exception as ex:
-            msg = str('[{}] Encountered an error while trying to set uri {}: \n'
-            .format(__name__,itm_uri) + ex.message)
-            raise KeyError(msg) 
+        #try:
+        if '.' in itm_uri:
+            parent_uri = itm_uri[:itm_uri.rfind('.')]
+            parent_itm = self.get_from_uri(parent_uri)
+            itm_tag = itm_uri.split('.')[-1]
+        else:
+            parent_itm = self._root_item
+            itm_tag = itm_uri
+        # add TreeItems to index the new TreeModel content 
+        treedata = self.build_tree(itm_data)
+        self.tree_update(parent_itm,itm_tag,treedata)
+        # store the data 
+        self._tree.set_uri(itm_uri,itm_data)
+        #except Exception as ex:
+        #    msg = str('[{}] Encountered an error while trying to set uri {}: \n'
+        #    .format(__name__,itm_uri) + ex.message)
+        #    raise KeyError(msg) 
 
     def remove_item(self,itm_uri):
         self._tree.delete_uri(itm_uri)
