@@ -1,19 +1,15 @@
+from __future__ import print_function 
 from PySide import QtCore
 
-class RunnableExecutor(QtCore.QRunnable,QtCore.QObject):
+class RunnableExecutor(QtCore.QRunnable):
     """
-    QRunnable that handles execution of an Operation
+    QRunnable that handles execution of a QWorkflow
     """
-    runStarted = QtCore.Signal()
-    runFinished = QtCore.Signal()
 
-    def __init__(self,wf,logmethod):
+    def __init__(self,wf):
         super(RunnableExecutor,self).__init__()
         self.wf = wf
-        self.logmethod = logmethod
 
     def run(self):
-        #self.runStarted.emit() 
-        self.wf.execute(self.logmethod)
-        #self.runFinished.emit()
+        self.wf.execute()
 

@@ -21,6 +21,7 @@ class Workflow(TreeModel):
         super(Workflow,self).__init__(flag_dict)
         self.inputs = OrderedDict()
         self.outputs = OrderedDict()
+        self.logmethod = print
 
     def __getitem__(self,key):
         optags = self.keys()
@@ -41,16 +42,44 @@ class Workflow(TreeModel):
     def keys(self):
         return self.list_op_tags() 
 
+    @classmethod
+    def clone(cls):
+        return cls()
+
+    def add_op(self,op_tag,op):
+        op.message_callback = self.logmethod
+        op.data_callback = partial( self.set_op_item,op_tag )
+        self.set_item(op_tag,op)
+
+    #def record_op_input(self,opname,inpname,inpdata):
+    #    uri = opname+'.'+opmod.inputs_tag+'.'+inpname
+    #    op = self.get_data_from_uri(opname)
+    #    op.inputs[inpname] = inpdata
+    #    self.set_item(uri,inpdata)
+
+    #def record_op_output(self,opname,outname,outdata):
+    #    uri = opname+'.'+opmod.outputs_tag+'.'+outname
+    #    op = self.get_data_from_uri(opname)
+    #    op.outputs[outname] = outdata 
+    #    self.set_item(uri,outdata)
+
+    def set_op_item(self,op_tag,item_uri,item_data):
+        full_uri = op_tag+'.'+item_uri
+        self.set_item(full_uri,item_data)
+
     def clone_wf(self):
         """
         Produce a Workflow that is a copy of this Workflow.
         """
-        new_wf = copy.copy(self)
+        new_wf = self.clone() 
+        #new_wf = copy.copy(self)
         new_wf.inputs = copy.deepcopy(self.inputs)
         new_wf.outputs = copy.deepcopy(self.outputs)
+        # NOTE: is it ok if I don't copy this method?
+        new_wf.logmethod = self.logmethod
         for op_tag in self.list_op_tags():
             op = self.get_data_from_uri(op_tag)
-            self.set_item(op_tag,op.copy())
+            new_wf.set_item(op_tag,op.clone_op())
         return new_wf
 
     def build_tree(self,x):
@@ -100,18 +129,22 @@ class Workflow(TreeModel):
     def set_wf_input(self,wf_input_name,val):
         self.set_op_input_at_uri(self.inputs[wf_input_name],val)
 
-    def execute(self,logmethod=print):
+    def execute(self):
         stk,diag = self.execution_stack()
+        self.logmethod(os.linesep+'running workflow:'+os.linesep+self.print_stack(stk))
         for lst in stk:
-            logmethod('running: {}'.format(lst))
+            self.logmethod('running: {}'.format(lst))
             for op_tag in lst: 
                 op = self.get_data_from_uri(op_tag) 
-                for name,il in op.input_locator.items():
+                for inpnm,il in op.input_locator.items():
                     if il.tp == opmod.workflow_item:
-                        il.data = self.locate_input(il)
-                        op.inputs[name] = il.data
+                        #il.data = self.locate_input(il)
+                        #op.inputs[inpnm] = il.data
+                        op.inputs[inpnm] = self.locate_input(il)
+                        self.set_op_item(op_tag+'.'+opmod.inputs_tag+'.'+inpnm,op.inputs[inpnm])
                 op.run() 
-                self.set_item(op_tag,op)
+                for outnm,outdata in op.outputs.items():
+                    self.set_op_item(op_tag+'.'+opmod.outputs_tag+'.'+outnm,outdata)
         #        try:
         #        except Exception as ex:
         #            tb = traceback.format_exc()
@@ -132,16 +165,9 @@ class Workflow(TreeModel):
         """
         path = uri.split('.')
         opname = path[0]
-        if not path[1] == opmod.inputs_tag:
-            msg = '[{}] uri {} does not point to an input'.format(__name__,uri)
-            raise ValueError(msg)
         inpname = path[2]
-        uri = opname+'.'+opmod.inputs_tag+'.'+inpname
         op = self.get_data_from_uri(opname)
         op.input_locator[inpname].val = val
-        #op.input_locator[inpname].data = val
-        #op.inputs[inpname] = val
-        self.set_item(uri,val)
 
     def set_op_enabled(self,opname,flag=True):
         op_item = self.get_from_uri(opname)

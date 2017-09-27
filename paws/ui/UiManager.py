@@ -26,23 +26,28 @@ class UiManager(QtCore.QObject):
         ui_file.close()
         self.ui.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         qpaw.set_logmethod( self.msg_board_log )
+        qpaw._wf_manager.emitMessage.connect( self.logMessage )
         self.paw = qpaw
         self.make_viewer()
         self.build()
         self.threads = QtCore.QThreadPool()
 
+    @QtCore.Slot(str)
+    def logMessage(self,msg):
+        self.msg_board_log(msg)
+
     def msg_board_log(self,msg):
         """Print timestamped message to msg board"""
-        if (self.ui.message_board.verticalScrollBar().value() == 
-        self.ui.message_board.verticalScrollBar().maximum()):
-            advance_scrollbar = True
-        else:
-            advance_scrollbar = False
+        #if (self.ui.message_board.verticalScrollBar().value() == 
+        #self.ui.message_board.verticalScrollBar().maximum()):
+        #    advance_scrollbar = True
+        #else:
+        #    advance_scrollbar = False
         self.ui.message_board.appendPlainText(
         '- ' + pawstools.timestr() + ': ' + msg)#+ '\n') 
-        if advance_scrollbar:
-            self.ui.message_board.verticalScrollBar().setValue(
-            self.ui.message_board.verticalScrollBar().maximum())
+        #if advance_scrollbar:
+        self.ui.message_board.verticalScrollBar().setValue(
+        self.ui.message_board.verticalScrollBar().maximum())
 
     def make_viewer(self):
         """
@@ -312,7 +317,6 @@ class UiManager(QtCore.QObject):
         if wfname is None:
             wfname = self.paw.current_wf_name()
         if wfname is not None:
-            wf = self.paw.get_wf(wfname)
             if self.paw.is_wf_running(wfname):
                 self.stop_wf(wfname)
             else:
@@ -322,8 +326,8 @@ class UiManager(QtCore.QObject):
         self.ui.run_wf_button.setText("S&top")
         # NOTE: this is where we choose between threaded or not.
         # TODO: consider exposing both run modes to the user.
-        #self.paw.run_wf(wfname,self.threads)
-        self.paw.run_wf(wfname,None)
+        self.paw.run_wf(wfname,self.threads)
+        #self.paw.run_wf(wfname,None)
 
     def stop_wf(self,wfname):
         # TODO: the interruption will have to be carried out by signals and slots.

@@ -38,15 +38,21 @@ class BatchFromDirectory(Operation):
         batch_list = glob.glob(os.path.join(dirpath,rx))
         self.outputs['batch_inputs'] = [] 
         self.outputs['batch_outputs'] = [] 
+        self.data_callback('outputs.batch_inputs',self.outputs['batch_inputs'])
+        self.data_callback('outputs.batch_outputs',self.outputs['batch_outputs'])
         n_batch = len(batch_list)
-        #wf.write_log('STARTING BATCH')
+        self.message_callback('STARTING BATCH')
+        wf.logmethod = self.message_callback
         for i,filename in zip(range(n_batch),batch_list):
             inp_dict = OrderedDict() 
             inp_dict[inpname] = filename
             wf.set_wf_input(inpname,filename)
-        #    wf.write_log('BATCH RUN {} / {}'.format(i+1,n_batch))
+            self.message_callback('BATCH RUN {} / {}'.format(i,n_batch-1))
             wf.execute()
+            out_dict = wf.wf_outputs_dict()
             self.outputs['batch_inputs'].append(inp_dict)
-            self.outputs['batch_outputs'].append(wf.wf_outputs_dict())
-        #wf.write_log('BATCH FINISHED')
+            self.outputs['batch_outputs'].append(out_dict)
+            self.data_callback('outputs.batch_inputs.'+str(i),inp_dict)
+            self.data_callback('outputs.batch_outputs.'+str(i),out_dict)
+        self.message_callback('BATCH FINISHED')
 

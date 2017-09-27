@@ -65,10 +65,12 @@ class WfManager(object):
         for lst in stk:
             for op_tag in lst:
                 op = wf.get_data_from_uri(op_tag)
-                for name,il in op.input_locator.items():
+                for inpname,il in op.input_locator.items():
                     if not il.tp == opmod.workflow_item:
-                        il.data = self.locate_input(il)
-                        op.inputs[name] = il.data
+                        #il.data = self.locate_input(il)
+                        #op.inputs[name] = il.data
+                        op.inputs[inpname] = self.locate_input(il)
+                        wf.set_op_item(op_tag,'inputs.'+inpname,op.inputs[inpname])
 
     def locate_input(self,il):
         """
@@ -141,7 +143,7 @@ class WfManager(object):
         for opname, op_setup in wf_spec.items():
             op = self.build_op_from_dict(op_setup,op_manager)
             if isinstance(op,Operation):
-                self.workflows[wfname].set_item(opname,op)
+                self.workflows[wfname].add_op(opname,op)
             else:
                 self.write_log('[{}] Failed to load {}.'.format(uri))
 

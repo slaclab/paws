@@ -41,8 +41,9 @@ class TreeModel(object):
         else:
             parent_itm = self._root_item
             itm_tag = itm_uri
-        # add TreeItems to index the new TreeModel content 
+        # cast the itm_data as an embedded dict for tree-storage 
         treedata = self.build_tree(itm_data)
+        # add TreeItems to index the new TreeModel content 
         self.tree_update(parent_itm,itm_tag,treedata)
         # store the data 
         self._tree.set_uri(itm_uri,itm_data)

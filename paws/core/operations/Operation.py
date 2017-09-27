@@ -1,3 +1,4 @@
+from __future__ import print_function
 import abc
 import re
 from collections import OrderedDict
@@ -20,12 +21,11 @@ class InputLocator(object):
     """
     Objects of this class are used as containers for inputs to an Operation.
     They contain the information needed to find the relevant input data.
-    After the data is loaded, it should be stored in InputLocator.data.
     """
     def __init__(self,tp=no_input,val=None):
         self.tp = tp
         self.val = val 
-        self.data = None 
+        #self.data = None 
 
 class Operation(object):
     """
@@ -55,6 +55,11 @@ class Operation(object):
         for name in output_names: 
             self.outputs[name] = None
             self.output_doc[name] = None
+        self.message_callback = print
+        self.data_callback = self.do_nothing
+    
+    def do_nothing(self,data_uri,data):
+        pass 
 
     def __getitem__(self,key):
         if key == inputs_tag:
@@ -97,15 +102,34 @@ class Operation(object):
         """
         pass
 
-    def copy(self):
-        new_op = copy.copy(self)
+    @classmethod
+    def clone(cls):
+        return cls()
+
+    def clone_op(self):
+        """
+        Clone the Operation.
+        This should be called after all inputs have been loaded,
+        with the exception of workflow items,
+        e.g. after calling WfManager.prepare_wf().
+        """
+        new_op = self.clone()
+        new_op.load_defaults()
         for nm,il in self.input_locator.items():
+            new_il = InputLocator()
+            new_il.tp = copy.copy(il.tp)
+            new_il.val = copy.deepcopy(il.val)
             if il.tp in [workflow_item,plugin_item,auto_type]:
-                # Hope that copy.deepcopy() does the trick
-                new_op.inputs[nm] = copy.deepcopy(self.inputs[nm])
+                # NOTE: have to implement __deepcopy__ for objects
+                new_op.inputs[nm] = copy.deepcopy(self.inputs[nm]) 
             elif il.tp == entire_workflow:
                 if self.inputs[nm]:
-                    new_op.inputs[nm] = self.inputs[nm].clone_wf() 
+                    new_wf = self.inputs[nm].clone_wf()
+                    new_wf.logmethod = self.inputs[nm].logmethod
+                    new_op.inputs[nm] = new_wf 
+            new_op.input_locator[nm] = new_il
+        new_op.message_callback = self.message_callback
+        new_op.data_callback = self.data_callback
         return new_op
     
     def clear_outputs(self):

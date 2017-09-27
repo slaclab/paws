@@ -138,7 +138,7 @@ class PawsAPI(object):
             # instantiate with default inputs
             op = op()
             op.load_defaults()
-            wf.set_item(op_tag,op)
+            wf.add_op(op_tag,op)
         else:
             msg = str('Attempted to add Operation {}, '.format(op_spec)
             + 'but this Operation has not been enabled. '
