@@ -5,6 +5,7 @@ from ... import Operation as opmod
 from ...Operation import Operation
 from ....tools import saxstools
 
+
 class SpectrumClassifier(Operation):
     """
     Classifies SAXS spectra.
@@ -31,10 +32,16 @@ class SpectrumClassifier(Operation):
 
         # TODO: use keys: 'bad_data', 'precursor_scattering', 'form_factor_scattering', and 'diffraction_peaks',
         # i.e. same keys as population_flags output dict
-        clsfr = clsfrs['model_for_bad_data'] # bad_data
-        clsfr2 = clsfrs['model_for_form'] # form
-        clsfr3 = clsfrs['model_for_precursor'] # precursor
-        clsfr4 = clsfrs['model_for_structure'] # structure
+
+        model_bad_data = clsfrs['model_for_bad_data']
+        model_form = clsfrs['model_for_form_factor_scattering']
+        model_precur = clsfrs['model_for_precursor_scattering']
+        model_diff_peaks = clsfrs['model_for_diffraction_peaks']
+
+        scaler_bad_data = sclrs['scaler_for_bad_data']
+        scaler_form = sclrs['scaler_for_form_factor_scattering']
+        scaler_precur = sclrs['scaler_for_precursor_scattering']
+        scaler_diff_peaks = sclrs['scaler_for_diffraction_peaks']
 
         flags = OrderedDict()
         flags['test'] = True
@@ -82,14 +89,12 @@ class SpectrumClassifier(Operation):
         for item in features60:
             input_features2.append(x[item])
 
-        bad_data_scaler = sclrs['analitical_features_and_60bins_for_bad_data']
-        transformed_input_features = bad_data_scaler.transform([input_features1])
-
-        bad_data = clsfr.predict(transformed_input_features)[0] # [0] since we have only one sample
+        transformed_input_features = scaler_bad_data.transform([input_features1])
+        bad_data = model_bad_data.predict(transformed_input_features)[0] # [0] since we have only one sample
         if bad_data:
-            pr_bad_data = clsfr.predict_proba(transformed_input_features)[0, 1]
+            pr_bad_data = model_bad_data.predict_proba(transformed_input_features)[0, 1]
         else:
-            pr_bad_data = clsfr.predict_proba(transformed_input_features)[0, 0]
+            pr_bad_data = model_bad_data.predict_proba(transformed_input_features)[0, 0]
 
         flags['bad_data'] = (bad_data, pr_bad_data) # label and propability to have this label
 
@@ -99,31 +104,30 @@ class SpectrumClassifier(Operation):
             flags['diffraction_peaks'] = (False, None)
         else:
             #form label
-            form_scaler = sclrs['scaler_60bins_no_bad_data']
-            transformed_input_features = form_scaler.transform([input_features2])
-            form = clsfr2.predict(transformed_input_features)[0]
+            transformed_input_features = scaler_form.transform([input_features2])
+            form = model_form.predict(transformed_input_features)[0]
             if form:
-                pr_form = clsfr2.predict_proba(transformed_input_features)[0, 1]
+                pr_form = model_form.predict_proba(transformed_input_features)[0, 1]
             else:
-                pr_form = clsfr2.predict_proba(transformed_input_features)[0, 0]
+                pr_form = model_form.predict_proba(transformed_input_features)[0, 0]
             flags['form_factor_scattering'] = (form, pr_form) # label and propability to have this label
 
             # precursor label
-            precur_struct_scaler = sclrs['scaler_features_analytical_and_60_no_bad_data']
-            transformed_input_features = precur_struct_scaler.transform([input_features1])
-            prec = clsfr3.predict(transformed_input_features)[0]
+            transformed_input_features = scaler_precur.transform([input_features1])
+            prec = model_precur.predict(transformed_input_features)[0]
             if prec:
-                pr_prec = clsfr3.predict_proba(transformed_input_features)[0, 1]
+                pr_prec = model_precur.predict_proba(transformed_input_features)[0, 1]
             else:
-                pr_prec = clsfr3.predict_proba(transformed_input_features)[0, 0]
+                pr_prec = model_precur.predict_proba(transformed_input_features)[0, 0]
             flags['precursor_scattering'] = (prec, pr_prec)
 
-            # structure label
-            picks = clsfr4.predict(transformed_input_features)[0]
+            # difraction peaks label
+            transformed_input_features = scaler_diff_peaks.transform([input_features1])
+            picks = model_diff_peaks.predict(transformed_input_features)[0]
             if picks:
-                pr_picks = clsfr4.predict_proba(transformed_input_features)[0, 1]
+                pr_picks = model_diff_peaks.predict_proba(transformed_input_features)[0, 1]
             else:
-                pr_picks = clsfr4.predict_proba(transformed_input_features)[0, 0]
+                pr_picks = model_diff_peaks.predict_proba(transformed_input_features)[0, 0]
             flags['diffraction_peaks'] = (picks, pr_picks)
 
         # problems for later:
