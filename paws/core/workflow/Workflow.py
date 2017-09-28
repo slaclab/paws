@@ -3,6 +3,7 @@ from collections import OrderedDict
 import copy
 from functools import partial
 import traceback
+import os
 
 from ..models.TreeModel import TreeModel
 from ..operations import Operation as opmod
@@ -21,7 +22,8 @@ class Workflow(TreeModel):
         super(Workflow,self).__init__(flag_dict)
         self.inputs = OrderedDict()
         self.outputs = OrderedDict()
-        self.logmethod = print
+        self.message_callback = print
+        self.data_callback = None
 
     def __getitem__(self,key):
         optags = self.keys()
@@ -47,7 +49,7 @@ class Workflow(TreeModel):
         return cls()
 
     def add_op(self,op_tag,op):
-        op.message_callback = self.logmethod
+        op.message_callback = self.message_callback
         op.data_callback = partial( self.set_op_item,op_tag )
         self.set_item(op_tag,op)
 
@@ -76,7 +78,8 @@ class Workflow(TreeModel):
         new_wf.inputs = copy.deepcopy(self.inputs)
         new_wf.outputs = copy.deepcopy(self.outputs)
         # NOTE: is it ok if I don't copy this method?
-        new_wf.logmethod = self.logmethod
+        new_wf.message_callback = self.message_callback
+        new_wf.data_callback = self.data_callback
         for op_tag in self.list_op_tags():
             op = self.get_data_from_uri(op_tag)
             new_wf.set_item(op_tag,op.clone_op())
@@ -138,9 +141,9 @@ class Workflow(TreeModel):
 
     def execute(self):
         stk,diag = self.execution_stack()
-        self.logmethod(os.linesep+'running workflow:'+os.linesep+self.print_stack(stk))
+        self.message_callback(os.linesep+'running workflow:'+os.linesep+self.print_stack(stk))
         for lst in stk:
-            self.logmethod('running: {}'.format(lst))
+            self.message_callback('running: {}'.format(lst))
             for op_tag in lst: 
                 op = self.get_data_from_uri(op_tag) 
                 for inpnm,il in op.input_locator.items():
@@ -152,11 +155,6 @@ class Workflow(TreeModel):
                 op.run() 
                 for outnm,outdata in op.outputs.items():
                     self.set_op_item(op_tag,opmod.outputs_tag+'.'+outnm,outdata)
-        #        try:
-        #        except Exception as ex:
-        #            tb = traceback.format_exc()
-        #            self.write_log(str('Operation {} threw an error. '
-        #            + '\nTrace: {}').format(op_tag,tb)) 
 
     def locate_input(self,il):
         if isinstance(il.val,list):

@@ -20,10 +20,6 @@ class QWfManager(WfManager,QtCore.QObject):
     wfAdded = QtCore.Signal(str)
 
     # this signal should emit the name
-    # of the workflow that has been updated 
-    wfUpdated = QtCore.Signal(str)
-
-    # this signal should emit the name
     # of the workflow that finished.
     wfFinished = QtCore.Signal(str)
 
@@ -58,7 +54,7 @@ class QWfManager(WfManager,QtCore.QObject):
         if not wf.is_tag_valid(wfname): 
             raise pawstools.WfNameError(wf.tag_error_message(wfname))
         wf.emitMessage.connect(self.relayMessage)
-        wf.logmethod = wf.emitMessage.emit
+        wf.message_callback = wf.emitMessage.emit
         wf.wfFinished.connect( partial(self.stop_wf,wfname) )
         self.workflows[wfname] = wf
         self.wf_running[wfname] = False
@@ -67,7 +63,7 @@ class QWfManager(WfManager,QtCore.QObject):
     def stop_wf(self,wfname):
         self.write_log('stopping workflow {}'.format(wfname))
         self.wf_running[wfname] = False
-        self.wfFinished.emit(wfname)
+        #self.wfFinished.emit(wfname)
 
     def run_wf(self,wfname,pool=None):
         wf = self.workflows[wfname]
@@ -83,79 +79,16 @@ class QWfManager(WfManager,QtCore.QObject):
             # Connect some signals so that the local copy gets updated
             # as the remote copy gets executed. 
             wf_clone = wf.clone_wf()
-            #wf_clone.opChanged.connect(wf.update_op)
+            wf_clone.message_callback = wf_clone.emitMessage.emit
             wf_clone.emitMessage.connect(self.relayMessage)
-            wf_clone.logmethod = wf_clone.emitMessage.emit 
-            #wf_clone.opInputChanged.connect( wf.updateOpInput )
-            #wf_clone.opOutputChanged.connect( wf.updateOpOutput )
+            wf_clone.data_callback = wf_clone.emitData.emit
+            wf_clone.emitData.connect(wf.updateItem)
             wf_clone.wfFinished.connect( partial(self.stop_wf,wfname) )
             # construct a QRunnable around a copy of the Workflow 
             qr = qttools.RunnableExecutor( wf_clone ) 
-            #qr.runStarted.connect(self.app.processEvents)
             # Call QThreadPool.start(QRunnable) - executes runnable.run()
             self.wf_running[wfname] = True
             pool.start(qr)
-            #wf.execute(self.write_log)
-
-    #    stk,diag = self.execution_stack(wf)
-    #    for lst in stk:
-    #        self.write_log('running: {}'.format(lst))
-    #        for op_tag in lst: 
-    #            op = self.get_data_from_uri(op_tag) 
-    #            self.load_inputs(op,wf)
-    #            self.opChanged.emit(op_tag,wfname)
-    #            # construct a QRunnable around a copy of the Operation
-    #            qr = qttools.RunnableExecutor( op.copy() ) 
-    #            qr.runStarted.connect(self.wf_manager.app.processEvents)
-    #            qr.opFinished.connect( partial(self.finish_op,op_tag,wfname) )
-    #            # Call QThreadPool.start(QRunnable) - executes runnable.run()
-    #            pool.start(qr)
-
-    #def finish_op(self,op_tag,wfname,op):
-    #    wf = self.workflows[wfname]
-    #    wf.set_item(op_tag,op)
-    #    self.opChanged.emit(op_tag,wfname)
-    #    self.opFinished.emit(op_tag,wfname)
-          
-    #def execute_from_layer(self,stk,layer_index):
-    #    print 'run layer {}'.format(layer_index)
-    #    self.write_log('running: {}'.format(stk[layer_index]))
-    #    lst = stk[layer_index] 
-    #    # load the inputs
-    #    for op_tag in lst:
-    #        op = self.get_data_from_uri(op_tag) 
-    #        self.load_inputs(op,self.wf_manager,self.wf_manager.plugin_manager)
-    #        self.opChanged.emit(op_tag)
-    #    op_dict = dict.fromkeys(lst)
-    #    for op_tag in lst:
-    #        # give ops to WfWorker as deep copies?
-    #        #op_dict[op_tag] = copy.deepcopy(self.get_data_from_uri(op_tag))
-    #        op_copy = copy.copy(self.get_data_from_uri(op_tag))
-    #        op_dict[op_tag] = op_copy 
-    #    # start a WfWorker
-    #    wkr = QWfWorker(op_dict)
-    #    # create a QThread
-    #    thd = QtCore.QThread()
-    #    # move the WfWorker to the QThread
-    #    wkr.moveToThread(thd)
-    #    # connect proper signals
-    #    thd.started.connect(wkr.work)
-    #    wkr.opDone.connect(self.finish_op)
-    #    #wkr.allDone.connect(thd.quit)
-    #    if not layer_index == len(stk):
-    #        thd.finished.connect( partial(self.execute_from_layer,stk,layer_index+1) )
-    #    # start the thread
-    #    #thd.exec_()
-    #    thd.start()
-    #    self.wf_manager.app.processEvents()
-
-    #def finish_op(self,op_tag,op):
-    #    self.set_item(op_tag,op)
-    #    self.opChanged.emit(op_tag)
-    #    self.opFinished.emit(op_tag)
-
-
-
 
 
 
