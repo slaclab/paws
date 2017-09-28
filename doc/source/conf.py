@@ -175,7 +175,8 @@ texinfo_documents = [
      'Miscellaneous'),
 ]
 
-
+# LAP put this here to avoid an obnoxious warning
+html_static_path = []
 
 
 # Example configuration for intersphinx: refer to the Python standard library.

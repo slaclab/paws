@@ -43,22 +43,20 @@ def profile_spectrum(q,I):
     by taking several fast numerical metrics 
     from the measured data.
 
-    :returns: dictionary of scalar metrics.
-    Dict keys and descriptions: 
-    - 'low_q_ratio': fraction of total intensity in the range q<0.4 
-    - 'high_q_ratio': fraction of total intensity in the range q>=0.4 
-    - 'q_Imax': q value of the maximum intensity. 
-    - 'Imax_over_Imean': maximum intensity divided by mean intensity. 
-    - 'Imax_over_Ilowq': Maximum intensity divided by mean intensity in the range q<0.4. 
-    - 'Imax_over_Ihighq': Maximum intensity divided by mean intensity in the range q>0.4. 
-    - 'Imax_sharpness': maximum intensity divided by 
-        the mean intensity in the range 0.9*q_Imax<q<1.1*q_Imax.
-    - 'q_bin_edges' : array of q-values to use as upper bin limits for intensity integration. 
-    - 'q_bin_strengths' : array of integrated log(I) within the bins specified by q_bin_edges.
-    - 'log_fluctuation': Integrated fluctuation of log(I): 
-        sum of difference in log(I) between adjacent points, 
-        taken only where this difference changes sign, 
-        divided by the maximum of log(I). 
+    Returns a dictionary of scalar metrics.
+    Dict keys and descriptions:
+    'low_q_ratio': fraction of total intensity in the range q<0.4
+    'high_q_ratio': fraction of total intensity in the range q>=0.4
+    'q_Imax': q value of the maximum intensity.
+    'Imax_over_Imean': maximum intensity divided by mean intensity.
+    'Imax_over_Ilowq': Maximum intensity divided by mean intensity in the range q<0.4.
+    'Imax_over_Ihighq': Maximum intensity divided by mean intensity in the range q>0.4.
+    'Imax_sharpness': maximum intensity divided by the mean intensity in the range 0.9*q_Imax<q<1.1*q_Imax.
+    'q_bin_edges' : array of q-values to use as upper bin limits for intensity integration.
+    'q_bin_strengths' : array of integrated log(I) within the bins specified by q_bin_edges.
+    'log_fluctuation': Integrated fluctuation of log(I):
+    sum of difference in log(I) between adjacent points,
+    taken only where this difference changes sign, divided by the maximum of log(I).
     """ 
 
     idx_lowq = np.array(q<0.4)
