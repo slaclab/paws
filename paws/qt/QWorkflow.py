@@ -50,11 +50,6 @@ class QWorkflow(Workflow,QTreeSelectionModel):
     def __init__(self):
         super(QWorkflow,self).__init__()
 
-    #def update_op(self,op_tag,op):
-    #    print('update_op({})'.format(op_tag))
-    #    self.set_item(op_tag,op)
-    #    #self.opChanged.emit(op_tag,op)
-
     def headerData(self,section,orientation,data_role):
         if (data_role == QtCore.Qt.DisplayRole and section == 0):
             return "{} operation(s) loaded".format(self.root_item().n_children())

@@ -326,6 +326,7 @@ class PawsAPI(object):
             wf_dict = d['WORKFLOWS']
             for wfname,wfspec in wf_dict.items():
                 self._wf_manager.load_from_dict(wfname,wfspec,self._op_manager)
+                self.select_wf(wfname)
         if 'PLUGINS' in d.keys():
             pgin_dict = d['PLUGINS']
             for pgin_name,pgin_spec in pgin_dict.items():

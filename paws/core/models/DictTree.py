@@ -86,6 +86,7 @@ class DictTree(object):
         except Exception as ex:
             msg = str('\n[{}] Encountered an error while trying to set uri {} to val {}: \n'
             .format(__name__,uri,val)) + ex.message
+            import pdb; pdb.set_trace()
             raise KeyError(msg)
 
     def get_from_uri(self,uri=''):

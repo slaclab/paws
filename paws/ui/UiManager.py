@@ -120,6 +120,9 @@ class UiManager(QtCore.QObject):
         self.ui.run_wf_button.setText("&Run")
         self.ui.run_wf_button.clicked.connect(self.toggle_run_wf)
         #self.qwfman.wfdone.connect(self.update_run_wf_button)
+        # If for some reason the QPawsAPI (self.paw) calls select_wf(),
+        # the UI should also select that wf.
+        self.paw.wfSelectionChanged.connect(self.select_wf)
 
         # Plugins ui stuff
         self.ui.plugins_box.setTitle('Plugins')
@@ -175,9 +178,12 @@ class UiManager(QtCore.QObject):
     def append_to_wf_selector(self,new_wfname):
         self.ui.wf_selector.model().append_item(new_wfname)
 
-    def set_wf(self,wf_selector_idx):
-        wfname = self.ui.wf_selector.model().list_data()[wf_selector_idx]
-        self.paw.select_wf(wfname)
+    def select_wf(self,wfname):
+        wf_idx = self.ui.wf_selector.model().list_data().index(wfname)
+        self.ui.wf_selector.setCurrentIndex(wf_idx)
+        self.set_wf_treeview(wfname)
+
+    def set_wf_treeview(self,wfname):
         wf = self.paw.get_wf(wfname)
         self.ui.wf_tree.setModel(wf)
         self.ui.wf_tree.setRootIndex(wf.root_index())
@@ -185,6 +191,12 @@ class UiManager(QtCore.QObject):
         self.ui.wf_tree.hideColumn(1)
         self.ui.wf_tree.setColumnWidth(0,200)
         self.update_run_wf_button()
+
+    def set_wf(self,wf_selector_idx):
+        wfname = self.ui.wf_selector.model().list_data()[wf_selector_idx]
+        if not wfname == self.paw.current_wf_name():
+            self.paw.select_wf(wfname)
+            self.set_wf_treeview(wfname)
 
     def add_plugin(self):
         pgin_name = self.ui.plugin_name_entry.text()
@@ -242,7 +254,8 @@ class UiManager(QtCore.QObject):
                 msg_ui.show()
                 return
             self.append_to_wf_selector(wfname)
-            self.ui.wf_selector.setCurrentIndex(self.paw.n_wf()-1)
+            #self.ui.wf_selector.setCurrentIndex(self.paw.n_wf()-1)
+            self.paw.set_wf(wfname)
             self.ui.wf_name_entry.clear()
             # Add a tab to the viewer for this workflow 
             self.add_wf_tab(wfname)

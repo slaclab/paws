@@ -1,6 +1,7 @@
 from collections import OrderedDict
 import glob
 import os
+import copy
 
 from ...Operation import Operation
 from ... import Operation as opmod 
@@ -36,11 +37,13 @@ class BatchFromDirectory(Operation):
         if (wf is None or not dirpath or not rx or not inpname):
             return
         batch_list = glob.glob(os.path.join(dirpath,rx))
-        self.outputs['batch_inputs'] = [] 
-        self.outputs['batch_outputs'] = [] 
-        self.data_callback('outputs.batch_inputs',self.outputs['batch_inputs'])
-        self.data_callback('outputs.batch_outputs',self.outputs['batch_outputs'])
         n_batch = len(batch_list)
+        self.outputs['batch_inputs'] = [None for ib in range(n_batch)] 
+        self.outputs['batch_outputs'] = [None for ib in range(n_batch)] 
+        update_outputs = not self.data_callback == self.do_nothing
+        if update_outputs:
+            self.data_callback('outputs.batch_inputs',[None for ib in range(n_batch)])
+            self.data_callback('outputs.batch_outputs',[None for ib in range(n_batch)])
         self.message_callback('STARTING BATCH')
         wf.logmethod = self.message_callback
         for i,filename in zip(range(n_batch),batch_list):
@@ -50,9 +53,11 @@ class BatchFromDirectory(Operation):
             self.message_callback('BATCH RUN {} / {}'.format(i,n_batch-1))
             wf.execute()
             out_dict = wf.wf_outputs_dict()
-            self.outputs['batch_inputs'].append(inp_dict)
-            self.outputs['batch_outputs'].append(out_dict)
-            self.data_callback('outputs.batch_inputs.'+str(i),inp_dict)
-            self.data_callback('outputs.batch_outputs.'+str(i),out_dict)
+            self.outputs['batch_inputs'][i] = inp_dict
+            self.outputs['batch_outputs'][i] = out_dict
+            if update_outputs: 
+                self.data_callback('outputs.batch_inputs.'+str(i),inp_dict)
+                #self.data_callback('outputs.batch_outputs.'+str(i),copy.deepcopy(out_dict))
+                self.data_callback('outputs.batch_outputs.'+str(i),out_dict)
         self.message_callback('BATCH FINISHED')
 

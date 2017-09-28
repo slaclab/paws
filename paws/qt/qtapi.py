@@ -21,6 +21,7 @@ def start(app):
     return QPawsAPI(app)
 
 class QPawsAPI(pawsapi.PawsAPI,QtCore.QObject):
+    wfSelectionChanged = QtCore.Signal(str)
 
     def __init__(self,app):
         super(QPawsAPI,self).__init__()
@@ -45,6 +46,10 @@ class QPawsAPI(pawsapi.PawsAPI,QtCore.QObject):
     def get_plugin_from_index(self,idx):
         return self._plugin_manager.get_data_from_index(idx)
 
+    def select_wf(self,wfname):
+        super(QPawsAPI,self).select_wf(wfname)
+        self.wfSelectionChanged.emit(wfname)
+        
     def stop_wf(self,wfname):
         self._wf_manager.stop_wf(wfname)
 

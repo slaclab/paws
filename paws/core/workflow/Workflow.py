@@ -127,7 +127,14 @@ class Workflow(TreeModel):
         return self.get_data_from_uri(self.outputs[wf_output_name])
 
     def set_wf_input(self,wf_input_name,val):
-        self.set_op_input_at_uri(self.inputs[wf_input_name],val)
+        """
+        Take the Operation input corresponding to self.inputs[wf_input_name],
+        and set it to the input value val. 
+        """
+        op_input_uri = self.inputs[wf_input_name]
+        self.set_item(op_input_uri,val)
+        p = op_input_uri.split('.')
+        self.get_data_from_uri(p[0]).input_locator[p[2]].val = val
 
     def execute(self):
         stk,diag = self.execution_stack()
@@ -140,11 +147,11 @@ class Workflow(TreeModel):
                     if il.tp == opmod.workflow_item:
                         #il.data = self.locate_input(il)
                         #op.inputs[inpnm] = il.data
-                        op.inputs[inpnm] = self.locate_input(il)
-                        self.set_op_item(op_tag+'.'+opmod.inputs_tag+'.'+inpnm,op.inputs[inpnm])
+                        #op.inputs[inpnm] = self.locate_input(il)
+                        self.set_op_item(op_tag,opmod.inputs_tag+'.'+inpnm,op.inputs[inpnm])
                 op.run() 
                 for outnm,outdata in op.outputs.items():
-                    self.set_op_item(op_tag+'.'+opmod.outputs_tag+'.'+outnm,outdata)
+                    self.set_op_item(op_tag,opmod.outputs_tag+'.'+outnm,outdata)
         #        try:
         #        except Exception as ex:
         #            tb = traceback.format_exc()
@@ -157,17 +164,6 @@ class Workflow(TreeModel):
         else:
             return self.get_data_from_uri(il.val)
              
-    def set_op_input_at_uri(self,uri,val):
-        """
-        Set an op input at uri to provided value val.
-        The uri must be a valid uri in the TreeModel,
-        of the form opname.inputs.inpname.
-        """
-        path = uri.split('.')
-        opname = path[0]
-        inpname = path[2]
-        op = self.get_data_from_uri(opname)
-        op.input_locator[inpname].val = val
 
     def set_op_enabled(self,opname,flag=True):
         op_item = self.get_from_uri(opname)
