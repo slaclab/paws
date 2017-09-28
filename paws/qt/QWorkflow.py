@@ -21,10 +21,9 @@ class QWorkflow(Workflow,QTreeSelectionModel):
     # this signal should emit the name
     # of the relevant operation,
     # as in opChanged(opname)
-    opInputChanged = QtCore.Signal(str,str,object)
-    opOutputChanged = QtCore.Signal(str,str,object)
     wfFinished = QtCore.Signal()
     emitMessage = QtCore.Signal(str)
+    emitData = QtCore.Signal(str,object)
 
     @QtCore.Slot(str)
     def relayMessage(self,msg):
@@ -42,6 +41,10 @@ class QWorkflow(Workflow,QTreeSelectionModel):
     def updateOpItem(self,opnm,item_uri,item_data):
         self.set_op_item(opnm,item_uri,item_data)
 
+    @QtCore.Slot(str,str,object)
+    def updateItem(self,item_uri,item_data):
+        self.set_item(item_uri,item_data)
+
     def add_op(self,op_tag,op):
         op.message_callback = self.relayMessage
         op.data_callback = partial( self.updateOpItem,op_tag )
@@ -58,22 +61,20 @@ class QWorkflow(Workflow,QTreeSelectionModel):
 
     def execute(self):
         stk,diag = self.execution_stack()
-        self.logmethod(os.linesep+'running workflow:'+os.linesep+self.print_stack(stk))
+        self.message_callback(os.linesep+'running workflow:'+os.linesep+self.print_stack(stk))
         for lst in stk:
-            self.logmethod('running: {}'.format(lst))
+            self.message_callback('running: {}'.format(lst))
             for op_tag in lst: 
                 op = self.get_data_from_uri(op_tag) 
                 for inpname,il in op.input_locator.items():
                     if il.tp == opmod.workflow_item:
-                        #il.data = self.locate_input(il)
-                        #op.inputs[name] = il.data
                         op.inputs[inpname] = self.locate_input(il)
-                        self.opInputChanged.emit(op_tag,inpname,op.inputs[inpname])
-                        #self.record_op_input(op_tag,inpname,op.inputs[inpname])
-                #self.opChanged.emit(op_tag,op)
+                        if self.data_callback:
+                            self.data_callback(op_tag+'.'+opmod.inputs_tag+'.'+inpname,op.inputs[inpname])
                 op.run()
                 for outnm,outdata in op.outputs.items():
-                    self.opOutputChanged.emit(op_tag,outnm,outdata)
+                    if self.data_callback:
+                        self.data_callback(op_tag+'.'+opmod.outputs_tag+'.'+outnm,outdata)
                     #self.record_op_output(op_tag,outnm,outdata)
                 #self.set_item(op_tag,op)
                 #self.opChanged.emit(op_tag,op)

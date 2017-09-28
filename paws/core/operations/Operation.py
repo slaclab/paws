@@ -56,11 +56,8 @@ class Operation(object):
             self.outputs[name] = None
             self.output_doc[name] = None
         self.message_callback = print
-        self.data_callback = self.do_nothing
+        self.data_callback = None 
     
-    def do_nothing(self,data_uri,data):
-        pass 
-
     def __getitem__(self,key):
         if key == inputs_tag:
             return self.inputs
@@ -125,7 +122,6 @@ class Operation(object):
             elif il.tp == entire_workflow:
                 if self.inputs[nm]:
                     new_wf = self.inputs[nm].clone_wf()
-                    new_wf.logmethod = self.inputs[nm].logmethod
                     new_op.inputs[nm] = new_wf 
             new_op.input_locator[nm] = new_il
         new_op.message_callback = self.message_callback

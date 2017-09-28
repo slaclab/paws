@@ -31,6 +31,8 @@ class BatchFromDirectory(Operation):
         
     def run(self):
         wf = self.inputs['workflow']
+        wf.message_callback = self.message_callback
+        #wf.data_callback = self.data_callback
         dirpath = self.inputs['dir_path']
         rx = self.inputs['regex']
         inpname = self.inputs['input_name']
@@ -40,12 +42,10 @@ class BatchFromDirectory(Operation):
         n_batch = len(batch_list)
         self.outputs['batch_inputs'] = [None for ib in range(n_batch)] 
         self.outputs['batch_outputs'] = [None for ib in range(n_batch)] 
-        update_outputs = not self.data_callback == self.do_nothing
-        if update_outputs:
+        if self.data_callback: 
             self.data_callback('outputs.batch_inputs',[None for ib in range(n_batch)])
             self.data_callback('outputs.batch_outputs',[None for ib in range(n_batch)])
         self.message_callback('STARTING BATCH')
-        wf.logmethod = self.message_callback
         for i,filename in zip(range(n_batch),batch_list):
             inp_dict = OrderedDict() 
             inp_dict[inpname] = filename
@@ -55,7 +55,7 @@ class BatchFromDirectory(Operation):
             out_dict = wf.wf_outputs_dict()
             self.outputs['batch_inputs'][i] = inp_dict
             self.outputs['batch_outputs'][i] = out_dict
-            if update_outputs: 
+            if self.data_callback: 
                 self.data_callback('outputs.batch_inputs.'+str(i),inp_dict)
                 #self.data_callback('outputs.batch_outputs.'+str(i),copy.deepcopy(out_dict))
                 self.data_callback('outputs.batch_outputs.'+str(i),out_dict)

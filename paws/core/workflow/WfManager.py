@@ -54,7 +54,7 @@ class WfManager(object):
         self.write_log('preparing workflow {} for execution'.format(wfname))
         stk,diag = wf.execution_stack()
         self.prepare_wf(wf,stk)
-        wf.execute(self.write_log)
+        wf.execute()
         self.write_log('execution finished')
 
     def prepare_wf(self,wf,stk):
