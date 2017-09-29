@@ -18,12 +18,17 @@ class QWorkflow(Workflow,QTreeSelectionModel):
     """
     A QTreeSelectionModel representing a Workflow
     """
-    # this signal should emit the name
-    # of the relevant operation,
-    # as in opChanged(opname)
     wfFinished = QtCore.Signal()
     emitMessage = QtCore.Signal(str)
+    opFinished = QtCore.Signal(str)
     emitData = QtCore.Signal(str,object)
+
+    def __init__(self):
+        super(QWorkflow,self).__init__()
+
+    @QtCore.Slot(str,str,object)
+    def relayOpData(self,op_tag,data_uri,data):
+        self.emitData.emit(op_tag+'.'+data_uri,data)
 
     @QtCore.Slot(str)
     def relayMessage(self,msg):
@@ -46,12 +51,9 @@ class QWorkflow(Workflow,QTreeSelectionModel):
         self.set_item(item_uri,item_data)
 
     def add_op(self,op_tag,op):
-        op.message_callback = self.relayMessage
-        op.data_callback = partial( self.updateOpItem,op_tag )
+        op.message_callback = self.message_callback
+        op.data_callback = partial( self.relayOpData,op_tag )
         self.set_item(op_tag,op)
-
-    def __init__(self):
-        super(QWorkflow,self).__init__()
 
     def headerData(self,section,orientation,data_role):
         if (data_role == QtCore.Qt.DisplayRole and section == 0):
@@ -75,6 +77,7 @@ class QWorkflow(Workflow,QTreeSelectionModel):
                 for outnm,outdata in op.outputs.items():
                     if self.data_callback:
                         self.data_callback(op_tag+'.'+opmod.outputs_tag+'.'+outnm,outdata)
+                self.opFinished.emit(op_tag)
                     #self.record_op_output(op_tag,outnm,outdata)
                 #self.set_item(op_tag,op)
                 #self.opChanged.emit(op_tag,op)

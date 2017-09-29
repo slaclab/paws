@@ -124,8 +124,8 @@ class Operation(object):
                     new_wf = self.inputs[nm].clone_wf()
                     new_op.inputs[nm] = new_wf 
             new_op.input_locator[nm] = new_il
-        new_op.message_callback = self.message_callback
-        new_op.data_callback = self.data_callback
+        #new_op.message_callback = self.message_callback
+        #new_op.data_callback = self.data_callback
         return new_op
     
     def clear_outputs(self):

@@ -32,9 +32,6 @@ class WfManager(object):
     def n_wf(self):
         return len(self.workflows)
 
-    def write_log(self,msg):
-        self.logmethod(msg)
-
     def add_wf(self,wfname):
         """
         Add a workflow to self.workflows, with key specified by wfname.
@@ -44,6 +41,7 @@ class WfManager(object):
         wf = Workflow()
         if not wf.is_tag_valid(wfname): 
             raise pawstools.WfNameError(wf.tag_error_message(wfname))
+        wf.message_callback = self.logmethod
         self.workflows[wfname] = wf
 
     def run_wf(self,wfname):
@@ -51,11 +49,11 @@ class WfManager(object):
         Execute the workflow indicated by input wfname
         """
         wf = self.workflows[wfname]
-        self.write_log('preparing workflow {} for execution'.format(wfname))
+        self.logmethod('preparing workflow {} for execution'.format(wfname))
         stk,diag = wf.execution_stack()
         self.prepare_wf(wf,stk)
         wf.execute()
-        self.write_log('execution finished')
+        self.logmethod('execution finished')
 
     def prepare_wf(self,wf,stk):
         """
@@ -145,7 +143,7 @@ class WfManager(object):
             if isinstance(op,Operation):
                 self.workflows[wfname].add_op(opname,op)
             else:
-                self.write_log('[{}] Failed to load {}.'.format(uri))
+                self.logmethod('[{}] Failed to load {}.'.format(uri))
 
     def op_setup_dict(self,op):
         op_modulename = op.__module__[op.__module__.find('operations'):]

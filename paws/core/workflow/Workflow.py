@@ -44,15 +44,6 @@ class Workflow(TreeModel):
     def keys(self):
         return self.list_op_tags() 
 
-    @classmethod
-    def clone(cls):
-        return cls()
-
-    def add_op(self,op_tag,op):
-        op.message_callback = self.message_callback
-        op.data_callback = partial( self.set_op_item,op_tag )
-        self.set_item(op_tag,op)
-
     #def record_op_input(self,opname,inpname,inpdata):
     #    uri = opname+'.'+opmod.inputs_tag+'.'+inpname
     #    op = self.get_data_from_uri(opname)
@@ -82,8 +73,17 @@ class Workflow(TreeModel):
         new_wf.data_callback = self.data_callback
         for op_tag in self.list_op_tags():
             op = self.get_data_from_uri(op_tag)
-            new_wf.set_item(op_tag,op.clone_op())
+            new_wf.add_op(op_tag,op.clone_op())
         return new_wf
+
+    @classmethod
+    def clone(cls):
+        return cls()
+
+    def add_op(self,op_tag,op):
+        op.message_callback = self.message_callback
+        op.data_callback = partial( self.set_op_item,op_tag )
+        self.set_item(op_tag,op)
 
     def build_tree(self,x):
         """

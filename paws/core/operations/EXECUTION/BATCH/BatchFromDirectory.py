@@ -57,7 +57,6 @@ class BatchFromDirectory(Operation):
             self.outputs['batch_outputs'][i] = out_dict
             if self.data_callback: 
                 self.data_callback('outputs.batch_inputs.'+str(i),inp_dict)
-                #self.data_callback('outputs.batch_outputs.'+str(i),copy.deepcopy(out_dict))
-                self.data_callback('outputs.batch_outputs.'+str(i),out_dict)
+                self.data_callback('outputs.batch_outputs.'+str(i),copy.deepcopy(out_dict))
         self.message_callback('BATCH FINISHED')
 

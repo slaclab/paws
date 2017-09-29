@@ -93,7 +93,7 @@ class UiManager(QtCore.QObject):
         self.ui.load_state_button.clicked.connect(self.load_state)
 
         # Workflows ui stuff
-        self.paw._wf_manager.wfFinished.connect(self.update_run_wf_button)
+        self.paw._wf_manager.wfStopped.connect(self.update_run_wf_button)
         self.ui.workflows_box.setTitle('Workflows')
         if uitools.have_qt47:
             self.ui.wf_name_entry.setPlaceholderText('(enter a name)')

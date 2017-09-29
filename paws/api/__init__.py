@@ -38,7 +38,6 @@ class PawsAPI(object):
         super(PawsAPI,self).__init__()
         # Assign a function(str) to PawsAPI.logmethod
         # to change where messages get printed
-        self.logmethod = print 
         self._op_manager = OpManager()
         self._plugin_manager = PluginManager()
         self._wf_manager = WfManager()
@@ -49,9 +48,6 @@ class PawsAPI(object):
         self._op_manager.load_cats(ops.cat_list) 
         self._op_manager.load_ops(ops.cat_op_list)
         self._current_wf_name = None 
-
-    def write_log(self,msg):
-        self.logmethod(msg)
 
     def set_logmethod(self,lm):
         self.logmethod = lm
@@ -141,10 +137,10 @@ class PawsAPI(object):
             wf.add_op(op_tag,op)
         else:
             msg = str('Attempted to add Operation {}, '.format(op_spec)
-            + 'but this Operation has not been enabled. '
-            + 'Enable it with paws.api.enable_op() '
+            + 'but this Operation has not been activated. '
+            + 'Activate it with paws.api.activate_op() '
             + 'before adding it to a workflow.')
-            self.write_log(msg) 
+            self.logmethod(msg) 
             raise pawstools.OperationDisabledError(msg)
 
     def add_wf(self,wfname):
@@ -312,7 +308,7 @@ class PawsAPI(object):
         current_vparts = list(map(int,current_vparts.groups()))
         if wfl_vparts[0] < current_vparts[0] or wfl_vparts[1] < current_vparts[1]:
             # WARNING
-            self.write_log('WARNING: paws (version {}) '\
+            self.logmethod('WARNING: paws (version {}) '\
             'is trying to load a state built in version {} - '\
             'this is likely to cause things to crash, '\
             'until the workflows and plugins are reviewed/refactored '\

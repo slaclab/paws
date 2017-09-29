@@ -37,6 +37,13 @@ class QPawsAPI(pawsapi.PawsAPI,QtCore.QObject):
         self._op_manager.load_ops(ops.cat_op_list)
         self.app = app
 
+    #def set_logmethod(self,lm):
+    #    super(QPawsAPI,self).set_logmethod(lm)
+    # TODO: figure out how to disconnect this signal
+    # so that it is only connected to one message slot at a time
+    #    self._wf_manager.emitMessage.disconnect()
+    #    self._wf_manager.emitMessage.connect(lm)
+
     def get_op_from_index(self,idx):
         return self._op_manager.get_data_from_index(idx)
 

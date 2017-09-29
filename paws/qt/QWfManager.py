@@ -22,6 +22,7 @@ class QWfManager(WfManager,QtCore.QObject):
     # this signal should emit the name
     # of the workflow that finished.
     wfFinished = QtCore.Signal(str)
+    wfStopped = QtCore.Signal(str)
 
     # a signal for carrying textual output
     # e.g. for message board logging
@@ -34,10 +35,6 @@ class QWfManager(WfManager,QtCore.QObject):
     @QtCore.Slot(str)
     def launchWorkflow(self,wfname):
         self.run_wf(wfname)
-
-    @QtCore.Slot(str)
-    def stopWorkflow(self,wfname):
-        self.stop_wf(wfname)
 
     def __init__(self,qapp):
         super(QWfManager,self).__init__()
@@ -53,31 +50,36 @@ class QWfManager(WfManager,QtCore.QObject):
         wf = QWorkflow()
         if not wf.is_tag_valid(wfname): 
             raise pawstools.WfNameError(wf.tag_error_message(wfname))
-        wf.emitMessage.connect(self.relayMessage)
         wf.message_callback = wf.emitMessage.emit
+        wf.emitMessage.connect( self.relayMessage )
+        #wf.data_callback = wf.emitData.emit
+        #wf.emitData.connect( wf.updateItem )
+        wf.data_callback = wf.updateItem
         wf.wfFinished.connect( partial(self.stop_wf,wfname) )
         self.workflows[wfname] = wf
         self.wf_running[wfname] = False
         self.wfAdded.emit(wfname)
 
     def stop_wf(self,wfname):
-        self.write_log('stopping workflow {}'.format(wfname))
         self.wf_running[wfname] = False
-        #self.wfFinished.emit(wfname)
+        self.wfStopped.emit(wfname)
 
     def run_wf(self,wfname,pool=None):
         wf = self.workflows[wfname]
         stk,diag = wf.execution_stack()
-        self.write_log('preparing workflow {} for execution'.format(wfname))
+        self.logmethod('preparing workflow {} for execution'.format(wfname))
         self.prepare_wf(wf,stk)
         if pool is None:
+            #wf.message_callback = self.logmethod
+            #wf.data_callback = None
             self.wf_running[wfname] = True
             wf.execute()
-            self.write_log('execution finished')
+            self.logmethod('execution finished')
         else:
             # Copy the workflow so it can be moved off the main thread.
             # Connect some signals so that the local copy gets updated
             # as the remote copy gets executed. 
+            # NOTE: This implementation assumes the Workflows are QWorkflows.
             wf_clone = wf.clone_wf()
             wf_clone.message_callback = wf_clone.emitMessage.emit
             wf_clone.emitMessage.connect(self.relayMessage)

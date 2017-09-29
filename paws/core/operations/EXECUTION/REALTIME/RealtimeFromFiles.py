@@ -57,27 +57,20 @@ class RealtimeFromFiles(Operation):
         nx = 0 # total number of executions
         nd = 0 # number of consecutive delays
         keep_going = True
-        #wf.write_log('STARTING REALTIME EXECUTION')
         while keep_going:
             p = it.next()
             if p is None:
                 # delay
-                #if nd == 0:
-                #    wf.write_log('WAITING FOR FILES...')
                 time.sleep(float(dly)/1000.) 
                 nd+=1
                 if nd == 1000:
-                    #wf.write_log('ABORTING')
                     keep_going = False 
             else:
                 nd = 0
-                #input_dict_list.append( {inpname:filename} )
                 wf.set_wf_input(inpname,filename)
-                #wf.write_log('EXECUTION {}'.format(nx))
                 nx+=1
                 wf.execute()
                 self.outputs['realtime_outputs'].append(wf.wf_outputs_dict())
-        #wf.write_log('REALTIME EXECUTION STOPPED')
                 
 
 

@@ -40,15 +40,12 @@ class BatchPostProcess(Operation):
         self.outputs['batch_inputs'] = []
         self.outputs['batch_outputs'] = []
         n_batch = len(batch_output)
-        #wf.write_log('STARTING BATCH')
         for d_out in batch_output:
             inp_dict = OrderedDict() 
             for kout,kin in zip(out_keys,inp_keys):
                 inp_dict[kin] = d_out[kout]
                 wf.set_wf_input(kin,d_out[kout])
-        #    wf.write_log('BATCH RUN {} / {}'.format(i+1,n_batch))
             wf.execute()
             self.outputs['batch_inputs'].append(inp_dict)
             self.outputs['batch_outputs'].append(wf.wf_outputs_dict())
-        #wf.write_log('BATCH FINISHED')
 

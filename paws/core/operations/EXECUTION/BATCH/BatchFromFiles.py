@@ -1,3 +1,6 @@
+from collections import OrderedDict
+import copy
+
 from ...Operation import Operation
 from ... import Operation as opmod 
 from ... import optools
@@ -27,15 +30,24 @@ class BatchFromFiles(Operation):
         wf = self.inputs['workflow'] 
         if (wf is None or batch_list is None or not inpname):
             return
-        self.outputs['batch_inputs'] = [] 
-        self.outputs['batch_outputs'] = [] 
         n_batch = len(batch_list)
-        #wf.write_log('STARTING BATCH')
+        self.outputs['batch_inputs'] = [None for ib in range(n_batch)] 
+        self.outputs['batch_outputs'] = [None for ib in range(n_batch)] 
+        if self.data_callback: 
+            self.data_callback('outputs.batch_inputs',[None for ib in range(n_batch)])
+            self.data_callback('outputs.batch_outputs',[None for ib in range(n_batch)])
+        self.message_callback('STARTING BATCH')
         for i,filename in zip(range(n_batch),batch_list):
-            self.outputs['batch_inputs'].append( {inpname:filename} )
+            inp_dict = OrderedDict() 
+            inp_dict[inpname] = filename
             wf.set_wf_input(inpname,filename)
-        #    wf.write_log('EXECUTION {} / {}'.format(i+1,n_batch))
+            self.message_callback('BATCH RUN {} / {}'.format(i,n_batch-1))
             wf.execute()
-            self.outputs['batch_outputs'].append(wf.wf_outputs_dict())
-        #wf.write_log('BATCH FINISHED')
+            out_dict = wf.wf_outputs_dict()
+            self.outputs['batch_inputs'][i] = inp_dict
+            self.outputs['batch_outputs'][i] = out_dict
+            if self.data_callback: 
+                self.data_callback('outputs.batch_inputs.'+str(i),inp_dict)
+                self.data_callback('outputs.batch_outputs.'+str(i),copy.deepcopy(out_dict))
+        self.message_callback('BATCH FINISHED')
 
