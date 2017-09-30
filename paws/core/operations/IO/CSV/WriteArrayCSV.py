@@ -21,7 +21,6 @@ class WriteArrayCSV(Operation):
         self.inputs['filetag'] = ''
 
     def run(self):
-        #import pdb; pdb.set_trace()
         a = self.inputs['array']
         h = self.inputs['headers']
         p = self.inputs['dir_path']

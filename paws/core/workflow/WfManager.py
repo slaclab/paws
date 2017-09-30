@@ -135,7 +135,6 @@ class WfManager(object):
         wfins = wf_spec.pop('WORKFLOW_INPUTS')
         wfouts = wf_spec.pop('WORKFLOW_OUTPUTS')
         opflags = wf_spec.pop('OP_ENABLE_FLAGS')
-        import pdb; pdb.set_trace()
         for inpname,inpval in wfins.items():
             self.workflows[wfname].connect_wf_input(inpname,inpval)
         for outname,outval in wfouts.items():

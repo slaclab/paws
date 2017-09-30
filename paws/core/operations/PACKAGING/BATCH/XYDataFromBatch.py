@@ -49,7 +49,6 @@ class XYDataFromBatch(Operation):
             #xmin = 0 
         self.outputs['x'] = x_all 
         self.outputs['y'] = y_all
-        #import pdb; pdb.set_trace()
         self.outputs['x_y'] = np.array(zip(x_all,y_all))
         #self.outputs['x_y_sorted'] = np.sort(np.array(zip(x_all,y_all)),0)
         i_xsort = np.argsort(x_all)
