@@ -26,8 +26,8 @@ class WfManager(object):
         self.logmethod = print 
         self.plugin_manager = None
 
-    def get_op(self,wfname,opname):
-        return self.workflows[wfname].get_data_from_uri(opname)
+    def get_op(self,wfname,op_tag):
+        return self.workflows[wfname].get_data_from_uri(op_tag)
 
     def n_wf(self):
         return len(self.workflows)
@@ -132,49 +132,16 @@ class WfManager(object):
         including all operations, Workflow.inputs, and Workflow.outputs.
         """
         self.add_wf(wfname)
-        wfin_spec = wf_spec.pop('WORKFLOW_INPUTS')
-        wfout_spec = wf_spec.pop('WORKFLOW_OUTPUTS')
-        for inpname,inpval in wfin_spec.items():
+        wfins = wf_spec.pop('WORKFLOW_INPUTS')
+        wfouts = wf_spec.pop('WORKFLOW_OUTPUTS')
+        opflags = wf_spec.pop('OP_ENABLE_FLAGS')
+        import pdb; pdb.set_trace()
+        for inpname,inpval in wfins.items():
             self.workflows[wfname].connect_wf_input(inpname,inpval)
-        for outname,outval in wfout_spec.items():
+        for outname,outval in wfouts.items():
             self.workflows[wfname].connect_wf_output(outname,outval)
-        for opname, op_setup in wf_spec.items():
-            op = self.build_op_from_dict(op_setup,op_manager)
-            if isinstance(op,Operation):
-                self.workflows[wfname].add_op(opname,op)
-            else:
-                self.logmethod('[{}] Failed to load {}.'.format(uri))
-
-    def op_setup_dict(self,op):
-        op_modulename = op.__module__[op.__module__.find('operations'):]
-        op_modulename = op_modulename[op_modulename.find('.')+1:]
-        dct = OrderedDict() 
-        dct['op_module'] = op_modulename
-        inp_dct = OrderedDict() 
-        for name in op.inputs.keys():
-            il = op.input_locator[name]
-            inp_dct[name] = {'tp':copy.copy(il.tp),'val':copy.copy(il.val)}
-        dct[opmod.inputs_tag] = inp_dct 
-        return dct
-
-    def build_op_from_dict(self,op_setup,op_manager):
-        op_uri = op_setup['op_module']
-        if not ops.load_flags[op_uri]:
-            op_manager.set_op_enabled(op_uri)
-        op = op_manager.get_data_from_uri(op_uri)
-        if issubclass(op,Operation):
-            op = op()
-            op.load_defaults()
-            il_setup_dict = op_setup[opmod.inputs_tag]
-            for name in op.inputs.keys():
-                if name in il_setup_dict.keys():
-                    tp = il_setup_dict[name]['tp']
-                    val = il_setup_dict[name]['val']
-                    op.input_locator[name] = opmod.InputLocator(tp,val) 
-            return op
-        else:
-            return None
-
-
-
+        for op_tag, op_setup in wf_spec.items():
+            self.workflows[wfname].add_op(op_tag,\
+            self.workflows[wfname].build_op_from_dict(op_setup,op_manager))
+            self.workflows[wfname].set_op_enabled(op_tag,opflags[op_tag])
 

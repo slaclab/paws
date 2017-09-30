@@ -127,6 +127,17 @@ class Operation(object):
         #new_op.message_callback = self.message_callback
         #new_op.data_callback = self.data_callback
         return new_op
+
+    def setup_dict(self):
+        op_modulename = self.__module__[self.__module__.find('operations'):]
+        op_modulename = op_modulename[op_modulename.find('.')+1:]
+        dct = OrderedDict() 
+        dct['op_module'] = op_modulename
+        inp_dct = OrderedDict() 
+        for nm,il in self.input_locator.items():
+            inp_dct[nm] = {'tp':copy.copy(il.tp),'val':copy.copy(il.val)}
+        dct[inputs_tag] = inp_dct 
+        return dct
     
     def clear_outputs(self):
         for k,v in self.outputs.items():

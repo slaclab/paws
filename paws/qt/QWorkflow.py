@@ -68,11 +68,12 @@ class QWorkflow(Workflow,QTreeSelectionModel):
             self.message_callback('running: {}'.format(lst))
             for op_tag in lst: 
                 op = self.get_data_from_uri(op_tag) 
-                for inpname,il in op.input_locator.items():
+                for inpnm,il in op.input_locator.items():
                     if il.tp == opmod.workflow_item:
-                        op.inputs[inpname] = self.locate_input(il)
+                        op.inputs[inpnm] = self.locate_input(il)
+                        self.set_op_item(op_tag,opmod.inputs_tag+'.'+inpnm,op.inputs[inpnm])
                         if self.data_callback:
-                            self.data_callback(op_tag+'.'+opmod.inputs_tag+'.'+inpname,op.inputs[inpname])
+                            self.data_callback(op_tag+'.'+opmod.inputs_tag+'.'+inpnm,op.inputs[inpnm])
                 op.run()
                 for outnm,outdata in op.outputs.items():
                     if self.data_callback:

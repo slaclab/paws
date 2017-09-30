@@ -44,18 +44,6 @@ class Workflow(TreeModel):
     def keys(self):
         return self.list_op_tags() 
 
-    #def record_op_input(self,opname,inpname,inpdata):
-    #    uri = opname+'.'+opmod.inputs_tag+'.'+inpname
-    #    op = self.get_data_from_uri(opname)
-    #    op.inputs[inpname] = inpdata
-    #    self.set_item(uri,inpdata)
-
-    #def record_op_output(self,opname,outname,outdata):
-    #    uri = opname+'.'+opmod.outputs_tag+'.'+outname
-    #    op = self.get_data_from_uri(opname)
-    #    op.outputs[outname] = outdata 
-    #    self.set_item(uri,outdata)
-
     def set_op_item(self,op_tag,item_uri,item_data):
         full_uri = op_tag+'.'+item_uri
         self.set_item(full_uri,item_data)
@@ -108,11 +96,11 @@ class Workflow(TreeModel):
     def n_ops(self):
         return self.n_children()
 
-    def connect_wf_input(self,wf_input_name,op_input_uri):
-        self.inputs[wf_input_name] = op_input_uri
+    def connect_wf_input(self,wf_input_name,op_input_uris):
+        self.inputs[wf_input_name] = op_input_uris
 
-    def connect_wf_output(self,wf_output_name,op_output_uri):
-        self.outputs[wf_output_name] = op_output_uri
+    def connect_wf_output(self,wf_output_name,op_output_uris):
+        self.outputs[wf_output_name] = op_output_uris
 
     def break_wf_input(self,wf_input_name):
         self.inputs.pop(wf_input_name)
@@ -127,17 +115,29 @@ class Workflow(TreeModel):
         return d
 
     def get_wf_output(wf_output_name):
-        return self.get_data_from_uri(self.outputs[wf_output_name])
+        """
+        Fetch and return the Operation output(s)
+        indicated by self.outputs[wf_output_name].
+        """
+        r = self.outputs[wf_output_name]
+        if isinstance(r,list):
+            return [self.get_data_from_uri(q) for q in r]
+        else:
+            return self.get_data_from_uri(r)
 
     def set_wf_input(self,wf_input_name,val):
         """
-        Take the Operation input corresponding to self.inputs[wf_input_name],
-        and set it to the input value val. 
+        Take the Operation input(s) 
+        indicated by self.inputs[wf_input_name],
+        and set them to the input value val. 
         """
-        op_input_uri = self.inputs[wf_input_name]
-        self.set_item(op_input_uri,val)
-        p = op_input_uri.split('.')
-        self.get_data_from_uri(p[0]).input_locator[p[2]].val = val
+        urilist = self.inputs[wf_input_name]
+        if not isinstance(urilist,list):
+            urilist = [urilist]
+        for uri in urilist:
+            self.set_item(uri,val)
+            p = uri.split('.')
+            self.get_data_from_uri(p[0]).input_locator[p[2]].val = val 
 
     def execute(self):
         stk,diag = self.execution_stack()
@@ -150,7 +150,7 @@ class Workflow(TreeModel):
                     if il.tp == opmod.workflow_item:
                         #il.data = self.locate_input(il)
                         #op.inputs[inpnm] = il.data
-                        #op.inputs[inpnm] = self.locate_input(il)
+                        op.inputs[inpnm] = self.locate_input(il)
                         self.set_op_item(op_tag,opmod.inputs_tag+'.'+inpnm,op.inputs[inpnm])
                 op.run() 
                 for outnm,outdata in op.outputs.items():
@@ -161,7 +161,6 @@ class Workflow(TreeModel):
             return [self.get_data_from_uri(v) for v in il.val]
         else:
             return self.get_data_from_uri(il.val)
-             
 
     def set_op_enabled(self,opname,flag=True):
         op_item = self.get_from_uri(opname)
@@ -170,6 +169,12 @@ class Workflow(TreeModel):
     def is_op_enabled(self,opname):
         op_item = self.get_from_uri(opname)
         return op_item.flags['enable']
+
+    def op_enable_flags(self):
+        dct = OrderedDict()
+        for opnm in self.list_op_tags():
+            dct[opnm] = self.get_from_uri(opnm).flags['enable']
+        return dct
 
     def execution_stack(self):
         """
@@ -205,6 +210,29 @@ class Workflow(TreeModel):
                 continue_flag = False
         return stk,diagnostics
 
+    def wf_setup_dict(self):
+        wf_dict = OrderedDict() 
+        for opname in self.list_op_tags():
+            op = self.get_data_from_uri(opname)
+            wf_dict[opname] = op.setup_dict()
+        wf_dict['WORKFLOW_INPUTS'] = self.inputs
+        wf_dict['WORKFLOW_OUTPUTS'] = self.outputs
+        wf_dict['OP_ENABLE_FLAGS'] = self.op_enable_flags()
+        return wf_dict
+
+    def build_op_from_dict(self,op_setup,op_manager):
+        op_uri = op_setup['op_module']
+        op_manager.set_op_enabled(op_uri)
+        op = op_manager.get_data_from_uri(op_uri)()
+        op.load_defaults()
+        il_setup_dict = op_setup[opmod.inputs_tag]
+        for nm in op.inputs.keys():
+            if nm in il_setup_dict.keys():
+                tp = il_setup_dict[nm]['tp']
+                val = il_setup_dict[nm]['val']
+                op.input_locator[nm] = opmod.InputLocator(tp,val) 
+        return op
+
     @staticmethod
     def stack_contains(itm,stk):
         for lst in stk:
@@ -234,11 +262,17 @@ class Workflow(TreeModel):
         diagnostics = {} 
         for name,il in op.input_locator.items():
             msg = ''
-            if (il.tp == opmod.workflow_item 
-            and not il.val in valid_wf_inputs): 
+            if il.tp == opmod.workflow_item:
                 inp_rdy = False
-                msg = str('Operation input {} (={}) '.format(name,il.val)
-                + 'not found in valid Workflow input list: {}'.format(valid_wf_inputs))
+                if isinstance(il.val,list):
+                    if all([v in valid_wf_inputs for v in il.val]):
+                        inp_rdy = True 
+                else:
+                    if il.val in valid_wf_inputs: 
+                        inp_rdy = True 
+                if not inp_rdy:
+                    msg = str('Operation input {} (={}) '.format(name,il.val)
+                    + 'not satisfied by valid inputs list: {}'.format(valid_wf_inputs))
             else:
                 inp_rdy = True
             inputs_rdy.append(inp_rdy)

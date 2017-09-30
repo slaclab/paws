@@ -1,5 +1,4 @@
-from os.path import splitext
-from os import linesep
+import os
 import numpy as np
 
 from ... import Operation as opmod 
@@ -37,7 +36,7 @@ class WriteArrayCSV(Operation):
             for i in range(len(h)-1):
                 h_str += h[i] + ', '
             h_str = h_str+h[-1]
-            np.savetxt(csv_path, a, delimiter=',', newline=linesep, header=h_str)
+            np.savetxt(csv_path, a, delimiter=',', newline=os.linesep, header=h_str)
         else:
-            np.savetxt(csv_path, a, delimiter=',', newline=linesep)
+            np.savetxt(csv_path, a, delimiter=',', newline=os.linesep)
 

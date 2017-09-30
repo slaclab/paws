@@ -31,13 +31,13 @@ class BatchFromDirectory(Operation):
         
     def run(self):
         wf = self.inputs['workflow']
-        wf.message_callback = self.message_callback
         #wf.data_callback = self.data_callback
         dirpath = self.inputs['dir_path']
         rx = self.inputs['regex']
         inpname = self.inputs['input_name']
         if (wf is None or not dirpath or not rx or not inpname):
             return
+        wf.message_callback = self.message_callback
         batch_list = glob.glob(os.path.join(dirpath,rx))
         n_batch = len(batch_list)
         self.outputs['batch_inputs'] = [None for ib in range(n_batch)] 
