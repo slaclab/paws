@@ -209,7 +209,7 @@ class PawsAPI(object):
         that will be referenced to this workflow output.
         If multiple output_uris are specified, they will be packed as a list.
         """
-        self.get_wf(wfname).connect_wf_output(wf_output_name,output_uri) 
+        self.get_wf(wfname).connect_wf_output(wf_output_name,output_uris) 
 
     def remove_wf_input(self,wf_input_name,wfname=None):
         self.get_wf(wfname).break_wf_input(wf_input_name) 
