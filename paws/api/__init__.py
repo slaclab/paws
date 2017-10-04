@@ -217,6 +217,11 @@ class PawsAPI(object):
     def remove_wf_output(self,wf_output_name,wfname=None):
         self.get_wf(wfname).break_wf_output(wf_output_name) 
 
+    def set_wf_input(self,wf_input_name,val=None,wfname=None):
+        if wfname is None:
+            wfname = self._current_wf_name
+        self.get_wf(wfname).set_wf_input(wf_input_name,val) 
+
     def set_input(self,opname,input_name,val=None,tp=None,wfname=None):
         if wfname is None:
             wfname = self._current_wf_name
