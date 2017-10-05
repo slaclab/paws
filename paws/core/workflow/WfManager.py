@@ -64,11 +64,13 @@ class WfManager(object):
             for op_tag in lst:
                 op = wf.get_data_from_uri(op_tag)
                 for inpname,il in op.input_locator.items():
-                    if not il.tp == opmod.workflow_item:
-                        #il.data = self.locate_input(il)
-                        #op.inputs[name] = il.data
-                        op.inputs[inpname] = self.locate_input(il)
-                        wf.set_op_item(op_tag,'inputs.'+inpname,op.inputs[inpname])
+                    if il.tp not in [opmod.runtime_type,opmod.workflow_item]:
+                        # runtime inputs should be set directly, without using il.val.
+                        # this is because il.val gets serialized in wf.wf_setup_dict().
+                        # workflow_item inputs should be set later, during execution.
+                        # the no_input case ends up setting the input to None
+                        #op.inputs[inpname] = self.locate_input(il)
+                        wf.set_op_item(op_tag,'inputs.'+inpname,self.locate_input(il))
 
     def locate_input(self,il):
         """
@@ -76,6 +78,8 @@ class WfManager(object):
         """
         if il.tp == opmod.no_input or il.val is None:
             return None
+        elif il.tp == opmod.basic_type:
+            return il.val
         elif il.tp == opmod.entire_workflow:
             wf = self.workflows[il.val]
             stk,diag = wf.execution_stack()
@@ -87,8 +91,10 @@ class WfManager(object):
                 return [self.plugin_manager.get_data_from_uri(v) for v in il.val]
             else:
                 return self.plugin_manager.get_data_from_uri(il.val)
-        elif il.tp == opmod.auto_type:
-            return il.val
+        # changed: let basic_type inputs be loaded directly,
+        # without using InputLocators.
+        #elif il.tp == opmod.basic_type:
+        #    return il.val
 
     # TODO: the following
     def check_wf(self,wf):

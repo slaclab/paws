@@ -13,10 +13,8 @@ class PawsPlugin(object):
         super(PawsPlugin,self).__init__()
         self.inputs = OrderedDict()
         self.input_doc = {}
-        self.input_type = {}
         # For each of the var names, assign to None 
         for name in input_names: 
-            self.input_type[name] = opmod.auto_type
             self.inputs[name] = None
             self.input_doc[name] = None
 
@@ -70,9 +68,4 @@ class PawsPlugin(object):
         """
         return {}
 
-    def parseinputs(self,inputs):
-        for name,desc,input_type,source,default in inputs:
-            self.input_doc[name] = desc
-            self.input_type[name] = input_type
-            self.inputs[name] = default
 

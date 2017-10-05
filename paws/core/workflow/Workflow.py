@@ -56,7 +56,7 @@ class Workflow(TreeModel):
         #new_wf = copy.copy(self)
         new_wf.inputs = copy.deepcopy(self.inputs)
         new_wf.outputs = copy.deepcopy(self.outputs)
-        # NOTE: is it ok if I don't copy this method?
+        # NOTE: is it ok if I don't copy.copy the callbacks? 
         new_wf.message_callback = self.message_callback
         new_wf.data_callback = self.data_callback
         for op_tag in self.list_op_tags():
@@ -80,8 +80,8 @@ class Workflow(TreeModel):
         """
         if isinstance(x,Operation):
             d = OrderedDict()
-            d[opmod.inputs_tag] = self.build_tree(x.inputs)
-            d[opmod.outputs_tag] = self.build_tree(x.outputs)
+            d['inputs'] = self.build_tree(x.inputs)
+            d['outputs'] = self.build_tree(x.outputs)
             return d
         else:
             return super(Workflow,self).build_tree(x) 
@@ -135,9 +135,16 @@ class Workflow(TreeModel):
         if not isinstance(urilist,list):
             urilist = [urilist]
         for uri in urilist:
-            self.set_item(uri,val)
             p = uri.split('.')
-            self.get_data_from_uri(p[0]).input_locator[p[2]].val = val 
+            il = self.get_data_from_uri(p[0]).input_locator[p[2]]
+            if il.tp in [opmod.basic_type,opmod.runtime_type]:
+                self.set_item(uri,val)
+            else:
+                il.val = val
+                #msg = 'Attempted to set input {}, '.format(uri)\
+                #'and found that input was supposed to be a {}. '.format(opmod.input_types[il.tp])\
+                #'Only "auto" type inputs should be loaded directly.'
+                #raise TypeError(msg)
 
     def execute(self):
         stk,diag = self.execution_stack()
@@ -150,11 +157,11 @@ class Workflow(TreeModel):
                     if il.tp == opmod.workflow_item:
                         #il.data = self.locate_input(il)
                         #op.inputs[inpnm] = il.data
-                        op.inputs[inpnm] = self.locate_input(il)
-                        self.set_op_item(op_tag,opmod.inputs_tag+'.'+inpnm,op.inputs[inpnm])
+                        #op.inputs[inpnm] = self.locate_input(il)
+                        self.set_op_item(op_tag,'inputs.'+inpnm,self.locate_input(il))
                 op.run() 
                 for outnm,outdata in op.outputs.items():
-                    self.set_op_item(op_tag,opmod.outputs_tag+'.'+outnm,outdata)
+                    self.set_op_item(op_tag,'outputs.'+outnm,outdata)
 
     def locate_input(self,il):
         if isinstance(il.val,list):
@@ -225,7 +232,7 @@ class Workflow(TreeModel):
         op_manager.set_op_enabled(op_uri)
         op = op_manager.get_data_from_uri(op_uri)()
         op.load_defaults()
-        il_setup_dict = op_setup[opmod.inputs_tag]
+        il_setup_dict = op_setup['inputs']
         for nm in op.inputs.keys():
             if nm in il_setup_dict.keys():
                 tp = il_setup_dict[nm]['tp']
@@ -276,7 +283,7 @@ class Workflow(TreeModel):
             else:
                 inp_rdy = True
             inputs_rdy.append(inp_rdy)
-            diagnostics[op_tag+'.'+opmod.inputs_tag+'.'+name] = msg
+            diagnostics[op_tag+'.inputs.'+name] = msg
         if all(inputs_rdy):
             op_rdy = True
         else:
@@ -290,9 +297,9 @@ class Workflow(TreeModel):
         that are eligible as downstream inputs in the workflow.
         """
         # valid_wf_inputs should be the operation, its input and output dicts, and their respective entries
-        valid_wf_inputs = [op_tag,op_tag+'.'+opmod.inputs_tag,op_tag+'.'+opmod.outputs_tag]
-        valid_wf_inputs += [op_tag+'.'+opmod.outputs_tag+'.'+k for k in op.outputs.keys()]
-        valid_wf_inputs += [op_tag+'.'+opmod.inputs_tag+'.'+k for k in op.inputs.keys()]
+        valid_wf_inputs = [op_tag,op_tag+'.inputs',op_tag+'.outputs']
+        valid_wf_inputs += [op_tag+'.outputs.'+k for k in op.outputs.keys()]
+        valid_wf_inputs += [op_tag+'.inputs.'+k for k in op.inputs.keys()]
         return valid_wf_inputs
 
     @staticmethod

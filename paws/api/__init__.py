@@ -174,7 +174,7 @@ class PawsAPI(object):
         # TODO: separate opmod from plugin stuff
         if tp == opmod.no_input or val is None: 
             pgin.inputs[input_name] = None
-        elif tp == opmod.auto_type:
+        elif tp == opmod.basic_type:
             pgin.inputs[input_name] = val
         else:
             msg = '[{}] failed to parse plugin input {}, tp: {}, val: {}'.format(
@@ -236,15 +236,23 @@ class PawsAPI(object):
         elif tp in opmod.input_types:
             # type specified by string: convert to enum
             tp = opmod.valid_types[ opmod.input_types.index(tp) ]
-        elif not tp in opmod.valid_types:
+        if not tp in opmod.valid_types:
             # tp is neither a string or an enum
             msg = '[{}] failed to parse input type: {}'.format(
             __name__,tp)
             raise ValueError(msg)
-        if tp == opmod.no_input: 
-            val = None
-        il = opmod.InputLocator(tp,val)
+        elif tp == opmod.runtime_type:
+            # set inputlocator.val to None, 
+            # so that this object will NOT attempt
+            # to be serialized when save_to_wfl() is called.
+            il = opmod.InputLocator(tp,None)
+        else:
+            # all other types, val can be serialized,
+            # so it is referenced in the InputLocator. 
+            il = opmod.InputLocator(tp,val)
         op.input_locator[input_name] = il
+        if tp == opmod.basic_type:
+            self.get_wf(wfname).set_op_item(opname,'inputs.'+input_name,val)
 
     def get_input_data(self,opname,input_name,wfname=None):
         if wfname is None:
@@ -281,17 +289,7 @@ class PawsAPI(object):
     def save_config(self):
         ops.save_config()
 
-    def save_to_wfl(self,wfl_filename):
-        """
-        Save the current workflows and plugins
-        to a .wfl (YAML) file,
-        specified by wfl_filename.
-        If the given filename does not have the .wfl extension,
-        it will be appended.
-        """
-        if not os.path.splitext(wfl_filename)[1] == '.wfl':
-            wfl_filename = wfl_filename + '.wfl'
-        self.logmethod( 'saving current state to {}'.format(wfl_filename) )
+    def wfl_dict(self):
         d = {} 
         d['OP_ACTIVATION_FLAGS'] = ops.load_flags
         d['PAWS_VERSION'] = pawstools.version 
@@ -304,6 +302,20 @@ class PawsAPI(object):
             pgin = self._plugin_manager.get_data_from_uri(pgin_name)
             pgin_dict[pgin_name] = self._plugin_manager.plugin_setup_dict(pgin)
         d['PLUGINS'] = pgin_dict
+        return d
+
+    def save_to_wfl(self,wfl_filename):
+        """
+        Save the current workflows and plugins
+        to a .wfl (YAML) file,
+        specified by wfl_filename.
+        If the given filename does not have the .wfl extension,
+        it will be appended.
+        """
+        self.logmethod( 'saving current state to {}'.format(wfl_filename) )
+        if not os.path.splitext(wfl_filename)[1] == '.wfl':
+            wfl_filename = wfl_filename + '.wfl'
+        d = self.wfl_dict()
         #pawstools.update_file(wfl_filename,d)
         pawstools.save_file(wfl_filename,d)
 

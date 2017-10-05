@@ -1,7 +1,5 @@
 from PySide import QtGui, QtCore
 
-from ...core.operations import Operation as opmod
-
 class OpWidget(QtGui.QWidget):
     
     def __init__(self,op):
@@ -48,8 +46,8 @@ class OpWidget(QtGui.QWidget):
         #outhdr = QtCore.QRectF(QtCore.QPoint(70,-90),QtCore.QPoint(90,-80))
         f.setUnderline(True)
         p.setFont(f)
-        p.drawText(inphdr,QtCore.Qt.AlignCenter,opmod.inputs_tag)
-        p.drawText(outhdr,QtCore.Qt.AlignCenter,opmod.outputs_tag)
+        p.drawText(inphdr,QtCore.Qt.AlignCenter,'inputs')
+        p.drawText(outhdr,QtCore.Qt.AlignCenter,'outputs')
         f.setUnderline(False)
         p.setFont(f)
         # Label the inputs

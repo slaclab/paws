@@ -36,11 +36,11 @@ class QWorkflow(Workflow,QTreeSelectionModel):
 
     @QtCore.Slot(str,str,object)
     def updateOpInput(self,opnm,inpnm,inpdata):
-        self.set_op_item(opnm,opmod.inputs_tag+'.'+inpnm,inpdata)
+        self.set_op_item(opnm,'inputs.'+inpnm,inpdata)
 
     @QtCore.Slot(str,str,object)
     def updateOpOutput(self,opnm,outnm,outdata):
-        self.set_op_item(opnm,opmod.outputs_tag+'.'+outnm,outdata)
+        self.set_op_item(opnm,'outputs.'+outnm,outdata)
 
     @QtCore.Slot(str,str,object)
     def updateOpItem(self,opnm,item_uri,item_data):
@@ -70,14 +70,19 @@ class QWorkflow(Workflow,QTreeSelectionModel):
                 op = self.get_data_from_uri(op_tag) 
                 for inpnm,il in op.input_locator.items():
                     if il.tp == opmod.workflow_item:
-                        op.inputs[inpnm] = self.locate_input(il)
-                        self.set_op_item(op_tag,opmod.inputs_tag+'.'+inpnm,op.inputs[inpnm])
+                        #op.inputs[inpnm] = self.locate_input(il)
+                        self.set_op_item(op_tag,'inputs.'+inpnm,self.locate_input(il))
                         if self.data_callback:
-                            self.data_callback(op_tag+'.'+opmod.inputs_tag+'.'+inpnm,op.inputs[inpnm])
+                            self.data_callback(op_tag+'.inputs.'+inpnm,op.inputs[inpnm])
                 op.run()
                 for outnm,outdata in op.outputs.items():
                     if self.data_callback:
-                        self.data_callback(op_tag+'.'+opmod.outputs_tag+'.'+outnm,outdata)
+                        out_uri = op_tag+'.outputs.'+outnm
+                        #print('setting {}'.format(out_uri))
+                        #import pdb; pdb.set_trace()
+                        if outdata is not None:
+                            self.data_callback(out_uri,outdata)
+                        #print('done setting {}'.format(out_uri))
                 self.opFinished.emit(op_tag)
                     #self.record_op_output(op_tag,outnm,outdata)
                 #self.set_item(op_tag,op)
