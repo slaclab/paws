@@ -3,10 +3,10 @@ import numpy as np
 from ... import Operation as opmod 
 from ...Operation import Operation
 
-class EasyZingers1D(Operation):
+class EasyZingers1d(Operation):
     """
     This Operation attempts to remove zingers 
-    from 1-D spectral data (I(q) versus q).
+    from 1d spectral data (I(q) versus q).
     Zingers are replaced with the average intensity
     in a window around where the zinger was found.
     """
@@ -14,7 +14,7 @@ class EasyZingers1D(Operation):
     def __init__(self):
         input_names = ['q_I']
         output_names = ['q_I_dz','zmask']
-        super(EasyZingers1D, self).__init__(input_names, output_names)
+        super(EasyZingers1d, self).__init__(input_names, output_names)
         self.input_doc['q_I'] = 'n-by-2 array of q values and corresponding intensities'
         self.output_doc['q_I_dz'] = 'same as input q_I but with zingers removed'
         self.output_doc['zmask'] = 'array of booleans, same shape as q, true if there is a zinger at q, else false'
