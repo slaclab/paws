@@ -5,17 +5,27 @@ from collections import OrderedDict
 import copy
 
 # Enumeration of valid types for workflow and plugin inputs
-no_input = 0
-auto_type = 1
-workflow_item = 2
-entire_workflow = 3
-plugin_item = 4
-valid_types = [no_input,auto_type,workflow_item,entire_workflow]
-input_types = ['none','auto','workflow item','entire workflow','plugin item']
+no_input = 0            # ensure the input is set to None 
 
-# tags for Operation inputs and outputs in Workflow(TreeModel)s
-inputs_tag = 'inputs'
-outputs_tag = 'outputs'
+basic_type = 1          # input is set by hand, 
+                        # and is of a basic type
+                        # that is easy to serialize 
+
+workflow_item = 2       # the address (TreeModel uri)
+                        # of an item in the workflow 
+
+entire_workflow = 3     # the name of a Workflow
+                        # in the current WfManager
+
+plugin_item = 4         # the address (TreeModel uri)
+                        # of an item in the PluginManager
+
+runtime_type = 5        # input is generated and set during execution,
+                        # and serialization should not be attempted
+
+
+valid_types = [no_input,basic_type,workflow_item,entire_workflow,plugin_item,runtime_type]
+input_types = ['none','basic','workflow item','entire workflow','plugin item','runtime']
 
 class InputLocator(object):
     """
@@ -48,7 +58,7 @@ class Operation(object):
         self.output_doc = OrderedDict() 
         # For each of the i/o names, assign to None 
         for name in input_names: 
-            self.input_type[name] = auto_type 
+            self.input_type[name] = basic_type 
             self.input_locator[name] = None 
             self.inputs[name] = None
             self.input_doc[name] = None
@@ -59,38 +69,34 @@ class Operation(object):
         self.data_callback = None 
     
     def __getitem__(self,key):
-        if key == inputs_tag:
+        if key == 'inputs':
             return self.inputs
-        elif key == outputs_tag:
+        elif key == 'outputs':
             return self.outputs
         else:
             raise KeyError('[{}] Operation only recognizes keys {}'
             .format(__name__,self.keys()))
     def __setitem__(self,key,data):
-        if key == inputs_tag:
+        if key == 'inputs':
             self.inputs = data
-        elif key == outputs_tag:
+        elif key == 'outputs':
             self.outputs = data
         else:
             raise KeyError('[{}] Operation only recognizes keys {}'
             .format(__name__,self.keys()))
     def keys(self):
-        return [inputs_tag,outputs_tag]
+        return ['inputs','outputs']
 
     def load_defaults(self):
         """
         Set default types and values into the Operation.input_locators.
         """
         for name in self.inputs.keys():
-            tp = auto_type 
+            tp = self.input_type[name]
             val = None
-            if not self.input_type[name] == auto_type:
-                tp = self.input_type[name]
             if self.inputs[name] is not None:
                 val = self.inputs[name]
             self.input_locator[name] = InputLocator(tp,val)
-            # defaults are now packaged in InputLocators, so can be dereferenced from self.inputs. 
-            #self.inputs[name] = None
 
     def run(self):
         """
@@ -115,14 +121,15 @@ class Operation(object):
         for nm,il in self.input_locator.items():
             new_il = InputLocator()
             new_il.tp = copy.copy(il.tp)
-            new_il.val = copy.deepcopy(il.val)
-            if il.tp in [workflow_item,plugin_item,auto_type]:
-                # NOTE: have to implement __deepcopy__ for objects
-                new_op.inputs[nm] = copy.deepcopy(self.inputs[nm]) 
-            elif il.tp == entire_workflow:
+            new_il.val = copy.copy(il.val)
+            if il.tp == entire_workflow:
                 if self.inputs[nm]:
                     new_wf = self.inputs[nm].clone_wf()
                     new_op.inputs[nm] = new_wf 
+            else: 
+                # NOTE: have to implement __deepcopy__
+                # for whatever the input is.
+                new_op.inputs[nm] = copy.deepcopy(self.inputs[nm]) 
             new_op.input_locator[nm] = new_il
         #new_op.message_callback = self.message_callback
         #new_op.data_callback = self.data_callback
@@ -136,7 +143,7 @@ class Operation(object):
         inp_dct = OrderedDict() 
         for nm,il in self.input_locator.items():
             inp_dct[nm] = {'tp':copy.copy(il.tp),'val':copy.copy(il.val)}
-        dct[inputs_tag] = inp_dct 
+        dct['inputs'] = inp_dct 
         return dct
     
     def clear_outputs(self):

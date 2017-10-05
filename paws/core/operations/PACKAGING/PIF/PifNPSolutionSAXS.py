@@ -21,7 +21,6 @@ class PifNPSolutionSAXS(Operation):
         self.input_doc['temperature'] = 'temperature of the system in degrees Celsius'
         self.input_doc['features'] = 'dict of features extracted from the measured spectrum.'
         self.output_doc['pif'] = 'pif object representing the input data'
-        self.input_type['uid_prefix'] = opmod.auto_type
         self.input_type['date_time'] = opmod.workflow_item
         self.input_type['t_utc'] = opmod.workflow_item
         self.input_type['q_I'] = opmod.workflow_item

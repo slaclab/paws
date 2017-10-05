@@ -13,10 +13,10 @@ class ReadImageAndHeader_SSRL15(Operation):
     """
 
     def __init__(self):
-        input_names = ['tif_path']
+        input_names = ['file_path']
         output_names = ['image_data', 'image_header', 'filename']
         super(ReadImageAndHeader_SSRL15, self).__init__(input_names, output_names)
-        self.input_doc['tif_path'] = 'path to a tif file '\
+        self.input_doc['file_path'] = 'path to a tif file '\
         'produced by beamline 1-5 at SSRL. '\
         'A .txt header file is expected '\
         'in the same directory as this .tif file.'
@@ -25,7 +25,7 @@ class ReadImageAndHeader_SSRL15(Operation):
         self.output_doc['filename'] = 'filename with path and extension stripped'
 
     def run(self):
-        tif_path = self.inputs['tif_path']
+        tif_path = self.inputs['file_path']
         if tif_path is None:
             return 
         filename = split(tif_path)[1]

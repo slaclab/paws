@@ -32,6 +32,8 @@ class BatchFromDirectory(Operation):
         'to be set to batch workflow inputs indicated by extra_input_names'
         self.input_type['workflow'] = opmod.entire_workflow
         self.inputs['regex'] = '*.tif' 
+        self.inputs['extra_input_names'] = []
+        self.inputs['extra_inputs'] = []
         
     def run(self):
         wf = self.inputs['workflow']
@@ -41,7 +43,7 @@ class BatchFromDirectory(Operation):
         inpname = self.inputs['input_name']
         if (wf is None or not dirpath or not rx or not inpname):
             return
-        wf.message_callback = self.message_callback
+        #wf.message_callback = self.message_callback
         batch_list = glob.glob(os.path.join(dirpath,rx))
         n_batch = len(batch_list)
         self.outputs['batch_inputs'] = [None for ib in range(n_batch)] 
@@ -49,6 +51,12 @@ class BatchFromDirectory(Operation):
         if self.data_callback: 
             self.data_callback('outputs.batch_inputs',[None for ib in range(n_batch)])
             self.data_callback('outputs.batch_outputs',[None for ib in range(n_batch)])
+        inps = self.inputs['extra_input_names']
+        vals = self.inputs['extra_inputs']
+        # Load any additional inputs...
+        if any(inps): 
+            for inpnm,inpval in zip(inps,vals):
+                wf.set_wf_input(inpnm,inpval)
         self.message_callback('STARTING BATCH')
         for i,filename in zip(range(n_batch),batch_list):
             inp_dict = OrderedDict() 

@@ -38,8 +38,8 @@ class NikaToPONI(Operation):
         input_names = ['nika_file','fpolz']
         output_names = ['poni_dict']
         super(NikaToPONI,self).__init__(input_names,output_names)
-        self.input_doc['nika_file'] = str('text file expressing nika automated calibration results- '
-        + 'see Operation documentation for the expected format of this file')
+        self.input_doc['nika_file'] = 'text file expressing nika automated calibration results- '\
+        'see documentation of this operation class for the expected format of this file'
         self.input_doc['fpolz'] = 'polarization factor, default value is 1.'
         self.inputs['fpolz'] = float(1.) 
         self.output_doc['poni_dict'] = 'Dict of pyFAI calibration parameters, as found in a .poni file'
