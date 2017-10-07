@@ -8,16 +8,16 @@ from matplotlib.figure import Figure
 from ...core.operations.Operation import Operation
 from ...core.workflow.Workflow import Workflow 
 from ...core.plugins.PawsPlugin import PawsPlugin
-from .. import uitools
+from .. import qttools
 from .OpWidget import OpWidget
 #from .PifWidget import PifWidget
 from .WorkflowGraphView import WorkflowGraphView
 from .text_widgets import display_text, display_text_fast
 
-if uitools.have_qt47:
-    from .. import plotmaker_pqg as plotmaker
+if qttools.have_qt47:
+    from . import plotmaker_pqg as plotmaker
 else:
-    from .. import plotmaker_mpl as plotmaker
+    from . import plotmaker_mpl as plotmaker
 
 def make_widget(itm):
     #if isinstance(itm,System):

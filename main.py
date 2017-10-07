@@ -4,7 +4,7 @@ This is the main module for gui-driven execution of paws.
 
 import sys
 
-from paws.ui.widgets import widget_launcher
+from paws.qt.widgets import widget_launcher
 
 def main():
     """

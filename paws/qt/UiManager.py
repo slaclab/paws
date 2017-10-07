@@ -6,7 +6,7 @@ from PySide import QtGui, QtCore, QtUiTools
 import yaml
 
 from ..core.operations.Operation import Operation
-from . import uitools
+from . import qttools
 from . import widgets 
 from ..core import pawstools
 from ..core import plugins as pgns
@@ -20,7 +20,7 @@ class UiManager(QtCore.QObject):
 
     def __init__(self,qpaw):
         super(UiManager,self).__init__()
-        ui_file = QtCore.QFile(pawstools.sourcedir+"/ui/qtui/basic.ui")
+        ui_file = QtCore.QFile(pawstools.sourcedir+"/qt/qtui/basic.ui")
         ui_file.open(QtCore.QFile.ReadOnly)
         self.ui = QtUiTools.QUiLoader().load(ui_file)
         ui_file.close()
@@ -65,7 +65,7 @@ class UiManager(QtCore.QObject):
         self.ui.viewer_tabwidget.addTab(self._viewer_frame,'main viewer')
 
         # logo scene:
-        img_file = os.path.join(pawstools.sourcedir, "ui/graphics/paws_icon_white.png")
+        img_file = os.path.join(pawstools.rootdir,"graphics/paws_icon_white.png")
         pixmap = QtGui.QPixmap(img_file)
         pixmap_item = QtGui.QGraphicsPixmapItem(pixmap)
         scene = QtGui.QGraphicsScene()
@@ -95,7 +95,7 @@ class UiManager(QtCore.QObject):
         # Workflows ui stuff
         self.paw._wf_manager.wfStopped.connect(self.update_run_wf_button)
         self.ui.workflows_box.setTitle('Workflows')
-        if uitools.have_qt47:
+        if qttools.have_qt47:
             self.ui.wf_name_entry.setPlaceholderText('(enter a name)')
         else:
             self.ui.wf_name_entry.setText('(enter a name)')
@@ -129,7 +129,7 @@ class UiManager(QtCore.QObject):
         self.ui.plugin_tree.setModel(self.paw._plugin_manager)
         self.ui.plugin_tree.clicked.connect( self.display_plugin_item )
         self.ui.plugin_tree.setRootIndex(self.paw._plugin_manager.root_index())
-        if uitools.have_qt47:
+        if qttools.have_qt47:
             self.ui.plugin_name_entry.setPlaceholderText('(enter a name)')
         else:
             self.ui.plugin_name_entry.setText('(enter a name)')
@@ -201,7 +201,7 @@ class UiManager(QtCore.QObject):
     def add_plugin(self):
         pgin_name = self.ui.plugin_name_entry.text()
         if pgin_name in self.paw.list_plugin_tags():
-            msg_ui = uitools.message_ui(self.ui)
+            msg_ui = qttools.message_ui(self.ui)
             msg_ui.setWindowTitle("Plugin Name Error")
             msg = '[{}] Name {} already assigned to a Plugin. '.format(
                 __name__,pgin_name) + 'Loaded plugins: {}'.format(
@@ -214,7 +214,7 @@ class UiManager(QtCore.QObject):
                 pgin_uri = self.ui.plugin_selector.model().list_data()[idx]
                 pgin = self.paw.load_plugin(pgin_uri)
             except pawstools.PluginLoadError as ex:
-                msg_ui = uitools.message_ui(self.ui)
+                msg_ui = qttools.message_ui(self.ui)
                 msg_ui.setWindowTitle("Plugin Load Error")
                 msg_ui.message_box.setPlainText(ex.message)
                 msg_ui.show()
@@ -222,7 +222,7 @@ class UiManager(QtCore.QObject):
             try:
                 self.paw.add_plugin(pgin_name,pgin)
             except pawstools.PluginNameError as ex:
-                msg_ui = uitools.message_ui(self.ui)
+                msg_ui = qttools.message_ui(self.ui)
                 msg_ui.setWindowTitle("Plugin Name Error")
                 msg_ui.message_box.setPlainText(ex.message)
                 msg_ui.show()
@@ -237,7 +237,7 @@ class UiManager(QtCore.QObject):
         """
         wfname = self.ui.wf_name_entry.text()
         if wfname in self.paw.list_wf_tags():
-            msg_ui = uitools.message_ui(self.ui)
+            msg_ui = qttools.message_ui(self.ui)
             msg_ui.setWindowTitle("Workflow Name Error")
             msg = '[{}] Name {} already assigned to a Workflow. '.format(
                 __name__,wfname) + 'Loaded workflows: {}'.format(
@@ -248,7 +248,7 @@ class UiManager(QtCore.QObject):
             try:
                 self.paw.add_wf(wfname)
             except pawstools.WfNameError as ex:
-                msg_ui = uitools.message_ui(self.ui)
+                msg_ui = qttools.message_ui(self.ui)
                 msg_ui.setWindowTitle("Workflow Name Error")
                 msg_ui.message_box.setPlainText(ex.message)
                 msg_ui.show()
@@ -365,7 +365,7 @@ class UiManager(QtCore.QObject):
         """
         Start a modal window dialog to choose a .wfl to save the current configuration  
         """
-        save_ui = uitools.start_save_ui(self.ui)
+        save_ui = qttools.start_save_ui(self.ui)
         save_ui.setWindowTitle('paws saver')
         #wf_idx = self.ui.wf_selector.currentIndex()
         #wfname = self.ui.wf_selector.model().list_data()[wf_idx]
@@ -378,7 +378,7 @@ class UiManager(QtCore.QObject):
         """
         Start a modal window dialog to choose a .wfl to load a previously saved configuration 
         """
-        load_ui = uitools.start_load_ui(self.ui)
+        load_ui = qttools.start_load_ui(self.ui)
         load_ui.setWindowTitle('paws loader')
         load_ui.tree_box.setTitle('Select a .wfl file to load a saved paws configuration.')
         load_ui.load_button.clicked.connect( partial(self.finish_load_state,load_ui) )

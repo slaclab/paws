@@ -4,16 +4,17 @@ This runs various widgets built on the paws.api.
 
 import sys
 
-from paws.qt import qtapi
-import paws.ui
-from paws.ui.UiManager import UiManager
+from .. import qtapi
+
+from .. import ui_app
+from ..UiManager import UiManager
 
 def main():   
     """
     An entry point for paws full-featured interface.
     """
     # start QtGui.QApplication
-    app = paws.ui.ui_app(sys.argv)
+    app = ui_app(sys.argv)
     # start paws objects 
     corepaw = qtapi.start(app)
 

@@ -17,7 +17,7 @@ class BatchWidget(QtGui.QWidget):
 
     def __init__(self,paws_api):
         super(BatchWidget,self).__init__()
-        ui_file = QtCore.QFile(pawstools.sourcedir+"/ui/qtui/batch_widget.ui")
+        ui_file = QtCore.QFile(pawstools.sourcedir+"/qt/qtui/batch_widget.ui")
         ui_file.open(QtCore.QFile.ReadOnly)
         self.ui = QtUiTools.QUiLoader().load(ui_file)
         ui_file.close()
