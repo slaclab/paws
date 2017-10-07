@@ -34,11 +34,10 @@ class SpectrumFit(Operation):
     """
 
     def __init__(self):
-        input_names = ['q','I','flags','params','fit_params','objfun']
+        input_names = ['q_I','flags','params','fit_params','objfun']
         output_names = ['params','q_I_opt']
         super(SpectrumFit, self).__init__(input_names, output_names)
-        self.input_doc['q'] = '1d array of wave vector values in 1/Angstrom units'
-        self.input_doc['I'] = '1d array of intensity values I(q)'
+        self.input_doc['q_I'] = 'n-by-2 array of wave vectors (1/Angstrom) and intensities (counts)'
         self.input_doc['flags'] = 'dict of flags indicating what populations to fit'
         self.input_doc['params'] = 'dict of initial values for the scattering equation parameters '\
             'for each of the populations specified in the input flags'
@@ -48,22 +47,22 @@ class SpectrumFit(Operation):
         self.output_doc['params'] = 'dict of scattering equation parameters copied from inputs, '\
         'with values optimized for all keys specified in fit_params'
         self.output_doc['q_I_opt'] = 'n-by-2 array of q and the optimized computed intensity spectrum'
-        self.input_type['q'] = opmod.workflow_item
-        self.input_type['I'] = opmod.workflow_item
+        self.input_type['q_I'] = opmod.workflow_item
         self.input_type['flags'] = opmod.workflow_item
         self.input_type['params'] = opmod.workflow_item
         self.inputs['objfun'] = 'chi2log' 
 
     def run(self):
         f = self.inputs['flags']
-        q, I = self.inputs['q'], self.inputs['I']
+        q_I = self.inputs['q_I']
+        q = q_I[:,0]
+        I = q_I[:,1]
         m = self.inputs['objfun']
         p = self.inputs['params']
         fitkeys = self.inputs['fit_params']
         if f is None or q is None or I is None or fitkeys is None:
             return
         if f['bad_data'] or not any([f['precursor_scattering'],f['form_factor_scattering'],f['diffraction_peaks']]):
-            self.outputs['params'] = {} 
             return
         if f['diffraction_peaks']:
             self.outputs['params'] = {'ERROR_MESSAGE':'diffraction peak fitting not yet supported'}
@@ -87,10 +86,8 @@ class SpectrumFit(Operation):
         Istd = np.std(logI_nz)
         logI_nz_s = (logI_nz - Imean) / Istd
         logIopt_nz_s = (logIopt_nz - Imean) / Istd
-        f['R2log_fit'] = saxstools.compute_Rsquared(np.log(I[nz]),np.log(I_opt[nz]))
-        f['chi2log_fit'] = saxstools.compute_chi2(logI_nz_s,logIopt_nz_s)
 
         q_I_opt = np.array([q,I_opt]).T
-        self.outputs['features'] = f 
+        self.outputs['params'] = p_opt 
         self.outputs['q_I_opt'] = q_I_opt
 

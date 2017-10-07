@@ -44,7 +44,6 @@ class SpectrumClassifier(Operation):
         scaler_diff_peaks = sclrs['scaler_for_diffraction_peaks']
 
         flags = OrderedDict()
-        flags['test'] = True
 
         ### Classify the spectrum
         # (1) Apply model to input

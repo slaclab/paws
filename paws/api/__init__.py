@@ -51,6 +51,15 @@ class PawsAPI(object):
         self.logmethod = print
 
     def set_logmethod(self,lm):
+        """
+        Sets the logmethod, which is the function
+        that is called to handle messages.
+
+        Parameters
+        ----------
+        lm : function
+            function to be called for logging messages
+        """
         self.logmethod = lm
         self._op_manager.logmethod = lm
         self._plugin_manager.logmethod = lm

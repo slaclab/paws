@@ -37,9 +37,9 @@ def compute_saxs(q,flags,params):
             I += I0_sph*I_sph
     return I
 
-def profile_spectrum(q,I):
+def profile_spectrum(q_I):
     """
-    Profile a saxs spectrum (q,I) 
+    Profile a saxs spectrum (n-by-2 array q_I) 
     by taking several fast numerical metrics 
     from the measured data.
 
@@ -58,7 +58,8 @@ def profile_spectrum(q,I):
     sum of difference in log(I) between adjacent points,
     taken only where this difference changes sign, divided by the maximum of log(I).
     """ 
-
+    q = q_I[:,0]
+    I = q_I[:,1]
     idx_lowq = np.array(q<0.4)
     idx_highq = np.array(q>=0.4)
     # log(I) analysis
@@ -172,10 +173,6 @@ def parameterize_spectrum(q,I,flags,fixed_params={}):
             # If only precursor scattering, fit third order for entire q-range 
             I_at_0 = fit_I0(q,I,3)
         d['I_at_0'] = I_at_0
-
-    if flags['diffraction_peaks']:
-        d['ERROR_MESSAGE']='diffraction peak parameterization not yet supported'
-        return d
 
     if flags['form_factor_scattering']:
         # TODO: insert cases for non-spherical form factors
@@ -384,10 +381,10 @@ def fit_spectrum(q,I,objfun,flags,params,fit_params,constraints=[]):
         else:
             msg = 'objective function {} not supported'.format(objfun)
             raise ValueError(msg)
+        d_opt['R2log_fit'] = saxstools.compute_Rsquared(np.log(I[nz]),np.log(I_opt[nz]))
+        d_opt['chi2log_fit'] = saxstools.compute_chi2(logI_nz_s,logIopt_nz_s)
         d_opt['objective_before'] = fit_obj(x_init)
-        #try:
         res = scipimin(fit_obj,x_init,bounds=x_bounds,constraints=c)
-        #except:
         x_opt = res.x
         d_opt['objective_after'] = fit_obj(x_opt)
         if d_opt['objective_after'] > d_opt['objective_before']:
