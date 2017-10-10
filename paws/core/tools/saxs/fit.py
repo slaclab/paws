@@ -5,68 +5,7 @@ import copy
 import numpy as np
 from scipy.optimize import minimize as scipimin
 
-def compute_saxs(q,flags,params):
-    """
-    Given q, a dict of population flags,
-    and a dict of scattering equation parameters,
-    compute the saxs spectrum.
-    Supported parameters are... TODO: fill in 
-
-    TODO: Document the equation.
-    """
-    b_flag = flags['bad_data']
-    s_flag = flags['diffraction_peaks']
-    I = np.zeros(len(q))
-    if not b_flag and not s_flag:
-        pre_flag = flags['precursor_scattering']
-        f_flag = flags['form_factor_scattering']
-        I0_floor = params['I0_floor'] 
-        I = I0_floor*np.ones(len(q))
-        if pre_flag:
-            # TODO: This should employ a Guinier-Porod or similar equation
-            I0_pre = params['I0_precursor']
-            r0_pre = params['r0_precursor']
-            G_pre = params['G_precursor']
-            #I_pre = compute_spherical_normal_saxs(q,r0_pre,0)
-            # Precursor as a Guinier-Porod equation for a small sphere:
-            I_pre = compute_guinier_porod(q,G_pre,4,np.sqrt(3./5)*r0_pre)
-            I += I0_pre*I_pre
-        if f_flag:
-            # TODO: support non-spherical form factors 
-            I0_sph = params['I0_sphere']
-            r0_sph = params['r0_sphere']
-            sigma_sph = params['sigma_sphere']
-            I_sph = compute_spherical_normal_saxs(q,r0_sph,sigma_sph)
-            I += I0_sph*I_sph
-    return I
-
-def compute_guinier_porod(q,guinier_factor,porod_exponent,r_g):
-    """Compute the Guinier-Porod small-angle scattering intensity.
-    
-    Computes the Guinier-Porod scattering intensity,
-    given the Guinier prefactor of the solvent/scatterer system,
-    the Porod exponent of the scatterer geometry,
-    and the radius of gyration of the scatterer.
-
-    Reference
-    ---------
-    B. Hammouda, J. Appl. Cryst. (2010). 43, 716-719.
-    """
-    # q-domain boundary q_splice:
-    q_splice = 1./r_g * np.sqrt(3./2*porod_exponent**2)
-    idx_guinier = (q <= q_splice)
-    idx_porod = (q > q_splice)
-    # porod prefactor D:
-    porod_factor = guinier_factor*np.exp(-1./2*porod_exponent)\
-                    * (3./2*porod_exponent)**(1./2*porod_exponent)\
-                    * 1./(r_g**porod_exponent)
-    I = np.zeros(q.shape)
-    # Guinier equation:
-    if any(idx_guinier):
-        I[idx_guinier] = guinier_factor * np.exp(-1./3*q**2*r_g**2)
-    # Porod equation:
-    if any(idx_porod):
-        I[idx_porod] = porod_factor * 1./(q**porod_exponent)
+import .model as saxs_model
 
 def profile_spectrum(q_I):
     """Numerical profiling of a SAXS spectrum.
@@ -167,14 +106,17 @@ def profile_spectrum(q_I):
     #d['q_bin_strengths'] = q_bin_strengths 
     return d
 
-def parameterize_spectrum(q,I,flags,fixed_params={}):
-    """
+def parameterize_spectrum(q_I,flags,fixed_params={}):
+    """Determine scattering equation parameters for a given spectrum.
+
     Determine a parameterization for a scattering equation,
     beginning with the measured spectrum (q,I) 
     and a dict of population flags. 
     Returns a dict containing the input population flags
-    along with initial guesses for the scattering equation parameters
+    along with scattering equation parameters
     corresponding to the flagged populations.
+    The dict of parameters should be of the same form
+    as the input to compute_saxs().
     """
     fix_keys = fixed_params.keys()
     d = OrderedDict()
@@ -182,12 +124,15 @@ def parameterize_spectrum(q,I,flags,fixed_params={}):
         # stop
         return d 
     else:
+        q = q_I[:,0]
+        I = q_I[:,1]
         # Get a number for I(q=0)
         if flags['form_factor_scattering']:
             # If form factor scattering, fit 3rd order, use q<0.06. 
             idx_lowq = (q<0.06)
             # Disregard lowest-q values if they are far from the mean, 
-            # as these points are likely dominated by experimental error.
+            # as these points are likely dominated by experimental error,
+            # such as interference from beam stops, etc.
             Imean_lowq = np.mean(I[idx_lowq])
             Istd_lowq = np.std(I[idx_lowq])
             idx_good = ((I[idx_lowq] < Imean_lowq+Istd_lowq) & (I[idx_lowq] > Imean_lowq-Istd_lowq))
@@ -228,7 +173,6 @@ def parameterize_spectrum(q,I,flags,fixed_params={}):
         d['r0_precursor'] = r0_pre 
 
     I_floor = np.ones(len(q))
-    # include other terms conditionally
     if flags['precursor_scattering']: 
         # TODO: This should be a Guinier-Porod or similar fit
         I_pre = compute_spherical_normal_saxs(q,r0_pre,0)
@@ -274,7 +218,7 @@ def parameterize_spectrum(q,I,flags,fixed_params={}):
 
     #TODO: add parameters for diffraction peaks
 
-    I_guess = compute_saxs(q,flags,d)
+    I_guess = saxs_models.compute_saxs(q,flags,d)
     q_I_guess = np.array([q,I_guess]).T
     nz = ((I>0)&(I_guess>0))
     logI_nz = np.log(I[nz])
@@ -426,41 +370,6 @@ def fit_spectrum(q,I,objfun,flags,params,fit_params,constraints=[]):
         for k,xk in zip(fit_params,x_opt):
             d_opt[k] = xk
     return d_opt    
-
-def compute_spherical_normal_saxs(q,r0,sigma):
-    """
-    Given q, a mean radius r0, 
-    and the fractional standard deviation of radius sigma,
-    compute the saxs spectrum assuming spherical particles 
-    with normal size distribution.
-    The returned intensity is normalized 
-    such that I(q=0) is equal to 1.
-    """
-    q_zero = (q == 0)
-    q_nz = np.invert(q_zero) 
-    I = np.zeros(q.shape)
-    if sigma < 1E-9:
-        x = q*r0
-        V_r0 = float(4)/3*np.pi*r0**3
-        I[q_nz] = V_r0**2 * (3.*(np.sin(x[q_nz])-x[q_nz]*np.cos(x[q_nz]))*x[q_nz]**-3)**2
-        I_zero = V_r0**2 
-    else:
-        sigma_r = sigma*r0
-        dr = sigma_r*0.02
-        rmin = np.max([r0-5*sigma_r,dr])
-        rmax = r0+5*sigma_r
-        I_zero = 0
-        for ri in np.arange(rmin,rmax,dr):
-            xi = q*ri
-            V_ri = float(4)/3*np.pi*ri**3
-            # The normal-distributed density of particles with radius r_i:
-            rhoi = 1./(np.sqrt(2*np.pi)*sigma_r)*np.exp(-1*(r0-ri)**2/(2*sigma_r**2))
-            I_zero += V_ri**2 * rhoi*dr
-            I[q_nz] += V_ri**2 * rhoi*dr*(3.*(np.sin(xi[q_nz])-xi[q_nz]*np.cos(xi[q_nz]))*xi[q_nz]**-3)**2
-    if any(q_zero):
-        I[q_zero] = I_zero
-    I = I/I_zero 
-    return I
 
 def precursor_heuristics(q,I,I_at_0=None):
     """
@@ -634,7 +543,7 @@ def compute_saxs_with_substitutions(q,flags,params,x_keys,x_vals):
     p_sub = copy.deepcopy(params)
     for k,v in zip(x_keys,x_vals):
         p_sub[k] = copy.copy(v)
-    return compute_saxs(q,flags,p_sub)
+    return saxs_models.compute_saxs(q,flags,p_sub)
 
 def compute_chi2(y1,y2,weights=None):
     """
