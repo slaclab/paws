@@ -26,7 +26,10 @@ def compute_saxs(q,flags,params):
             # TODO: This should employ a Guinier-Porod or similar equation
             I0_pre = params['I0_precursor']
             r0_pre = params['r0_precursor']
-            I_pre = compute_spherical_normal_saxs(q,r0_pre,0)
+            G_pre = params['G_precursor']
+            #I_pre = compute_spherical_normal_saxs(q,r0_pre,0)
+            # Precursor as a Guinier-Porod equation for a small sphere:
+            I_pre = compute_guinier_porod(q,G_pre,4,np.sqrt(3./5)*r0_pre)
             I += I0_pre*I_pre
         if f_flag:
             # TODO: support non-spherical form factors 
@@ -37,69 +40,92 @@ def compute_saxs(q,flags,params):
             I += I0_sph*I_sph
     return I
 
-def profile_spectrum(q,I):
+def compute_guinier_porod(q,guinier_factor,porod_exponent,r_g):
+    """Compute the Guinier-Porod small-angle scattering intensity.
+    
+    Computes the Guinier-Porod scattering intensity,
+    given the Guinier prefactor of the solvent/scatterer system,
+    the Porod exponent of the scatterer geometry,
+    and the radius of gyration of the scatterer.
+
+    Reference
+    ---------
+    B. Hammouda, J. Appl. Cryst. (2010). 43, 716-719.
     """
-    Profile a saxs spectrum (q,I) 
+    # q-domain boundary q_splice:
+    q_splice = 1./r_g * np.sqrt(3./2*porod_exponent**2)
+    idx_guinier = (q <= q_splice)
+    idx_porod = (q > q_splice)
+    # porod prefactor D:
+    porod_factor = guinier_factor*np.exp(-1./2*porod_exponent)\
+                    * (3./2*porod_exponent)**(1./2*porod_exponent)\
+                    * 1./(r_g**porod_exponent)
+    I = np.zeros(q.shape)
+    # Guinier equation:
+    if any(idx_guinier):
+        I[idx_guinier] = guinier_factor * np.exp(-1./3*q**2*r_g**2)
+    # Porod equation:
+    if any(idx_porod):
+        I[idx_porod] = porod_factor * 1./(q**porod_exponent)
+
+def profile_spectrum(q_I):
+    """Numerical profiling of a SAXS spectrum.
+
+    Profile a saxs spectrum (n-by-2 array q_I) 
     by taking several fast numerical metrics 
     from the measured data.
-
-    :returns: dictionary of scalar metrics.
-    Dict keys and descriptions: 
-    - 'low_q_ratio': fraction of total intensity in the range q<0.4 
-    - 'high_q_ratio': fraction of total intensity in the range q>=0.4 
-    - 'q_Imax': q value of the maximum intensity. 
-    - 'Imax_over_Imean': maximum intensity divided by mean intensity. 
-    - 'Imax_over_Ilowq': Maximum intensity divided by mean intensity in the range q<0.4. 
-    - 'Imax_over_Ihighq': Maximum intensity divided by mean intensity in the range q>0.4. 
-    - 'Imax_sharpness': maximum intensity divided by 
-        the mean intensity in the range 0.9*q_Imax<q<1.1*q_Imax.
-    - 'q_bin_edges' : array of q-values to use as upper bin limits for intensity integration. 
-    - 'q_bin_strengths' : array of integrated log(I) within the bins specified by q_bin_edges.
-    - 'log_fluctuation': Integrated fluctuation of log(I): 
-        sum of difference in log(I) between adjacent points, 
-        taken only where this difference changes sign, 
-        divided by the maximum of log(I). 
+    The metrics should be consistent for spectra
+    with different intensity scaling 
+    or different q domains.   
+    Ideally this method should execute gracefully
+    for any n-by-2 input array,
+    such that it can be used to profile any type of spectrum. 
+ 
+    Returns a dictionary of scalar metrics.
+    TODO: document metrics here.
     """ 
-
-    idx_lowq = np.array(q<0.4)
-    idx_highq = np.array(q>=0.4)
-    # log(I) analysis
+    q = q_I[:,0]
+    I = q_I[:,1]
+    # I metrics
+    idxmax = np.argmax(I)
+    idxmin = np.argmin(I)
+    I_min = I[idxmin]
+    I_max = I[idxmax] 
+    q_Imax = q[idxmax]
+    I_range = I_max - I_min
+    #I_sum = np.sum(I)
+    I_mean = np.mean(I)
+    Imax_over_Imean = I_max/I_mean
+    # log(I) metrics
     nz = I>0
     q_nz = q[nz]
     I_nz = I[nz]
     logI_nz = np.log(I_nz)
     logI_max = np.max(logI_nz)
-    # I analysis
-    I_sum = np.sum(I)
-    I_mean = np.mean(I)
-    I_lowq_mean = np.mean(I[idx_lowq])
-    I_highq_mean = np.mean(I[idx_highq])
-    idxmax = np.argmax(I)
-    idxmin = np.argmin(I)
-    Imin = I[idxmin]
-    Imax = I[idxmax] 
-    q_Imax = q[idxmax]
-    Irange = Imax - Imin
+    logI_min = np.min(logI_nz)
+    logI_range = logI_max - logI_min
     # I_max peak shape analysis
     idx_around_max = ((q > 0.9*q_Imax) & (q < 1.1*q_Imax))
     Imean_around_max = np.mean(I[idx_around_max])
-    Imax_sharpness = Imax / Imean_around_max
-    # low-q and high-q intensity integration
-    dq = q[1:] - q[:-1]
-    I_trap = (I[1:]+I[:-1])/2
-    I_integral = np.sum(dq*I_trap)
-    dq_lowq = q[idx_lowq][1:] - q[idx_lowq][:-1]
-    I_trap_lowq = (I[idx_lowq][1:]+I[idx_lowq][:-1])/2
-    I_lowq_integral = np.sum(dq_lowq*I_trap_lowq)
-    dq_highq = q[idx_highq][1:] - q[idx_highq][:-1]
-    I_trap_highq = (I[idx_highq][1:]+I[idx_highq][:-1])/2
-    I_highq_integral = np.sum(dq_highq*I_trap_highq)
+    Imax_sharpness = I_max / Imean_around_max
+    # Integration...
+    #dq = q[1:] - q[:-1]
+    #I_trap = (I[1:]+I[:-1])/2
+    #I_integral = np.sum(dq*I_trap)
+    # log(I) statistics 
+    logI_std = np.std(logI_nz)
+    logI_max_over_std = logI_max / logI_std
+    #dq_lowq = q[idx_lowq][1:] - q[idx_lowq][:-1]
+    #I_trap_lowq = (I[idx_lowq][1:]+I[idx_lowq][:-1])/2
+    #I_lowq_integral = np.sum(dq_lowq*I_trap_lowq)
+    #dq_highq = q[idx_highq][1:] - q[idx_highq][:-1]
+    #I_trap_highq = (I[idx_highq][1:]+I[idx_highq][:-1])/2
+    #I_highq_integral = np.sum(dq_highq*I_trap_highq)
     # I_max relative intensity analysis
-    low_q_ratio = I_lowq_integral / I_integral 
-    high_q_ratio = I_highq_integral / I_integral
-    Imax_over_Imean = Imax/I_mean
-    Imax_over_Ilowq = Imax/I_lowq_mean
-    Imax_over_Ihighq = Imax/I_highq_mean
+    #low_q_ratio = I_lowq_integral / I_integral 
+    #high_q_ratio = I_highq_integral / I_integral
+    #Imax_over_Ilowq = Imax/I_lowq_mean
+    #Imax_over_Ihighq = Imax/I_highq_mean
 
     ### fluctuation analysis
     # array of the difference between neighboring points:
@@ -109,35 +135,36 @@ def profile_spectrum(q,I):
     nn_diff_prod = nn_diff[1:]*nn_diff[:-1]
     idx_keep = np.hstack((np.array([True]),nn_diff_prod<0))
     fluc = np.sum(np.abs(nn_diff[idx_keep]))
-    log_fluctuation = fluc/logI_max
+    logI_fluctuation = fluc/logI_range
 
     ### bin-integrated log(intensity) analysis
-    nbins = 100
-    qbinmax = float(1.)
-    qbinstep = qbinmax/nbins
-    q_bin_edges = np.arange(qbinstep,qbinmax+qbinstep,qbinstep)
-    q_bin_strengths = np.zeros(q_bin_edges.shape) 
-    binfloor = 0
-    for ibin,binmax in zip(range(nbins),q_bin_edges):
-        binidx = ((q>=binfloor) & (q<binmax))
-        if any(binidx):
-            qbin = q[ binidx ]
-            Ibin = I[ binidx ]
-            dqbin = qbin[1:]-qbin[:-1]
-            Ibin = (Ibin[1:]+Ibin[:-1])/2
-            q_bin_strengths[ibin] = np.sum(Ibin * dqbin) / I_integral 
-        binfloor = binmax
+    #nbins = 100
+    #qbinmax = float(1.)
+    #qbinstep = qbinmax/nbins
+    #q_bin_edges = np.arange(qbinstep,qbinmax+qbinstep,qbinstep)
+    #q_bin_strengths = np.zeros(q_bin_edges.shape) 
+    #binfloor = 0
+    #for ibin,binmax in zip(range(nbins),q_bin_edges):
+    #    binidx = ((q>=binfloor) & (q<binmax))
+    #    if any(binidx):
+    #        qbin = q[ binidx ]
+    #        Ibin = I[ binidx ]
+    #        dqbin = qbin[1:]-qbin[:-1]
+    #        Ibin = (Ibin[1:]+Ibin[:-1])/2
+    #        q_bin_strengths[ibin] = np.sum(Ibin * dqbin) / I_integral 
+    #    binfloor = binmax
     d = OrderedDict()
     d['q_Imax'] = q_Imax
     d['Imax_over_Imean'] = Imax_over_Imean
-    d['Imax_over_Ilowq'] = Imax_over_Ilowq 
-    d['Imax_over_Ihighq'] = Imax_over_Ihighq 
     d['Imax_sharpness'] = Imax_sharpness
-    d['low_q_ratio'] = low_q_ratio 
-    d['high_q_ratio'] = high_q_ratio 
-    d['q_bin_edges'] = q_bin_edges
-    d['log_fluctuation'] = log_fluctuation
-    d['q_bin_strengths'] = q_bin_strengths 
+    d['logI_fluctuation'] = logI_fluctuation
+    d['logI_max_over_std'] = logI_max_over_std
+    #d['Imax_over_Ilowq'] = Imax_over_Ilowq 
+    #d['Imax_over_Ihighq'] = Imax_over_Ihighq 
+    #d['low_q_ratio'] = low_q_ratio 
+    #d['high_q_ratio'] = high_q_ratio 
+    #d['q_bin_edges'] = q_bin_edges
+    #d['q_bin_strengths'] = q_bin_strengths 
     return d
 
 def parameterize_spectrum(q,I,flags,fixed_params={}):
@@ -174,10 +201,6 @@ def parameterize_spectrum(q,I,flags,fixed_params={}):
             # If only precursor scattering, fit third order for entire q-range 
             I_at_0 = fit_I0(q,I,3)
         d['I_at_0'] = I_at_0
-
-    if flags['diffraction_peaks']:
-        d['ERROR_MESSAGE']='diffraction peak parameterization not yet supported'
-        return d
 
     if flags['form_factor_scattering']:
         # TODO: insert cases for non-spherical form factors
@@ -317,7 +340,7 @@ def fit_spectrum(q,I,objfun,flags,params,fit_params,constraints=[]):
     #    if 'sigma_structure' in fit_params:
     #        fit_params.pop(fit_params.index('sigma_structure')) 
 
-    c = []
+    x_constraints = []
     if 'fix_I0' in constraints: 
         I_keys = []
         if 'I0_floor' in fit_params:
@@ -344,7 +367,7 @@ def fit_spectrum(q,I,objfun,flags,params,fit_params,constraints=[]):
                     Icons += params[k]
             cfun = lambda x: sum([x[i] for i in iargs]) - Icons 
             c_fixI0 = {'type':'eq','fun':cfun}
-            c.append(c_fixI0)
+            x_constraints.append(c_fixI0)
 
     x_init = [] 
     x_bounds = [] 
@@ -386,10 +409,10 @@ def fit_spectrum(q,I,objfun,flags,params,fit_params,constraints=[]):
         else:
             msg = 'objective function {} not supported'.format(objfun)
             raise ValueError(msg)
+        #d_opt['R2log_fit'] = compute_Rsquared(np.log(I[I_nz]),np.log(I_opt[I_nz]))
+        #d_opt['chi2log_fit'] = compute_chi2(logI_nz_s,logIopt_nz_s)
         d_opt['objective_before'] = fit_obj(x_init)
-        #try:
-        res = scipimin(fit_obj,x_init,bounds=x_bounds,constraints=c)
-        #except:
+        res = scipimin(fit_obj,x_init,bounds=x_bounds,constraints=x_constraints)
         x_opt = res.x
         d_opt['objective_after'] = fit_obj(x_opt)
         if d_opt['objective_after'] > d_opt['objective_before']:
@@ -398,6 +421,7 @@ def fit_spectrum(q,I,objfun,flags,params,fit_params,constraints=[]):
             print('obj_init: {}'.format(d_opt['objective_before']))
             print('x_opt: {}'.format(x_opt))
             print('obj_opt: {}'.format(d_opt['objective_after']))
+            import pdb; pdb.set_trace()
             x_opt = x_init
         for k,xk in zip(fit_params,x_opt):
             d_opt[k] = xk

@@ -38,11 +38,10 @@ class SpectrumParameterization(Operation):
     """
 
     def __init__(self):
-        input_names = ['q', 'I', 'flags', 'fixed_params', 'fixed_param_values']
+        input_names = ['q_I', 'flags', 'fixed_params', 'fixed_param_values']
         output_names = ['params','q_I_guess']
         super(SpectrumParameterization, self).__init__(input_names, output_names)
-        self.input_doc['q'] = '1d array of wave vector values in 1/Angstrom units'
-        self.input_doc['I'] = '1d array of intensity values I(q)'
+        self.input_doc['q_I'] = 'n-by-2 array of wave vectors(1/Angstrom) and intensities (counts)'
         self.input_doc['flags'] = 'dict of population flags- currently supported: '\
         '"bad_data", "precursor_scattering", "form_factor_scattering", "diffraction_peaks"'
         self.input_doc['fixed_params'] = 'list of strings indicating which parameters '\
@@ -66,16 +65,20 @@ class SpectrumParameterization(Operation):
         self.output_doc['q_I_guess'] = 'n-by-2 array of q and the intensity spectrum '\
         'corresponding to the returned scattering equation parameters'
 
-        self.input_type['q'] = opmod.workflow_item
-        self.input_type['I'] = opmod.workflow_item
+        self.input_type['q_I'] = opmod.workflow_item
         self.input_type['flags'] = opmod.workflow_item
         self.inputs['fixed_params'] = []
         self.inputs['fixed_param_values'] = []
 
     def run(self):
-        q, I = self.inputs['q'], self.inputs['I']
+        q_I = self.inputs['q_I']
+        q = q_I[:,0]
+        I = q_I[:,1]
         f = self.inputs['flags'] 
         if q is None or I is None or f is None:
+            return
+        if f['diffraction_peaks']:
+            self.outputs['params'] = {'ERROR_MESSAGE':'diffraction peak parameterization not yet supported'}
             return
         fix_keys = self.inputs['fixed_params']
         fix_vals = self.inputs['fixed_param_values']

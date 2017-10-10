@@ -1,4 +1,4 @@
-from os.path import splitext, split
+import os
 from collections import OrderedDict
 
 import tifffile
@@ -13,25 +13,27 @@ class ReadImageAndHeader_SSRL15(Operation):
     """
 
     def __init__(self):
-        input_names = ['tif_path']
-        output_names = ['image_data', 'image_header', 'filename']
+        input_names = ['file_path']
+        output_names = ['image_data', 'image_header', 'dir_path', 'filename']
         super(ReadImageAndHeader_SSRL15, self).__init__(input_names, output_names)
-        self.input_doc['tif_path'] = 'path to a tif file '\
+        self.input_doc['file_path'] = 'path to a tif file '\
         'produced by beamline 1-5 at SSRL. '\
         'A .txt header file is expected '\
         'in the same directory as this .tif file.'
         self.output_doc['image_data'] = 'the image pixel data as an ndarray'
         self.output_doc['image_header'] = 'the header file as a python dictionary'
+        self.output_doc['dir_path'] = 'the directory portion of the input file_path'
         self.output_doc['filename'] = 'filename with path and extension stripped'
 
     def run(self):
-        tif_path = self.inputs['tif_path']
+        tif_path = self.inputs['file_path']
         if tif_path is None:
             return 
-        filename = split(tif_path)[1]
-        filename_noext = splitext(filename)[0]
-        path_noext = splitext(tif_path)[0]
+        dirpath,filename = os.path.split(tif_path)
+        filename_noext = os.path.splitext(filename)[0]
+        path_noext = os.path.splitext(tif_path)[0]
         hdr_file_path = path_noext + '.txt'
+        self.outputs['dir_path'] = dirpath 
         self.outputs['filename'] = filename_noext 
         self.outputs['image_data'] = tifffile.imread(tif_path)
         d = OrderedDict()

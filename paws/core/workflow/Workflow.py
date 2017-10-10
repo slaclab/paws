@@ -1,11 +1,13 @@
+from __future__ import print_function
 from collections import OrderedDict
 import copy
 from functools import partial
 import traceback
+import os
 
 from ..models.TreeModel import TreeModel
 from ..operations import Operation as opmod
-from ..operations.Operation import Operation#, Batch, Realtime
+from ..operations.Operation import Operation
 from ..operations import optools
 
 class Workflow(TreeModel):
@@ -13,15 +15,15 @@ class Workflow(TreeModel):
     Tree structure for a Workflow built from paws Operations.
     """
 
-    def __init__(self,wfman):
+    def __init__(self):
         flag_dict = OrderedDict()
         flag_dict['select'] = False
         flag_dict['enable'] = True
         super(Workflow,self).__init__(flag_dict)
-        self.wf_manager = wfman
         self.inputs = OrderedDict()
         self.outputs = OrderedDict()
-        #self.wfman = wfman
+        self.message_callback = print
+        self.data_callback = None
 
     def __getitem__(self,key):
         optags = self.keys()
@@ -42,32 +44,34 @@ class Workflow(TreeModel):
     def keys(self):
         return self.list_op_tags() 
 
-    def copy(self):
+    def set_op_item(self,op_tag,item_uri,item_data):
+        full_uri = op_tag+'.'+item_uri
+        self.set_item(full_uri,item_data)
+
+    def clone_wf(self):
         """
         Produce a Workflow that is a copy of this Workflow.
         """
-        new_wf = copy.copy(self)
+        new_wf = self.clone() 
+        #new_wf = copy.copy(self)
         new_wf.inputs = copy.deepcopy(self.inputs)
         new_wf.outputs = copy.deepcopy(self.outputs)
+        # NOTE: is it ok if I don't copy.copy the callbacks? 
+        new_wf.message_callback = self.message_callback
+        new_wf.data_callback = self.data_callback
         for op_tag in self.list_op_tags():
-            op = self.get_data_from_uri(opname)
-            self.set_op(op_tag,op.copy())
+            op = self.get_data_from_uri(op_tag)
+            new_wf.add_op(op_tag,op.clone_op())
         return new_wf
 
-    def write_log(self,msg):
-        self.wf_manager.write_log(msg)
+    @classmethod
+    def clone(cls):
+        return cls()
 
-    def set_op(self,op_tag,new_op):
-        """
-        Set workflow tree data at op_tag to new_op.
-        """
-        self.set_item(op_tag,new_op)
-
-    def remove_op(self,op_tag):
-        """
-        Remove an Operation from the workflow tree.
-        """
-        self.remove_item(op_tag)
+    def add_op(self,op_tag,op):
+        op.message_callback = self.message_callback
+        op.data_callback = partial( self.set_op_item,op_tag )
+        self.set_item(op_tag,op)
 
     def build_tree(self,x):
         """
@@ -76,47 +80,15 @@ class Workflow(TreeModel):
         """
         if isinstance(x,Operation):
             d = OrderedDict()
-            d[opmod.inputs_tag] = self.build_tree(x.inputs)
-            d[opmod.outputs_tag] = self.build_tree(x.outputs)
+            d['inputs'] = self.build_tree(x.inputs)
+            d['outputs'] = self.build_tree(x.outputs)
             return d
         else:
             return super(Workflow,self).build_tree(x) 
 
-    def execute(self):
-        stk,diag = self.execution_stack()
-        #self.write_log('beginning execution. execution stack: \n'+optools.print_stack(stk))
-        for lst in stk:
-            self.write_log('running: {}'.format(lst))
-            for op_tag in lst: 
-                try:
-                    self.execute_op(op_tag)
-                except Exception as ex:
-                    tb = traceback.format_exc()
-                    self.write_log(str('Operation {} threw an error. '
-                    + '\nTrace: {}').format(op_tag,tb)) 
-        self.write_log('execution finished')
-
-    def execute_op(self,op_tag):
-        op = self.get_data_from_uri(op_tag) 
-        self.load_inputs(op,self.wf_manager,self.wf_manager.plugin_manager)
-        op.run() 
-        self.set_item(op_tag,op)
-
-    def load_inputs(self,op,wf_manager=None,plugin_manager=None):
-        """
-        Loads input data for an Operation from its input_locators.
-        A WfManager and a PluginManager can be provided 
-        as optional arguments,
-        in which case they are used to fetch data.
-        """
-        for name,il in op.input_locator.items():
-            il.data = optools.locate_input(il,self,wf_manager,plugin_manager)
-            op.inputs[name] = il.data
-
     def op_dict(self):
         optags = self.list_op_tags() 
-        op_dict = OrderedDict(zip(optags,[self.get_data_from_uri(nm) for nm in optags]))
-        return op_dict
+        return OrderedDict(zip(optags,[self.get_data_from_uri(nm) for nm in optags]))
 
     def list_op_tags(self):
         return self.root_tags()
@@ -124,11 +96,11 @@ class Workflow(TreeModel):
     def n_ops(self):
         return self.n_children()
 
-    def connect_wf_input(self,wf_input_name,op_input_uri):
-        self.inputs[wf_input_name] = op_input_uri
+    def connect_wf_input(self,wf_input_name,op_input_uris):
+        self.inputs[wf_input_name] = op_input_uris
 
-    def connect_wf_output(self,wf_output_name,op_output_uri):
-        self.outputs[wf_output_name] = op_output_uri
+    def connect_wf_output(self,wf_output_name,op_output_uris):
+        self.outputs[wf_output_name] = op_output_uris
 
     def break_wf_input(self,wf_input_name):
         self.inputs.pop(wf_input_name)
@@ -143,29 +115,59 @@ class Workflow(TreeModel):
         return d
 
     def get_wf_output(wf_output_name):
-        return self.get_data_from_uri(self.outputs[wf_output_name])
+        """
+        Fetch and return the Operation output(s)
+        indicated by self.outputs[wf_output_name].
+        """
+        r = self.outputs[wf_output_name]
+        if isinstance(r,list):
+            return [self.get_data_from_uri(q) for q in r]
+        else:
+            return self.get_data_from_uri(r)
 
     def set_wf_input(self,wf_input_name,val):
-        self.set_op_input_at_uri(self.inputs[wf_input_name],val)
+        """
+        Take the Operation input(s) 
+        indicated by self.inputs[wf_input_name],
+        and set them to the input value val. 
+        """
+        urilist = self.inputs[wf_input_name]
+        if not isinstance(urilist,list):
+            urilist = [urilist]
+        for uri in urilist:
+            p = uri.split('.')
+            il = self.get_data_from_uri(p[0]).input_locator[p[2]]
+            if il.tp in [opmod.basic_type,opmod.runtime_type]:
+                self.set_item(uri,val)
+            else:
+                il.val = val
+                #msg = 'Attempted to set input {}, '.format(uri)\
+                #'and found that input was supposed to be a {}. '.format(opmod.input_types[il.tp])\
+                #'Only "auto" type inputs should be loaded directly.'
+                #raise TypeError(msg)
 
-    def set_op_input_at_uri(self,uri,val):
-        """
-        Set an op input at uri to provided value val.
-        The uri must be a valid uri in the TreeModel,
-        of the form opname.inputs.inpname.
-        """
-        path = uri.split('.')
-        opname = path[0]
-        if not path[1] == opmod.inputs_tag:
-            msg = '[{}] uri {} does not point to an input'.format(__name__,uri)
-            raise ValueError(msg)
-        inpname = path[2]
-        uri = opname+'.'+opmod.inputs_tag+'.'+inpname
-        op = self.get_data_from_uri(opname)
-        op.input_locator[inpname].val = val
-        #op.input_locator[inpname].data = val
-        #op.inputs[inpname] = val
-        self.set_item(uri,val)
+    def execute(self):
+        stk,diag = self.execution_stack()
+        self.message_callback(os.linesep+'running workflow:'+os.linesep+self.print_stack(stk))
+        for lst in stk:
+            self.message_callback('running: {}'.format(lst))
+            for op_tag in lst: 
+                op = self.get_data_from_uri(op_tag) 
+                for inpnm,il in op.input_locator.items():
+                    if il.tp == opmod.workflow_item:
+                        #il.data = self.locate_input(il)
+                        #op.inputs[inpnm] = il.data
+                        #op.inputs[inpnm] = self.locate_input(il)
+                        self.set_op_item(op_tag,'inputs.'+inpnm,self.locate_input(il))
+                op.run() 
+                for outnm,outdata in op.outputs.items():
+                    self.set_op_item(op_tag,'outputs.'+outnm,outdata)
+
+    def locate_input(self,il):
+        if isinstance(il.val,list):
+            return [self.get_data_from_uri(v) for v in il.val]
+        else:
+            return self.get_data_from_uri(il.val)
 
     def set_op_enabled(self,opname,flag=True):
         op_item = self.get_from_uri(opname)
@@ -174,6 +176,12 @@ class Workflow(TreeModel):
     def is_op_enabled(self,opname):
         op_item = self.get_from_uri(opname)
         return op_item.flags['enable']
+
+    def op_enable_flags(self):
+        dct = OrderedDict()
+        for opnm in self.list_op_tags():
+            dct[opnm] = self.get_from_uri(opnm).flags['enable']
+        return dct
 
     def execution_stack(self):
         """
@@ -193,7 +201,8 @@ class Workflow(TreeModel):
                     op_rdy = False
                     op_diag = {op_tag:'Operation is disabled'}
                 elif not self.stack_contains(op_tag,stk):
-                    op_rdy,op_diag = self.is_op_ready(op_tag,valid_wf_inputs)
+                    op = self.get_data_from_uri(op_tag)
+                    op_rdy,op_diag = self.is_op_ready(op_tag,self,valid_wf_inputs)
                     diagnostics.update(op_diag)
                     if op_rdy:
                         ops_rdy.append(op_tag)
@@ -207,31 +216,29 @@ class Workflow(TreeModel):
             else:
                 continue_flag = False
         return stk,diagnostics
-        # Finished building list of ops currently ready. Now filter these into stack.
-        #if any(ops_rdy):
-        #     Which of these are not Batch/Realtime ops?
-        #    non_batch_rdy = []
-        #    for op_tag in ops_rdy:
-        #        op = wf.get_data_from_uri(op_tag)
-        #        if not any([op._batch_flag,op._realtime_flag]):
-        #            non_batch_rdy.append(op_tag)
-        #    if any(non_batch_rdy):
-        #        ops_rdy = non_batch_rdy
-        #        stk.append(ops_rdy)
-        #        for op_tag in ops_rdy:
-        #            op = wf.get_data_from_uri(op_tag)
-        #            valid_wf_inputs += get_valid_wf_inputs(op_tag,op)
-        #    else:
-        #        batch_tag = ops_rdy[0]
-        #        ops_rdy = [batch_tag]
-        #        batch_op = wf.get_data_from_uri(batch_tag)
-        #        batch_stk,batch_rdy,batch_diag = batch_op_stack(
-        #        wf,batch_tag,valid_wf_inputs)
-        #        diagnostics.update(batch_diag)
-        #        stk.append([batch_tag,batch_stk])
-        #        valid_wf_inputs += get_valid_wf_inputs(batch_tag,batch_op)
-        #else:
-        #    continue_flag = False
+
+    def wf_setup_dict(self):
+        wf_dict = OrderedDict() 
+        for opname in self.list_op_tags():
+            op = self.get_data_from_uri(opname)
+            wf_dict[opname] = op.setup_dict()
+        wf_dict['WORKFLOW_INPUTS'] = self.inputs
+        wf_dict['WORKFLOW_OUTPUTS'] = self.outputs
+        wf_dict['OP_ENABLE_FLAGS'] = self.op_enable_flags()
+        return wf_dict
+
+    def build_op_from_dict(self,op_setup,op_manager):
+        op_uri = op_setup['op_module']
+        op_manager.set_op_enabled(op_uri)
+        op = op_manager.get_data_from_uri(op_uri)()
+        op.load_defaults()
+        il_setup_dict = op_setup['inputs']
+        for nm in op.inputs.keys():
+            if nm in il_setup_dict.keys():
+                tp = il_setup_dict[nm]['tp']
+                val = il_setup_dict[nm]['val']
+                op.input_locator[nm] = opmod.InputLocator(tp,val) 
+        return op
 
     @staticmethod
     def stack_contains(itm,stk):
@@ -255,22 +262,28 @@ class Workflow(TreeModel):
                     sz += 1
         return sz
 
-    def is_op_ready(self,op_tag,valid_wf_inputs):
-        op = self.get_data_from_uri(op_tag)
+    @staticmethod
+    def is_op_ready(op_tag,wf,valid_wf_inputs):
+        op = wf.get_data_from_uri(op_tag)
         inputs_rdy = []
         diagnostics = {} 
         for name,il in op.input_locator.items():
             msg = ''
-            if (il.tp == opmod.workflow_item 
-            and not il.val in valid_wf_inputs): 
+            if il.tp == opmod.workflow_item:
                 inp_rdy = False
-                msg = str('Operation input {}.inputs.{} (={}) '.format(op_tag,name,il.val)
-                + 'not found in valid Workflow input list: {}'.format(valid_wf_inputs)
-                + 'or in workflows: {}'.format(self.wf_manager.workflows.keys()))
+                if isinstance(il.val,list):
+                    if all([v in valid_wf_inputs for v in il.val]):
+                        inp_rdy = True 
+                else:
+                    if il.val in valid_wf_inputs: 
+                        inp_rdy = True 
+                if not inp_rdy:
+                    msg = str('Operation input {} (={}) '.format(name,il.val)
+                    + 'not satisfied by valid inputs list: {}'.format(valid_wf_inputs))
             else:
                 inp_rdy = True
             inputs_rdy.append(inp_rdy)
-            diagnostics[op_tag+'.'+opmod.inputs_tag+'.'+name] = msg
+            diagnostics[op_tag+'.inputs.'+name] = msg
         if all(inputs_rdy):
             op_rdy = True
         else:
@@ -284,9 +297,26 @@ class Workflow(TreeModel):
         that are eligible as downstream inputs in the workflow.
         """
         # valid_wf_inputs should be the operation, its input and output dicts, and their respective entries
-        valid_wf_inputs = [op_tag,op_tag+'.'+opmod.inputs_tag,op_tag+'.'+opmod.outputs_tag]
-        valid_wf_inputs += [op_tag+'.'+opmod.outputs_tag+'.'+k for k in op.outputs.keys()]
-        valid_wf_inputs += [op_tag+'.'+opmod.inputs_tag+'.'+k for k in op.inputs.keys()]
+        valid_wf_inputs = [op_tag,op_tag+'.inputs',op_tag+'.outputs']
+        valid_wf_inputs += [op_tag+'.outputs.'+k for k in op.outputs.keys()]
+        valid_wf_inputs += [op_tag+'.inputs.'+k for k in op.inputs.keys()]
         return valid_wf_inputs
-    
+
+    @staticmethod
+    def print_stack(stk):
+        stktxt = ''
+        opt_newline = '\n'
+        for i,lst in zip(range(len(stk)),stk):
+            if i == len(stk)-1:
+                opt_newline = ''
+            if len(lst) > 1:
+                if isinstance(lst[1],list):
+                    substk = lst[1]
+                    stktxt += ('[\'{}\':\n{}\n]'+opt_newline).format(lst[0],print_stack(lst[1]))
+                else:
+                    stktxt += ('{}'+opt_newline).format(lst)
+            else:
+                stktxt += ('{}'+opt_newline).format(lst)
+        return stktxt
+
 

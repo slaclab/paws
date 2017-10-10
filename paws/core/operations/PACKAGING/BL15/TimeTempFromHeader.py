@@ -13,19 +13,19 @@ class TimeTempFromHeader(Operation):
     Time is assumed to be in the format Day Mon dd hh:mm:ss yyyy.
     """
     def __init__(self):
-        input_names = ['header_dict','time_key','temp_key']
-        output_names = ['date_time','time','temp']
+        input_names = ['image_header','time_key','temp_key']
+        output_names = ['date_time','time','temperature']
         super(TimeTempFromHeader,self).__init__(input_names,output_names)        
-        self.input_type['header_dict'] = opmod.workflow_item
-        self.input_doc['header_dict'] = 'workflow uri of dict produced from detector output header file.'
-        self.input_doc['time_key'] = 'key in header_dict that refers to the time' 
-        self.input_doc['temp_key'] = 'key in header_dict that refers to the temperature' 
+        self.input_type['image_header'] = opmod.workflow_item
+        self.input_doc['image_header'] = 'workflow uri of dict produced from detector output header file.'
+        self.input_doc['time_key'] = 'key in image_header that refers to the time' 
+        self.input_doc['temp_key'] = 'key in image_header that refers to the temperature' 
         self.output_doc['date_time'] = 'string representation of the time'
         self.output_doc['time'] = 'UTC time in seconds'
-        self.output_doc['temp'] = 'Temperature'
+        self.output_doc['temperature'] = 'Temperature'
 
     def run(self):
-        d = self.inputs['header_dict']
+        d = self.inputs['image_header']
         ktime = self.inputs['time_key']
         ktemp = self.inputs['temp_key']
         if d is None or ktime is None or ktemp is None:
@@ -43,5 +43,5 @@ class TimeTempFromHeader(Operation):
         t_utc = time.mktime(dt_aware.timetuple())
         self.outputs['date_time'] = time_str
         self.outputs['time'] = float(t_utc)
-        self.outputs['temp'] = temp
+        self.outputs['temperature'] = temp
 

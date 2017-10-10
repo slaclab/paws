@@ -48,19 +48,19 @@ class BgSubtractByTemperature(Operation):
         T_allbg = [d[Tkey] for d in bg_out]
         closest_T_idx = np.argmin(np.abs([T_bg - T_meas for T_bg in T_allbg]))
         T_bg = T_allbg[closest_T_idx]
-        qI_bg = bg_out[closest_T_idx][qIkey]
-        if not all(q_I[:,0] == q_I_bg[:,0]):
+        q_I_bg = bg_out[closest_T_idx][qIkey]
+        if not all(q_I_meas[:,0] == q_I_bg[:,0]):
             msg = 'SPECTRUM AND BACKGROUND ON DIFFERENT q DOMAINS'
             raise ValueError(msg)
         bad_data = ( (q_I_meas[:,1] <= 0) 
-            | (qI_bg[:,1] <= 0) 
+            | (q_I_bg[:,1] <= 0) 
             | np.isnan(q_I_meas[:,1]) 
-            | np.isnan(qI_bg[:,1]) )
+            | np.isnan(q_I_bg[:,1]) )
         I_floor = 0 
         #I_floor = 1E-6 * np.max(q_I_meas[:,1])
-        bg_factor = np.min((q_I_meas[:,1][~bad_data]-I_floor) / qI_bg[:,1][~bad_data])
+        bg_factor = np.min((q_I_meas[:,1][~bad_data]-I_floor) / q_I_bg[:,1][~bad_data])
         q_I_bgsub = np.array(q_I_meas)
-        q_I_bgsub[:,1] = q_I_meas[:,1] - bg_factor * I_bg
+        q_I_bgsub[:,1] = q_I_meas[:,1] - bg_factor * q_I_bg[:,1]
 
         self.outputs['q_I_bgsub'] = q_I_bgsub
         self.outputs['T_bg'] = T_bg 

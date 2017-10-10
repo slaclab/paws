@@ -1,4 +1,5 @@
 import os.path
+
 import numpy as np
 import yaml
 from sklearn import preprocessing
@@ -58,8 +59,14 @@ class LoadSAXSClassifiers(Operation):
 
         if (major != sk_version[0] or minor != sk_version[1]):
             version_str = ".".join(map(str,sk_version))
-            raise RuntimeError('PAWS works with sklearn {} only.'.format(version_str))
-        
+            msg = 'found scikit-learn v{}.{}.x. '\
+                .format(major,minor) + \
+                'SAXS classification models were built '\
+                'with scikit-learn v{}. '\
+                .format(version_str) + \
+                'Please try again with a matching version of scikit-learn.'
+            raise RuntimeError(msg)
+
 
         scalers_dict = s_and_m['scalers'] # dict of scalers parametrs
         classifier_dict = s_and_m['models'] # dict of models parametrs

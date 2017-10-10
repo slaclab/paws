@@ -13,9 +13,10 @@ d = os.path.dirname(d)
 # d = (pawsroot)/paws/
 sourcedir = str(d)
 
-# d = os.path.dirname(d)
-# d = (pawsroot)
-#rootdir = str(d)
+d = os.path.dirname(d)
+# d = (pawsroot)/
+rootdir = str(d)
+
 user_homedir = os.path.expanduser("~")
 
 paws_scratch_dir = os.path.join(user_homedir,'.paws_scratch')

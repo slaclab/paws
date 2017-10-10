@@ -1,7 +1,6 @@
 How to build paws docs:
 
-(0) If modules have been removed or renamed, execute from this directory:
-rm -rf ./source/moduledoc_files/
+(0) If modules have been removed or renamed, remove the corresponding .rst files from ./source. 
 
 (1) From this directory:
 ./build_scripts/build_rst_files.x

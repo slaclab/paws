@@ -33,28 +33,27 @@ class SpectrumClassifier(Operation):
         # TODO: use keys: 'bad_data', 'precursor_scattering', 'form_factor_scattering', and 'diffraction_peaks',
         # i.e. same keys as population_flags output dict
 
-        model_bad_data = clsfrs['model_for_bad_data']
-        model_form = clsfrs['model_for_form_factor_scattering']
-        model_precur = clsfrs['model_for_precursor_scattering']
-        model_diff_peaks = clsfrs['model_for_diffraction_peaks']
+        model_bad_data = clsfrs['bad_data']
+        model_form = clsfrs['form_factor_scattering']
+        model_precur = clsfrs['precursor_scattering']
+        model_diff_peaks = clsfrs['diffraction_peaks']
 
-        scaler_bad_data = sclrs['scaler_for_bad_data']
-        scaler_form = sclrs['scaler_for_form_factor_scattering']
-        scaler_precur = sclrs['scaler_for_precursor_scattering']
-        scaler_diff_peaks = sclrs['scaler_for_diffraction_peaks']
+        scaler_bad_data = sclrs['bad_data']
+        scaler_form = sclrs['form_factor_scattering']
+        scaler_precur = sclrs['precursor_scattering']
+        scaler_diff_peaks = sclrs['diffraction_peaks']
 
         flags = OrderedDict()
-        flags['test'] = True
 
         ### Classify the spectrum
         # (1) Apply model to input
 
         # transform the ordered dictionary into an array of features:
-        bin_strengths = x['q_bin_strengths']
-        del x['q_bin_strengths']
+        #bin_strengths = x['q_bin_strengths']
+        #del x['q_bin_strengths']
 
         #edges = x['q_bin_edges']
-        del x['q_bin_edges']
+        #del x['q_bin_edges']
 
         # we can use edges instead to indexes, but it could cause a problem
         # when not all samples have a specific edge
@@ -62,24 +61,24 @@ class SpectrumClassifier(Operation):
         #    x[str(edges[i])] = bin_strengths[i]
 
         # should we do it in profile_spectrum()?
-        for i in range(100):
-            x[str(i)] = bin_strengths[i]
+        #for i in range(100):
+        #    x[str(i)] = bin_strengths[i]
 
         # features for bad_data, precursor, and structure labels
-        features_analytical_and_60 = ['q_Imax', 'Imax_over_Imean', 'Imax_over_Ilowq',
-       'Imax_over_Ihighq', 'Imax_sharpness', 'low_q_ratio', 'high_q_ratio',
-       'log_fluctuation','0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13',
-       '14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '24', '25',
-       '26', '27', '28', '29', '30', '31', '32', '33', '34', '35', '36', '37',
-       '38', '39', '40', '41', '42', '43', '44', '45', '46', '47', '48', '49',
-       '50', '51', '52', '53', '54', '55', '56', '57', '58', '59' ]
+        #features_analytical_and_60 = ['q_Imax', 'Imax_over_Imean', 'Imax_over_Ilowq',
+        #'Imax_over_Ihighq', 'Imax_sharpness', 'low_q_ratio', 'high_q_ratio',
+        #'log_fluctuation','0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13',
+        #'14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '24', '25',
+        #'26', '27', '28', '29', '30', '31', '32', '33', '34', '35', '36', '37',
+        #'38', '39', '40', '41', '42', '43', '44', '45', '46', '47', '48', '49',
+        #'50', '51', '52', '53', '54', '55', '56', '57', '58', '59' ]
 
         # features for form label
-        features60 = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13',
-       '14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '24', '25',
-       '26', '27', '28', '29', '30', '31', '32', '33', '34', '35', '36', '37',
-       '38', '39', '40', '41', '42', '43', '44', '45', '46', '47', '48', '49',
-       '50', '51', '52', '53', '54', '55', '56', '57', '58', '59']
+        #features60 = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13',
+        #'14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '24', '25',
+        #'26', '27', '28', '29', '30', '31', '32', '33', '34', '35', '36', '37',
+        #'38', '39', '40', '41', '42', '43', '44', '45', '46', '47', '48', '49',
+        #'50', '51', '52', '53', '54', '55', '56', '57', '58', '59']
 
         input_features1 = [] # analytical and 60 bins
         for item in features_analytical_and_60:

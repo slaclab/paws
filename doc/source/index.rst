@@ -10,7 +10,8 @@ Contents:
 
     intro
     installation
-    moduledoc
+    usage
+    packagedoc
 
 
 Indices and tables

@@ -78,7 +78,7 @@ setup(
     # installed, specify them here.  If using Python 2.6 or less, then these
     # have to be included in MANIFEST.in as well.
     package_data={
-        'paws': ['ui/graphics/*.png','ui/qtui/*.ui','core/tools/modeling_data/*'],
+        'paws': ['qt/graphics/*.png','qt/qtui/*.ui','core/tools/modeling_data/*'],
     },
 
     # Although 'package_data' is the preferred approach, in some case you may
@@ -90,11 +90,11 @@ setup(
     # To provide executable scripts, use entry points in preference to the
     # "scripts" keyword. Entry points provide cross-platform support and allow
     # pip to create the appropriate form of executable for the target platform.
-    # TODO: entry point for paws python console
     entry_points={
         'console_scripts': [
             'paws=main:main',
-            'pawspipeline=paws.ui.widgets.widget_launcher:pipeline',
+            # TODO: add a jupyter/ipython console entry point 
+            #'pawsconsole=paws.qt.widgets.widget_launcher:ipypaws',
         ],
     },
 )

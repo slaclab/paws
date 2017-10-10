@@ -1,4 +1,5 @@
 from collections import OrderedDict
+import copy
 
 from ...Operation import Operation
 from ... import Operation as opmod 
@@ -13,15 +14,23 @@ class BatchFromFiles(Operation):
     """
 
     def __init__(self):
-        input_names = ['file_list','workflow','input_name']
+        input_names = ['file_list','workflow','input_name','extra_input_names','extra_inputs']
         output_names = ['batch_inputs','batch_outputs']
         super(BatchFromFiles,self).__init__(input_names,output_names)
         self.input_doc['file_list'] = 'list of file paths'
         self.input_doc['workflow'] = 'the Workflow to be executed'
-        self.input_doc['input_name'] = 'name of the workflow input where the file paths will be used'
+        self.input_doc['input_name'] = 'name of the workflow input '\
+        'where the file paths will be used'
+        self.input_doc['extra_input_names'] = 'list of names '\
+        'of batch workflow inputs to be set to extra_inputs '\
+        'before batch-execution'
+        self.input_doc['extra_inputs'] = 'data items '\
+        'to be set to batch workflow inputs indicated by extra_input_names'
         self.output_doc['batch_inputs'] = 'list of dicts of [input_name:input_value]'
         self.output_doc['batch_outputs'] = 'list of dicts of [output_name:output_value] for all Workflow outputs'
         self.input_type['workflow'] = opmod.entire_workflow
+        self.inputs['extra_input_names'] = []
+        self.inputs['extra_inputs'] = []
         
     def run(self):
         batch_list = self.inputs['file_list'] 
@@ -30,12 +39,29 @@ class BatchFromFiles(Operation):
         if (wf is None or batch_list is None or not inpname):
             return
         n_batch = len(batch_list)
-        wf.write_log('STARTING BATCH')
+        self.outputs['batch_inputs'] = [None for ib in range(n_batch)] 
+        self.outputs['batch_outputs'] = [None for ib in range(n_batch)] 
+        if self.data_callback: 
+            self.data_callback('outputs.batch_inputs',[None for ib in range(n_batch)])
+            self.data_callback('outputs.batch_outputs',[None for ib in range(n_batch)])
+        inps = self.inputs['extra_input_names']
+        vals = self.inputs['extra_inputs']
+        # Load any additional inputs...
+        if any(inps): 
+            for inpnm,inpval in zip(inps,vals):
+                wf.set_wf_input(inpnm,inpval)
+        self.message_callback('STARTING BATCH')
         for i,filename in zip(range(n_batch),batch_list):
-            self.outputs['batch_inputs'].append( {inpname:filename} )
+            inp_dict = OrderedDict() 
+            inp_dict[inpname] = filename
             wf.set_wf_input(inpname,filename)
-            wf.write_log('EXECUTION {} / {}'.format(i+1,n_batch))
+            self.message_callback('BATCH RUN {} / {}'.format(i,n_batch-1))
             wf.execute()
-            self.outputs['batch_outputs'].append(wf.wf_outputs_dict())
-        wf.write_log('BATCH FINISHED')
+            out_dict = wf.wf_outputs_dict()
+            self.outputs['batch_inputs'][i] = inp_dict
+            self.outputs['batch_outputs'][i] = out_dict
+            if self.data_callback: 
+                self.data_callback('outputs.batch_inputs.'+str(i),inp_dict)
+                self.data_callback('outputs.batch_outputs.'+str(i),copy.deepcopy(out_dict))
+        self.message_callback('BATCH FINISHED')
 

@@ -38,7 +38,6 @@ class PawsAPI(object):
         super(PawsAPI,self).__init__()
         # Assign a function(str) to PawsAPI.logmethod
         # to change where messages get printed
-        self.logmethod = print 
         self._op_manager = OpManager()
         self._plugin_manager = PluginManager()
         self._wf_manager = WfManager()
@@ -49,11 +48,18 @@ class PawsAPI(object):
         self._op_manager.load_cats(ops.cat_list) 
         self._op_manager.load_ops(ops.cat_op_list)
         self._current_wf_name = None 
-
-    def write_log(self,msg):
-        self.logmethod(msg)
+        self.logmethod = print
 
     def set_logmethod(self,lm):
+        """
+        Sets the logmethod, which is the function
+        that is called to handle messages.
+
+        Parameters
+        ----------
+        lm : function
+            function to be called for logging messages
+        """
         self.logmethod = lm
         self._op_manager.logmethod = lm
         self._plugin_manager.logmethod = lm
@@ -138,13 +144,13 @@ class PawsAPI(object):
             # instantiate with default inputs
             op = op()
             op.load_defaults()
-            wf.set_item(op_tag,op)
+            wf.add_op(op_tag,op)
         else:
             msg = str('Attempted to add Operation {}, '.format(op_spec)
-            + 'but this Operation has not been enabled. '
-            + 'Enable it with paws.api.enable_op() '
+            + 'but this Operation has not been activated. '
+            + 'Activate it with paws.api.activate_op() '
             + 'before adding it to a workflow.')
-            self.write_log(msg) 
+            self.logmethod(msg) 
             raise pawstools.OperationDisabledError(msg)
 
     def add_wf(self,wfname):
@@ -177,7 +183,7 @@ class PawsAPI(object):
         # TODO: separate opmod from plugin stuff
         if tp == opmod.no_input or val is None: 
             pgin.inputs[input_name] = None
-        elif tp == opmod.auto_type:
+        elif tp == opmod.basic_type:
             pgin.inputs[input_name] = val
         else:
             msg = '[{}] failed to parse plugin input {}, tp: {}, val: {}'.format(
@@ -195,17 +201,35 @@ class PawsAPI(object):
         wf = self.get_wf(wfname)
         wf.remove_item(op_tag)
 
-    def add_wf_input(self,wf_input_name,input_uri,wfname=None):
-        self.get_wf(wfname).connect_wf_input(wf_input_name,input_uri) 
+    def add_wf_input(self,wf_input_name,input_uris,wfname=None):
+        """
+        Add an input to the workflow specified by wfname,
+        and specify its workflow routing by any number of input_uris,
+        which should refer to the inputs of operations in the workflow.
+        When the workflow is asked to set this input to some value x,
+        it will set all of the provided input_uris to x.
+        """
+        self.get_wf(wfname).connect_wf_input(wf_input_name,input_uris) 
 
-    def add_wf_output(self,wf_output_name,output_uri,wfname=None):
-        self.get_wf(wfname).connect_wf_output(wf_output_name,output_uri) 
+    def add_wf_output(self,wf_output_name,output_uris,wfname=None):
+        """
+        Add an output to the workflow specified by wfname,
+        and specify one or more output_uris for pieces of workflow data
+        that will be referenced to this workflow output.
+        If multiple output_uris are specified, they will be packed as a list.
+        """
+        self.get_wf(wfname).connect_wf_output(wf_output_name,output_uris) 
 
     def remove_wf_input(self,wf_input_name,wfname=None):
         self.get_wf(wfname).break_wf_input(wf_input_name) 
 
     def remove_wf_output(self,wf_output_name,wfname=None):
         self.get_wf(wfname).break_wf_output(wf_output_name) 
+
+    def set_wf_input(self,wf_input_name,val=None,wfname=None):
+        if wfname is None:
+            wfname = self._current_wf_name
+        self.get_wf(wfname).set_wf_input(wf_input_name,val) 
 
     def set_input(self,opname,input_name,val=None,tp=None,wfname=None):
         if wfname is None:
@@ -221,15 +245,23 @@ class PawsAPI(object):
         elif tp in opmod.input_types:
             # type specified by string: convert to enum
             tp = opmod.valid_types[ opmod.input_types.index(tp) ]
-        elif not tp in opmod.valid_types:
+        if not tp in opmod.valid_types:
             # tp is neither a string or an enum
             msg = '[{}] failed to parse input type: {}'.format(
             __name__,tp)
             raise ValueError(msg)
-        if tp == opmod.no_input: 
-            val = None
-        il = opmod.InputLocator(tp,val)
+        elif tp == opmod.runtime_type:
+            # set inputlocator.val to None, 
+            # so that this object will NOT attempt
+            # to be serialized when save_to_wfl() is called.
+            il = opmod.InputLocator(tp,None)
+        else:
+            # all other types, val can be serialized,
+            # so it is referenced in the InputLocator. 
+            il = opmod.InputLocator(tp,val)
         op.input_locator[input_name] = il
+        if tp == opmod.basic_type:
+            self.get_wf(wfname).set_op_item(opname,'inputs.'+input_name,val)
 
     def get_input_data(self,opname,input_name,wfname=None):
         if wfname is None:
@@ -266,6 +298,21 @@ class PawsAPI(object):
     def save_config(self):
         ops.save_config()
 
+    def wfl_dict(self):
+        d = {} 
+        d['OP_ACTIVATION_FLAGS'] = ops.load_flags
+        d['PAWS_VERSION'] = pawstools.version 
+        wfman_dict = OrderedDict()
+        for wfname,wf in self._wf_manager.workflows.items():
+            wfman_dict[wfname] = wf.wf_setup_dict() 
+        d['WORKFLOWS'] = wfman_dict
+        pgin_dict = OrderedDict() 
+        for pgin_name in self._plugin_manager.list_plugin_tags():
+            pgin = self._plugin_manager.get_data_from_uri(pgin_name)
+            pgin_dict[pgin_name] = self._plugin_manager.plugin_setup_dict(pgin)
+        d['PLUGINS'] = pgin_dict
+        return d
+
     def save_to_wfl(self,wfl_filename):
         """
         Save the current workflows and plugins
@@ -274,27 +321,10 @@ class PawsAPI(object):
         If the given filename does not have the .wfl extension,
         it will be appended.
         """
+        self.logmethod( 'saving current state to {}'.format(wfl_filename) )
         if not os.path.splitext(wfl_filename)[1] == '.wfl':
             wfl_filename = wfl_filename + '.wfl'
-        self._wf_manager.logmethod( 'saving current state to {}'.format(wfl_filename) )
-        d = {} 
-        d['OP_LOAD_FLAGS'] = ops.load_flags
-        d['PAWS_VERSION'] = pawstools.version 
-        wfman_dict = OrderedDict()
-        for wfname,wf in self._wf_manager.workflows.items():
-            wf_dict = OrderedDict() 
-            for opname in wf.list_op_tags():
-                op = wf.get_data_from_uri(opname)
-                wf_dict[opname] = self._wf_manager.op_setup_dict(op)
-                wf_dict['WORKFLOW_INPUTS'] = wf.inputs
-                wf_dict['WORKFLOW_OUTPUTS'] = wf.outputs
-            wfman_dict[wfname] = wf_dict
-        d['WORKFLOWS'] = wfman_dict
-        pgin_dict = OrderedDict() 
-        for pgin_name in self._plugin_manager.list_plugin_tags():
-            pgin = self._plugin_manager.get_data_from_uri(pgin_name)
-            pgin_dict[pgin_name] = self._plugin_manager.plugin_setup_dict(pgin)
-        d['PLUGINS'] = pgin_dict
+        d = self.wfl_dict()
         #pawstools.update_file(wfl_filename,d)
         pawstools.save_file(wfl_filename,d)
 
@@ -312,13 +342,13 @@ class PawsAPI(object):
         current_vparts = list(map(int,current_vparts.groups()))
         if wfl_vparts[0] < current_vparts[0] or wfl_vparts[1] < current_vparts[1]:
             # WARNING
-            self.write_log('WARNING: paws (version {}) '\
+            self.logmethod('WARNING: paws (version {}) '\
             'is trying to load a state built in version {} - '\
             'this is likely to cause things to crash, '\
             'until the workflows and plugins are reviewed/refactored '\
             'under the current version.'.format(pawstools.version,wfl_version))  
-        if 'OP_LOAD_FLAGS' in d.keys():
-            for opname,flag in d['OP_LOAD_FLAGS'].items():
+        if 'OP_ACTIVATION_FLAGS' in d.keys():
+            for opname,flag in d['OP_ACTIVATION_FLAGS'].items():
                 if opname in ops.load_flags.keys():
                     if ops.load_flags[opname]:
                         self.activate_op(opname)
@@ -326,6 +356,7 @@ class PawsAPI(object):
             wf_dict = d['WORKFLOWS']
             for wfname,wfspec in wf_dict.items():
                 self._wf_manager.load_from_dict(wfname,wfspec,self._op_manager)
+                self.select_wf(wfname)
         if 'PLUGINS' in d.keys():
             pgin_dict = d['PLUGINS']
             for pgin_name,pgin_spec in pgin_dict.items():

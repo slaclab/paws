@@ -1,6 +1,7 @@
 from collections import OrderedDict
 import glob
 import os
+import copy
 
 from ...Operation import Operation
 from ... import Operation as opmod 
@@ -16,39 +17,58 @@ class BatchFromDirectory(Operation):
     """
 
     def __init__(self):
-        input_names = ['dir_path','regex','workflow','input_name']
+        input_names = ['dir_path','regex','workflow','input_name','extra_input_names','extra_inputs']
         output_names = ['batch_inputs','batch_outputs']
         super(BatchFromDirectory,self).__init__(input_names,output_names)
         self.input_doc['dir_path'] = 'path to directory containing batch of files to be used as input'
-        self.input_doc['regex'] = 'string with * wildcards that will be substituted to indicate input files'
+        self.input_doc['regex'] = 'string with * wildcards to select input files from dir_path'
         self.input_doc['workflow'] = 'the Workflow to be executed'
-        self.input_doc['input_name'] = 'name of the workflow input where the file paths will be used'
-        self.output_doc['batch_inputs'] = 'list of dicts of [input_name:input_value]'
-        self.output_doc['batch_outputs'] = 'list of dicts of [output_name:output_value] for all Workflow outputs'
+        self.input_doc['input_name'] = 'name of the workflow input '\
+        'where the file paths will be used'
+        self.input_doc['extra_input_names'] = 'list of names '\
+        'of batch workflow inputs to be set to extra_inputs '\
+        'before batch-execution'
+        self.input_doc['extra_inputs'] = 'data items '\
+        'to be set to batch workflow inputs indicated by extra_input_names'
         self.input_type['workflow'] = opmod.entire_workflow
         self.inputs['regex'] = '*.tif' 
+        self.inputs['extra_input_names'] = []
+        self.inputs['extra_inputs'] = []
         
     def run(self):
         wf = self.inputs['workflow']
+        #wf.data_callback = self.data_callback
         dirpath = self.inputs['dir_path']
         rx = self.inputs['regex']
         inpname = self.inputs['input_name']
-        if (wf is None or not dirpath or not regex or not inpname):
+        if (wf is None or not dirpath or not rx or not inpname):
             return
+        #wf.message_callback = self.message_callback
         batch_list = glob.glob(os.path.join(dirpath,rx))
-        input_dict_list = []
-        output_dict_list = []
         n_batch = len(batch_list)
-        wf.write_log('STARTING BATCH')
+        self.outputs['batch_inputs'] = [None for ib in range(n_batch)] 
+        self.outputs['batch_outputs'] = [None for ib in range(n_batch)] 
+        if self.data_callback: 
+            self.data_callback('outputs.batch_inputs',[None for ib in range(n_batch)])
+            self.data_callback('outputs.batch_outputs',[None for ib in range(n_batch)])
+        inps = self.inputs['extra_input_names']
+        vals = self.inputs['extra_inputs']
+        # Load any additional inputs...
+        if any(inps): 
+            for inpnm,inpval in zip(inps,vals):
+                wf.set_wf_input(inpnm,inpval)
+        self.message_callback('STARTING BATCH')
         for i,filename in zip(range(n_batch),batch_list):
             inp_dict = OrderedDict() 
             inp_dict[inpname] = filename
             wf.set_wf_input(inpname,filename)
-            wf.write_log('BATCH RUN {} / {}'.format(i+1,n_batch))
+            self.message_callback('BATCH RUN {} / {}'.format(i,n_batch-1))
             wf.execute()
-            input_dict_list.append(inp_dict)
-            output_dict_list.append(wf.wf_outputs_dict())
-        wf.write_log('BATCH FINISHED')
-        self.outputs['batch_inputs'] = input_dict_list
-        self.outputs['batch_outputs'] = output_dict_list 
+            out_dict = wf.wf_outputs_dict()
+            self.outputs['batch_inputs'][i] = inp_dict
+            self.outputs['batch_outputs'][i] = out_dict
+            if self.data_callback: 
+                self.data_callback('outputs.batch_inputs.'+str(i),inp_dict)
+                self.data_callback('outputs.batch_outputs.'+str(i),copy.deepcopy(out_dict))
+        self.message_callback('BATCH FINISHED')
 

@@ -1,6 +1,8 @@
+from __future__ import print_function
 from collections import OrderedDict
 from functools import partial
 import copy
+import os
 
 from PySide import QtCore
 
@@ -10,16 +12,48 @@ from ..core.operations import Operation as opmod
 from .QTreeSelectionModel import QTreeSelectionModel
 from ..core.operations import optools
 from . import qttools
+from ..core.operations.Operation import Operation
 
 class QWorkflow(Workflow,QTreeSelectionModel):
     """
     A QTreeSelectionModel representing a Workflow
     """
-    opChanged = QtCore.Signal(str)
+    wfFinished = QtCore.Signal()
+    emitMessage = QtCore.Signal(str)
     opFinished = QtCore.Signal(str)
+    emitData = QtCore.Signal(str,object)
 
-    def __init__(self,wfman):
-        super(QWorkflow,self).__init__(wfman)
+    def __init__(self):
+        super(QWorkflow,self).__init__()
+
+    @QtCore.Slot(str,str,object)
+    def relayOpData(self,op_tag,data_uri,data):
+        self.emitData.emit(op_tag+'.'+data_uri,data)
+
+    @QtCore.Slot(str)
+    def relayMessage(self,msg):
+        self.emitMessage.emit(msg)
+
+    @QtCore.Slot(str,str,object)
+    def updateOpInput(self,opnm,inpnm,inpdata):
+        self.set_op_item(opnm,'inputs.'+inpnm,inpdata)
+
+    @QtCore.Slot(str,str,object)
+    def updateOpOutput(self,opnm,outnm,outdata):
+        self.set_op_item(opnm,'outputs.'+outnm,outdata)
+
+    @QtCore.Slot(str,str,object)
+    def updateOpItem(self,opnm,item_uri,item_data):
+        self.set_op_item(opnm,item_uri,item_data)
+
+    @QtCore.Slot(str,str,object)
+    def updateItem(self,item_uri,item_data):
+        self.set_item(item_uri,item_data)
+
+    def add_op(self,op_tag,op):
+        op.message_callback = self.message_callback
+        op.data_callback = partial( self.relayOpData,op_tag )
+        self.set_item(op_tag,op)
 
     def headerData(self,section,orientation,data_role):
         if (data_role == QtCore.Qt.DisplayRole and section == 0):
@@ -27,62 +61,31 @@ class QWorkflow(Workflow,QTreeSelectionModel):
         else:
             return super(QWorkflow,self).headerData(section,orientation,data_role)    
 
-    def execute_op(self,op_tag,pool=None):
-        if pool is None:
-            super(QWorkflow,self).execute_op(op_tag)
-        else:
-            op = self.get_data_from_uri(op_tag) 
-            self.load_inputs(op,self.wf_manager,self.wf_manager.plugin_manager)
-            self.opChanged.emit(op_tag)
-            # construct a QRunnable around a copy of the Operation
-            qr = qttools.RunnableExecutor( op.copy() ) 
-            # Call QThreadPool.start(QRunnable) - executes runnable.run()
-            pool.start(qr)
-            self.wf_manager.app.processEvents()
-            self.set_item(op_tag,op)
-            self.opChanged.emit(op_tag)
-            self.opFinished.emit(op_tag)
-        self.wf_manager.app.processEvents()
-
-    #def execute(self):
-    #    stk,diag = self.execution_stack()
-    #    self.execute_from_layer(stk,0)
-    #    self.write_log('execution finished')
-          
-    #def execute_from_layer(self,stk,layer_index):
-    #    print 'run layer {}'.format(layer_index)
-    #    self.write_log('running: {}'.format(stk[layer_index]))
-    #    lst = stk[layer_index] 
-    #    # load the inputs
-    #    for op_tag in lst:
-    #        op = self.get_data_from_uri(op_tag) 
-    #        self.load_inputs(op,self.wf_manager,self.wf_manager.plugin_manager)
-    #        self.opChanged.emit(op_tag)
-    #    op_dict = dict.fromkeys(lst)
-    #    for op_tag in lst:
-    #        # give ops to WfWorker as deep copies?
-    #        #op_dict[op_tag] = copy.deepcopy(self.get_data_from_uri(op_tag))
-    #        op_copy = copy.copy(self.get_data_from_uri(op_tag))
-    #        op_dict[op_tag] = op_copy 
-    #    # start a WfWorker
-    #    wkr = QWfWorker(op_dict)
-    #    # create a QThread
-    #    thd = QtCore.QThread()
-    #    # move the WfWorker to the QThread
-    #    wkr.moveToThread(thd)
-    #    # connect proper signals
-    #    thd.started.connect(wkr.work)
-    #    wkr.opDone.connect(self.finish_op)
-    #    #wkr.allDone.connect(thd.quit)
-    #    if not layer_index == len(stk):
-    #        thd.finished.connect( partial(self.execute_from_layer,stk,layer_index+1) )
-    #    # start the thread
-    #    #thd.exec_()
-    #    thd.start()
-    #    self.wf_manager.app.processEvents()
-
-    #def finish_op(self,op_tag,op):
-    #    self.set_item(op_tag,op)
-    #    self.opChanged.emit(op_tag)
-    #    self.opFinished.emit(op_tag)
+    def execute(self):
+        stk,diag = self.execution_stack()
+        self.message_callback(os.linesep+'running workflow:'+os.linesep+self.print_stack(stk))
+        for lst in stk:
+            self.message_callback('running: {}'.format(lst))
+            for op_tag in lst: 
+                op = self.get_data_from_uri(op_tag) 
+                for inpnm,il in op.input_locator.items():
+                    if il.tp == opmod.workflow_item:
+                        #op.inputs[inpnm] = self.locate_input(il)
+                        self.set_op_item(op_tag,'inputs.'+inpnm,self.locate_input(il))
+                        if self.data_callback:
+                            self.data_callback(op_tag+'.inputs.'+inpnm,op.inputs[inpnm])
+                op.run()
+                for outnm,outdata in op.outputs.items():
+                    if self.data_callback:
+                        out_uri = op_tag+'.outputs.'+outnm
+                        #print('setting {}'.format(out_uri))
+                        #import pdb; pdb.set_trace()
+                        if outdata is not None:
+                            self.data_callback(out_uri,outdata)
+                        #print('done setting {}'.format(out_uri))
+                self.opFinished.emit(op_tag)
+                    #self.record_op_output(op_tag,outnm,outdata)
+                #self.set_item(op_tag,op)
+                #self.opChanged.emit(op_tag,op)
+        self.wfFinished.emit()
 

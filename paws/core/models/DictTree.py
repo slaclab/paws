@@ -122,7 +122,6 @@ class DictTree(object):
                                 found = True           
             return itm
         except Exception as ex:
-            #import pdb; pdb.set_trace()
             msg = str('[{}] Encountered an error while fetching uri {}: \n'
             .format(__name__,uri) + ex.message)
             raise KeyError(msg) 

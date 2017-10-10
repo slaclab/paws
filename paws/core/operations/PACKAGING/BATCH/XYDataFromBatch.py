@@ -49,12 +49,11 @@ class XYDataFromBatch(Operation):
             #xmin = 0 
         self.outputs['x'] = x_all 
         self.outputs['y'] = y_all
-        #import pdb; pdb.set_trace() 
-        self.outputs['x_y'] = zip(x_all,y_all)
+        self.outputs['x_y'] = np.array(zip(x_all,y_all))
         #self.outputs['x_y_sorted'] = np.sort(np.array(zip(x_all,y_all)),0)
         i_xsort = np.argsort(x_all)
         y_xsort = y_all[i_xsort]
         x_sort = x_all[i_xsort] 
-        self.outputs['x_y_sorted'] = zip(x_sort,y_xsort)
+        self.outputs['x_y_sorted'] = np.array(zip(x_sort,y_xsort))
 
 

@@ -6,7 +6,7 @@ from ...Operation import Operation
 
 class LoadYAML(Operation):
     """
-    Read a YAML file containing population flags for saxs data. 
+    Load a YAML file, save the output of yaml.load(open(file_path,'r')) 
     """
 
     def __init__(self):
