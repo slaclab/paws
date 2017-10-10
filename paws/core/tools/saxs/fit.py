@@ -106,6 +106,16 @@ def profile_spectrum(q_I):
     #d['q_bin_strengths'] = q_bin_strengths 
     return d
 
+def classify_spectrum(params,saxs_classifier):
+    """Use a SaxsClassifier to classify a saxs spectrum.
+    
+    The SaxsClassifier (paws.core.tools.saxs.SaxsClassifier.SaxsClassifier)
+    is a collection of scikit-learn based ML models
+    used to determine the presence of various scatterers
+    using the outputs produced by profile_spectrum().
+    """
+    return saxs_classifier.classify(params)
+
 def parameterize_spectrum(q_I,flags,fixed_params={}):
     """Determine scattering equation parameters for a given spectrum.
 
@@ -674,4 +684,6 @@ def spherical_normal_heuristics_setup():
         plt.figure(4)
         plt.scatter(width_metric,intensity_metric) 
         plt.show()
+
+
 
