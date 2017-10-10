@@ -55,9 +55,11 @@ class LoadSAXSClassifiers(Operation):
 
         #print('!!!!!!!!!!!!!!!!!!!!!')
         #print(major, sk_version[0], minor, sk_version[1])
+
         if (major != sk_version[0] or minor != sk_version[1]):
             version_str = ".".join(map(str,sk_version))
             raise RuntimeError('PAWS works with sklearn {} only.'.format(version_str))
+        
 
         scalers_dict = s_and_m['scalers'] # dict of scalers parametrs
         classifier_dict = s_and_m['models'] # dict of models parametrs
