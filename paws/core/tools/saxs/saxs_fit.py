@@ -5,7 +5,142 @@ import copy
 import numpy as np
 from scipy.optimize import minimize as scipimin
 
-import .model as saxs_model
+def compute_saxs(q,flags,params):
+    """Compute a SAXS intensity spectrum given some parameters.
+
+    TODO: Document the equation.
+
+    Parameters
+    ----------
+    q : array
+        Array of q values at which saxs intensity should be computed.
+    flags : dict
+        Flags for scatterer populations. 
+        Supported flags:
+        - 'bad_data'
+        - 'precursor_scattering' 
+        - 'form_factor_scattering'
+        - 'diffraction_peaks'
+    params : dict
+        Scattering equation parameters.
+        Supported parameter keys:
+        - 'I_at_0': Intensity at q=0, by fitting the low-q region 
+            to a polynomial with dI/dq(q=0)=0
+        - 'I0_floor': magnitude of constant (flat in q) floor term 
+        - 'I0_pre': precursor intensity scaling factor
+        - 'G_pre': Guinier prefactor for precursor scattering spectrum 
+        - 'I0_sphere': spherical form factor scattering intensity scaling factor 
+        - 'r0_sphere': mean sphere size (Angstrom) 
+        - 'sigma_sphere': fractional standard deviation of sphere size 
+
+    Returns
+    ------- 
+    I : array
+        Array of scattering intensities for each of the input q values
+    """
+    b_flag = flags['bad_data']
+    s_flag = flags['diffraction_peaks']
+    I = np.zeros(len(q))
+    if not b_flag and not s_flag:
+        pre_flag = flags['precursor_scattering']
+        f_flag = flags['form_factor_scattering']
+        I0_floor = params['I0_floor'] 
+        I = I0_floor*np.ones(len(q))
+        if pre_flag:
+            I0_pre = params['I0_precursor']
+            r0_pre = params['r0_precursor']
+            G_pre = params['G_precursor']
+            # Precursor as a monodisperse spherical form factor:
+            I_pre = spherical_normal_saxs(q,r0_pre,0)
+            # TODO: Finish implementing Guinier-Porod here, or similar 
+            # TODO: implement G_pre as a (fixed?) parameter
+            # Precursor as a Guinier-Porod equation for a small sphere:
+            #I_pre = guinier_porod(q,G_pre,4,np.sqrt(3./5)*r0_pre)
+            I += I0_pre*I_pre
+        if f_flag:
+            I0_sph = params['I0_sphere']
+            r0_sph = params['r0_sphere']
+            sigma_sph = params['sigma_sphere']
+            I_sph = spherical_normal_saxs(q,r0_sph,sigma_sph)
+            I += I0_sph*I_sph
+    return I
+
+def spherical_normal_saxs(q,r0,sigma):
+    """Compute SAXS intensity of a normally-distributed sphere population.
+
+    Originally contributed by Amanda Fournier.
+
+    The returned intensity is normalized 
+    such that I(q=0) is equal to 1.
+
+    Parameters
+    ----------
+    q : array
+        array of scattering vector magnitudes
+    r0 : float
+        mean radius of the sphere population
+    sigma : float
+        fractional standard deviation of the sphere population radii
+
+    Returns
+    -------
+    I : array
+        Array of scattering intensities for each of the input q values
+    """
+    q_zero = (q == 0)
+    q_nz = np.invert(q_zero) 
+    I = np.zeros(q.shape)
+    if sigma < 1E-9:
+        x = q*r0
+        V_r0 = float(4)/3*np.pi*r0**3
+        I[q_nz] = V_r0**2 * (3.*(np.sin(x[q_nz])-x[q_nz]*np.cos(x[q_nz]))*x[q_nz]**-3)**2
+        I_zero = V_r0**2 
+    else:
+        sigma_r = sigma*r0
+        dr = sigma_r*0.02
+        rmin = np.max([r0-5*sigma_r,dr])
+        rmax = r0+5*sigma_r
+        I_zero = 0
+        for ri in np.arange(rmin,rmax,dr):
+            xi = q*ri
+            V_ri = float(4)/3*np.pi*ri**3
+            # The normal-distributed density of particles with radius r_i:
+            rhoi = 1./(np.sqrt(2*np.pi)*sigma_r)*np.exp(-1*(r0-ri)**2/(2*sigma_r**2))
+            I_zero += V_ri**2 * rhoi*dr
+            I[q_nz] += V_ri**2 * rhoi*dr*(3.*(np.sin(xi[q_nz])-xi[q_nz]*np.cos(xi[q_nz]))*xi[q_nz]**-3)**2
+    if any(q_zero):
+        I[q_zero] = I_zero
+    I = I/I_zero 
+    return I
+
+def guinier_porod(q,guinier_factor,porod_exponent,r_g):
+    """Compute the Guinier-Porod small-angle scattering intensity.
+    
+    Computes the Guinier-Porod scattering intensity,
+    given the Guinier prefactor of the solvent/scatterer system,
+    the Porod exponent of the scatterer geometry,
+    and the radius of gyration of the scatterer.
+
+    Reference
+    ---------
+    B. Hammouda, J. Appl. Cryst. (2010). 43, 716-719.
+    """
+    # q-domain boundary q_splice:
+    q_splice = 1./r_g * np.sqrt(3./2*porod_exponent**2)
+    idx_guinier = (q <= q_splice)
+    idx_porod = (q > q_splice)
+    # porod prefactor D:
+    porod_factor = guinier_factor*np.exp(-1./2*porod_exponent)\
+                    * (3./2*porod_exponent)**(1./2*porod_exponent)\
+                    * 1./(r_g**porod_exponent)
+    I = np.zeros(q.shape)
+    # Guinier equation:
+    if any(idx_guinier):
+        I[idx_guinier] = guinier_factor * np.exp(-1./3*q**2*r_g**2)
+    # Porod equation:
+    if any(idx_porod):
+        I[idx_porod] = porod_factor * 1./(q**porod_exponent)
+
 
 def profile_spectrum(q_I):
     """Numerical profiling of a SAXS spectrum.
@@ -16,12 +151,22 @@ def profile_spectrum(q_I):
     The metrics should be consistent for spectra
     with different intensity scaling 
     or different q domains.   
-    Ideally this method should execute gracefully
+
+    This method should execute gracefully
     for any n-by-2 input array,
     such that it can be used to profile any type of spectrum. 
- 
-    Returns a dictionary of scalar metrics.
-    TODO: document metrics here.
+    TODO: document the returned metrics here.
+
+    Parameters
+    ----------
+    q_I : array
+        n-by-2 array of scattering vector q and scattered intensity I
+    
+    Returns
+    -------
+    params : dict
+        dictionary of scattering equation parameters,
+        for input to compute_saxs() 
     """ 
     q = q_I[:,0]
     I = q_I[:,1]
@@ -43,28 +188,12 @@ def profile_spectrum(q_I):
     logI_max = np.max(logI_nz)
     logI_min = np.min(logI_nz)
     logI_range = logI_max - logI_min
+    logI_std = np.std(logI_nz)
+    logI_max_over_std = logI_max / logI_std
     # I_max peak shape analysis
     idx_around_max = ((q > 0.9*q_Imax) & (q < 1.1*q_Imax))
     Imean_around_max = np.mean(I[idx_around_max])
     Imax_sharpness = I_max / Imean_around_max
-    # Integration...
-    #dq = q[1:] - q[:-1]
-    #I_trap = (I[1:]+I[:-1])/2
-    #I_integral = np.sum(dq*I_trap)
-    # log(I) statistics 
-    logI_std = np.std(logI_nz)
-    logI_max_over_std = logI_max / logI_std
-    #dq_lowq = q[idx_lowq][1:] - q[idx_lowq][:-1]
-    #I_trap_lowq = (I[idx_lowq][1:]+I[idx_lowq][:-1])/2
-    #I_lowq_integral = np.sum(dq_lowq*I_trap_lowq)
-    #dq_highq = q[idx_highq][1:] - q[idx_highq][:-1]
-    #I_trap_highq = (I[idx_highq][1:]+I[idx_highq][:-1])/2
-    #I_highq_integral = np.sum(dq_highq*I_trap_highq)
-    # I_max relative intensity analysis
-    #low_q_ratio = I_lowq_integral / I_integral 
-    #high_q_ratio = I_highq_integral / I_integral
-    #Imax_over_Ilowq = Imax/I_lowq_mean
-    #Imax_over_Ihighq = Imax/I_highq_mean
 
     ### fluctuation analysis
     # array of the difference between neighboring points:
@@ -76,45 +205,16 @@ def profile_spectrum(q_I):
     fluc = np.sum(np.abs(nn_diff[idx_keep]))
     logI_fluctuation = fluc/logI_range
 
-    ### bin-integrated log(intensity) analysis
-    #nbins = 100
-    #qbinmax = float(1.)
-    #qbinstep = qbinmax/nbins
-    #q_bin_edges = np.arange(qbinstep,qbinmax+qbinstep,qbinstep)
-    #q_bin_strengths = np.zeros(q_bin_edges.shape) 
-    #binfloor = 0
-    #for ibin,binmax in zip(range(nbins),q_bin_edges):
-    #    binidx = ((q>=binfloor) & (q<binmax))
-    #    if any(binidx):
-    #        qbin = q[ binidx ]
-    #        Ibin = I[ binidx ]
-    #        dqbin = qbin[1:]-qbin[:-1]
-    #        Ibin = (Ibin[1:]+Ibin[:-1])/2
-    #        q_bin_strengths[ibin] = np.sum(Ibin * dqbin) / I_integral 
-    #    binfloor = binmax
-    d = OrderedDict()
-    d['q_Imax'] = q_Imax
-    d['Imax_over_Imean'] = Imax_over_Imean
-    d['Imax_sharpness'] = Imax_sharpness
-    d['logI_fluctuation'] = logI_fluctuation
-    d['logI_max_over_std'] = logI_max_over_std
-    #d['Imax_over_Ilowq'] = Imax_over_Ilowq 
-    #d['Imax_over_Ihighq'] = Imax_over_Ihighq 
-    #d['low_q_ratio'] = low_q_ratio 
-    #d['high_q_ratio'] = high_q_ratio 
-    #d['q_bin_edges'] = q_bin_edges
-    #d['q_bin_strengths'] = q_bin_strengths 
-    return d
+    # TODO: add some pearson metrics.
+    # TODO: add qmin, qmax as metrics
 
-def classify_spectrum(params,saxs_classifier):
-    """Use a SaxsClassifier to classify a saxs spectrum.
-    
-    The SaxsClassifier (paws.core.tools.saxs.SaxsClassifier.SaxsClassifier)
-    is a collection of scikit-learn based ML models
-    used to determine the presence of various scatterers
-    using the outputs produced by profile_spectrum().
-    """
-    return saxs_classifier.classify(params)
+    params = OrderedDict()
+    params['q_Imax'] = q_Imax
+    params['Imax_over_Imean'] = Imax_over_Imean
+    params['Imax_sharpness'] = Imax_sharpness
+    params['logI_fluctuation'] = logI_fluctuation
+    params['logI_max_over_std'] = logI_max_over_std
+    return params 
 
 def parameterize_spectrum(q_I,flags,fixed_params={}):
     """Determine scattering equation parameters for a given spectrum.
@@ -228,7 +328,7 @@ def parameterize_spectrum(q_I,flags,fixed_params={}):
 
     #TODO: add parameters for diffraction peaks
 
-    I_guess = saxs_models.compute_saxs(q,flags,d)
+    I_guess = compute_saxs(q,flags,d)
     q_I_guess = np.array([q,I_guess]).T
     nz = ((I>0)&(I_guess>0))
     logI_nz = np.log(I[nz])
@@ -553,7 +653,7 @@ def compute_saxs_with_substitutions(q,flags,params,x_keys,x_vals):
     p_sub = copy.deepcopy(params)
     for k,v in zip(x_keys,x_vals):
         p_sub[k] = copy.copy(v)
-    return saxs_models.compute_saxs(q,flags,p_sub)
+    return compute_saxs(q,flags,p_sub)
 
 def compute_chi2(y1,y2,weights=None):
     """

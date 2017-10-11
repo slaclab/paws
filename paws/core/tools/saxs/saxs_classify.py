@@ -1,5 +1,3 @@
-"""Class for loading and applying the SAXS classifiers.
-"""
 import yaml
 import sklearn
 from sklearn import preprocessing
@@ -7,6 +5,7 @@ from sklearn import preprocessing
 from ... import pawstools
 
 class SaxsClassifier(object):
+    """A container for a set of classifiers to be used on SAXS spectra"""
 
     def __init__(self,yml_file=None):
         if yml_file is None:
@@ -209,6 +208,7 @@ class SaxsClassifier(object):
         #
 
         #self.outputs['population_flags'] = flags 
+
 
 
 

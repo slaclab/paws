@@ -29,8 +29,6 @@ class SpectrumProfiler(Operation):
 
     def run(self):
         q_I = self.inputs['q_I']
-        if q_I is None:
-            return
         d_prof = saxstools.profile_spectrum(q_I)
         self.outputs['features'] = d_prof
 
