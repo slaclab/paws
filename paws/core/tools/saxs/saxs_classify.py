@@ -2,7 +2,7 @@ from collections import OrderedDict
 
 import yaml
 import sklearn
-from sklearn import preprocessing
+from sklearn import preprocessing,linear_model
 from collections import OrderedDict
 import os
 
