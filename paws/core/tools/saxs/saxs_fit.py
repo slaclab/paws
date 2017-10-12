@@ -141,6 +141,7 @@ def guinier_porod(q,r_g,porod_exponent,guinier_factor):
     # Porod equation:
     if any(idx_porod):
         I[idx_porod] = porod_factor * 1./(q**porod_exponent)
+    return I
 
 
 def profile_spectrum(q_I):
@@ -497,14 +498,13 @@ def precursor_heuristics(q_I):
         np.log(q_I[n_q/2:,1][idx_nz]))
     ##res = scipimin(fit_ojb,[0.1],bounds=[(0,0.3)]) 
     res = scipimin(fit_obj,[1,1],bounds=[(1E-3,10),(1E-3,None)])
-    rg_opt, G_opt = res.x[0]
+    rg_opt, G_opt = res.x
     I_pre = guinier_porod(q_I[:,0],rg_opt,4,G_opt)
     from matplotlib import pyplot as plt
     plt.figure(2)
     plt.plot(q_I[:,0],q_I[:,1])
     plt.plot(q_I[:,0],I_pre)
     plt.show()
-    import pdb; pdb.set_trace()
     return rg_pre, G_pre 
 
 def spherical_normal_heuristics(q_I,I_at_0):

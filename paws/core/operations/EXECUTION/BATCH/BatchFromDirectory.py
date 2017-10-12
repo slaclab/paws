@@ -64,7 +64,7 @@ class BatchFromDirectory(Operation):
             wf.set_wf_input(inpname,filename)
             self.message_callback('BATCH RUN {} / {}'.format(i,n_batch-1))
             wf.execute()
-            out_dict = wf.wf_outputs_dict()
+            out_dict = copy.deepcopy(wf.wf_outputs_dict())
             self.outputs['batch_inputs'][i] = inp_dict
             self.outputs['batch_outputs'][i] = out_dict
             if self.data_callback: 
