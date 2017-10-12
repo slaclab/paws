@@ -23,7 +23,7 @@ class SaxsClassifier(object):
         s_and_m = yaml.load(s_and_m_file)
 
         sk_version = s_and_m['version']
-        cur_version = map(int,sklearn.__version__.split('.'))
+        cur_version = list(map(int,sklearn.__version__.split('.')))
         major = cur_version[0]
         minor = cur_version[1]
 
