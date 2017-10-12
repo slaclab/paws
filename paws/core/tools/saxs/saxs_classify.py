@@ -34,7 +34,7 @@ class SaxsClassifier(object):
                 'with scikit-learn v{}. '\
                 'Please try again with a matching version of scikit-learn.'\
                 .format(major,minor,version_str) 
-        raise RuntimeError(msg)
+            raise RuntimeError(msg)
 
         scalers_dict = s_and_m['scalers'] # dict of scalers parametrs
         classifier_dict = s_and_m['models'] # dict of models parametrs
