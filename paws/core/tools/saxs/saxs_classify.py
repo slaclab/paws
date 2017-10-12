@@ -108,12 +108,12 @@ class SaxsClassifier(object):
         """ 
         flags = OrderedDict()
         x_bd = self.scalers['bad_data'].transform(sample_params)
-        f_bd = self.models['bad_data'].predict(x_bd) 
+        f_bd = self.models['bad_data'].predict(x_bd)[0]
         p_bd = self.models['bad_data'].predict_proba(x_bd)[0,int(f_bd)]
         flags['bad_data'] = (f_bd,p_bd)
         # NOTE: this is temporary, until new models have been built
         #flags['bad_data'] = (True,1.)
-        if not flags['bad_data']:
+        if not f_bd: 
             for k in self.models.keys():
                 if not k == 'bad_data':
                     xk = self.scalers[k].transform(sample_params)
