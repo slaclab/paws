@@ -6,7 +6,7 @@ from scipy.optimize import curve_fit
 
 from ... import Operation as opmod 
 from ...Operation import Operation
-from ....tools.saxs import saxs_fit, saxs_models 
+from ....tools.saxs import saxs_fit
 
 class SpectrumFit(Operation):
     """
@@ -43,7 +43,7 @@ class SpectrumFit(Operation):
             'for each of the populations specified in the input flags'
         self.input_doc['fit_params'] = 'list of strings (keys) indicating which parameters to optimize'
         self.input_doc['objfun'] = 'string indicating objective function for optimization: '\
-        + 'see documentation of tools.saxs.fit_spectrum() for supported objective functions'
+        + 'see documentation of tools.saxs.saxs_fit.fit_spectrum() for supported objective functions'
         self.output_doc['params'] = 'dict of scattering equation parameters copied from inputs, '\
         'with values optimized for all keys specified in fit_params'
         self.output_doc['q_I_opt'] = 'n-by-2 array of q and the optimized computed intensity spectrum'
@@ -77,7 +77,7 @@ class SpectrumFit(Operation):
         # Fitting happens here
         p_opt = saxs_fit.fit_spectrum(q,I,m,f,p,fitkeys,c)
 
-        I_opt = saxs_models.compute_saxs(q,f,p_opt)
+        I_opt = saxs_fit.compute_saxs(q,f,p_opt)
 
         nz = ((I>0)&(I_opt>0))
         logI_nz = np.log(I[nz])

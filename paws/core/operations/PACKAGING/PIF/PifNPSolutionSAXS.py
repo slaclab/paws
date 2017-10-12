@@ -3,7 +3,7 @@ import pypif.obj as pifobj
 
 from ... import Operation as opmod 
 from ...Operation import Operation
-from ....tools import saxstools
+from ....tools.saxs import saxs_fit 
 
 class PifNPSolutionSAXS(Operation):
     """
@@ -87,7 +87,7 @@ class PifNPSolutionSAXS(Operation):
             if not ftrs['diffraction_peaks'] and not ftrs['bad_data']:
                 csys.properties.append(self.feature_property(None,'scattered intensity at q=0','counts'))
                 # Compute the saxs spectrum, package it
-                qI_computed = saxstools.compute_saxs(q_I[:,0],ftrs)
+                qI_computed = saxs_fit.compute_saxs(q_I[:,0],ftrs)
                 pI_computed = self.q_I_property(np.array( [[q_I[i,0],qI_computed[i]] for i in range(len(qI_computed))] ))
                 pI_computed.name = 'computed SAXS intensity'
                 csys.properties.append(pI_computed)

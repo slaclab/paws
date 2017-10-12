@@ -1,3 +1,5 @@
+from collections import OrderedDict
+
 import yaml
 import sklearn
 from sklearn import preprocessing
@@ -90,15 +92,17 @@ class SaxsClassifier(object):
     def classify(self, sample_params):
         """Apply self.models and self.scalers to sample_params""" 
         flags = OrderedDict()
-        x_bd = self.scalers['bad_data'].transform(sample_params)
-        f_bd = self.models['bad_data'].predict(x_bd) 
-        p_bd = self.models['bad_data'].predict_proba(x_bd)[0,int(f_bd)]
-        flags['bad_data'] = (f_bd,p_bd)
-        if not f_bd:
+        #x_bd = self.scalers['bad_data'].transform(sample_params)
+        #f_bd = self.models['bad_data'].predict(x_bd) 
+        #p_bd = self.models['bad_data'].predict_proba(x_bd)[0,int(f_bd)]
+        #flags['bad_data'] = (f_bd,p_bd)
+        # NOTE: this is temporary, until new models have been built
+        flags['bad_data'] = (True,1.)
+        if not flags['bad_data']:
             for k in self.models.keys():
                 if not k == 'bad_data':
                     xk = self.scalers[k].transform(sample_params)
-                    fk = (self.models[k].predict(xk)
+                    fk = self.models[k].predict(xk)
                     pk = self.models[k].predict_proba(x)[0,int(fk)]
                     flags[k] = (fk,pk)
         return flags

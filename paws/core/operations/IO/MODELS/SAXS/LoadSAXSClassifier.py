@@ -8,7 +8,7 @@ from sklearn import linear_model
 from .... import Operation as opmod 
 from ....Operation import Operation
 from ..... import pawstools
-from .....tools.saxs.SaxsClassifier import SaxsClassifier
+from .....tools.saxs.saxs_classify import SaxsClassifier
 
 class LoadSAXSClassifier(Operation):
     """

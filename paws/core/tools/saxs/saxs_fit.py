@@ -24,11 +24,12 @@ def compute_saxs(q,flags,params):
     params : dict
         Scattering equation parameters.
         Supported parameter keys:
-        - 'I_at_0': Intensity at q=0, by fitting the low-q region 
+        - 'I_at_0': intensity at q=0, by fitting the low-q region 
             to a polynomial with dI/dq(q=0)=0
         - 'I0_floor': magnitude of constant (flat in q) floor term 
-        - 'I0_pre': precursor intensity scaling factor
-        - 'G_pre': Guinier prefactor for precursor scattering spectrum 
+        - 'I0_precursor': precursor scattering intensity scaling factor
+        - 'rg_precursor': radius of gyration of precursors 
+        - 'G_precursor': Guinier prefactor for precursor scattering 
         - 'I0_sphere': spherical form factor scattering intensity scaling factor 
         - 'r0_sphere': mean sphere size (Angstrom) 
         - 'sigma_sphere': fractional standard deviation of sphere size 
@@ -48,14 +49,14 @@ def compute_saxs(q,flags,params):
         I = I0_floor*np.ones(len(q))
         if pre_flag:
             I0_pre = params['I0_precursor']
-            r0_pre = params['r0_precursor']
+            rg_pre = params['rg_precursor']
             G_pre = params['G_precursor']
             # Precursor as a monodisperse spherical form factor:
-            I_pre = spherical_normal_saxs(q,r0_pre,0)
+            #I_pre = spherical_normal_saxs(q,r0_pre,0)
             # TODO: Finish implementing Guinier-Porod here, or similar 
             # TODO: implement G_pre as a (fixed?) parameter
             # Precursor as a Guinier-Porod equation for a small sphere:
-            #I_pre = guinier_porod(q,G_pre,4,np.sqrt(3./5)*r0_pre)
+            I_pre = guinier_porod(q,rg_pre,4,G_pre)
             I += I0_pre*I_pre
         if f_flag:
             I0_sph = params['I0_sphere']
@@ -113,7 +114,7 @@ def spherical_normal_saxs(q,r0,sigma):
     I = I/I_zero 
     return I
 
-def guinier_porod(q,guinier_factor,porod_exponent,r_g):
+def guinier_porod(q,r_g,porod_exponent,guinier_factor):
     """Compute the Guinier-Porod small-angle scattering intensity.
     
     Computes the Guinier-Porod scattering intensity,
@@ -216,19 +217,23 @@ def profile_spectrum(q_I):
     params['logI_max_over_std'] = logI_max_over_std
     return params 
 
-def parameterize_spectrum(q_I,flags,fixed_params={}):
+def parameterize_spectrum(q_I,flags):
     """Determine scattering equation parameters for a given spectrum.
 
-    Determine a parameterization for a scattering equation,
-    beginning with the measured spectrum (q,I) 
-    and a dict of population flags. 
-    Returns a dict containing the input population flags
-    along with scattering equation parameters
-    corresponding to the flagged populations.
-    The dict of parameters should be of the same form
-    as the input to compute_saxs().
+    Parameters
+    ----------
+    q_I : array
+        n-by-2 array of q (scattering vector magnitude) and I (intensity)
+    flags : dict
+        dictionary of population flags, like SaxsClassifier.classify() output
+
+    Returns
+    -------
+    params : dict
+        dict of scattering equation parameters
+        corresponding to the flagged populations,
+        similar to the input params for compute_saxs().
     """
-    fix_keys = fixed_params.keys()
     d = OrderedDict()
     if flags['bad_data']:
         # stop
@@ -248,50 +253,37 @@ def parameterize_spectrum(q_I,flags,fixed_params={}):
             idx_good = ((I[idx_lowq] < Imean_lowq+Istd_lowq) & (I[idx_lowq] > Imean_lowq-Istd_lowq))
             I_at_0 = fit_I0(q[idx_lowq][idx_good],I[idx_lowq][idx_good],3)
         elif flags['diffraction_peaks']:
-            # If diffraction without form factor scattering, 
-            # fit 2nd order, use q<0.06. 
             idx_lowq = (q<0.06)
             I_at_0 = fit_I0(q[idx_lowq],I[idx_lowq],3)
         elif flags['precursor_scattering']:
-            # If only precursor scattering, fit third order for entire q-range 
             I_at_0 = fit_I0(q,I,3)
         d['I_at_0'] = I_at_0
 
     if flags['form_factor_scattering']:
         # TODO: insert cases for non-spherical form factors
-        #if flags['form_factor_id'] == 'sphere':
-            if ('r0_sphere' in fix_keys and 'sigma_sphere' in fix_keys):
-                r0_sphere = fixed_params['r0_sphere']
-                sigma_sphere = fixed_params['sigma_sphere']
-            else:
-                # get at least one of r0_sphere or sigma_sphere from spherical_normal_heuristics()
-                r0_sphere, sigma_sphere = spherical_normal_heuristics(q,I,I_at_0=I_at_0)
-                if 'r0_sphere' in fix_keys:
-                    r0_sphere = fixed_params['r0_sphere']
-                if 'sigma_sphere' in fix_keys:
-                    sigma_sphere = fixed_params['sigma_sphere']
-            d['r0_sphere'] = r0_sphere
-            d['sigma_sphere'] = sigma_sphere
-    
+        r0_sphere, sigma_sphere = spherical_normal_heuristics(q_I,I_at_0)
+        d['r0_sphere'] = r0_sphere
+        d['sigma_sphere'] = sigma_sphere
+        I_remain = I - spherical_normal_saxs(q,r0_sphere,sigma_sphere)
+
+    #TODO: add parameters for diffraction peaks
+    #if flags['diffraction_peaks']:
+    #    .... 
+    #   I_remain = I - I_diff   
+ 
     if flags['precursor_scattering']: 
-        if 'r0_precursor' in fix_keys:
-            r0_pre = fixed_params['r0_precursor']
-        else:
-            # TODO: This should employ a Guinier-Porod or similar fit
-            # TODO: This approach will have to respect whatever other populations are flagged. 
-            r0_pre = precursor_heuristics(q,I,I_at_0=I_at_0)
-        d['r0_precursor'] = r0_pre 
+        rg_pre, G_pre = precursor_heuristics(q_I)
+        d['rg_precursor'] = rg_pre 
+        d['G_precursor'] = G_pre 
 
     I_floor = np.ones(len(q))
     if flags['precursor_scattering']: 
         # TODO: This should be a Guinier-Porod or similar fit
-        I_pre = compute_spherical_normal_saxs(q,r0_pre,0)
+        I_pre = guinier_porod(q,rg_pre,4,G_pre)
     if flags['form_factor_scattering']:
-        #if flags['form_factor_id'] == 'sphere':
-        # TODO: form factors other than sphere
-        I_form = compute_spherical_normal_saxs(q,r0_sphere,sigma_sphere)
+        I_form = spherical_normal_saxs(q,r0_sphere,sigma_sphere)
     #if flags['diffraction_peaks']:
-    #   I_structure = .....
+    #   I_peaks = .....
 
     # Run a quick least-squares to get initial guesses for intensity prefactors
     if flags['precursor_scattering'] and flags['form_factor_scattering']:
@@ -309,8 +301,7 @@ def parameterize_spectrum(q_I,flags,fixed_params={}):
     if flags['precursor_scattering'] or flags['form_factor_scattering']:
         I_nz = np.invert((I<=0))
         I_error = lambda x: np.sum( (np.log(Ifunc(x))[I_nz] - np.log(I[I_nz]))**2 )
-        res = scipimin(I_error,x_init,bounds=x_bounds,
-        constraints=[{'type':'eq','fun':lambda x:np.sum(x)-I_at_0}]) 
+        res = scipimin(I_error,x_init,bounds=x_bounds)
         x_res = res.x
         I0_floor = x_res[0]
         if flags['precursor_scattering'] and flags['form_factor_scattering']:
@@ -325,8 +316,6 @@ def parameterize_spectrum(q_I,flags,fixed_params={}):
             I0_form = x_res[1]
             d['I0_sphere'] = I0_form 
         d['I0_floor'] = I0_floor 
-
-    #TODO: add parameters for diffraction peaks
 
     I_guess = compute_saxs(q,flags,d)
     q_I_guess = np.array([q,I_guess]).T
@@ -419,6 +408,8 @@ def fit_spectrum(q,I,objfun,flags,params,fit_params,constraints=[]):
                 if k in I_keys:
                     iargs.append(ik)
                     Icons += params[k]
+            # Constrain I(q=0) to be fixed during fit
+            #constraints=[{'type':'eq','fun':lambda x:np.sum(x)-I_at_0}]) 
             cfun = lambda x: sum([x[i] for i in iargs]) - Icons 
             c_fixI0 = {'type':'eq','fun':cfun}
             x_constraints.append(c_fixI0)
@@ -427,7 +418,7 @@ def fit_spectrum(q,I,objfun,flags,params,fit_params,constraints=[]):
     x_bounds = [] 
     for k in fit_params:
         x_init.append(params[k])
-        if k in ['r0_precursor','r0_sphere']:
+        if k in ['rg_precursor','r0_sphere']:
             x_bounds.append((1E-3,None))
         elif k in ['I0_precursor','I0_sphere','I0_floor']:
             x_bounds.append((0.0,None))
@@ -481,24 +472,44 @@ def fit_spectrum(q,I,objfun,flags,params,fit_params,constraints=[]):
             d_opt[k] = xk
     return d_opt    
 
-def precursor_heuristics(q,I,I_at_0=None):
-    """
-    Makes an educated guess for the radius of a small scatterer
-    that would produce the input q, I(q).
-    Result is bounded between 0.1 and 10 Angstroms.
-    """
-    # TODO: This should employ a Guinier-Porod or similar fit.
-    n_q = len(q)
-    # optimize the log pearson correlation in the upper half of the q domain
-    nz = (I[n_q/2:]>0)
-    fit_obj = lambda r: -1*compute_pearson(np.log(compute_spherical_normal_saxs(q[n_q/2:],r,0)[nz]),np.log(I[n_q/2:][nz]))
-    #res = scipimin(fit_ojb,[0.1],bounds=[(0,0.3)]) 
-    res = scipimin(fit_obj,[5],bounds=[(1E-3,10)])
-    r_opt = res.x[0]
-    return r_opt
+def precursor_heuristics(q_I):
+    """Guess radius of gyration and Guinier prefactor of scatterers.
 
-def spherical_normal_heuristics(q,I,I_at_0=None):
+    Parameters
+    ----------
+    q_I : array
+        n-by-2 array of q (scattering vector magnitude) 
+        and I (intensity at q)
+
+    Returns
+    -------
+    rg_pre : float
+        estimated radius of gyration 
+    G_pre : float
+        estimated Guinier factor
     """
+
+    n_q = len(q_I[:,0])
+    ## optimize the log pearson correlation in the upper half of the q domain
+    idx_nz = (q_I[n_q/2:,1]>0)
+    fit_obj = lambda x: -1*compute_pearson(
+        np.log(guinier_porod(q_I[n_q/2:,0],x[0],4,x[1])[idx_nz]),
+        np.log(q_I[n_q/2:,1][idx_nz]))
+    ##res = scipimin(fit_ojb,[0.1],bounds=[(0,0.3)]) 
+    res = scipimin(fit_obj,[1,1],bounds=[(1E-3,10),(1E-3,None)])
+    rg_opt, G_opt = res.x[0]
+    I_pre = guinier_porod(q_I[:,0],rg_opt,4,G_opt)
+    from matplotlib import pyplot as plt
+    plt.figure(2)
+    plt.plot(q_I[:,0],q_I[:,1])
+    plt.plot(q_I[:,0],I_pre)
+    plt.show()
+    import pdb; pdb.set_trace()
+    return rg_pre, G_pre 
+
+def spherical_normal_heuristics(q_I,I_at_0):
+    """Guess mean and std of radii for spherical scatterers.
+
     This algorithm was developed and 
     originally contributed by Amanda Fournier.    
 
@@ -510,9 +521,7 @@ def spherical_normal_heuristics(q,I,I_at_0=None):
 
     TODO: Document algorithm here.
     """
-    if I_at_0 is None:
-        I_at_0 = fit_I0(q,I)
-    m = saxs_Iq4_metrics(q,I)
+    m = saxs_Iq4_metrics(q_I)
     width_metric = m['pI_qwidth']/m['q_at_Iqqqq_min1']
     intensity_metric = m['I_at_Iqqqq_min1']/I_at_0
     #######
@@ -547,7 +556,7 @@ def spherical_normal_heuristics(q,I,I_at_0=None):
     #sigma_r = sigma_over_r * r0 
     return r0,sigma_over_r
 
-def saxs_Iq4_metrics(q,I):
+def saxs_Iq4_metrics(q_I):
     """
     From an input spectrum q and I(q),
     compute several properties of the I(q)*q^4 curve.
@@ -572,6 +581,8 @@ def saxs_Iq4_metrics(q,I):
 
     TODO: document the algorithm here.
     """
+    q = q_I[:,0]
+    I = q_I[:,1]
     d = {}
     #if not dI:
     #    # uniform weights
@@ -756,8 +767,8 @@ def spherical_normal_heuristics_setup():
         sigma_r_vals = np.arange(0*r0,0.21*r0,0.01*r0)      #Angstrom
         for isig,sigma_r in zip(range(len(sigma_r_vals)),sigma_r_vals):
             I = compute_spherical_normal_saxs(q,r0,sigma_r/r0) 
-            I_at_0 = compute_spherical_normal_saxs(0,r0,sigma_r/r0) 
-            d = saxs_spherical_normal_heuristics(q,I)
+            I_at_0 = spherical_normal_saxs(0,r0,sigma_r/r0) 
+            d = spherical_normal_heuristics(q_I,I_at_0)
             sigma_over_r.append(float(sigma_r)/r0)
             qr0_focus.append(d['q_at_Iqqqq_min1']*r0)
             width_metric.append(d['pI_qwidth']/d['q_at_Iqqqq_min1'])

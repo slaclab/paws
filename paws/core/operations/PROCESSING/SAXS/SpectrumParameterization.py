@@ -6,7 +6,7 @@ from scipy.optimize import minimize
 
 from ... import Operation as opmod 
 from ...Operation import Operation
-from ....tools import saxstools
+from ....tools.saxs import saxs_fit 
 
 class SpectrumParameterization(Operation):
     """Determine approximate parameterization for a SAXS spectrum.
@@ -38,7 +38,7 @@ class SpectrumParameterization(Operation):
         self.input_doc['fixed_param_values'] = 'list of values '\
             'to which the corresponding fixed_params will be set.'
         self.output_doc['params'] = 'dict of scattering equation parameters, '\
-            'similar to the input of paws.core.tools.saxs.saxs_models.compute_saxs()'
+            'similar to the input of paws.core.tools.saxs.saxs_fit.compute_saxs()'
 
         self.output_doc['q_I_guess'] = 'n-by-2 array of q and the intensity spectrum '\
             'corresponding to the returned scattering equation parameters'
@@ -57,15 +57,15 @@ class SpectrumParameterization(Operation):
         if f['diffraction_peaks']:
             self.outputs['params'] = {'ERROR_MESSAGE':'diffraction peak parameterization not yet supported'}
             return
-        fix_keys = self.inputs['fixed_params']
-        fix_vals = self.inputs['fixed_param_values']
-        p_fix = {}
-        for k,v in zip(fix_keys,fix_vals):
-            p_fix[k] = v
+        #fix_keys = self.inputs['fixed_params']
+        #fix_vals = self.inputs['fixed_param_values']
+        #p_fix = {}
+        #for k,v in zip(fix_keys,fix_vals):
+        #    p_fix[k] = v
 
-        p_new = saxstools.parameterize_spectrum(q_I,f,p_fix)
+        p_new = saxs_fit.parameterize_spectrum(q_I,f)
 
-        I_guess = saxstools.compute_saxs(q_I[:,0],f,p_new)
+        I_guess = saxs_fit.compute_saxs(q_I[:,0],f,p_new)
 
         q_I_guess = np.array([q_I[:,0],I_guess]).T
         self.outputs['params'] = p_new
