@@ -3,6 +3,8 @@ from collections import OrderedDict
 import yaml
 import sklearn
 from sklearn import preprocessing
+from collections import OrderedDict
+import os
 
 from ... import pawstools
 
@@ -22,6 +24,8 @@ class SaxsClassifier(object):
 
             sk_version = s_and_m['version']
             cur_version = map(int,sklearn.__version__.split('.'))
+            major = cur_version[0]
+            minor = cur_version[1]
 
             if (major != sk_version[0] or minor != sk_version[1]):
                 version_str = ".".join(map(str,sk_version))
@@ -35,15 +39,15 @@ class SaxsClassifier(object):
             scalers_dict = s_and_m['scalers'] # dict of scalers parametrs
             classifier_dict = s_and_m['models'] # dict of models parametrs
 
-            model_param_bad_data = classifier_dict['model_for_bad_data']
-            model_param_form = classifier_dict['model_for_form_factor_scattering']
-            model_param_precur = classifier_dict['model_for_precursor_scattering']
-            model_param_diff_peaks = classifier_dict['model_for_diffraction_peaks']
+            model_param_bad_data = classifier_dict['bad_data']
+            model_param_form = classifier_dict['form_factor_scattering']
+            model_param_precur = classifier_dict['precursor_scattering']
+            model_param_diff_peaks = classifier_dict['diffraction_peaks']
 
-            scaler_param_bad_data = scalers_dict['scaler_for_bad_data']
-            scaler_param_form = scalers_dict['scaler_for_form_factor_scattering']
-            scaler_param_precur = scalers_dict['scaler_for_precursor_scattering']
-            scaler_param_diff_peaks = scalers_dict['scaler_for_diffraction_peaks']
+            scaler_param_bad_data = scalers_dict['bad_data']
+            scaler_param_form = scalers_dict['form_factor_scattering']
+            scaler_param_precur = scalers_dict['precursor_scattering']
+            scaler_param_diff_peaks = scalers_dict['diffraction_peaks']
 
             # recreate the scalers
             scaler_bad_data = preprocessing.StandardScaler()
@@ -92,18 +96,18 @@ class SaxsClassifier(object):
     def classify(self, sample_params):
         """Apply self.models and self.scalers to sample_params""" 
         flags = OrderedDict()
-        #x_bd = self.scalers['bad_data'].transform(sample_params)
-        #f_bd = self.models['bad_data'].predict(x_bd) 
-        #p_bd = self.models['bad_data'].predict_proba(x_bd)[0,int(f_bd)]
-        #flags['bad_data'] = (f_bd,p_bd)
+        x_bd = self.scalers['bad_data'].transform(sample_params)
+        f_bd = self.models['bad_data'].predict(x_bd) 
+        p_bd = self.models['bad_data'].predict_proba(x_bd)[0,int(f_bd)]
+        flags['bad_data'] = (f_bd,p_bd)
         # NOTE: this is temporary, until new models have been built
-        flags['bad_data'] = (True,1.)
+        #flags['bad_data'] = (True,1.)
         if not flags['bad_data']:
             for k in self.models.keys():
                 if not k == 'bad_data':
                     xk = self.scalers[k].transform(sample_params)
                     fk = self.models[k].predict(xk)
-                    pk = self.models[k].predict_proba(x)[0,int(fk)]
+                    pk = self.models[k].predict_proba(xk)[0,int(fk)]
                     flags[k] = (fk,pk)
         return flags
 

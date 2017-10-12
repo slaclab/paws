@@ -1,7 +1,4 @@
-import numpy as np
-from collections import OrderedDict
-
-from ... import Operation as opmod 
+from ... import Operation as opmod
 from ...Operation import Operation
 
 class SpectrumClassifier(Operation):
