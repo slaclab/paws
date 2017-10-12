@@ -22,5 +22,8 @@ class SpectrumClassifier(Operation):
     def run(self):
         x = self.inputs['features']
         c = self.inputs['classifier'] 
-        self.outputs['flags'] = c.classify(np.array(list(x.values())))
+        # for py3, the dict.values() has to be cast as a list,
+        # then the list has to be cast as a reshaped np.array
+        # to be correctly understood by scikit-learn.
+        self.outputs['flags'] = c.classify(np.array(list(x.values())).reshape(1,-1))
 
