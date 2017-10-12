@@ -94,7 +94,18 @@ class SaxsClassifier(object):
                 setattr(m_s, k, v)
 
     def classify(self, sample_params):
-        """Apply self.models and self.scalers to sample_params""" 
+        """Apply self.models and self.scalers to sample_params.
+
+        Parameters
+        ----------
+        sample_params : array
+            array of floats representing features of test sample
+
+        Returns
+        -------
+        flags : dict
+            dictionary of boolean flags indicating sample populations
+        """ 
         flags = OrderedDict()
         x_bd = self.scalers['bad_data'].transform(sample_params)
         f_bd = self.models['bad_data'].predict(x_bd) 

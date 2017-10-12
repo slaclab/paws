@@ -20,5 +20,5 @@ class SpectrumClassifier(Operation):
     def run(self):
         x = self.inputs['features']
         c = self.inputs['classifier'] 
-        self.outputs['flags'] = c.classify(x) 
+        self.outputs['flags'] = c.classify(x.values()) 
 
