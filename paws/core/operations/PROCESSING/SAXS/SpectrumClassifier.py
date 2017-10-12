@@ -1,3 +1,5 @@
+import numpy as np
+
 from ... import Operation as opmod
 from ...Operation import Operation
 
@@ -20,5 +22,5 @@ class SpectrumClassifier(Operation):
     def run(self):
         x = self.inputs['features']
         c = self.inputs['classifier'] 
-        self.outputs['flags'] = c.classify(x.values()) 
+        self.outputs['flags'] = c.classify(np.array(list(x.values())))
 
