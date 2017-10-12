@@ -3,6 +3,8 @@
 import yaml
 import sklearn
 from sklearn import preprocessing
+from collections import OrderedDict
+import os
 
 from ... import pawstools
 
@@ -21,6 +23,8 @@ class SaxsClassifier(object):
 
             sk_version = s_and_m['version']
             cur_version = map(int,sklearn.__version__.split('.'))
+            major = cur_version[0]
+            minor = cur_version[1]
 
             if (major != sk_version[0] or minor != sk_version[1]):
                 version_str = ".".join(map(str,sk_version))
@@ -34,15 +38,15 @@ class SaxsClassifier(object):
             scalers_dict = s_and_m['scalers'] # dict of scalers parametrs
             classifier_dict = s_and_m['models'] # dict of models parametrs
 
-            model_param_bad_data = classifier_dict['model_for_bad_data']
-            model_param_form = classifier_dict['model_for_form_factor_scattering']
-            model_param_precur = classifier_dict['model_for_precursor_scattering']
-            model_param_diff_peaks = classifier_dict['model_for_diffraction_peaks']
+            model_param_bad_data = classifier_dict['bad_data']
+            model_param_form = classifier_dict['form_factor_scattering']
+            model_param_precur = classifier_dict['precursor_scattering']
+            model_param_diff_peaks = classifier_dict['diffraction_peaks']
 
-            scaler_param_bad_data = scalers_dict['scaler_for_bad_data']
-            scaler_param_form = scalers_dict['scaler_for_form_factor_scattering']
-            scaler_param_precur = scalers_dict['scaler_for_precursor_scattering']
-            scaler_param_diff_peaks = scalers_dict['scaler_for_diffraction_peaks']
+            scaler_param_bad_data = scalers_dict['bad_data']
+            scaler_param_form = scalers_dict['form_factor_scattering']
+            scaler_param_precur = scalers_dict['precursor_scattering']
+            scaler_param_diff_peaks = scalers_dict['diffraction_peaks']
 
             # recreate the scalers
             scaler_bad_data = preprocessing.StandardScaler()
@@ -99,8 +103,8 @@ class SaxsClassifier(object):
             for k in self.models.keys():
                 if not k == 'bad_data':
                     xk = self.scalers[k].transform(sample_params)
-                    fk = (self.models[k].predict(xk)
-                    pk = self.models[k].predict_proba(x)[0,int(fk)]
+                    fk = self.models[k].predict(xk)
+                    pk = self.models[k].predict_proba(xk)[0,int(fk)]
                     flags[k] = (fk,pk)
         return flags
 
