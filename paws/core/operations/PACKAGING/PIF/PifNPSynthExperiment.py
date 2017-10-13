@@ -3,7 +3,6 @@ import pypif.obj as pifobj
 
 from ... import Operation as opmod 
 from ...Operation import Operation
-from ....tools import saxstools
 
 class PifNPSynthExperiment(Operation):
     """

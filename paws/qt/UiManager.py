@@ -20,7 +20,7 @@ class UiManager(QtCore.QObject):
 
     def __init__(self,qpaw):
         super(UiManager,self).__init__()
-        ui_file = QtCore.QFile(pawstools.sourcedir+"/qt/qtui/basic.ui")
+        ui_file = QtCore.QFile(os.path.join(pawstools.sourcedir,'qt','qtui','main.ui'))
         ui_file.open(QtCore.QFile.ReadOnly)
         self.ui = QtUiTools.QUiLoader().load(ui_file)
         ui_file.close()
@@ -65,7 +65,7 @@ class UiManager(QtCore.QObject):
         self.ui.viewer_tabwidget.addTab(self._viewer_frame,'main viewer')
 
         # logo scene:
-        img_file = os.path.join(pawstools.rootdir,"graphics/paws_icon_white.png")
+        img_file = os.path.join(pawstools.rootdir,'graphics','paws_icon_white.png')
         pixmap = QtGui.QPixmap(img_file)
         pixmap_item = QtGui.QGraphicsPixmapItem(pixmap)
         scene = QtGui.QGraphicsScene()
