@@ -4,10 +4,10 @@ paws.core.operations.IO.MODELS.SAXS package
 Submodules
 ----------
 
-paws.core.operations.IO.MODELS.SAXS.LoadSAXSClassifiers module
---------------------------------------------------------------
+paws.core.operations.IO.MODELS.SAXS.LoadSAXSClassifier module
+-------------------------------------------------------------
 
-.. automodule:: paws.core.operations.IO.MODELS.SAXS.LoadSAXSClassifiers
+.. automodule:: paws.core.operations.IO.MODELS.SAXS.LoadSAXSClassifier
     :members:
     :undoc-members:
     :show-inheritance:

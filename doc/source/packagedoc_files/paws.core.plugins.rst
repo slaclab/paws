@@ -12,14 +12,6 @@ paws.core.plugins.CitrinationPlugin module
     :undoc-members:
     :show-inheritance:
 
-paws.core.plugins.DatabrokerPlugin module
------------------------------------------
-
-.. automodule:: paws.core.plugins.DatabrokerPlugin
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 paws.core.plugins.PawsPlugin module
 -----------------------------------
 

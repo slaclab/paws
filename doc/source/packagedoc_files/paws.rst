@@ -9,7 +9,6 @@ Subpackages
     paws.api
     paws.core
     paws.qt
-    paws.ui
 
 Submodules
 ----------

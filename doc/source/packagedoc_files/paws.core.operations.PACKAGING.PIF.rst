@@ -12,10 +12,10 @@ paws.core.operations.PACKAGING.PIF.EmptyPif module
     :undoc-members:
     :show-inheritance:
 
-paws.core.operations.PACKAGING.PIF.PifNPSynth module
-----------------------------------------------------
+paws.core.operations.PACKAGING.PIF.PifNPSolutionSAXS module
+-----------------------------------------------------------
 
-.. automodule:: paws.core.operations.PACKAGING.PIF.PifNPSynth
+.. automodule:: paws.core.operations.PACKAGING.PIF.PifNPSolutionSAXS
     :members:
     :undoc-members:
     :show-inheritance:
