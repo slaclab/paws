@@ -1,6 +1,13 @@
 paws.qt package
 ===============
 
+Subpackages
+-----------
+
+.. toctree::
+
+    paws.qt.widgets
+
 Submodules
 ----------
 
@@ -56,6 +63,14 @@ paws.qt.QWorkflow module
 ------------------------
 
 .. automodule:: paws.qt.QWorkflow
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+paws.qt.UiManager module
+------------------------
+
+.. automodule:: paws.qt.UiManager
     :members:
     :undoc-members:
     :show-inheritance:
