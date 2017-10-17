@@ -29,12 +29,5 @@ class LoadTif(Operation):
         file_noext = os.path.splitext(file_nopath)[0]
         self.outputs['dir_path'] = dir_path 
         self.outputs['filename'] = file_noext 
-        try:
-            self.outputs['image_data'] = tifffile.imread(p)
-        except IOError as ex:
-            ex.message = "[{}] IOError for file {}. \nError message:".format(__name__,p,ex.message)
-            raise ex
-        except ValueError as ex:
-            ex.message = "[{}] ValueError for file {}. \nError message:".format(__name__,p,ex.message)
-            raise ex
+        self.outputs['image_data'] = tifffile.imread(p)
 
