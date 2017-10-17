@@ -78,6 +78,7 @@ setup(
     # installed, specify them here.  If using Python 2.6 or less, then these
     # have to be included in MANIFEST.in as well.
     package_data={
+        '': ['contributors.txt'],
         'paws': ['qt/graphics/*.png','qt/qtui/*.ui','core/tools/modeling_data/*'],
     },
 
@@ -85,7 +86,7 @@ setup(
     # need to place data files outside of your packages. 
     # http://docs.python.org/3.4/distutils/setupscript.html#installing-additional-files # noqa
     # In this case, 'data_file' will be installed into '<sys.prefix>/my_data'
-    data_files=[('', ['contributors.txt'])],
+    #data_files=[('', ['contributors.txt'])],
 
     # To provide executable scripts, use entry points in preference to the
     # "scripts" keyword. Entry points provide cross-platform support and allow
