@@ -71,11 +71,14 @@ class OpManager(TreeModel):
         """
         Add op name to the tree under category cat.
         If ops.load_flags indicates that this op should be enabled,
-        enable it (this causes it to import the module).
+        try to enable it (this causes it to import the module).
         """
         op_uri = cat+'.'+opname
         if ops.load_flags[op_uri]:
-            self.set_op_enabled(op_uri)
+            try: 
+                self.set_op_enabled(op_uri)
+            except ImportError:
+                self.logmethod('import error for {}: disabling operation'.format(op_uri))
         else:
             self.set_item(op_uri,None)
 
