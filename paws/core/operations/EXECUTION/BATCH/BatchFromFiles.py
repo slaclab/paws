@@ -36,8 +36,6 @@ class BatchFromFiles(Operation):
         batch_list = self.inputs['file_list'] 
         inpname = self.inputs['input_name'] 
         wf = self.inputs['workflow'] 
-        if (wf is None or batch_list is None or not inpname):
-            return
         n_batch = len(batch_list)
         self.outputs['batch_inputs'] = [None for ib in range(n_batch)] 
         self.outputs['batch_outputs'] = [None for ib in range(n_batch)] 

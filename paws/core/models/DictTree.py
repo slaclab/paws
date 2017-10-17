@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os
 import string 
 from collections import OrderedDict
@@ -27,7 +28,7 @@ class DictTree(object):
         self.bad_chars = self.bad_chars.replace('-','')
         self.bad_chars = self.bad_chars.replace('.','')
         self.space_chars = [' ','\t','\n',os.linesep]
-        self._all_uris = []
+        #self._all_uris = []
 
     def __getitem__(self,uri):
         return self.get_from_uri(uri)
@@ -41,9 +42,8 @@ class DictTree(object):
     def delete_uri(self,uri=''):
         """
         Delete the given uri, i.e., 
-        remove the corresponding key from the embedded dict.
-        This should not be relied on to be fast.
-        It has to go through all of the uris to remove children.
+        remove the corresponding key, value pair 
+        from the embedded dict.
         """
         try:
             itm = self._root
@@ -55,9 +55,6 @@ class DictTree(object):
                 # Note- parent items must implement __getitem__
                 del itm[k]
                 #itm.pop(k)
-                for i,testuri in zip(range(len(self._all_uris))[::-1],self._all_uris[::-1]):
-                    if uri in testuri:
-                        self._all_uris.pop(i)
         except Exception as ex:
             msg = str('\n[{}] Encountered an error while trying to delete uri {}: \n'
             .format(__name__,uri))
@@ -81,8 +78,8 @@ class DictTree(object):
                 else:
                     # Note- parent items must implement __setitem__
                     itm[k] = val
-                if not uri in self._all_uris:
-                    self._all_uris.append(uri)
+                #if not uri in self._all_uris:
+                #    self._all_uris.append(uri)
         except Exception as ex:
             msg = str('\n[{}] Encountered an error while trying to set uri {} to val {}: \n'
             .format(__name__,uri,val)) + ex.message
@@ -157,7 +154,7 @@ class DictTree(object):
         """
         Check for uniqueness of a uri. 
         """
-        return uri not in self._all_uris
+        return not self.contains_uri(uri)
 
     def uri_error_message(self,uri):
         """Provide a human-readable error message for bad uris."""
@@ -177,9 +174,41 @@ class DictTree(object):
         else:
             return self.uri_error_message(tag)
 
+    #def contains_uri(self,uri):
+    #    """Returns whether or not input uri points to an item in this tree."""
+    #    return uri in self._all_uris
     def contains_uri(self,uri):
-        """Returns whether or not input uri points to an item in this tree."""
-        return uri in self._all_uris
+        """
+        Check if the uri represents an item in this DictTree.
+        """
+        return uri in self.keys()
+
+    def keys(self):
+        return self.subkeys()
+
+    def subkeys(self,root_uri=''):
+        if not root_uri:
+            itm = self._root
+        else:
+            itm = self.get_from_uri(root_uri)
+        if isinstance(itm,list):
+            rootks = map(lambda i: str(i),range(len(itm)))
+        else:
+            try:
+                rootks = itm.keys()
+            except AttributeError as ex:
+                # non-parental nodes may have no keys()
+                rootks = []
+        if root_uri:
+            prefix = root_uri + '.'
+        else:
+            prefix = root_uri
+        subks = map(lambda s:prefix+s,rootks)
+        for k in rootks:
+            nextks = self.subkeys(prefix+k) 
+            if any(nextks):
+                subks = subks + nextks
+        return subks
 
     def make_unique_uri(self,prefix):
         """
@@ -188,10 +217,10 @@ class DictTree(object):
         """
         suffix = 0
         gooduri = False
-        urilist = self._all_uris
+        #urilist = self._all_uris
         while not gooduri:
             testuri = prefix+'_{}'.format(suffix)
-            if not testuri in urilist: 
+            if not self.contains_uri(testuri): 
                 gooduri = True
             else:
                 suffix += 1

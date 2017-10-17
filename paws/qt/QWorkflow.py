@@ -78,8 +78,6 @@ class QWorkflow(Workflow,QTreeSelectionModel):
                 for outnm,outdata in op.outputs.items():
                     if self.data_callback:
                         out_uri = op_tag+'.outputs.'+outnm
-                        #print('setting {}'.format(out_uri))
-                        #import pdb; pdb.set_trace()
                         if outdata is not None:
                             self.data_callback(out_uri,outdata)
                         #print('done setting {}'.format(out_uri))
