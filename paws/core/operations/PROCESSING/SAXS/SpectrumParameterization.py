@@ -51,25 +51,18 @@ class SpectrumParameterization(Operation):
     def run(self):
         q_I = self.inputs['q_I']
         f = self.inputs['flags'] 
-        if f['bad_data']:
-            self.outputs['params'] = {'ERROR_MESSAGE':'skipping parameterization because bad_data flag is up'}
-            return
-        if f['diffraction_peaks']:
-            self.outputs['params'] = {'ERROR_MESSAGE':'diffraction peak parameterization not yet supported'}
-            return
         #fix_keys = self.inputs['fixed_params']
         #fix_vals = self.inputs['fixed_param_values']
         #p_fix = {}
         #for k,v in zip(fix_keys,fix_vals):
         #    p_fix[k] = v
 
-        p_new = saxs_fit.parameterize_spectrum(q_I,f)
-
-        I_guess = saxs_fit.compute_saxs(q_I[:,0],f,p_new)
-
-        q_I_guess = np.array([q_I[:,0],I_guess]).T
-        self.outputs['params'] = p_new
-        self.outputs['q_I_guess'] = q_I_guess 
+        if not f['bad_data']:
+            p = saxs_fit.parameterize_spectrum(q_I,f)
+            I_guess = saxs_fit.compute_saxs(q_I[:,0],f,p)
+            q_I_guess = np.array([q_I[:,0],I_guess]).T
+            self.outputs['params'] = p
+            self.outputs['q_I_guess'] = q_I_guess 
 
 
 

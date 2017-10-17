@@ -34,60 +34,36 @@ class SpectrumFit(Operation):
     """
 
     def __init__(self):
-        input_names = ['q_I','flags','params','fit_params','objfun']
+        input_names = ['q_I','flags','params','fixed_params']#,'objfun','constraints']
         output_names = ['params','q_I_opt']
         super(SpectrumFit, self).__init__(input_names, output_names)
         self.input_doc['q_I'] = 'n-by-2 array of wave vectors (1/Angstrom) and intensities (counts)'
         self.input_doc['flags'] = 'dict of flags indicating what populations to fit'
         self.input_doc['params'] = 'dict of initial values for the scattering equation parameters '\
             'for each of the populations specified in the input flags'
-        self.input_doc['fit_params'] = 'list of strings (keys) indicating which parameters to optimize'
-        self.input_doc['objfun'] = 'string indicating objective function for optimization: '\
-        + 'see documentation of tools.saxs.saxs_fit.fit_spectrum() for supported objective functions'
+        self.input_doc['fixed_params'] = 'list of strings (keys) indicating '\
+            'which parameters to hold fixed during optimization'
+        #self.input_doc['objfun'] = 'string indicating objective function for optimization- '\
+        #    'see documentation of tools.saxs.saxs_fit.fit_spectrum() for supported objective functions'
+        #self.input_doc['constraints'] = 'list of strings indicating constraints- '\
+        #    'see documentation of tools.saxs.saxs_fit.fit_spectrum() for supported constraints'
         self.output_doc['params'] = 'dict of scattering equation parameters copied from inputs, '\
-        'with values optimized for all keys specified in fit_params'
+            'with values optimized for all keys not listed in fixed_params'
         self.output_doc['q_I_opt'] = 'n-by-2 array of q and the optimized computed intensity spectrum'
         self.input_type['q_I'] = opmod.workflow_item
         self.input_type['flags'] = opmod.workflow_item
         self.input_type['params'] = opmod.workflow_item
-        self.inputs['objfun'] = 'chi2log' 
+        self.inputs['fixed_params'] = [] 
 
     def run(self):
-        f = self.inputs['flags']
         q_I = self.inputs['q_I']
-        q = q_I[:,0]
-        I = q_I[:,1]
-        m = self.inputs['objfun']
+        f = self.inputs['flags']
         p = self.inputs['params']
-        fitkeys = self.inputs['fit_params']
-        if f is None or q is None or I is None or fitkeys is None:
-            return
-        if f['bad_data'] or not any([f['precursor_scattering'],f['form_factor_scattering'],f['diffraction_peaks']]):
-            return
-        if f['diffraction_peaks']:
-            self.outputs['params'] = {'ERROR_MESSAGE':'diffraction peak fitting not yet supported'}
-            return
-        #p_opt = copy.deepcopy(p)
-
-        # Set up constraints as needed
-        c = []
-        if f['form_factor_scattering'] or f['diffraction_peaks']:
-            c = ['fix_I0']
-
-        # Fitting happens here
-        p_opt = saxs_fit.fit_spectrum(q,I,m,f,p,fitkeys,c)
-
-        I_opt = saxs_fit.compute_saxs(q,f,p_opt)
-
-        nz = ((I>0)&(I_opt>0))
-        logI_nz = np.log(I[nz])
-        logIopt_nz = np.log(I_opt[nz])
-        Imean = np.mean(logI_nz)
-        Istd = np.std(logI_nz)
-        logI_nz_s = (logI_nz - Imean) / Istd
-        logIopt_nz_s = (logIopt_nz - Imean) / Istd
-
-        q_I_opt = np.array([q,I_opt]).T
-        self.outputs['params'] = p_opt 
-        self.outputs['q_I_opt'] = q_I_opt
+        fixkeys = self.inputs['fixed_params']
+        if not f['bad_data']:
+            p_opt = saxs_fit.fit_spectrum(q_I,f,p,fixkeys,'chi2log')
+            I_opt = saxs_fit.compute_saxs(q_I[:,0],f,p_opt)
+            q_I_opt = np.array([q_I[:,0],I_opt]).T
+            self.outputs['params'] = p_opt 
+            self.outputs['q_I_opt'] = q_I_opt
 

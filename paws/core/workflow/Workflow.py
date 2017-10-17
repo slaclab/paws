@@ -111,7 +111,9 @@ class Workflow(TreeModel):
     def wf_outputs_dict(self):
         d = OrderedDict()
         for wfoutnm in self.outputs.keys():
-            d[wfoutnm] = self.get_data_from_uri(self.outputs[wfoutnm])
+            # if the uri referred to by this output exists, save it
+            if self.contains_uri(self.outputs[wfoutnm]):
+                d[wfoutnm] = self.get_data_from_uri(self.outputs[wfoutnm])
         return d
 
     def get_wf_output(wf_output_name):
