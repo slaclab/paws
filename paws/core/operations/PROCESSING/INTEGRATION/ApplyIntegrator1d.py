@@ -26,11 +26,11 @@ class ApplyIntegrator1d(Operation):
     Output arrays containing q and I(q) 
     """
     def __init__(self):
-        input_names = ['data','integrator','mask','ROI_mask','dark','flat',\
+        input_names = ['image_data','integrator','mask','ROI_mask','dark','flat',\
         'radial_range','azimuth_range','npt','polarization_factor','unit','method','integration_mode']
         output_names = ['q','I','q_I']
         super(ApplyIntegrator1d,self).__init__(input_names,output_names)
-        self.input_doc['data'] = '2d array representing intensity for each pixel'
+        self.input_doc['image_data'] = '2d array representing intensity for each pixel'
         self.input_doc['integrator'] = 'A PyFAI.AzimuthalIntegrator object'
         self.input_doc['mask'] = '2d array for image mask, same shape as image_data'
         self.input_doc['ROI_mask'] = '2d array for ROI mask, same shape as image_data'
@@ -44,7 +44,7 @@ class ApplyIntegrator1d(Operation):
         self.input_doc['method'] = 'choice of integration method. See PyFAI documentation for options.' 
         self.input_doc['integration_mode'] = 'not yet implemented' 
 
-        self.input_type['data'] = opmod.workflow_item
+        self.input_type['image_data'] = opmod.workflow_item
         self.input_type['integrator'] = opmod.workflow_item
 
         self.inputs['npt'] = 1000
@@ -56,10 +56,8 @@ class ApplyIntegrator1d(Operation):
         self.output_doc['q_I'] = 'q and I zipped together an a n-by-2 numpy array.'
 
     def run(self):
-        img = self.inputs['data']
+        img = self.inputs['image_data']
         intgtr = self.inputs['integrator']
-        if img is None or intgtr is None:
-            return
         m = None
         if self.inputs['mask'] is not None and self.inputs['ROI_mask'] is not None: 
             m = self.inputs['mask'] | self.inputs['ROI_mask']
@@ -70,10 +68,10 @@ class ApplyIntegrator1d(Operation):
         self.inputs['mask'] = m
         #if self.inputs['ROI_mask']: self.inputs['mask'] = self.inputs['mask'] | self.inputs['ROI_mask']
         kwargexcludemask = [k for k in self.inputs.keys() if self.inputs[k] is None]
-        kwargexcludemask = kwargexcludemask + ['ROI_mask','integrator','integration_mode']
+        kwargexcludemask = kwargexcludemask + ['image_data','ROI_mask','integrator','integration_mode']
         kwargs = {key:val for key,val in self.inputs.items() if key not in kwargexcludemask}
 
-        q,I = intgtr.integrate1d(**kwargs)
+        q,I = intgtr.integrate1d(img,**kwargs)
         #integ_result = intgtr.integrate1d(**kwargs)
         # save results to self.outputs
         #q = integ_result.radial

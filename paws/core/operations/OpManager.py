@@ -79,6 +79,10 @@ class OpManager(TreeModel):
                 self.set_op_enabled(op_uri)
             except ImportError:
                 self.logmethod('import error for {}: disabling operation'.format(op_uri))
+                self.set_op_enabled(op_uri,False)
+            except Exception as ex:
+                self.logmethod('unexpected exception while importing {}. Message: {}'.format(op_uri,ex.message))
+                self.set_op_enabled(op_uri,False)
         else:
             self.set_item(op_uri,None)
 
