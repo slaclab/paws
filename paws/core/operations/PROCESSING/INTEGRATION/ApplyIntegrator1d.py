@@ -79,5 +79,5 @@ class ApplyIntegrator1d(Operation):
 
         self.outputs['q'] = q 
         self.outputs['I'] = I
-        self.outputs['q_I'] = np.array(zip(q,I))
+        self.outputs['q_I'] = np.array([q,I]).T
 
