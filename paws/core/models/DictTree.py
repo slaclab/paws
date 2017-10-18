@@ -192,7 +192,7 @@ class DictTree(object):
         else:
             itm = self.get_from_uri(root_uri)
         if isinstance(itm,list):
-            rootks = map(lambda i: str(i),range(len(itm)))
+            rootks = list(map(lambda i: str(i),range(len(itm))))
         else:
             try:
                 rootks = itm.keys()
@@ -203,7 +203,7 @@ class DictTree(object):
             prefix = root_uri + '.'
         else:
             prefix = root_uri
-        subks = map(lambda s:prefix+s,rootks)
+        subks = list(map(lambda s:prefix+s,rootks))
         for k in rootks:
             nextks = self.subkeys(prefix+k) 
             if any(nextks):
