@@ -152,7 +152,7 @@ class Workflow(TreeModel):
         stk,diag = self.execution_stack()
         bad_diag_keys = [k for k in diag.keys() if diag[k]]
         for k in bad_diag_keys:
-            self.message_callback('WARNING- operation not ready: {}'.format(diag[k]))
+            self.message_callback('WARNING- {} is not ready: {}'.format(k,diag[k]))
         self.message_callback('workflow queue:'+os.linesep+self.print_stack(stk))
         for lst in stk:
             self.message_callback('running: {}'.format(lst))
