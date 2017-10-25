@@ -35,7 +35,7 @@ class SpectrumFit(Operation):
 
     def __init__(self):
         input_names = ['q_I','flags','params','fixed_params']#,'objfun','constraints']
-        output_names = ['params','q_I_opt']
+        output_names = ['params','report','q_I_opt']
         super(SpectrumFit, self).__init__(input_names, output_names)
         self.input_doc['q_I'] = 'n-by-2 array of wave vectors (1/Angstrom) and intensities (counts)'
         self.input_doc['flags'] = 'dict of flags indicating what populations to fit'
@@ -49,6 +49,8 @@ class SpectrumFit(Operation):
         #    'see documentation of tools.saxs.saxs_fit.fit_spectrum() for supported constraints'
         self.output_doc['params'] = 'dict of scattering equation parameters copied from inputs, '\
             'with values optimized for all keys not listed in fixed_params'
+        self.output_doc['report'] = 'dict expressing the objective function, '\
+            'and its evaluation at the initial and final points of the fit'
         self.output_doc['q_I_opt'] = 'n-by-2 array of q and the optimized computed intensity spectrum'
         self.input_type['q_I'] = opmod.workflow_item
         self.input_type['flags'] = opmod.workflow_item
@@ -61,9 +63,13 @@ class SpectrumFit(Operation):
         p = self.inputs['params']
         fixkeys = self.inputs['fixed_params']
         if not f['bad_data']:
-            p_opt = saxs_fit.fit_spectrum(q_I,f,p,fixkeys,'chi2log')
+            #if f['form_factor_scattering']:
+            #    p_opt,rpt = saxs_fit.fit_spectrum(q_I,f,p,fixkeys,'chi2log_fixI0')
+            #else:
+            p_opt,rpt = saxs_fit.fit_spectrum(q_I,f,p,fixkeys,'chi2log')
             I_opt = saxs_fit.compute_saxs(q_I[:,0],f,p_opt)
             q_I_opt = np.array([q_I[:,0],I_opt]).T
             self.outputs['params'] = p_opt 
+            self.outputs['report'] = rpt
             self.outputs['q_I_opt'] = q_I_opt
 
