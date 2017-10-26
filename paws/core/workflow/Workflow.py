@@ -40,7 +40,6 @@ class Workflow(TreeModel):
         else:
             raise KeyError('[{}] {}.__setitem__ only recognizes keys {}'
             .format(__name__,type(self).__name__,optags))
-
     def keys(self):
         return self.list_op_tags() 
 
