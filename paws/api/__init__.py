@@ -286,7 +286,7 @@ class PawsAPI(object):
 
     def wfl_dict(self):
         d = {} 
-        d['OP_ACTIVATION_FLAGS'] = ops.load_flags
+        d['OP_ACTIVATION_FLAGS'] = {k:True for k,f in ops.load_flags.items() if f}
         d['PAWS_VERSION'] = pawstools.version 
         wfman_dict = OrderedDict()
         for wfname,wf in self._wf_manager.workflows.items():
@@ -335,9 +335,11 @@ class PawsAPI(object):
             'under the current version.'.format(pawstools.version,wfl_version))  
         if 'OP_ACTIVATION_FLAGS' in d.keys():
             for opname,flag in d['OP_ACTIVATION_FLAGS'].items():
-                if opname in ops.load_flags.keys():
-                    if ops.load_flags[opname]:
+                if opname in ops.load_keys:
+                    if flag:
                         self.activate_op(opname)
+                    else:
+                        self.deactivate_op(opname)
         if 'WORKFLOWS' in d.keys():
             wf_dict = d['WORKFLOWS']
             for wfname,wfspec in wf_dict.items():
