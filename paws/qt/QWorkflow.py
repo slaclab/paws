@@ -7,7 +7,7 @@ import os
 from PySide import QtCore
 
 from .QWfWorker import QWfWorker
-from ..core.workflow.Workflow import Workflow
+from ..core.workflows.Workflow import Workflow
 from ..core.operations import Operation as opmod
 from .QTreeSelectionModel import QTreeSelectionModel
 from ..core.operations import optools

@@ -97,12 +97,14 @@ class PifWidget(QtGui.QTextEdit):
         t += '<br>' + indent + 'name: {}'.format(display_text(itm.name,indent+unit_indent))
         if itm.conditions is not None:
             t += '<br>' + indent + 'conditions: (array)' 
-            for i,val in zip(range(len(itm.conditions)),itm.conditions):
+            stop_idx = min([len(itm.conditions),10])
+            for i,val in zip(range(len(itm.conditions)),itm.conditions)[:stop_idx]:
                 t += '<br>' + indent + unit_indent + '{}: {}'.format(
                 i, self.print_value(val,indent+unit_indent+unit_indent))
         if itm.scalars is not None:
             t += '<br>' + indent + 'scalars: (array)' 
-            for i,scl in zip(range(len(itm.scalars)),itm.scalars):
+            stop_idx = min([len(itm.scalars),10])
+            for i,scl in zip(range(len(itm.scalars)),itm.scalars)[:stop_idx]:
                 t += '<br>' + indent + unit_indent + '{}: {}'.format(
                 i, self.print_scalar(scl,indent+unit_indent+unit_indent))
         return t

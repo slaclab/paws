@@ -8,7 +8,7 @@ from PySide import QtCore
 from .QWfWorker import QWfWorker
 from .QWorkflow import QWorkflow
 from ..core import pawstools
-from ..core.workflow.WfManager import WfManager
+from ..core.workflows.WfManager import WfManager
 from . import qttools
 
 class QWfManager(WfManager,QtCore.QObject):

@@ -6,11 +6,11 @@ from matplotlib.figure import Figure
 #from pypif.obj import System
 
 from ...core.operations.Operation import Operation
-from ...core.workflow.Workflow import Workflow 
+from ...core.workflows.Workflow import Workflow 
 from ...core.plugins.PawsPlugin import PawsPlugin
 from .. import qttools
 from .OpWidget import OpWidget
-#from .PifWidget import PifWidget
+from .PifWidget import PifWidget
 from .WorkflowGraphView import WorkflowGraphView
 from .text_widgets import display_text, display_text_fast
 
@@ -20,8 +20,8 @@ else:
     from . import plotmaker_mpl as plotmaker
 
 def make_widget(itm):
-    #if isinstance(itm,System):
-    #    w = PifWidget(itm)
+    if isinstance(itm,System):
+        w = PifWidget(itm)
     if isinstance(itm,Workflow):
         w = WorkflowGraphView(itm)
     elif isinstance(itm,PawsPlugin):
