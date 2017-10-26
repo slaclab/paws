@@ -172,23 +172,9 @@ class PawsAPI(object):
     def load_plugin(self,pgin_module):
         return self._plugin_manager.load_plugin(pgin_module)
 
-    def set_plugin_input(self,pgin_tag,input_name,val=None,tp=None):
+    def set_plugin_input(self,pgin_tag,input_name,val=None):
         pgin = self._plugin_manager.get_data_from_uri(pgin_tag)
-        if tp is None:
-            # if type is not specified, take the plugin's default 
-            tp = pgin.input_type[input_name]
-        else:
-            if tp in opmod.input_types:
-                tp = opmod.valid_types[ opmod.input_types.index(tp) ]
-        # TODO: separate opmod from plugin stuff
-        if tp == opmod.no_input or val is None: 
-            pgin.inputs[input_name] = None
-        elif tp == opmod.basic_type:
-            pgin.inputs[input_name] = val
-        else:
-            msg = '[{}] failed to parse plugin input {}, tp: {}, val: {}'.format(
-            __name__,input_name,tp,val)
-            raise ValueError(msg)
+        pgin.inputs[input_name] = val
 
     def start_plugin(self,pgin_name):
         pgin = self.get_plugin(pgin_name)

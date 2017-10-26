@@ -36,35 +36,12 @@ class CitrinationPlugin(PawsPlugin):
         return {'client':self.ctn_client,'inputs':self.inputs}
 
     def description(self):
-        desc = str('Citrination API Client Plugin for Paws: '
+        desc = str('Citrination Client Plugin for Paws: '
             + 'This is a container for the Citrination Client module. '
             + 'The Citrination Client connects to a Citrination instance '
             + 'and exposes some parts of the Citrination API. '
             + 'Startup requires the web address of a Citrination instance '
             + 'and an API key that provides access to that instance.')
         return desc
-
-    def ship_dataset(self,pifs):
-        # Create the data set
-        response = self.ctn_client.create_data_set()
-        dsid = response.json()['id']
-        # TODO: Note that the entire data set can be one json,
-        # of an array of pif records, and this will lead to a faster upload.
-        for p in pifs:
-            try:
-                json_file = pawstools.scratchdir+'/'+p.uid+'.json'
-                pif.dump(p, open(json_file,'w'))
-                #print 'add DATA SET {} to tags'.format(dsid)
-                #p.tags.append('DATA SET {}'.format(dsid))
-                #print 'dump {} to data set {}'.format(json_file,dsid)
-                cl.upload_file(json_file,data_set_id = dsid)
-                #print 'NOT SHIPPING {} (this is a test)'.format(json_file)
-                self.return_codes[p.uid]=1
-                # delete dataset json
-                #print 'deleting file {}'.format(json_file)
-                os.remove(json_file) 
-            except:
-                # TODO: Pass along some return code from the server?
-                self.return_codes[p.uid]=-1
 
 

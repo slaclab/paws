@@ -20,11 +20,25 @@ class PluginManager(TreeModel):
         super(PluginManager,self).__init__(flag_dict)
         self.logmethod = print 
 
+    def __getitem__(self,key):
+        pgintags = self.keys()
+        if key in pgintags:
+            return self.get_data_from_uri(key) 
+        else:
+            raise KeyError('[{}] {}.__getitem__ only recognizes keys {}'
+            .format(__name__,type(self).__name__,pgintags))
+    #def __setitem__(self,key,data):
+    #    pgin_tags = self.keys() 
+    #    if key in pgin_tags:
+    #        self.set_item(key,data)
+    #    else:
+    #        raise KeyError('[{}] {}.__setitem__ only recognizes keys {}'
+    #        .format(__name__,type(self).__name__,pgin_tags))
+    def keys(self):
+        return self.list_plugin_tags() 
+
     def write_log(self,msg):
         self.logmethod(msg)
-        #if self.logmethod:
-        #else:
-        #    print(msg)
 
     def plugin_setup_dict(self,pgin):
         pgin_mod = pgin.__module__[pgin.__module__.find('plugins'):]
