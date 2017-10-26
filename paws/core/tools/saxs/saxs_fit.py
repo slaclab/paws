@@ -251,11 +251,6 @@ def parameterize_spectrum(q_I,flags):
     n_q = len(q)
 
     # PART 1: Get a number for I(q=0)
-    # TODO: add units to this package
-    # Disregard lowest-q values if they are far from the mean, 
-    # as these points are likely dominated by experimental error,
-    # such as interference from beam stops, etc.
-    #idx_lowq = (q<0.06)
     q_Imax = q[np.argmax(I)]
     idx_fit = (q>=q_Imax)&(q<2.*q_Imax)
     if q_Imax > q[int(n_q/2)]:
@@ -269,26 +264,9 @@ def parameterize_spectrum(q_I,flags):
     I_sig = np.polyval(pI,qs_fit)*np.std(I_fit)+np.mean(I_fit)
     I_bg = I_fit-I_sig
     snr = np.mean(I_fit)/np.std(I_bg)
-    #print('snr: {}'.format(snr))
     if snr < 100:
         # if noisy, constrained fit on third order
-        #print('high noise fit')
         I_at_0,pI = fit_I0(q_fit,I_fit,3)
-
-    #if not sum(idx_lowq) > 9: 
-    #    msg = 'Insufficient data for estimating I(q=0). '\
-    #        'At least 10 points are expected within q<0.06 1/A.'
-    #    raise RuntimeError(msg)
-    #Imean_lowq = np.mean(I[idx_lowq])
-    #Istd_lowq = np.std(I[idx_lowq])
-    #idx_good = ((I[idx_lowq] < Imean_lowq+Istd_lowq) & (I[idx_lowq] > Imean_lowq-Istd_lowq))
-    #I_at_0 = fit_I0(q[idx_lowq][idx_good],I[idx_lowq][idx_good],4)
-    # safety check in case of low-q errors (e.g. beam stop interference, beam drift)...
-    # TODO: use some measure of noise here instead?
-    #if not I_at_0>0 or I_at_0<0.5*Imean_lowq or I_at_0>2.*Imean_lowq: 
-    #    idx_fit = ((q>0.06)&(q<0.1))
-    #    I_at_0 = fit_I0(q[idx_fit],I[idx_fit],2)
-    #d['I_at_0'] = I_at_0
 
     # PART 2: Estimate parameters for flagged populations
     #TODO: add parameters for diffraction peaks
@@ -435,19 +413,19 @@ def fit_spectrum(q_I,flags,params,fixed_params,objective='chi2log'):
             snr = np.mean(I_opt)/np.std(I_bg) 
             rpt['fit_snr'] = snr
 
-    I_opt = compute_saxs(q,flags,p_opt) 
-    I_guess = compute_saxs(q,flags,params) 
-    from matplotlib import pyplot as plt
-    plt.figure(2)
-    plt.plot(q,I)
-    plt.plot(q,I_guess,'r')
-    plt.plot(q,I_opt,'g')
-    plt.figure(12)
-    plt.semilogy(q,I)
-    plt.semilogy(q,I_guess,'r')
-    plt.semilogy(q,I_opt,'g')
-    print('flags: \n{}'.format(flags))
-    plt.show()
+    #I_opt = compute_saxs(q,flags,p_opt) 
+    #I_guess = compute_saxs(q,flags,params) 
+    #from matplotlib import pyplot as plt
+    #plt.figure(2)
+    #plt.plot(q,I)
+    #plt.plot(q,I_guess,'r')
+    #plt.plot(q,I_opt,'g')
+    #plt.figure(12)
+    #plt.semilogy(q,I)
+    #plt.semilogy(q,I_guess,'r')
+    #plt.semilogy(q,I_opt,'g')
+    #print('flags: \n{}'.format(flags))
+    #plt.show()
 
     return p_opt,rpt
 

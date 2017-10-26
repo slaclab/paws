@@ -1,5 +1,6 @@
 from collections import OrderedDict
 import glob
+import copy
 
 from ...Operation import Operation
 from ... import Operation as opmod 
@@ -15,37 +16,42 @@ class BatchPostProcess(Operation):
     """
 
     def __init__(self):
-        input_names = ['batch_output','output_keys','workflow','input_keys']
+        input_names = ['batch_outputs','workflow','output_keys','input_keys']
         output_names = ['batch_inputs','batch_outputs']
         super(BatchPostProcess,self).__init__(input_names,output_names)
-        self.input_doc['batch_output'] = 'list of dicts produced as batch output from another batch execution operation'
-        self.input_doc['output_keys'] = 'list of keys for harvesting batch outputs (must be outputs of the previous batch workflow)'
-        self.input_doc['workflow'] = 'a reference to the workflow to be executed in this batch'
+        self.input_doc['batch_outputs'] = 'list of dicts produced as batch output from another batch execution operation'
+        self.input_doc['workflow'] = 'the workflow to be executed in this batch'
+        self.input_doc['output_keys'] = 'list of keys for harvesting batch outputs'
         self.input_doc['input_keys'] = 'list of keys for setting workflow inputs, in corresponding order to output_keys'
         self.output_doc['batch_inputs'] = 'list of dicts of input_key:input_value for each of the input_keys'
         self.output_doc['batch_outputs'] = 'list of dicts of workflow outputs'
         self.input_type['workflow'] = opmod.entire_workflow
-        self.input_type['batch_output'] = opmod.workflow_item
+        self.input_type['batch_outputs'] = opmod.workflow_item
         
     def run(self):
-        """
-        Build a list of [uri:value] dicts to be used in the workflow.
-        """
-        batch_output = self.inputs['batch_output']
+        b_out = self.inputs['batch_outputs']
         out_keys = self.inputs['output_keys']
         inp_keys = self.inputs['input_keys']
         wf = self.inputs['workflow']
-        if (wf is None or batch_output is None or out_keys is None or inp_keys is None):
-            return
-        self.outputs['batch_inputs'] = []
-        self.outputs['batch_outputs'] = []
-        n_batch = len(batch_output)
-        for d_out in batch_output:
+        n_batch = len(b_out)
+        self.outputs['batch_inputs'] = [None for ib in range(n_batch)] 
+        self.outputs['batch_outputs'] = [None for ib in range(n_batch)] 
+        if self.data_callback: 
+            self.data_callback('outputs.batch_inputs',[None for ib in range(n_batch)])
+            self.data_callback('outputs.batch_outputs',[None for ib in range(n_batch)])
+        self.message_callback('STARTING BATCH')
+        for i,d_out in zip(range(n_batch),b_out):
             inp_dict = OrderedDict() 
             for kout,kin in zip(out_keys,inp_keys):
                 inp_dict[kin] = d_out[kout]
                 wf.set_wf_input(kin,d_out[kout])
+            self.message_callback('BATCH RUN {} / {}'.format(i,n_batch-1))
             wf.execute()
-            self.outputs['batch_inputs'].append(inp_dict)
-            self.outputs['batch_outputs'].append(wf.wf_outputs_dict())
+            out_dict = wf.wf_outputs_dict()
+            self.outputs['batch_inputs'][i] = inp_dict
+            self.outputs['batch_outputs'][i] = out_dict
+            if self.data_callback: 
+                self.data_callback('outputs.batch_inputs.'+str(i),inp_dict)
+                self.data_callback('outputs.batch_outputs.'+str(i),copy.deepcopy(out_dict))
+        self.message_callback('BATCH FINISHED')
 
