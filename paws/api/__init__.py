@@ -14,7 +14,7 @@ from ..core import plugins
 from ..core.operations import Operation as opmod
 from ..core.operations import optools
 from ..core.operations.OpManager import OpManager 
-from ..core.workflow.WfManager import WfManager 
+from ..core.workflows.WfManager import WfManager 
 from ..core.plugins.PluginManager import PluginManager 
 
 def start():

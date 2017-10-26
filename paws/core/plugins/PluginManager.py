@@ -3,7 +3,7 @@ import importlib
 from collections import OrderedDict
 
 from ..operations.Operation import Operation
-from ..workflow.Workflow import Workflow
+from ..workflows.Workflow import Workflow
 from ..models.TreeModel import TreeModel
 from .. import plugins as pgns
 from .. import pawstools
