@@ -8,12 +8,11 @@ import yaml
 
 from .. import pawstools
 
+load_flags = OrderedDict() 
 # check for an ops.cfg (yaml) file
-cfg_file = os.path.join(pawstools.paws_cfg_dir,'ops.cfg')
-if os.path.exists(cfg_file):
-    load_flags = pawstools.load_cfg(cfg_file)
-else:
-    load_flags = OrderedDict() 
+#cfg_file = os.path.join(pawstools.paws_cfg_dir,'ops.cfg')
+#if os.path.exists(cfg_file):
+#    load_flags = pawstools.load_cfg(cfg_file)
 
 # Keep track of keys that get loaded in this run.
 # These keys are used to remove load_flags automatically
