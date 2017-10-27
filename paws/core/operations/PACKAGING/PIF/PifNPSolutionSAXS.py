@@ -11,32 +11,35 @@ class PifNPSolutionSAXS(Operation):
     """
 
     def __init__(self):
-        input_names = ['uid_prefix','date_time','t_utc','q_I','temperature','features']
+        input_names = ['uid_prefix','t_utc','temperature','q_I','flags','params','report']
         output_names = ['pif']
         super(PifNPSolutionSAXS,self).__init__(input_names,output_names)
-        self.input_doc['uid_prefix'] = 'text string to prepend to pif uid (pif uid = uid_prefix+t_utc'
-        self.input_doc['date_time'] = 'string date/time from measurement header file, used for pif record tags'
+        self.input_doc['uid_prefix'] = 'string for pif uid prefix '\
+            '(pif uid = uid_prefix+t_utc)'
         self.input_doc['t_utc'] = 'time in seconds utc'
-        self.input_doc['q_I'] = 'n-by-2 array of q values and corresponding intensities for saxs spectrum'
         self.input_doc['temperature'] = 'temperature of the system in degrees Celsius'
-        self.input_doc['features'] = 'dict of features extracted from the measured spectrum.'
+        self.input_doc['q_I'] = 'n-by-2 array of q values and corresponding saxs intensities'
+        self.input_doc['flags'] = 'dict of boolean flags indicating scatterer populations'
+        self.input_doc['params'] = 'dict of scattering equation parameters fit to q_I'
+        self.input_doc['report'] = 'dict reporting key results '\
+            'for the SAXS processing workflow, including fitting objectives, etc.'
         self.output_doc['pif'] = 'pif object representing the input data'
-        self.input_type['date_time'] = opmod.workflow_item
         self.input_type['t_utc'] = opmod.workflow_item
-        self.input_type['q_I'] = opmod.workflow_item
         self.input_type['temperature'] = opmod.workflow_item
-        self.input_type['features'] = opmod.workflow_item
+        self.input_type['q_I'] = opmod.workflow_item
+        self.input_type['flags'] = opmod.workflow_item
+        self.input_type['params'] = opmod.workflow_item
         # all inputs default to none: an empty pif should be produced in this case.
         self.inputs['uid_prefix'] = None
-        self.inputs['date_time'] = None
         self.inputs['t_utc'] = None
-        self.inputs['q_I'] = None
         self.inputs['temperature'] = None
-        self.inputs['features'] = None
+        self.inputs['q_I'] = None
+        self.inputs['flags'] = None
+        self.inputs['params'] = None
+        self.inputs['report'] = None
 
     def run(self):
         uid_pre = self.inputs['uid_prefix']
-        t_str = self.inputs['date_time']
         t_utc = self.inputs['t_utc']
         uid_full = 'tmp'
         if uid_pre is not None:
@@ -45,7 +48,9 @@ class PifNPSolutionSAXS(Operation):
             uid_full = uid_full+'_'+str(int(t_utc))
         temp_C = self.inputs['temperature']
         q_I = self.inputs['q_I']
-        ftrs = self.inputs['features']
+        f = self.inputs['flags']
+        p = self.inputs['params']
+        r = self.inputs['report']
 
         # ChemicalSystem record construction begins here
         csys = pifobj.ChemicalSystem()
@@ -54,28 +59,49 @@ class PifNPSolutionSAXS(Operation):
         csys.tags = []
         if uid_pre is not None:
             csys.tags.append('reaction id: '+uid_pre)
-        if t_str is not None:
-            csys.tags.append('date: '+t_str)
         if t_utc is not None:
-            csys.tags.append('utc: '+str(int(t_utc)))
+            csys.tags.append('time (utc): '+str(int(t_utc)))
 
         # TODO: include the scattering equation in this record somehow
-        if ftrs is not None:
-            if ftrs['bad_data']:
-                csys.tags.append('unidentified scattering or bad data')
-            if ftrs['diffraction_peaks']:
-                csys.tags.append('diffraction peaks')
-            if ftrs['form_factor_scattering']:
-                csys.tags.append('form factor scattering')
-                if not ftrs['diffraction_peaks'] and not ftrs['bad_data']:
-                    csys.properties.append(self.feature_property(None,'nanoparticle mean radius','Angstrom'))
-                    csys.properties.append(self.feature_property(None,'fractional standard deviation of nanoparticle radius',''))
-                    csys.properties.append(self.feature_property(None,'form factor scattering intensity prefactor','counts'))
-            if ftrs['precursor_scattering']:
-                csys.tags.append('precursor scattering')
-                if not ftrs['diffraction_peaks'] and not ftrs['bad_data']:
-                    csys.properties.append(self.feature_property(None,'precursor effective radius','Angstrom'))
-                    csys.properties.append(self.feature_property(None,'precursor scattering intensity prefactor','counts'))
+        if f is not None:
+            if f['bad_data']:
+                csys.properties.append(self.param_property(
+                'bad_data',1.,'probability of bad data','EXPERIMENTAL'))
+            if f['diffraction_peaks']:
+                csys.properties.append(self.param_property(
+                'diffraction_peaks',1.,'probability of diffraction peaks','EXPERIMENTAL'))
+            if f['form_factor_scattering']:
+                csys.properties.append(self.param_property(
+                'form_factor_scattering',1.,'probability of form factor scattering','EXPERIMENTAL'))
+            if f['precursor_scattering']:
+                csys.properties.append(self.param_property(
+                'precursor scattering',1.,'probability of precursor scattering','EXPERIMENTAL'))
+
+        if p is not None:
+            if 'I0_floor' in p:
+                csys.properties.append(self.param_property(
+                'I0_floor',p['I0_floor'],
+                'arb','flat background intensity','FIT'))
+            if 'G_precursor' in p:
+                csys.properties.append(self.param_property(
+                'G_precursor',p['G_precursor'],
+                'arb','precursor Guinier factor','FIT'))
+            if 'rg_precursor' in p:
+                csys.properties.append(self.param_property(
+                'rg_precursor',p['rg_precursor'],
+                'Angstrom','precursor radius of gyration','FIT'))
+            if 'I0_sphere' in p:
+                csys.properties.append(self.param_property(
+                'I0_sphere',p['I0_sphere'],
+                'arb','spherical scatterer intensity','FIT'))
+            if 'r0_sphere' in p:
+                csys.properties.append(self.param_property(
+                'r0_sphere',p['r0_sphere'],
+                'Angstrom','spherical scatterer mean radius','FIT'))
+            if 'sigma_sphere' in p:
+                csys.properties.append(self.param_property(
+                'sigma_sphere',p['sigma_sphere'],
+                '','fractional standard deviation of spherical scatterer radii','FIT'))
 
         if q_I is not None:
             # Process measured q_I into a property
@@ -84,31 +110,47 @@ class PifNPSolutionSAXS(Operation):
                 pI.conditions.append(pifobj.Value('temperature',[pifobj.Scalar(temp_C)],None,None,None,'degrees Celsius'))
             pI.name = 'SAXS intensity' 
             csys.properties.append(pI)
-            if not ftrs['diffraction_peaks'] and not ftrs['bad_data']:
-                csys.properties.append(self.feature_property(None,'scattered intensity at q=0','counts'))
-                # Compute the saxs spectrum, package it
-                qI_computed = saxs_fit.compute_saxs(q_I[:,0],ftrs)
-                pI_computed = self.q_I_property(np.array( [[q_I[i,0],qI_computed[i]] for i in range(len(qI_computed))] ))
+            # Store featurization of measured spectrum
+            prof = saxs_fit.profile_spectrum(q_I)
+            for fnm,fval in prof.items():
+                csys.properties.append(self.param_property(
+                fnm,fval,'','spectrum profiling heuristic quantity'))
+
+        if q_I is not None and p is not None and f is not None:
+            if not f['bad_data'] and not f['diffraction_peaks']:
+                I_computed = saxs_fit.compute_saxs(q_I[:,0],f,p)
+                pI_computed = self.q_I_property(np.array([q_I[:,0],I_computed]).T)
                 pI_computed.name = 'computed SAXS intensity'
                 csys.properties.append(pI_computed)
+
+        if r is not None:
+            for rptnm,rptval in r.items():
+                if isinstance(rptval,float):
+                    csys.properties.append(self.param_property(
+                    rptnm,rptval,'','spectrum fitting reported quantity','FIT'))
+
         self.outputs['pif'] = csys
 
-    def feature_property(self,fval,fname,funits=''):
+    def param_property(self,fname,fval,funits='',desc='',data_type=''):
         pf = pifobj.Property()
         pf.name = fname
         pf.scalars = [pifobj.Scalar(fval)]
         if funits:
             pf.units = funits
+        if desc:
+            pf.tags = [desc]
+        if data_type:
+            pf.dataType = data_type 
         return pf
 
-    def q_I_property(self,q_I):
+    def q_I_property(self,q_I,Iunits='arb',qunits='1/Angstrom'):
         pI = pifobj.Property()
         n_qpoints = q_I.shape[0]
         pI.scalars = [pifobj.Scalar(q_I[i,1]) for i in range(n_qpoints)]
-        pI.units = 'counts'
+        pI.units = Iunits 
         pI.conditions = []
         pI.conditions.append( pifobj.Value('scattering vector', 
                             [pifobj.Scalar(q_I[i,0]) for i in range(n_qpoints)],
-                            None,None,None,'1/Angstrom') )
+                            None,None,None,qunits) )
         return pI 
         
