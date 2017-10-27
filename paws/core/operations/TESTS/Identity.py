@@ -1,14 +1,17 @@
 from ..Operation import Operation
 
+inputs = OrderedDict(data=None)
+outputs = OrderedDict(data=None)
+
 class Identity(Operation):
-    """An Operation testing class, loads its input into its output"""
+    """Operation that loads its one input into its one output"""
 
     def __init__(self):
-        input_names = ['data']
-        output_names = ['data']
-        super(Identity,self).__init__(input_names,output_names) 
+        super(Identity,self).__init__(inputs,outputs) 
         self.input_doc['data'] = 'this can actually be anything'
         self.output_doc['data'] = 'this ends up being whatever the input was'
         
     def run(self):
+        """Load self.inputs['data'] into self.outputs['data']"""
         self.outputs['data'] = self.inputs['data']
+

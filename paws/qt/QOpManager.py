@@ -41,7 +41,7 @@ class QOpManager(OpManager,QTreeSelectionModel):
             except Exception as ex:
                 msg = str('Failed to enable Operation {}. '.format(op_uri)
                 + 'Error message: {}'.format(ex.message))
-                self.write_log(msg)
+                self.logmethod(msg)
                 return False
             self.set_flagged(itm,self.default_flags.keys()[idx.column()-1],val)
             self.dataChanged.emit(idx,idx)

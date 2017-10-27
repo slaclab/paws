@@ -27,6 +27,9 @@ class TreeModel(object):
 
     def __setitem__(self,uri,val):
         self.set_item(uri,val)
+
+    def keys(self):
+        return self._tree.keys()
     
     def n_children(self,parent_uri=''):
         itm = self.get_from_uri(parent_uri)
