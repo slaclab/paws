@@ -15,7 +15,7 @@ class PifNPSolutionSAXS(Operation):
         output_names = ['pif']
         super(PifNPSolutionSAXS,self).__init__(input_names,output_names)
         self.input_doc['uid_prefix'] = 'string for pif uid prefix '\
-            '(pif uid = uid_prefix+t_utc)'
+            '(pif uid = uid_prefix+t_utc), and also the '
         self.input_doc['t_utc'] = 'time in seconds utc'
         self.input_doc['temperature'] = 'temperature of the system in degrees Celsius'
         self.input_doc['q_I'] = 'n-by-2 array of q values and corresponding saxs intensities'
@@ -57,10 +57,34 @@ class PifNPSolutionSAXS(Operation):
         csys.uid = uid_full
         csys.properties = []
         csys.tags = []
+        csys.ids = []
         if uid_pre is not None:
-            csys.tags.append('reaction id: '+uid_pre)
+            csys.ids.append(self.id_tag('EXPERIMENT_ID',uid_pre))
+        #if uid_pre is not None:
+        #    csys.tags.append('reaction id: '+uid_pre)
         if t_utc is not None:
             csys.tags.append('time (utc): '+str(int(t_utc)))
+
+        if q_I is not None:
+            # Process measured q_I into a property
+            pI = self.q_I_property(q_I)
+            if temp_C is not None:
+                pI.conditions.append(pifobj.Value('temperature',[pifobj.Scalar(temp_C)],None,None,None,'degrees Celsius'))
+            pI.name = 'SAXS intensity' 
+            csys.properties.append(pI)
+            # Store featurization of measured spectrum
+            prof = saxs_fit.profile_spectrum(q_I)
+            for fnm,fval in prof.items():
+                csys.properties.append(self.param_property(
+                fnm,fval,'','spectrum profiling heuristic quantity'))
+
+        if q_I is not None and p is not None and f is not None:
+            if not f['bad_data'] and not f['diffraction_peaks']:
+                I_computed = saxs_fit.compute_saxs(q_I[:,0],f,p)
+                pI_computed = self.q_I_property(np.array([q_I[:,0],I_computed]).T)
+                pI_computed.name = 'computed SAXS intensity'
+                csys.properties.append(pI_computed)
+
 
         # TODO: include the scattering equation in this record somehow
         if f is not None:
@@ -103,26 +127,6 @@ class PifNPSolutionSAXS(Operation):
                 'sigma_sphere',p['sigma_sphere'],
                 '','fractional standard deviation of spherical scatterer radii','FIT'))
 
-        if q_I is not None:
-            # Process measured q_I into a property
-            pI = self.q_I_property(q_I)
-            if temp_C is not None:
-                pI.conditions.append(pifobj.Value('temperature',[pifobj.Scalar(temp_C)],None,None,None,'degrees Celsius'))
-            pI.name = 'SAXS intensity' 
-            csys.properties.append(pI)
-            # Store featurization of measured spectrum
-            prof = saxs_fit.profile_spectrum(q_I)
-            for fnm,fval in prof.items():
-                csys.properties.append(self.param_property(
-                fnm,fval,'','spectrum profiling heuristic quantity'))
-
-        if q_I is not None and p is not None and f is not None:
-            if not f['bad_data'] and not f['diffraction_peaks']:
-                I_computed = saxs_fit.compute_saxs(q_I[:,0],f,p)
-                pI_computed = self.q_I_property(np.array([q_I[:,0],I_computed]).T)
-                pI_computed.name = 'computed SAXS intensity'
-                csys.properties.append(pI_computed)
-
         if r is not None:
             for rptnm,rptval in r.items():
                 if isinstance(rptval,float):
@@ -130,6 +134,9 @@ class PifNPSolutionSAXS(Operation):
                     rptnm,rptval,'','spectrum fitting reported quantity','FIT'))
 
         self.outputs['pif'] = csys
+
+    def id_tag(self,idname,idval,tags=None):
+        return pifobj.Id(idname,idval,tags)
 
     def param_property(self,fname,fval,funits='',desc='',data_type=''):
         pf = pifobj.Property()
