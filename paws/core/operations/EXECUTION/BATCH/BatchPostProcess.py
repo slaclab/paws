@@ -6,6 +6,13 @@ from ...Operation import Operation
 from ... import Operation as opmod 
 from ... import optools
 
+inputs=OrderedDict(
+    batch_outputs=None,
+    workflow=None,
+    output_keys=None,
+    input_keys=None)
+outputs=OrderedDict(batch_inputs=None,batch_outputs=None)
+
 class BatchPostProcess(Operation):
     """
     Take the batch output (list of dicts) from a previously completed Batch,
@@ -16,9 +23,7 @@ class BatchPostProcess(Operation):
     """
 
     def __init__(self):
-        input_names = ['batch_outputs','workflow','output_keys','input_keys']
-        output_names = ['batch_inputs','batch_outputs']
-        super(BatchPostProcess,self).__init__(input_names,output_names)
+        super(BatchPostProcess,self).__init__(inputs,outputs)
         self.input_doc['batch_outputs'] = 'list of dicts produced as batch output from another batch execution operation'
         self.input_doc['workflow'] = 'the workflow to be executed in this batch'
         self.input_doc['output_keys'] = 'list of keys for harvesting batch outputs'

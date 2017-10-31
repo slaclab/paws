@@ -1,3 +1,5 @@
+from collections import OrderedDict
+
 import numpy as np
 
 from .. import Operation as opmod 
@@ -13,7 +15,6 @@ class NoiseArray(Operation):
         super(NoiseArray,self).__init__(inputs,outputs) 
         self.input_doc['size'] = 'dimension of output array'
         self.output_doc['array'] = 'an array of noise'
-        self.inputs['size'] = 100 
     
     def run(self):
         s = self.inputs['size']

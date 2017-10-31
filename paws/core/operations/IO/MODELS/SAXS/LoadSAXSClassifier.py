@@ -1,3 +1,4 @@
+from collections import OrderedDict
 import os.path
 
 import numpy as np
@@ -10,15 +11,16 @@ from ....Operation import Operation
 from ..... import pawstools
 from .....tools.saxs.saxs_classify import SaxsClassifier
 
+inputs=OrderedDict(file_path=None)
+outputs=OrderedDict(saxs_classifier=None)
+
 class LoadSAXSClassifier(Operation):
     """
     Read files to load a set of classifiers to be used on 1-d saxs spectra. 
     """
 
     def __init__(self):
-        input_names = ['file_path']
-        output_names = ['saxs_classifier']
-        super(LoadSAXSClassifier, self).__init__(input_names, output_names)
+        super(LoadSAXSClassifier, self).__init__(inputs, outputs)
         self.input_doc['file_path'] = 'path to a pickle file '\
         'with data defining a set of scalers and classifiers '\
         'designed for 1-d (I(q) versus q) SAXS spectra. '\
@@ -32,5 +34,4 @@ class LoadSAXSClassifier(Operation):
     def run(self):
         p = self.inputs['file_path']
         self.outputs['saxs_classifier'] = SaxsClassifier(p)
-
 

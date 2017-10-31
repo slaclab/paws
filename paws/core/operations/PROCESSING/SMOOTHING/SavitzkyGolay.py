@@ -1,17 +1,18 @@
+from collections import OrderedDict
+
 import numpy as np
 
 from ... import Operation as opmod 
 from ...Operation import Operation
 
+inputs = OrderedDict(x=None,y=None,dy=None,order=None,base=None)
+outputs = OrderedDict(smoothdata=None)
+
 class SavitzkyGolay(Operation):
-    """
-    Applies a Savitzky-Golay (polynomial fit approximation) filter to 1d data.
-    Uses error bars on intensity if available (default None).  
-    """
+    """Applies a Savitzky-Golay polynomial smoothing filter to a 1d array."""
+
     def __init__(self):
-        input_names = ['x', 'y', 'dy', 'order', 'base']
-        output_names = ['smoothdata']
-        super(SavitzkyGolay, self).__init__(input_names, output_names)
+        super(SavitzkyGolay, self).__init__(inputs, outputs)
         self.input_doc['x'] = '1d array- independent variable'
         self.input_doc['y'] = '1d array- dependent variable, same shape as x'
         self.input_doc['dy'] = '1d array, error estimate in y, same shape as y (default None)'

@@ -1,8 +1,13 @@
+from collections import OrderedDict
+
 import numpy as np
 
 import yaml
 from ... import Operation as opmod 
 from ...Operation import Operation
+
+inputs=OrderedDict(file_path=None)
+outputs=OrderedDict(yaml_output=None)
 
 class LoadYAML(Operation):
     """
@@ -10,16 +15,12 @@ class LoadYAML(Operation):
     """
 
     def __init__(self):
-        input_names = ['file_path']
-        output_names = ['yaml_output']
-        super(LoadYAML, self).__init__(input_names, output_names)
+        super(LoadYAML, self).__init__(inputs, outputs)
         self.input_doc['file_path'] = 'path to YAML-formatted data file'
         self.output_doc['yaml_output'] = 'the result of yaml.load(file_path)' 
 
     def run(self):
         p = self.inputs['file_path']
-        if p is None:
-            return
         f = open(p,'r')
         ds = yaml.load(f)
         f.close()

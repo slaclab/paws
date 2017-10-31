@@ -4,7 +4,7 @@ from ... import Operation as opmod
 from ...Operation import Operation
 from ... import optools
 
-class BuildListFromBatch(Operation):
+class ListFromBatch(Operation):
     """
     Given a batch output (list of dicts)
     and an output name (dict key), 
@@ -14,7 +14,7 @@ class BuildListFromBatch(Operation):
     def __init__(self):
         input_names = ['batch_outputs','output_key']
         output_names = ['data_list']
-        super(BuildListFromBatch,self).__init__(input_names,output_names)        
+        super(ListFromBatch,self).__init__(input_names,output_names)        
         self.input_doc['batch_outputs'] = 'list of dicts produced by a batch execution'
         self.input_doc['output_key'] = 'name of workflow output to be harvested'
         self.input_type['batch_outputs'] = opmod.workflow_item

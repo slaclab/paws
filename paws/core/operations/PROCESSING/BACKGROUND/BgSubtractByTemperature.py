@@ -1,24 +1,31 @@
 import numpy as np
+from collections import OrderedDict
 
 from ... import Operation as opmod 
 from ...Operation import Operation
 from ... import optools
 
+inputs = OrderedDict(
+    q_I_meas=None,
+    T_meas=None,
+    bg_batch_output=None,
+    q_I_bg_key=None,
+    T_bg_key=None)
+outputs = OrderedDict(q_I_bgsub=None,T_bg=None,bg_factor=None)
+
 class BgSubtractByTemperature(Operation):
     """
-    Originally contributed by Amanda Fournier.  
-
     Find a background spectrum from a batch of background spectra,
     where the temperature of the background spectrum is as close as possible
     to the (input) temperature of the measured spectrum.
     Then subtract that background spectrum from the input spectrum.
     The measured and background spectra are expected to have the same domain.
+
+    Operation originally contributed by Amanda Fournier.  
     """
     
     def __init__(self):
-        input_names = ['q_I_meas','T_meas','bg_batch_output','q_I_bg_key','T_bg_key']
-        output_names = ['q_I_bgsub', 'T_bg', 'bg_factor']
-        super(BgSubtractByTemperature, self).__init__(input_names, output_names)
+        super(BgSubtractByTemperature, self).__init__(inputs, outputs)
         self.input_doc['q_I_meas'] = 'n-by-2 array of I(q) versus q'
         self.input_doc['T_meas'] = 'temperature as taken from the dict '\
             'produced by the detector header file'
@@ -43,8 +50,6 @@ class BgSubtractByTemperature(Operation):
         qIkey = self.inputs['q_I_bg_key']
         Tkey = self.inputs['T_bg_key']
         bg_out = self.inputs['bg_batch_output']
-        if q_I_meas is None or bg_out is None or not all([qIkey,Tkey]) or T_meas is None:
-            return
         T_allbg = [d[Tkey] for d in bg_out]
         closest_T_idx = np.argmin(np.abs([T_bg - T_meas for T_bg in T_allbg]))
         T_bg = T_allbg[closest_T_idx]

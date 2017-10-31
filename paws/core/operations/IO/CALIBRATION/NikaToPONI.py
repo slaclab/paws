@@ -1,3 +1,4 @@
+from collections import OrderedDict
 import os
 
 import numpy as np
@@ -5,6 +6,9 @@ import pyFAI
 
 from ... import Operation as opmod 
 from ...Operation import Operation
+
+inputs=OrderedDict(nika_file=None,fpolz=1.)
+outputs=OrderedDict(poni_dict=None)
 
 class NikaToPONI(Operation):
     """
@@ -35,20 +39,15 @@ class NikaToPONI(Operation):
     """
     
     def __init__(self):
-        input_names = ['nika_file','fpolz']
-        output_names = ['poni_dict']
-        super(NikaToPONI,self).__init__(input_names,output_names)
+        super(NikaToPONI,self).__init__(inputs,outputs)
         self.input_doc['nika_file'] = 'text file expressing nika automated calibration results- '\
-        'see documentation of this operation class for the expected format of this file'
+            'see documentation of this operation class for the expected format of this file'
         self.input_doc['fpolz'] = 'polarization factor, default value is 1.'
-        self.inputs['fpolz'] = float(1.) 
         self.output_doc['poni_dict'] = 'Dict of pyFAI calibration parameters, as found in a .poni file'
 
     def run(self):
         fpath = self.inputs['nika_file']
         fpolz = self.inputs['fpolz']
-        if fpath is None:
-            return
         for line in open(fpath,'r'):
             kv = line.strip().split('=')
             if kv[0] == 'sample_to_CCD_mm':

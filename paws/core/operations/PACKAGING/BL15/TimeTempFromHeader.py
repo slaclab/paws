@@ -1,3 +1,4 @@
+from collections import OrderedDict
 import datetime
 import time
 
@@ -6,6 +7,9 @@ import tzlocal
 from ... import Operation as opmod 
 from ...Operation import Operation
 
+inputs=OrderedDict(image_header=None,time_key=None,temp_key=None)
+outputs=OrderedDict(date_time=None,time=None,temperature=None)
+
 class TimeTempFromHeader(Operation):
     """
     Get time and temperature from a detector output header file.
@@ -13,9 +17,7 @@ class TimeTempFromHeader(Operation):
     Time is assumed to be in the format Day Mon dd hh:mm:ss yyyy.
     """
     def __init__(self):
-        input_names = ['image_header','time_key','temp_key']
-        output_names = ['date_time','time','temperature']
-        super(TimeTempFromHeader,self).__init__(input_names,output_names)        
+        super(TimeTempFromHeader,self).__init__(inputs,outputs)        
         self.input_type['image_header'] = opmod.workflow_item
         self.input_doc['image_header'] = 'workflow uri of dict produced from detector output header file.'
         self.input_doc['time_key'] = 'key in image_header that refers to the time' 
@@ -28,8 +30,6 @@ class TimeTempFromHeader(Operation):
         d = self.inputs['image_header']
         ktime = self.inputs['time_key']
         ktemp = self.inputs['temp_key']
-        if d is None or ktime is None or ktemp is None:
-            return
         time_str = str(d[ktime])
         temp = float(d[ktemp])
         # process the UTC time in seconds assuming %a %b %d %H:%M:%S %Y format

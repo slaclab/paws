@@ -1,16 +1,24 @@
+from collections import OrderedDict
+
 import os
 import numpy as np
 
 from ... import Operation as opmod 
 from ...Operation import Operation
 
+inputs=OrderedDict(
+    array=None,
+    headers=None,
+    dir_path=None,
+    filename=None,
+    filetag='')
+outputs=OrderedDict(file_path=None,filename=None)
+
 class WriteArrayCSV(Operation):
     """Write a 2d array to a csv file"""
 
     def __init__(self):
-        input_names = ['array','headers','dir_path','filename','filetag']
-        output_names = ['file_path','filename']
-        super(WriteArrayCSV, self).__init__(input_names, output_names)
+        super(WriteArrayCSV, self).__init__(inputs, outputs)
         self.input_doc['array'] = 'any 2d array'
         self.input_doc['headers'] = 'list of string headers (optional)- one header for each column of array'
         self.input_doc['dir_path'] = 'the path to the destination directory'
@@ -19,7 +27,6 @@ class WriteArrayCSV(Operation):
         self.output_doc['file_path'] = 'the path to the finished csv file: dir_path+filename+filetag+.csv'
         self.output_doc['file_path'] = 'the name of the output csv: filename+filetag'
         self.input_type['array'] = opmod.workflow_item
-        self.inputs['filetag'] = ''
 
     def run(self):
         a = self.inputs['array']
@@ -27,8 +34,6 @@ class WriteArrayCSV(Operation):
         p = self.inputs['dir_path']
         fnm = self.inputs['filename']
         tag = self.inputs['filetag']
-        if p is None or a is None or fnm is None:
-            return 
         csv_path = os.path.join(p,self.inputs['filename']+tag+'.csv')
         self.outputs['file_path'] = csv_path
         self.outputs['filename'] = fnm+tag 

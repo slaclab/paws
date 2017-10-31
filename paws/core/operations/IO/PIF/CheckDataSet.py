@@ -1,5 +1,10 @@
+from collections import OrderedDict
+
 from ... import Operation as opmod 
 from ...Operation import Operation
+
+inputs=OrderedDict(client=None,dsid=None)
+outputs=OrderedDict(ok_flag=None,status=None)
         
 class CheckDataSet(Operation):
     """
@@ -8,9 +13,7 @@ class CheckDataSet(Operation):
     """
     
     def __init__(self):
-        input_names = ['client','dsid']
-        output_names = ['ok_flag','status']
-        super(CheckDataSet,self).__init__(input_names,output_names)
+        super(CheckDataSet,self).__init__(inputs,outputs)
         self.input_doc['client'] = 'A reference to a running Citrination client.'
         self.input_doc['dsid'] = 'The data set to be queried.'
         self.output_doc['ok_flag'] = 'Indicator of whether or not the data set passes the test.'
@@ -20,8 +23,6 @@ class CheckDataSet(Operation):
     def run(self):
         c = self.inputs['client']
         dsid = self.inputs['dsid'] 
-        if c is None or dsid is None:
-            return
         f = True
         try:
             r = c.get_dataset_files(dsid)

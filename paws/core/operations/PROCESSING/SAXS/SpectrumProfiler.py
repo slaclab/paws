@@ -5,22 +5,21 @@ from ... import Operation as opmod
 from ...Operation import Operation
 from ....tools.saxs import saxs_fit 
 
+inputs = OrderedDict(q_I=None,dI=None)
+outputs = OrderedDict(features=None)
+
 class SpectrumProfiler(Operation):
-    """
+    """Profile a SAXS spectrum and return some numerical metrics.
+
     This operation profiles a SAXS spectrum (I(q) vs. q)
     by taking various scalar quantities from the data.
-
-    Outputs a dictionary of the results.
-
     This Operation is somewhat robust for noisy data,
     but any preprocessing (background subtraction, smoothing, or other cleaning)
     should be performed beforehand. 
     """
 
     def __init__(self):
-        input_names = ['q_I', 'dI']
-        output_names = ['features']
-        super(SpectrumProfiler, self).__init__(input_names, output_names)
+        super(SpectrumProfiler, self).__init__(inputs, outputs)
         self.input_doc['q_I'] = 'n-by-2 array of q(1/Angstrom) versus I(arb).'
         self.output_doc['features'] = 'dict profiling the input spectrum. '\
         'See the documentation of paws.core.tools.saxs.saxs_fit.profile_spectrum().'

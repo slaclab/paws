@@ -1,9 +1,12 @@
 from collections import OrderedDict
 
+import pyFAI
+
 from ... import Operation as opmod 
 from ...Operation import Operation
 
-import pyFAI
+inputs=OrderedDict(file_path=None)
+outputs=OrderedDict(poni_dict=None)
 
 class ReadPONI(Operation):
     """
@@ -12,9 +15,7 @@ class ReadPONI(Operation):
     """
     
     def __init__(self):
-        input_names = ['file_path']
-        output_names = ['poni_dict']
-        super(ReadPONI,self).__init__(input_names,output_names)
+        super(ReadPONI,self).__init__(inputs,outputs)
         self.input_doc['poni_file'] = 'Path to a .poni file '\
             'describing a calibrated sample-detector geometry'
         self.output_doc['poni_dict'] = 'Dict of pyFAI calibration parameters'

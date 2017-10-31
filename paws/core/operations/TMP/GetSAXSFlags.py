@@ -5,6 +5,9 @@ import numpy as np
 from .. import Operation as opmod 
 from ..Operation import Operation
 
+inputs = OrderedDict(dicts=None,dict_key=None)
+outputs = OrderedDict(flags=None)
+
 class GetSAXSFlags(Operation):
     """
     Operation for retrieving SAXS population flags
@@ -12,9 +15,7 @@ class GetSAXSFlags(Operation):
     """
 
     def __init__(self):
-        input_names = ['dicts','dict_key']
-        output_names = ['flags']
-        super(GetSAXSFlags, self).__init__(input_names, output_names)
+        super(GetSAXSFlags, self).__init__(inputs, outputs)
         self.input_doc['dicts'] = 'dict of dicts read in from a YAML file where data labels were previously saved'
         self.input_doc['dict_key'] = 'The key to use to extract the flags from the input dicts'
         self.output_doc['flags'] = 'a dict with keys "bad_data", "precursor_scattering", '\
@@ -30,7 +31,5 @@ class GetSAXSFlags(Operation):
         f['precursor_scattering'] = ds['precursor_flags'][k]
         f['form_factor_scattering'] = ds['form_flags'][k]
         f['diffraction_peaks'] = ds['structure_flags'][k]
-
         self.outputs['flags'] = f 
-
 

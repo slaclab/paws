@@ -1,3 +1,4 @@
+from collections import OrderedDict
 import os
 
 from pypif import pif
@@ -5,6 +6,16 @@ import pypif.obj as pifobj
 
 from ... import Operation as opmod 
 from ...Operation import Operation
+
+inputs=OrderedDict(
+    pif=None,
+    client=None,
+    dsid=None,
+    json_dirpath=None,
+    json_filename=None,
+    keep_json=False,
+    ship_flag=False)
+outputs=OrderedDict(response=None)
         
 class ShipToDataSet(Operation):
     """
@@ -12,9 +23,7 @@ class ShipToDataSet(Operation):
     """
 
     def __init__(self):
-        input_names = ['pif','client','dsid','json_dirpath','json_filename','keep_json','ship_flag']
-        output_names = ['response']
-        super(ShipToDataSet,self).__init__(input_names,output_names)
+        super(ShipToDataSet,self).__init__(inputs,outputs)
         self.input_doc['pif'] = 'A pypif.obj.System object or an array/list thereof'
         self.input_doc['client'] = 'A running Citrination client' 
         self.input_doc['dsid'] = 'Data set ID where the pif record(s) will be stored on Citrination' 
@@ -25,8 +34,6 @@ class ShipToDataSet(Operation):
         self.output_doc['response'] = 'The Citrination server response to the shipment'
         self.input_type['pif'] = opmod.workflow_item
         self.input_type['client'] = opmod.plugin_item
-        self.inputs['ship_flag'] = False
-        self.inputs['keep_json'] = False
 
     def run(self):
         cl = self.inputs['client'] 

@@ -8,6 +8,9 @@ from ... import Operation as opmod
 from ...Operation import Operation
 from ....tools.saxs import saxs_fit
 
+inputs = OrderedDict(q_I=None,flags=None,params=None,fixed_params=[])
+outputs = OrderedDict(params=None,report=None,q_I_opt=None)
+
 class SpectrumFit(Operation):
     """
     Use a measured SAXS spectrum (I(q) vs. q),
@@ -34,9 +37,7 @@ class SpectrumFit(Operation):
     """
 
     def __init__(self):
-        input_names = ['q_I','flags','params','fixed_params']#,'objfun','constraints']
-        output_names = ['params','report','q_I_opt']
-        super(SpectrumFit, self).__init__(input_names, output_names)
+        super(SpectrumFit, self).__init__(inputs, outputs)
         self.input_doc['q_I'] = 'n-by-2 array of wave vectors (1/Angstrom) and intensities (counts)'
         self.input_doc['flags'] = 'dict of flags indicating what populations to fit'
         self.input_doc['params'] = 'dict of initial values for the scattering equation parameters '\
@@ -55,21 +56,18 @@ class SpectrumFit(Operation):
         self.input_type['q_I'] = opmod.workflow_item
         self.input_type['flags'] = opmod.workflow_item
         self.input_type['params'] = opmod.workflow_item
-        self.inputs['fixed_params'] = [] 
 
     def run(self):
         q_I = self.inputs['q_I']
         f = self.inputs['flags']
         p = self.inputs['params']
         fixkeys = self.inputs['fixed_params']
+        p_opt,rpt = saxs_fit.fit_spectrum(q_I,f,p,fixkeys,'chi2log')
+        q_I_opt = None
         if not f['bad_data']:
-            #if f['form_factor_scattering']:
-            #    p_opt,rpt = saxs_fit.fit_spectrum(q_I,f,p,fixkeys,'chi2log_fixI0')
-            #else:
-            p_opt,rpt = saxs_fit.fit_spectrum(q_I,f,p,fixkeys,'chi2log')
             I_opt = saxs_fit.compute_saxs(q_I[:,0],f,p_opt)
             q_I_opt = np.array([q_I[:,0],I_opt]).T
-            self.outputs['params'] = p_opt 
-            self.outputs['report'] = rpt
-            self.outputs['q_I_opt'] = q_I_opt
+        self.outputs['params'] = p_opt 
+        self.outputs['report'] = rpt
+        self.outputs['q_I_opt'] = q_I_opt
 

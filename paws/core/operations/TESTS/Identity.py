@@ -1,3 +1,5 @@
+from collections import OrderedDict
+
 from ..Operation import Operation
 
 inputs = OrderedDict(data=None)

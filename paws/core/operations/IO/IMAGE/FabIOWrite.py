@@ -1,9 +1,21 @@
+from collections import OrderedDict
+
 from fabio import edfimage
 from fabio import tifimage
 
 from ... import Operation as opmod 
 from ...Operation import Operation
 import os
+
+inputs=OrderedDict(
+    image_data=None,
+    header=None,
+    dir_path=None,
+    filename=None,
+    filetag='',
+    ext='.tif',
+    overwrite=False)
+outputs = OrderedDict(file_path=None)
 
 class FabIOWrite(Operation):
     """
@@ -16,9 +28,7 @@ class FabIOWrite(Operation):
     """
 
     def __init__(self):
-        input_names = ['image_data','header','dir_path','filename','filetag','ext','overwrite']
-        output_names = ['file_path']
-        super(FabIOWrite,self).__init__(input_names,output_names)
+        super(FabIOWrite,self).__init__(inputs,outputs)
         self.input_doc['image_data'] = 'image/array data to be saved'
         self.input_doc['header'] = 'dict-like image metadata header'
         self.input_doc['dir_path'] = 'parent directory path'
@@ -27,14 +37,9 @@ class FabIOWrite(Operation):
         self.input_doc['ext'] = 'file extension (overwrites base filename extension)'
         self.input_doc['overwrite'] = 'allow overwrite of already existing files'
         self.output_doc['file_path'] = 'path to the file that will be written: dir_path+filename+filetag+ext'
-
         self.input_type['image_data'] = opmod.workflow_item
         self.input_type['header'] = opmod.workflow_item
         self.input_type['filename'] = opmod.workflow_item
-
-        self.inputs['filetag'] = ''
-        self.inputs['ext'] = '.tif'
-        self.inputs['overwrite'] = False
 
     def run(self):
         """
@@ -43,8 +48,6 @@ class FabIOWrite(Operation):
         img = self.inputs['image_data']
         p = self.inputs['dir_path']
         fnm = self.inputs['filename'] 
-        if p is None or fnm is None or img is None:
-            return
         ext = self.inputs['ext'].lower()
         tg = self.inputs['filetag']
         hdr = self.inputs['header']
@@ -52,13 +55,10 @@ class FabIOWrite(Operation):
         filepath = os.path.join(self.inputs['dir_path'],outfile)
         self.outputs['file_path'] = filepath
         if os.path.isfile(filepath) and not self.inputs['overwrite']:
-            raise IOError('File already exists.')
-
+            raise IOError('File exists and overwrite flag is False')
         cls = None
-
         if ext == '.edf': cls = edfimage.edfimage
         elif ext == '.tif': cls = tifimage.tifimage
-        # TODO: add JPEG support
 
         if not cls: raise ValueError('Extension not supported.')
 

@@ -1,19 +1,23 @@
-import numpy as np
-import copy
 from collections import OrderedDict
+import copy
+
+import numpy as np
 
 from ... import Operation as opmod 
 from ...Operation import Operation
 from ... import optools
 from ....tools.saxs import saxs_fit
 
+inputs = OrderedDict(batch_outputs=None,time_key=None,
+                    q_I_key=None,q_I_opt_key=None,flags_key=None,
+                    params_key=None,reports_key=None)
+outputs = OrderedDict(new_outputs=None)
+
 class PostProcessTimeSeries(Operation):
     """Re-fit a set of SAXS spectra chronologically, to refine results."""
 
     def __init__(self):
-        input_names = ['batch_outputs','time_key','q_I_key','q_I_opt_key','flags_key','params_key','reports_key']
-        output_names = ['new_outputs']
-        super(PostProcessTimeSeries,self).__init__(input_names,output_names)        
+        super(PostProcessTimeSeries,self).__init__(inputs,outputs)        
         self.input_doc['batch_outputs'] = 'list of dicts '\
             'of workflow outputs, produced by a batch execution'
         self.input_doc['time_key'] = 'dict key for time stamp in batch_outputs'

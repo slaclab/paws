@@ -1,7 +1,11 @@
 import numpy as np
+from collections import OrderedDict
 
 from ... import Operation as opmod 
 from ...Operation import Operation
+
+inputs=OrderedDict(array_in=None)
+outputs=OrderedDict(array_out=None)
 
 class ArrayMirrorVertical(Operation):
     """
@@ -10,16 +14,12 @@ class ArrayMirrorVertical(Operation):
     """
 
     def __init__(self):
-        input_names = ['array_in']
-        output_names = ['array_out']
-        super(ArrayMirrorVertical, self).__init__(input_names, output_names)
+        super(ArrayMirrorVertical, self).__init__(inputs, outputs)
         self.input_doc['array_in'] = '2d array'
         self.output_doc['array_out'] = 'input array mirrored vertically'
 
     def run(self):
         x = self.inputs['array_in']
-        if x is None:
-            return
         self.outputs['array_out'] = x[:,::-1]
 
 
