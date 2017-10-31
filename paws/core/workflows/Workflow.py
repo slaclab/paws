@@ -138,14 +138,10 @@ class Workflow(TreeModel):
         for uri in urilist:
             p = uri.split('.')
             il = self.get_data_from_uri(p[0]).input_locator[p[2]]
+            il.val = val
             if il.tp in [opmod.basic_type,opmod.runtime_type]:
+                # these two types should be loaded for immediate use
                 self.set_item(uri,val)
-            else:
-                il.val = val
-                #msg = 'Attempted to set input {}, '.format(uri)\
-                #'and found that input was supposed to be a {}. '.format(opmod.input_types[il.tp])\
-                #'Only "auto" type inputs should be loaded directly.'
-                #raise TypeError(msg)
 
     def execute(self):
         stk,diag = self.execution_stack()
@@ -159,9 +155,6 @@ class Workflow(TreeModel):
                 op = self.get_data_from_uri(op_tag) 
                 for inpnm,il in op.input_locator.items():
                     if il.tp == opmod.workflow_item:
-                        #il.data = self.locate_input(il)
-                        #op.inputs[inpnm] = il.data
-                        #op.inputs[inpnm] = self.locate_input(il)
                         self.set_op_item(op_tag,'inputs.'+inpnm,self.locate_input(il))
                 op.run() 
                 for outnm,outdata in op.outputs.items():

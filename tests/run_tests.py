@@ -62,4 +62,18 @@ runner.run(api_tests)
 print(os.linesep+'--- done testing api for workflows ---')
 print('======================================================================')
 
+print('======================================================================')
+print('--- testing packaged workflows ---'+os.linesep)
+wf_tests = unittest.TestSuite()
+wf_list = [] # TODO: fetch from workflows package
+for wf_name in wf_list:
+    wf_tests.addTest(test_wf.TestWf('test_wf',wf_name,paw))
+runner.run(wf_tests)
+print('======================================================================')
+wf_run_tests = unittest.TestSuite()
+for wf_name in wf_list:
+    wf_run_tests.addTest(test_wf.TestWf('test_run',wf_name,paw))
+runner.run(wf_run_tests)
+print(os.linesep+'--- done testing packaged workflows ---')
+print('======================================================================')
 

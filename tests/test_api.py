@@ -13,7 +13,7 @@ class TestAPI(unittest.TestCase):
         self.assertIsInstance(paw,paws.api.PawsAPI)
 
     def test_add_wf(self):
-        from paws.core.workflow.Workflow import Workflow
+        from paws.core.workflows.Workflow import Workflow
         self.paw.add_wf('test')
         self.assertIsInstance(self.paw.get_wf('test'),Workflow)
 
