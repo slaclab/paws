@@ -22,13 +22,15 @@ class OpManager(TreeModel):
 
     # override TreeModel.create_tree_item() to add 
     # the correct enable/disable flags. 
-    def create_tree_item(self,parent_itm,itm_tag):
-        itm = TreeItem(parent_itm,itm_tag)
-        op_uri = self.build_uri(itm)
-        itm.flags['enable'] = False
-        if op_uri in ops.load_flags.keys():
-            itm.flags['enable'] = ops.load_flags[op_uri]
-        return itm
+    #def create_tree_item(self,parent_itm,itm_tag):
+    #    itm = TreeItem(parent_itm,itm_tag)
+    #    #op_uri = self.build_uri(itm)
+    #    #itm.flags['enable'] = False
+    #    return itm
+
+    def is_op_enabled(self,op_uri):
+        op_itm = self.get_from_uri(op_uri)
+        return op_itm.flags['enable']
 
     def n_ops(self):
         return self._n_ops
@@ -70,21 +72,19 @@ class OpManager(TreeModel):
     def add_op(self,cat,opname):
         """
         Add op name to the tree under category cat.
-        If ops.load_flags indicates that this op should be enabled,
-        try to enable it (this causes it to import the module).
         """
         op_uri = cat+'.'+opname
-        if ops.load_flags[op_uri]:
-            try: 
-                self.set_op_enabled(op_uri)
-            except ImportError:
-                self.logmethod('import error for {}: disabling operation'.format(op_uri))
-                self.set_op_enabled(op_uri,False)
-            except Exception as ex:
-                self.logmethod('unexpected exception while importing {}. Message: {}'.format(op_uri,ex.message))
-                self.set_op_enabled(op_uri,False)
-        else:
-            self.set_item(op_uri,None)
+        self.set_item(op_uri,None)
+        #if ops.load_flags[op_uri]:
+        #    try: 
+        #        self.set_op_enabled(op_uri)
+        #    except ImportError:
+        #        self.logmethod('import error for {}: disabling operation'.format(op_uri))
+        #        self.set_op_enabled(op_uri,False)
+        #    except Exception as ex:
+        #        self.logmethod('unexpected exception while importing {}. Message: {}'.format(op_uri,ex.message))
+        #        self.set_op_enabled(op_uri,False)
+        #else:
 
     def set_op_enabled(self,op_uri,flag=True):
         cat = op_uri[:op_uri.rfind('.')]
@@ -94,11 +94,12 @@ class OpManager(TreeModel):
             op = getattr(mod,opname)
             optest = op()
             self.set_item(op_uri,op)
-            ops.load_flags[op_uri] = True
+            op_itm = self.get_from_uri(op_uri)
+            self.set_flagged(op_itm,'enable',flag)
         else:
             # disable the op: set ops.load_flags so that
             # add_op() replaces the treedata with None
-            ops.load_flags[op_uri] = False
+            #ops.load_flags[op_uri] = False
             self.set_item(op_uri,None)
 
     def remove_op(self,op_uri):

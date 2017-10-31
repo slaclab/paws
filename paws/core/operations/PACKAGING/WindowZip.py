@@ -1,7 +1,12 @@
+from collections import OrderedDict
+
 import numpy as np
 
 from .. import Operation as opmod 
 from ..Operation import Operation
+
+inputs=OrderedDict(x=None,y=None,x_min=None,x_max=None)
+outputs=OrderedDict(x_window=None,y_window=None,x_y_window=None)
 
 class WindowZip(Operation):
     """
@@ -11,9 +16,7 @@ class WindowZip(Operation):
     """
 
     def __init__(self):
-        input_names = ['x','y','x_min','x_max']
-        output_names = ['x_window','y_window','x_y_window']
-        super(WindowZip,self).__init__(input_names,output_names)        
+        super(WindowZip,self).__init__(inputs,outputs)        
         self.input_type['x'] = opmod.workflow_item
         self.input_type['y'] = opmod.workflow_item
         self.input_doc['x'] = 'array of x values'

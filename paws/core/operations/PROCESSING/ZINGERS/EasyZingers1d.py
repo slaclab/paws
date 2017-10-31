@@ -1,33 +1,39 @@
+from collections import OrderedDict
+
 import numpy as np
 
 from ... import Operation as opmod 
 from ...Operation import Operation
 
+inputs = OrderedDict(q_I=None,sharpness_limit=40)
+outputs = OrderedDict(q_I_dz=None,zmask=None)
+
 class EasyZingers1d(Operation):
-    """
-    This Operation attempts to remove zingers 
-    from 1d spectral data (I(q) versus q).
-    Zingers are replaced with the average intensity
-    in a window around where the zinger was found.
-    """
+    """Operation for quickly removing zingers from 1d spectral data."""
 
     def __init__(self):
-        input_names = ['q_I','sharpness_limit']
-        output_names = ['q_I_dz','zmask']
-        super(EasyZingers1d, self).__init__(input_names, output_names)
+        super(EasyZingers1d, self).__init__(inputs, outputs)
         self.input_doc['q_I'] = 'n-by-2 array of q values and corresponding intensities'
         self.input_doc['sharpness_limit'] = 'limit for the heuristic sharpness of a zinger- '\
             'turn this down to catch more zingers, turn it up to catch fewer zingers'
         self.output_doc['q_I_dz'] = 'same as input q_I but with zingers removed'
         self.output_doc['zmask'] = 'array of booleans, same shape as q, true if there is a zinger at q, else false'
         self.input_type['q_I'] = opmod.workflow_item
-        self.inputs['sharpness_limit'] = 40
 
     def run(self):
+        """Scan through the input spectrum and remove zingers.
+
+        For each point in the spectrum, 
+        the neighboring points to the right and left are analyzed
+        to determine whether or not the point of interest 
+        is part of an exceedingly sharp edge.
+        Points that exceed the threshold are flagged as zingers,
+        and in a second pass these points are subtituted 
+        by the average intensity in a window around the zinger point.
+        """
+
         q_I = self.inputs['q_I']
         I_ratio_limit = self.inputs['sharpness_limit'] 
-        if q_I is None:
-            return
         q = q_I[:,0]
         I = q_I[:,1]
         I_dz = np.array(I)

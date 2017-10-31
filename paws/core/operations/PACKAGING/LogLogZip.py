@@ -1,7 +1,12 @@
+from collections import OrderedDict
+
 import numpy as np
 
 from .. import Operation as opmod 
 from ..Operation import Operation
+
+inputs=OrderedDict(x=None,y=None)
+outputs=OrderedDict(logx_logy=None)
 
 class LogLogZip(Operation):
     """
@@ -10,9 +15,7 @@ class LogLogZip(Operation):
     """
 
     def __init__(self):
-        input_names = ['x', 'y']
-        output_names = ['logx_logy']
-        super(LogLogZip, self).__init__(input_names, output_names)
+        super(LogLogZip, self).__init__(inputs, outputs)
         self.input_doc['x'] = '1d array'
         self.input_doc['y'] = '1d array, same size as x'
         self.output_doc['logx_logy'] = 'n x 2 array containing log(x) and log(y)'
@@ -22,8 +25,6 @@ class LogLogZip(Operation):
     def run(self):
         x = self.inputs['x']
         y = self.inputs['y']
-        if x is None or y is None:
-            return
         # good_vals = elements for which both x and y have defined logarithm
         good_vals = ((x > 0) & (y > 0) & (~np.isnan(x)) & (~np.isnan(y)))
         xy = zip(np.log10(x[good_vals]), np.log10(y[good_vals]))

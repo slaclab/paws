@@ -1,7 +1,11 @@
 import numpy as np
+from collections import OrderedDict
 
 from ... import Operation as opmod 
 from ...Operation import Operation
+
+inputs = OrderedDict(q_I=None,q_I_bg=None,dI=None,dI_bg=None)
+outputs = OrderedDict(q_I=None,dI=None,bg_factor=None)
 
 class SubtractMaximumBackground(Operation):
     """
@@ -13,9 +17,7 @@ class SubtractMaximumBackground(Operation):
     """
 
     def __init__(self):
-        input_names = ['q_I', 'q_I_bg', 'dI', 'dI_bg']
-        output_names = ['q_I', 'dI', 'bg_factor']
-        super(SubtractMaximumBackground, self).__init__(input_names, output_names)
+        super(SubtractMaximumBackground, self).__init__(inputs, outputs)
         self.input_doc['q_I'] = 'n-by-2 array of q values and corresponding intensity values'
         self.input_doc['q_I_bg'] = 'n-by-2 array, background corresponding to q_I'
         self.input_doc['dI'] = '1d array, error estimate of I (optional, default None)' 
@@ -30,8 +32,6 @@ class SubtractMaximumBackground(Operation):
     def run(self):
         q_I = self.inputs['q_I']
         q_I_bg = self.inputs['q_I_bg']
-        if q_I is None or q_I_bg is None:
-            return 
         if not all(q_I[:,0] == q_I_bg[:,0]):
             msg = 'SPECTRUM AND BACKGROUND ON DIFFERENT q DOMAINS'
             raise ValueError(msg)

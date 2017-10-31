@@ -38,33 +38,18 @@ class InputLocator(object):
         #self.data = None 
 
 class Operation(object):
-    """
-    Class template for implementing paws operations.
-    """
+    """Class template for implementing paws operations"""
 
-    def __init__(self,input_names,output_names):
-        """
-        The input_names and output_names (lists of strings)
-        are used to specify names for the parameters 
-        that will be used to perform the operation.
-        These lists are used as keys to build dicts
-        Operation.inputs and Operation.outputs.
-        """
-        self.inputs = OrderedDict()
-        self.input_locator = OrderedDict() 
-        self.outputs = OrderedDict() 
-        self.input_doc = OrderedDict() 
-        self.input_type = OrderedDict() 
-        self.output_doc = OrderedDict() 
-        # For each of the i/o names, assign to None 
-        for name in input_names: 
+    def __init__(self,inputs,outputs):
+        self.inputs = OrderedDict(copy.deepcopy(inputs))
+        self.outputs = OrderedDict(copy.deepcopy(outputs))
+        self.input_locator = OrderedDict.fromkeys(self.inputs.keys())
+        self.outputs = OrderedDict.fromkeys(self.outputs.keys()) 
+        self.input_doc = OrderedDict.fromkeys(self.inputs.keys()) 
+        self.input_type = OrderedDict.fromkeys(self.inputs.keys()) 
+        self.output_doc = OrderedDict.fromkeys(self.outputs.keys()) 
+        for name in self.inputs.keys(): 
             self.input_type[name] = basic_type 
-            self.input_locator[name] = None 
-            self.inputs[name] = None
-            self.input_doc[name] = None
-        for name in output_names: 
-            self.outputs[name] = None
-            self.output_doc[name] = None
         self.message_callback = print
         self.data_callback = None 
     
@@ -93,9 +78,7 @@ class Operation(object):
         """
         for name in self.inputs.keys():
             tp = self.input_type[name]
-            val = None
-            if self.inputs[name] is not None:
-                val = self.inputs[name]
+            val = self.inputs[name]
             self.input_locator[name] = InputLocator(tp,val)
 
     def run(self):
@@ -110,9 +93,11 @@ class Operation(object):
         return cls()
 
     def clone_op(self):
-        """
-        Clone the Operation.
-        This should be called after all inputs have been loaded,
+        """Clone the Operation.
+
+        If this is used to provide a copy of the Operation
+        for distributed execution, then it should be called 
+        after all inputs have been loaded,
         with the exception of workflow items,
         e.g. after calling WfManager.prepare_wf().
         """
@@ -136,6 +121,14 @@ class Operation(object):
         return new_op
 
     def setup_dict(self):
+        """Produce a dictionary fully describing the setup of the Operation.
+
+        Returns
+        -------
+        dct : dict
+            Dictionary specifying the module name and input setup 
+            for the current state of the Operation
+        """
         op_modulename = self.__module__[self.__module__.find('operations'):]
         op_modulename = op_modulename[op_modulename.find('.')+1:]
         dct = OrderedDict() 
@@ -151,10 +144,7 @@ class Operation(object):
             self.outputs[k] = None
 
     def description(self):
-        """
-        self.description() returns a string 
-        documenting the input and output structure 
-        and usage instructions for the Operation
+        """Provide a string describing the Operation.
         """
         return str(type(self).__name__+": "
         + self.doc_as_string()
@@ -176,22 +166,22 @@ class Operation(object):
                 display_val = self.input_locator[name]
             else:
                 display_val = self.inputs[name] 
-            a = a + '\n\n'+parameter_doc(name,display_val,self.input_doc[name])
+            a = a + '\n\n'+self.parameter_doc(name,display_val,self.input_doc[name])
         return a
 
     def output_description(self):
         a = ""
         for name,val in self.outputs.items(): 
-            a = a + '\n\n'+parameter_doc(name,val,self.output_doc[name])
+            a = a + '\n\n'+self.parameter_doc(name,val,self.output_doc[name])
         return a
     
-
-def parameter_doc(name,value,doc):
-    if isinstance(value, InputLocator):
-        tp_str = input_types[value.tp]
-        v_str = str(value.val)
-        return "- name: {} \n- value: {} ({}) \n- doc: {}".format(name,v_str,tp_str,doc) 
-    else:
-        v_str = str(value)
-        return "- name: {} \n- value: {} \n- doc: {}".format(name,v_str,doc) 
+    @staticmethod
+    def parameter_doc(name,value,doc):
+        if isinstance(value, InputLocator):
+            tp_str = input_types[value.tp]
+            v_str = str(value.val)
+            return "- name: {} \n- value: {} ({}) \n- doc: {}".format(name,v_str,tp_str,doc) 
+        else:
+            v_str = str(value)
+            return "- name: {} \n- value: {} \n- doc: {}".format(name,v_str,doc) 
                 

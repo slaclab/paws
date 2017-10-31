@@ -1,7 +1,12 @@
+from collections import OrderedDict
+
 import numpy as np
 
 from .. import Operation as opmod 
 from ..Operation import Operation
+
+inputs=OrderedDict(x_y=None,x_min=None,x_max=None)
+outputs=OrderedDict(x_y_window=None)
 
 class Window(Operation):
     """
@@ -10,9 +15,7 @@ class Window(Operation):
     """
 
     def __init__(self):
-        input_names = ['x_y','x_min','x_max']
-        output_names = ['x_y_window']
-        super(Window,self).__init__(input_names,output_names)        
+        super(Window,self).__init__(inputs,outputs)        
         self.input_type['x_y'] = opmod.workflow_item
         self.input_doc['x_y'] = 'n-by-2 array of x and y values'
         self.input_doc['x_min'] = 'inclusive minimum x value of output'

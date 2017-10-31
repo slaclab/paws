@@ -14,30 +14,6 @@ class QTreeSelectionModel(QTreeModel):
         super(QTreeSelectionModel,self).__init__(flag_dict)
         #self.flag_defaults = flag_defaults 
 
-    def n_flags(self):
-        return len(self.default_flags)
-
-    def is_flagged(self,itm,flag_key):
-        if flag_key in itm.flags.keys():
-            return bool(itm.flags[flag_key])
-
-    def children_flagged(self,itm,flag_key):
-        if flag_key in itm.flags.keys():
-            if itm.n_children() > 0:
-                return any([self.children_flagged(c_itm,flag_key) for c_itm in itm.children])
-            else:
-                return bool(itm.flags[flag_key])
-
-    def set_flagged(self,itm,flag_key,val):
-        itm.flags[flag_key] = bool(val)
-
-    def set_all_flagged(self,flag_key,val,itm=None):
-        if itm is None:
-            itm = self.root_item()
-        self.set_flagged(itm,flag_key,val)
-        for c_itm in itm.children:
-            self.set_all_flagged(flag_key,val,c_itm)
-
     def get_flagged_idxs(self,flag_key,idx=None,val=True):
         if idx is None:
             idx = self.root_index()

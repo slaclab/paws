@@ -39,6 +39,7 @@ class PifNPSolutionSAXS(Operation):
         self.input_type['q_I'] = opmod.workflow_item
         self.input_type['flags'] = opmod.workflow_item
         self.input_type['params'] = opmod.workflow_item
+        self.input_type['report'] = opmod.workflow_item
 
     def run(self):
         uid_pre = self.inputs['uid_prefix']

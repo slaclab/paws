@@ -1,16 +1,18 @@
+from collections import OrderedDict
+
 from .. import Operation as opmod 
 from ..Operation import Operation
+
+inputs = OrderedDict(n_primes=10)
+outputs = OrderedDict(primes_list=None)
 
 class ListPrimes(Operation):
     """Makes a list of prime numbers in increasing order"""
 
     def __init__(self):
-        input_names = ['n_primes']
-        output_names = ['primes_list']
-        super(ListPrimes,self).__init__(input_names,output_names) 
+        super(ListPrimes,self).__init__(inputs,outputs) 
         self.input_doc['n_primes'] = 'number of primes to output'
         self.output_doc['primes_list'] = 'list of prime numbers'
-        self.inputs['n_primes'] = 10 
     
     def run(self):
         np = self.inputs['n_primes']

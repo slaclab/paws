@@ -1,4 +1,6 @@
 import numpy as np
+from collections import OrderedDict
+
 from matplotlib.figure import Figure
 from scipy.special import wofz
 from scipy.optimize import minimize as scimin
@@ -6,9 +8,13 @@ from scipy.optimize import minimize as scimin
 from ... import Operation as opmod 
 from ...Operation import Operation
 
+inputs = OrderedDict(x=None,y=None,xguess=None,hwhm=None)
+outputs = OrderedDict(y_voigt=None,xpk=None,ypk=None,
+                hwhm_g=None,hwhm_l=None,prefactor=None)
+        
 class VoigtPeakFit(Operation):
-    """
-    Fit a set of x and y values to a Voigt distribution.
+    """Fit a set of x and y values to a Voigt distribution.
+
     Solves the best-fitting hwhm (half width at half max) 
     of the gaussian and lorentzian distributions and shared distribution center.
     Takes as input a guess for the distribution center and hwhm.
@@ -18,9 +24,7 @@ class VoigtPeakFit(Operation):
     """
 
     def __init__(self):
-        input_names = ['x','y','xguess','hwhm']
-        output_names = ['y_voigt','xpk','ypk','hwhm_g','hwhm_l','prefactor','plot']
-        super(VoigtPeakFit,self).__init__(input_names, output_names)
+        super(VoigtPeakFit,self).__init__(inputs, outputs)
         self.input_doc['x'] = '1d array of x values (domain)'
         self.input_doc['y'] = '1d array of y values (amplitudes)'
         self.input_doc['xguess'] = 'initial guess for the center of the voigt profile'
@@ -40,8 +44,6 @@ class VoigtPeakFit(Operation):
         y = self.inputs['y']
         xpk = self.inputs['xguess']
         hwhm = self.inputs['hwhm']
-        if x is None or y is None or xpk is None or hwhm is None:
-            return
         # get y value nearest xpk guess, use it to guess a scaling factor
         ypk = y[np.argmin((x-xpk)**2)]
         scl = ypk / self.voigt(0, hwhm, hwhm)

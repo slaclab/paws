@@ -7,6 +7,15 @@ from ...Operation import Operation
 from ... import Operation as opmod 
 from ... import optools
 
+inputs=OrderedDict(
+    dir_path=None,
+    regex='*.tif',
+    workflow=None,
+    input_name=None,
+    extra_input_names=[],
+    extra_inputs=[])
+outputs=OrderedDict(batch_inputs=None,batch_outputs=None)
+
 class BatchFromDirectory(Operation):
     """
     Read a directory and filter its contents with a regular expression
@@ -17,23 +26,17 @@ class BatchFromDirectory(Operation):
     """
 
     def __init__(self):
-        input_names = ['dir_path','regex','workflow','input_name','extra_input_names','extra_inputs']
-        output_names = ['batch_inputs','batch_outputs']
-        super(BatchFromDirectory,self).__init__(input_names,output_names)
+        super(BatchFromDirectory,self).__init__(inputs,outputs)
         self.input_doc['dir_path'] = 'path to directory containing batch of files to be used as input'
         self.input_doc['regex'] = 'string with * wildcards to select input files from dir_path'
         self.input_doc['workflow'] = 'the Workflow to be executed'
         self.input_doc['input_name'] = 'name of the workflow input '\
-        'where the file paths will be used'
+            'where the file paths will be used'
         self.input_doc['extra_input_names'] = 'list of names '\
-        'of batch workflow inputs to be set to extra_inputs '\
-        'before batch-execution'
+            'of batch workflow inputs to be set to extra_inputs before batch-execution'
         self.input_doc['extra_inputs'] = 'data items '\
-        'to be set to batch workflow inputs indicated by extra_input_names'
+            'to be set to batch workflow inputs indicated by extra_input_names'
         self.input_type['workflow'] = opmod.entire_workflow
-        self.inputs['regex'] = '*.tif' 
-        self.inputs['extra_input_names'] = []
-        self.inputs['extra_inputs'] = []
         
     def run(self):
         wf = self.inputs['workflow']

@@ -1,3 +1,4 @@
+from collections import OrderedDict
 import os.path
 
 import tifffile
@@ -6,6 +7,9 @@ import numpy as np
 from ... import Operation as opmod 
 from ...Operation import Operation
 
+inputs=OrderedDict(file_path=None)
+outputs=OrderedDict(image_data=None,dir_path=None,filename=None)
+
 class LoadTif(Operation):
     """
     Takes a filesystem path that points to a .tif,
@@ -13,17 +17,13 @@ class LoadTif(Operation):
     """
 
     def __init__(self):
-        input_names = ['file_path']
-        output_names = ['image_data','dir_path','filename']
-        super(LoadTif,self).__init__(input_names,output_names)
+        super(LoadTif,self).__init__(inputs,outputs)
         self.input_doc['file_path'] = 'path to a .tif image'
         self.output_doc['image_data'] = '2D array representing pixel values'
         self.output_doc['filename'] = 'Filename for image, path and extension stripped'
         
     def run(self):
         p = self.inputs['file_path']
-        if p is None:
-            return
         dir_path = os.path.split(p)[0]
         file_nopath = os.path.split(p)[1]
         file_noext = os.path.splitext(file_nopath)[0]

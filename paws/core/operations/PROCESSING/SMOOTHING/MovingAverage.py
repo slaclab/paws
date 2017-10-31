@@ -1,31 +1,27 @@
+from collections import OrderedDict
+
 import numpy as np
 
 from ... import Operation as opmod 
 from ...Operation import Operation
 
+inputs = OrderedDict(data=None,window=3,shape='square',error=None)
+outputs = OrderedDict(smoothdata=None)
+
 class MovingAverage(Operation):
-    """
-    Applies moving average smoothing filter to 1d array,
-    optionally weighted by window shape and error values.
-    """
+    """Applies moving average filter to 1d array."""
 
     def __init__(self):
-        input_names = ['data','window','shape','error']
-        output_names = ['smoothdata']
-        super(MovingAverage, self).__init__(input_names, output_names)
+        super(MovingAverage, self).__init__(inputs, outputs)
         self.input_doc['data'] = '1d array'
         self.input_doc['window'] = 'integer number of data points to average on either side'
         self.input_doc['shape'] = 'window shape for weighting- triangular or square (default)'
         self.input_doc['error'] = '1d array, same shape as data, optional (default None)'
         self.output_doc['smoothdata'] = 'smoothed 1d array'
         self.input_type['data'] = opmod.workflow_item
-        self.inputs['window'] = 3
-        self.inputs['shape'] = 'square' 
 
     def run(self):
         x = self.inputs['data']
-        if x is None:
-            return
         w = self.inputs['window']
         err = self.inputs['error']
         nx = len(x)

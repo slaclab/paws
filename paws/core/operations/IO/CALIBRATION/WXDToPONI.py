@@ -1,8 +1,13 @@
+from collections import OrderedDict
+
 import numpy as np
 import pyFAI
 
 from ... import Operation as opmod 
 from ...Operation import Operation
+
+inputs=OrderedDict(wxd_file=None,pixel_size_um=None,fpolz=None)
+outputs=OrderedDict(poni_dict=None)
 
 class WXDToPONI(Operation):
     """
@@ -21,9 +26,7 @@ class WXDToPONI(Operation):
     """
     
     def __init__(self):
-        input_names = ['wxd_file','pixel_size_um','fpolz']
-        output_names = ['poni_dict']
-        super(WXDToPONI,self).__init__(input_names,output_names)
+        super(WXDToPONI,self).__init__(inputs,outputs)
         self.input_doc['wxd_file'] = '.calib file produced by WXDIFF calibration'
         self.input_doc['pixel_size_um'] = 'pixel size in microns'
         self.input_doc['fpolz'] = 'polarization factor'
@@ -33,8 +36,6 @@ class WXDToPONI(Operation):
     def run(self):
         fpath = self.inputs['wxd_file']
         pxsz_um = self.inputs['pixel_size_um']
-        if fpath is None or pxsz_um is None:
-            return
         pxsz_m = pxsz_um*1E-6
         fpolz = self.inputs['fpolz']
         for line in open(fpath,'r'):

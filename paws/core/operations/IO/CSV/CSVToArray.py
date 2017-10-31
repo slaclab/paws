@@ -1,7 +1,12 @@
+from collections import OrderedDict
+
 import numpy as np
 
 from ... import Operation as opmod 
 from ...Operation import Operation
+
+inputs=OrderedDict(file_path=None)
+outputs=OrderedDict(array=None)
 
 class CSVToArray(Operation):
     """
@@ -9,16 +14,12 @@ class CSVToArray(Operation):
     """
 
     def __init__(self):
-        input_names = ['path']
-        output_names = ['array']
-        super(CSVToArray, self).__init__(input_names, output_names)
-        self.input_doc['path'] = "path to .csv file"
+        super(CSVToArray, self).__init__(inputs, outputs)
+        self.input_doc['file_path'] = "path to .csv file"
         self.output_doc['array'] = "numpy array built from csv file contents"
 
     def run(self):
-        path = self.inputs['path']
-        if path is None:
-            return
-        self.outputs['array'] = np.loadtxt(path, dtype=float, delimiter=',')
+        p = self.inputs['file_path']
+        self.outputs['array'] = np.loadtxt(p, dtype=float, delimiter=',')
 
 

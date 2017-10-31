@@ -1,7 +1,11 @@
 import numpy as np
+from collections import OrderedDict
 
 from ... import Operation as opmod 
 from ...Operation import Operation
+
+inputs = OrderedDict(x=None)
+outputs = OrderedDict(logx=None)
 
 class ArrayLog(Operation):
     """
@@ -10,17 +14,13 @@ class ArrayLog(Operation):
     """
 
     def __init__(self):
-        input_names = ['x']
-        output_names = ['logx']
-        super(ArrayLog, self).__init__(input_names, output_names)
+        super(ArrayLog, self).__init__(inputs, outputs)
         self.input_doc['x'] = 'any array'
         self.output_doc['logx'] = 'array of log(x), same size as x, non-positive values replaced with np.nan'
         self.input_type['x'] = opmod.workflow_item
 
     def run(self):
         x = self.inputs['x']
-        if x is None:
-            return 
         # good_vals = elements for which both x and y have defined logarithm
         idx_ok = ((x > 0) & (~np.isnan(x)))
         logx = np.zeros(x.shape)

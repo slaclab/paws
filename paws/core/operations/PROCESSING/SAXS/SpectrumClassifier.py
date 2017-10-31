@@ -1,15 +1,17 @@
+from collections import OrderedDict
 import numpy as np
 
 from ... import Operation as opmod
 from ...Operation import Operation
 
+inputs = OrderedDict(features=None,classifier=None)
+outputs = OrderedDict(flags=None)
+
 class SpectrumClassifier(Operation):
     """Identifies scatterer populations from features of SAXS spectra."""
 
     def __init__(self):
-        input_names = ['features', 'classifier']
-        output_names = ['flags']
-        super(SpectrumClassifier, self).__init__(input_names, output_names)
+        super(SpectrumClassifier, self).__init__(inputs, outputs)
         self.input_doc['features'] = 'Dict of scalar features '\
             'as produced by PROCESSING.SAXS.SpectrumProfiler.'
         self.input_doc['classifier'] = 'A SaxsClassifier object, '\

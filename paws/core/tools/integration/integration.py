@@ -220,7 +220,7 @@ def cakexintegrate(data, mask=None, cut=None, q_norm = None, q_par = None, npts_
     if cut is not None:
         mask &= cut.astype(bool)
 
-    chi = np.arange(-180,180,360/npts_chi])
+    chi = np.arange(-180,180,360./npts_chi)
     maskeddata = np.ma.masked_array(data, mask=1-mask)
     xprofile = np.ma.average(maskeddata, axis=1)
 
@@ -231,7 +231,7 @@ def cakezintegrate(data, mask=None, cut=None, q_norm = None, q_par = None, npts_
         mask = np.ones_like(data)
     if cut is not None:
         mask &= cut.astype(bool)
-    q = np.arange(npts_q)*np.max(q_par)/ 10./npts_q]
+    q = np.arange(npts_q)*np.max(q_par)/ 10./npts_q
 
     maskeddata = np.ma.masked_array(data, mask=1-mask)
     zprofile = np.ma.average(maskeddata, axis=0)

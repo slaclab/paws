@@ -1,22 +1,22 @@
-"""
-Produce a PyFAI.AzumthalIntegrator to use for calibrating and integrating images.
-"""
-
 import numpy as np
+from collections import OrderedDict
+
 import pyFAI
 
 from ... import Operation as opmod 
 from ...Operation import Operation
 
+inputs = OrderedDict(poni_dict=None) 
+outputs = OrderedDict(integrator=None) 
+
 class BuildPyFAIIntegrator(Operation):
-    """
-    Input dict of calibration parameters 
-    Return AzimuthalIntegrator 
+    """Produce a PyFAI.AzimuthalIntegrator from a dict of PONI parameters.
+
+    Input PONI dict should be similar 
+    to the output of PyFAI.AzimuthalIntegrator.getPyFAI()
     """
     def __init__(self):
-        input_names = ['poni_dict']
-        output_names = ['integrator']
-        super(BuildPyFAIIntegrator,self).__init__(input_names,output_names)
+        super(BuildPyFAIIntegrator,self).__init__(inputs,outputs)
         self.input_doc['poni_dict'] = str( 'dict of calibration parameters; '
         + 'minimally including keys dist, poni1, poni2, rot1, rot2, rot3, pixel1, pixel2, wavelength;'
         + 'optionally including keys fpolz, detector, splineFile; '
@@ -27,7 +27,5 @@ class BuildPyFAIIntegrator(Operation):
     def run(self):
         pd = self.inputs['poni_dict']
         p = pyFAI.AzimuthalIntegrator()
-        if pd is not None:
-            p.setPyFAI(**pd)
         self.outputs['integrator'] = p
 
