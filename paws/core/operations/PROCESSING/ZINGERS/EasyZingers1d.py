@@ -34,8 +34,6 @@ class EasyZingers1d(Operation):
 
         q_I = self.inputs['q_I']
         I_ratio_limit = self.inputs['sharpness_limit'] 
-        if q_I is None:
-            return
         q = q_I[:,0]
         I = q_I[:,1]
         I_dz = np.array(I)

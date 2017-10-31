@@ -22,6 +22,30 @@ class TreeModel(object):
         # unless subclasses override TreeModel.create_tree_item()
         self.default_flags = default_flags
 
+    def n_flags(self):
+        return len(self.default_flags)
+
+    def is_flagged(self,itm,flag_key):
+        if flag_key in itm.flags.keys():
+            return bool(itm.flags[flag_key])
+
+    def children_flagged(self,itm,flag_key):
+        if flag_key in itm.flags.keys():
+            if itm.n_children() > 0:
+                return any([self.children_flagged(c_itm,flag_key) for c_itm in itm.children])
+            else:
+                return bool(itm.flags[flag_key])
+
+    def set_all_flagged(self,flag_key,val,itm=None):
+        if itm is None:
+            itm = self.root_item()
+        self.set_flagged(itm,flag_key,val)
+        for c_itm in itm.children:
+            self.set_all_flagged(flag_key,val,c_itm)
+
+    def set_flagged(self,itm,flag_key,val):
+        itm.flags[flag_key] = bool(val)
+
     def __getitem__(self,uri):
         return self.get_from_uri(uri)
 

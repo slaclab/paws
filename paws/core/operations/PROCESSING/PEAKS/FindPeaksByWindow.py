@@ -34,8 +34,6 @@ class FindPeaksByWindow(Operation):
     def run(self):
         x = self.inputs['x']
         y = self.inputs['y']
-        if x is None or y is None:
-            return
         w = self.inputs['windowsize']
         thr = self.inputs['threshold']
         pk_idx = []

@@ -41,9 +41,6 @@ class ShipToDataSet(Operation):
         p = self.inputs['pif']        
         json_dir = self.inputs['json_dirpath']
         json_file = self.inputs['json_filename']
-        if cl is None or dsid is None or p is None \
-        or json_dir is None or json_file is None:
-            return
         if not os.path.splitext(json_file)[1] == 'json':
             json_file = json_file+'.json'
         json_file = os.path.join(json_dir,json_file)

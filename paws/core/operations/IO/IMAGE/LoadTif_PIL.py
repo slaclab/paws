@@ -16,7 +16,7 @@ class LoadTif_PIL(Operation):
     """
 
     def __init__(self):
-        super(LoadTif_PIL,self).__init__(input_names,output_names)
+        super(LoadTif_PIL,self).__init__(inputs,outputs)
         self.input_doc['file_path'] = 'path to a .tif image'
         self.output_doc['image_data'] = '2D array representing pixel values'
         self.output_doc['metadata'] = 'Dictionary of image metadata'

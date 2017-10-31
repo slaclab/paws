@@ -3,7 +3,7 @@ from collections import OrderedDict
 
 from ... import Operation as opmod 
 from ...Operation import Operation
-from ....tools.integration import integrate
+from ....tools.integration import integration
         
 inputs = OrderedDict(image_data=None,mask=None,ROI_mask=None,q_norm=None,q_par=None)
 outputs = OrderedDict(q_z=None,I=None)
@@ -31,7 +31,7 @@ class RemeshZIntegration(Operation):
         cut = self.inputs['ROI_mask']
         qv = self.inputs['q_norm']
         qp = self.inputs['q_par']
-        qz, zprof = integrate.remeshzintegrate(data, mask, cut = cut, qvrt = qv, qpar = ap)
+        qz, zprof = integration.remeshzintegrate(data, mask, cut = cut, qvrt = qv, qpar = ap)
         self.outputs['q_z'] = qz
         self.outputs['I'] = zprof
 

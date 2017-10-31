@@ -24,8 +24,6 @@ class GetSAXSFlags(Operation):
     def run(self):
         ds = self.inputs['dicts']
         k = self.inputs['dict_key']
-        if ds is None or k is None:
-            return
         f = OrderedDict()
         f['bad_data'] = ds['bad_data_flags'][k]
         f['precursor_scattering'] = ds['precursor_flags'][k]

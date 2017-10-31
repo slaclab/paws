@@ -18,7 +18,10 @@ def load_ops_from_path(path_,pkg,cat_root=''):
     for modloader, modname, ispkg in mods:
         if ispkg:
             pkg_path = [os.path.join(path_[0],modname)]
-            pkg_ops, pkg_cats = load_ops_from_path(pkg_path,pkg+'.'+modname,mod_root)
+            subcat_root = modname
+            if cat_root:
+                subcat_root = cat_root+'.'+modname
+            pkg_ops, pkg_cats = load_ops_from_path(pkg_path,pkg+'.'+modname,subcat_root)
             pkg_ops = [op for op in pkg_ops if not op in ops]
             pkg_cats = [cat for cat in pkg_cats if not cat in cats]
             ops = ops + pkg_ops

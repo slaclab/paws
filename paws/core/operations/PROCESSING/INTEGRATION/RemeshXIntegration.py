@@ -1,9 +1,10 @@
-import numpy as np
 from collections import OrderedDict
+
+import numpy as np
 
 from ... import Operation as opmod 
 from ...Operation import Operation
-from ....tools.integration import integrate
+from ....tools.integration import integration
         
 inputs = OrderedDict(image_data=None,mask=None,ROI_mask=None,q_norm=None,q_par=None)
 outputs = OrderedDict(q_x=None,I=None)
@@ -15,7 +16,7 @@ class RemeshXIntegration(Operation):
     Output arrays containing q_x and I(q_x) 
     """
     def __init__(self):
-        super(RemeshXIntegration, self).__init__(input_names, output_names)
+        super(RemeshXIntegration, self).__init__(inputs, outputs)
         self.input_doc['image_data'] = '2d array representing intensity for each pixel'
         self.input_doc['mask'] = '2d array for image mask, same shape as image_data'
         self.input_doc['ROI_mask'] = '2d array for ROI mask, same shape as image_data'
@@ -30,6 +31,6 @@ class RemeshXIntegration(Operation):
         cut = self.inputs['ROI_mask']
         qv = self.inputs['q_norm']
         qp = self.inputs['q_par']
-        qx, xprof = integrate.remeshzintegrate(data, mask, cut = cut, qvrt = qv, qpar = ap)
+        qx, xprof = integration.remeshzintegrate(data, mask, cut = cut, qvrt = qv, qpar = ap)
         self.outputs['q_x'] = qx
         self.outputs['I'] = xprof

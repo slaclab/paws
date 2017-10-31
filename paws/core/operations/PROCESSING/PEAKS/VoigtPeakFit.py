@@ -44,8 +44,6 @@ class VoigtPeakFit(Operation):
         y = self.inputs['y']
         xpk = self.inputs['xguess']
         hwhm = self.inputs['hwhm']
-        if x is None or y is None or xpk is None or hwhm is None:
-            return
         # get y value nearest xpk guess, use it to guess a scaling factor
         ypk = y[np.argmin((x-xpk)**2)]
         scl = ypk / self.voigt(0, hwhm, hwhm)

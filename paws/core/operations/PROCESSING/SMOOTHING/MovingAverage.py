@@ -22,8 +22,6 @@ class MovingAverage(Operation):
 
     def run(self):
         x = self.inputs['data']
-        if x is None:
-            return
         w = self.inputs['window']
         err = self.inputs['error']
         nx = len(x)

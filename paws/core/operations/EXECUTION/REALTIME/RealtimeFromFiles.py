@@ -9,7 +9,7 @@ inputs=OrderedDict(
     regex=None,
     workflow=None,
     input_name=None,
-    new_files_only=,
+    new_files_only=True,
     delay=1000)
 outputs=OrderedDict(realtime_inputs=None,realtime_outputs=None)
 

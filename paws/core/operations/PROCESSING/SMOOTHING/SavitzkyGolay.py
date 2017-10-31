@@ -28,8 +28,6 @@ class SavitzkyGolay(Operation):
         y = self.inputs['y']
         o = self.inputs['order']
         b = self.inputs['base']
-        if None in [x,y,o,b]:
-            return
         err = self.inputs['dy']
         nx = x.size
         if err is None:

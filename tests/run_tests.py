@@ -40,11 +40,13 @@ op_tests = unittest.TestSuite()
 for op_uri in ops_active:
     op_tests.addTest(test_op.TestOp('test_op',op_uri,paw))
 op_result = runner.run(op_tests)
-print('======================================================================')
-op_run_tests = unittest.TestSuite()
-for op_uri in ops_active:
-    op_run_tests.addTest(test_op.TestOp('test_run',op_uri,paw))
-op_run_result = runner.run(op_run_tests)
+#
+#print('======================================================================')
+#op_run_tests = unittest.TestSuite()
+#for op_uri in ops_active:
+#    op_run_tests.addTest(test_op.TestOp('test_run',op_uri,paw))
+#op_run_result = runner.run(op_run_tests)
+#
 print(os.linesep+'--- done testing active Operations ---')
 print('======================================================================')
 

@@ -6,7 +6,7 @@ from .. import Operation as opmod
 from ..Operation import Operation
 
 inputs = OrderedDict(x=None,y=None)
-outputs = OrderedDict(x_y)
+outputs = OrderedDict(x_y=None)
 
 class Zip(Operation):
     """Zip two 1d arrays together."""
@@ -22,6 +22,6 @@ class Zip(Operation):
     def run(self):
         x = self.inputs['x']
         y = self.inputs['y']
-        xy = np.array(zip(x, y))
-        self.outputs['x_y'] = xy
+        x_y = np.array(zip(x, y))
+        self.outputs['x_y'] = x_y
 
