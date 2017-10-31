@@ -334,6 +334,7 @@ def fit_spectrum(q_I,flags,params,fixed_params,objective='chi2log'):
     """
 
     f_bd = flags['bad_data']
+    if f_bd: return {},{}
     f_pre = flags['precursor_scattering']
     f_form = flags['form_factor_scattering']
     f_pks = flags['diffraction_peaks']
@@ -378,7 +379,7 @@ def fit_spectrum(q_I,flags,params,fixed_params,objective='chi2log'):
     saxs_fun = lambda q,x,p: compute_saxs_with_substitutions(q,flags,params,x)
     p_opt = copy.deepcopy(params) 
     # Only proceed if there is work to do.
-    if not f_pks and not f_bd:
+    if not f_pks:
         if objective in ['chi2log','chi2log_fixI0']:
             #idx_fit = ((I>0)&(q>0.1))
             if f_pre and not f_form and not f_pks:
@@ -412,6 +413,7 @@ def fit_spectrum(q_I,flags,params,fixed_params,objective='chi2log'):
             I_bg = I - I_opt
             snr = np.mean(I_opt)/np.std(I_bg) 
             rpt['fit_snr'] = snr
+    return p_opt,rpt
 
     #I_opt = compute_saxs(q,flags,p_opt) 
     #I_guess = compute_saxs(q,flags,params) 
@@ -426,8 +428,6 @@ def fit_spectrum(q_I,flags,params,fixed_params,objective='chi2log'):
     #plt.semilogy(q,I_opt,'g')
     #print('flags: \n{}'.format(flags))
     #plt.show()
-
-    return p_opt,rpt
 
 def precursor_heuristics(q_I):
     """Guess radius of gyration and Guinier prefactor of scatterers.
