@@ -1,3 +1,5 @@
+from collections import OrderedDict
+
 import numpy as np
 import pypif.obj as pifobj
 
@@ -5,15 +7,23 @@ from ... import Operation as opmod
 from ...Operation import Operation
 from ....tools.saxs import saxs_fit 
 
+inputs=OrderedDict(
+    uid_prefix=None,
+    t_utc=None,
+    temperature=None,
+    q_I=None,
+    flags=None,
+    params=None,
+    report=None)
+outputs=OrderedDict(pif=None)
+
 class PifNPSolutionSAXS(Operation):
     """
     Package SAXS results from a nanoparticle solution into a pypif.obj.ChemicalSystem record.
     """
 
     def __init__(self):
-        input_names = ['uid_prefix','t_utc','temperature','q_I','flags','params','report']
-        output_names = ['pif']
-        super(PifNPSolutionSAXS,self).__init__(input_names,output_names)
+        super(PifNPSolutionSAXS,self).__init__(inputs,outputs)
         self.input_doc['uid_prefix'] = 'string for pif uid prefix '\
             '(pif uid = uid_prefix+t_utc), and also the '
         self.input_doc['t_utc'] = 'time in seconds utc'
@@ -29,14 +39,6 @@ class PifNPSolutionSAXS(Operation):
         self.input_type['q_I'] = opmod.workflow_item
         self.input_type['flags'] = opmod.workflow_item
         self.input_type['params'] = opmod.workflow_item
-        # all inputs default to none: an empty pif should be produced in this case.
-        self.inputs['uid_prefix'] = None
-        self.inputs['t_utc'] = None
-        self.inputs['temperature'] = None
-        self.inputs['q_I'] = None
-        self.inputs['flags'] = None
-        self.inputs['params'] = None
-        self.inputs['report'] = None
 
     def run(self):
         uid_pre = self.inputs['uid_prefix']
