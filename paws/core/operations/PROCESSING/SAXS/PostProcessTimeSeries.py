@@ -6,7 +6,7 @@ import numpy as np
 from ... import Operation as opmod 
 from ...Operation import Operation
 from ... import optools
-from ....tools.saxs import saxs_fit
+from saxskit import saxs_fit
 
 inputs = OrderedDict(batch_outputs=None,time_key=None,
                     q_I_key=None,q_I_opt_key=None,flags_key=None,

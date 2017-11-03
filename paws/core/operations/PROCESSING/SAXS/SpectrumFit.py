@@ -1,12 +1,10 @@
 from collections import OrderedDict
-import copy
 
 import numpy as np
-from scipy.optimize import curve_fit
 
 from ... import Operation as opmod 
 from ...Operation import Operation
-from ....tools.saxs import saxs_fit
+from saxskit import saxs_fit
 
 inputs = OrderedDict(q_I=None,flags=None,params=None,fixed_params=[])
 outputs = OrderedDict(params=None,report=None,q_I_opt=None)
