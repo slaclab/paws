@@ -3,6 +3,7 @@ from collections import OrderedDict
 import re
 
 import tifffile
+import numpy as np
 
 from ... import Operation as opmod 
 from ...Operation import Operation
@@ -36,7 +37,9 @@ class ReadImageAndHeader_SSRL42(Operation):
         hdr_file_path = path_noext + '.prp'
         self.outputs['dir_path'] = dirpath 
         self.outputs['filename'] = filename_noext 
-        self.outputs['image_data'] = tifffile.imread(tif_path)
+        img = tifffile.imread(tif_path)
+        # flip the image...
+        self.outputs['image_data'] = np.array(img[::-1,:])
         d = OrderedDict()
         for l in open(hdr_file_path,'r').readlines():
             if not '=' in l:

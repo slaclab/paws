@@ -76,7 +76,6 @@ Fit2D dict keys and definitions:
 - 'tiltPlanRotation': detector rotation in degrees = 360 minus WXDIFF alpha (TODO:clarify)
 - 'splineFile' optional spline file describing detector distortion
 
-
 WXDIFF FORMAT
 -------------
 

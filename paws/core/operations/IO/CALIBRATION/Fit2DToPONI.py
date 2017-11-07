@@ -7,81 +7,59 @@ import pyFAI
 from ... import Operation as opmod 
 from ...Operation import Operation
 
-inputs=OrderedDict(nika_file=None,fpolz=1.)
-outputs=OrderedDict(poni_dict=None)
+inputs=OrderedDict(fit2d_file=None,wavelength_A=None)
+outputs=OrderedDict(poni_dict=None,fit2d_dict=None)
 
-class NikaToPONI(Operation):
-    """
-    Converts Nika calibration output 
-    (saved in a text file)
-    to a dict of PyFAI PONI parameters,
-    by first converting from Nika to Fit2D,
-    then using a pyFAI.AzimuthalIntegrator 
-    to convert from Fit2D to PONI format.
+class Fit2DToPONI(Operation):
+    """Produce PONI calibration parameters from a Fit2D calibration result. 
 
-    WARNING: 
-    The correspondence between 
-    Nika's horizontal and vertical tilts
-    and Fit2D's tilt and tiltPlanRotation
-    has not been verified. 
-    Use with nonzero tilts at own risk.
+    Reads in Fit2D calibration result from a text file,
+    converts it to a dict of PyFAI PONI parameters.
+
+    WARNING: Some developers have claimed that 
+    the Fit2D software itself computes tilted geometries incorrectly.
+    If using actual Fit2D output with tilts, 
+    it is suggested that a new calibration be attempted,
+    with a different package (something other than Fit2D).
+    Use tilts from Fit2D output at your own risk.
  
-    Input a text file expressing results of Nika automated calibration,
-    and manually input polarization factor. 
-    Output a dict of pyFAI PONI calibration parameters.
-    Format of text file for Nika output is expected to be:
-    sample_to_CCD_mm=____
-    pixel_size_x_mm=____
-    pixel_size_y_mm=____
-    beam_center_x_pix=____
-    beam_center_y_pix=____
-    horizontal_tilt_deg=____
-    vertical_tilt_deg=____ 
-    wavelength_A=____ 
+    Format of text file for Fit2D parameters is expected to be:
+    directDist=____         # sample-detector
+    centerX=____            # beam center on detector, in pixels
+    centerY=____            # beam center on detector, in pixels
+    pixelX=____             # pixel width, microns
+    pixelY=____             # pixel height, microns
+    tilt=____               # degrees
+    tiltPlanRotation=____   # degrees
+    splineFile=____         # optional detector distortion correction file
     """
     
     def __init__(self):
-        super(NikaToPONI,self).__init__(inputs,outputs)
-        self.input_doc['nika_file'] = 'text file expressing nika automated calibration results- '\
-            'see documentation of this operation class for the expected format of this file'
-        self.input_doc['fpolz'] = 'polarization factor, default value is 1.'
-        self.output_doc['poni_dict'] = 'Dict of pyFAI calibration parameters, as found in a .poni file'
+        super(Fit2DToPONI,self).__init__(inputs,outputs)
+        self.input_doc['fit2d_file'] = 'text file describing Fit2D geometry'
+        self.input_doc['wavelength_A'] = 'wavelength in Angstroms'
+        self.output_doc['fit2d_dict'] = 'Fit2D calibration parameters'
+        self.output_doc['poni_dict'] = 'pyFAI calibration parameters'
 
     def run(self):
-        fpath = self.inputs['nika_file']
-        fpolz = self.inputs['fpolz']
+        fpath = self.inputs['fit2d_file']
+        fit2d_dict = OrderedDict() 
         for line in open(fpath,'r'):
             kv = line.strip().split('=')
-            if kv[0] == 'sample_to_CCD_mm':
-                d_mm = float(kv[1])         # Nika reports direct detector distance, 
-                                            # from sample to where beam axis intersects detector plane, in mm.
-            if kv[0] == 'pixel_size_x_mm':
-                pxsz_x_mm = float(kv[1])    # Nika uses pixel dimensions in mm- this is the 'horzontal' dimension. 
-            if kv[0] == 'pixel_size_y_mm':
-                pxsz_y_mm = float(kv[1])    # Nika uses pixel dimensions in mm- this is the 'vertical' dimension. 
-            if kv[0] == 'beam_center_x_pix':
-                bcx_px = float(kv[1])       # Nika reports the x coord relative to 'bottom left' corner of detector
-                                            # where beam axis intersects detector plane, in pixels 
-            if kv[0] == 'beam_center_y_pix':
-                bcy_px = float(kv[1])       # same as beam_center_x_pix but for y 
-            if kv[0] == 'horizontal_tilt_deg':    
-                htilt_deg = float(kv[1])    # Nika reports the horizontal tilt in degrees...
-            if kv[0] == 'vertical_tilt_deg':
-                vtilt_deg = float(kv[1])    # Nika reports the vertical tilt in degrees...
-            if kv[0] == 'wavelength_A':
-                wl_A = float(kv[1])         # Nika reports wavelength is in Angstroms
+            fit2d_dict[kv[0]] = float(kv[1])
         # get wavelength in m 
-        wl_m = wl_A*1E-10
-        pxsz_x_um = pxsz_x_mm * 1000
-        pxsz_y_um = pxsz_y_mm * 1000
-        # TODO: figure out how Fit2D angles correspond to Nika angles:
-        # cannot use this for tilted geometries until this is done.
-        tilt_deg = 0
-        rot_fit2d = 0
+        wl_m = self.inputs['wavelength_A']*1E-10
         # use a pyFAI.AzimuthalIntegrator() to do the conversion
         p = pyFAI.AzimuthalIntegrator(wavelength = wl_m) 
-        p.setFit2D(d_mm,bcx_px,bcy_px,tilt_deg,rot_fit2d,pxsz_x_um,pxsz_y_um)
+        p.setFit2D(
+            fit2d_dict['directDist'],
+            fit2d_dict['centerX'],
+            fit2d_dict['centerY'],
+            fit2d_dict['tilt'],
+            fit2d_dict['tiltPlanRotation'],
+            fit2d_dict['pixelX'],
+            fit2d_dict['pixelY'])
         poni_dict = p.getPyFAI()
-        poni_dict['fpolz'] = fpolz
+        self.outputs['fit2d_dict'] = fit2d_dict 
         self.outputs['poni_dict'] = poni_dict 
 
