@@ -7,7 +7,7 @@ import pyFAI
 from ... import Operation as opmod 
 from ...Operation import Operation
 
-inputs=OrderedDict(nika_file=None)
+inputs=OrderedDict(nika_file=None,fpolz=1.)
 outputs=OrderedDict(poni_dict=None)
 
 class NikaToPONI(Operation):
@@ -19,12 +19,15 @@ class NikaToPONI(Operation):
     then using a pyFAI.AzimuthalIntegrator 
     to convert from Fit2D to PONI format.
 
-    WARNING: the map from Nika's horizontal and vertical tilts
-    to Fit2D's tilt and tiltPlanRotation
-    has not yet been verified by the developers. 
-    Use this operation with nonzero tilts at your own risk.
+    WARNING: 
+    The correspondence between 
+    Nika's horizontal and vertical tilts
+    and Fit2D's tilt and tiltPlanRotation
+    has not been verified. 
+    Use with nonzero tilts at own risk.
  
-    Input a text file expressing results of Nika automated calibration.
+    Input a text file expressing results of Nika automated calibration,
+    and manually input polarization factor. 
     Output a dict of pyFAI PONI calibration parameters.
     Format of text file for Nika output is expected to be:
     sample_to_CCD_mm=____
@@ -41,10 +44,12 @@ class NikaToPONI(Operation):
         super(NikaToPONI,self).__init__(inputs,outputs)
         self.input_doc['nika_file'] = 'text file expressing nika automated calibration results- '\
             'see documentation of this operation class for the expected format of this file'
+        self.input_doc['fpolz'] = 'polarization factor, default value is 1.'
         self.output_doc['poni_dict'] = 'Dict of pyFAI calibration parameters, as found in a .poni file'
 
     def run(self):
         fpath = self.inputs['nika_file']
+        fpolz = self.inputs['fpolz']
         for line in open(fpath,'r'):
             kv = line.strip().split('=')
             if kv[0] == 'sample_to_CCD_mm':
@@ -77,5 +82,6 @@ class NikaToPONI(Operation):
         p = pyFAI.AzimuthalIntegrator(wavelength = wl_m) 
         p.setFit2D(d_mm,bcx_px,bcy_px,tilt_deg,rot_fit2d,pxsz_x_um,pxsz_y_um)
         poni_dict = p.getPyFAI()
+        poni_dict['fpolz'] = fpolz
         self.outputs['poni_dict'] = poni_dict 
 

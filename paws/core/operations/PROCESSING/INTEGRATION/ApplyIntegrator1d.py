@@ -6,8 +6,13 @@ import pyFAI
 from ... import Operation as opmod 
 from ...Operation import Operation
 
-inputs = OrderedDict(image_data=None,integrator=None,
-    npt=1000,polz_factor=1.,unit='q_A^-1',integrate_args={})
+inputs = OrderedDict(
+    image_data=None,
+    integrator=None,
+    npt=1000,
+    polz_factor=0.,
+    unit='q_A^-1',
+    integrate_args={})
 outputs = OrderedDict(q=None,I=None,q_I=None)
         
 class ApplyIntegrator1d(Operation):

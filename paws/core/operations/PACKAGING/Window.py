@@ -5,7 +5,10 @@ import numpy as np
 from .. import Operation as opmod 
 from ..Operation import Operation
 
-inputs=OrderedDict(x_y=None,x_min=None,x_max=None)
+inputs=OrderedDict(
+    x_y=None,
+    x_min=None,
+    x_max=None)
 outputs=OrderedDict(x_y_window=None)
 
 class Window(Operation):

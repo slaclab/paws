@@ -5,8 +5,15 @@ import numpy as np
 from .. import Operation as opmod 
 from ..Operation import Operation
 
-inputs=OrderedDict(x=None,y=None,x_min=None,x_max=None)
-outputs=OrderedDict(x_window=None,y_window=None,x_y_window=None)
+inputs=OrderedDict(
+    x=None,
+    y=None,
+    x_min=None,
+    x_max=None)
+outputs=OrderedDict(
+    x_window=None,
+    y_window=None,
+    x_y_window=None)
 
 class WindowZip(Operation):
     """

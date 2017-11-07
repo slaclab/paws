@@ -1,16 +1,15 @@
 import numpy as np
 from collections import OrderedDict
 
-from ... import Operation as opmod 
 from ...Operation import Operation
 
 inputs=OrderedDict(array_in=None)
 outputs=OrderedDict(array_out=None)
 
 class ArrayMirrorHorizontal(Operation):
-    """
-    Mirror an array across a horizontal plane,
-    i.e., exchange indices along axis 0.
+    """Mirror an array across a horizontal plane.
+
+    Exchanges indices along axis 0.
     """
 
     def __init__(self):
@@ -20,6 +19,5 @@ class ArrayMirrorHorizontal(Operation):
 
     def run(self):
         x = self.inputs['array_in']
-        self.outputs['array_out'] = x[::-1,:]
-
+        self.outputs['array_out'] = np.array(x[::-1,:])
 
