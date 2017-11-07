@@ -1,15 +1,1 @@
 pyyaml
-numpy
-scipy
-sklearn
-six
-tifffile
-pillow
-h5py
-matplotlib
-silx
-fabio
-pyfai
-pypif
-pytz
-tzlocal
