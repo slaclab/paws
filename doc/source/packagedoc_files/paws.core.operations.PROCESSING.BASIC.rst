@@ -28,6 +28,14 @@ paws.core.operations.PROCESSING.BASIC.ArrayMirrorVertical module
     :undoc-members:
     :show-inheritance:
 
+paws.core.operations.PROCESSING.BASIC.InvertBinaryArray module
+--------------------------------------------------------------
+
+.. automodule:: paws.core.operations.PROCESSING.BASIC.InvertBinaryArray
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 paws.core.operations.PROCESSING.BASIC.LogY module
 -------------------------------------------------
 
@@ -40,6 +48,14 @@ paws.core.operations.PROCESSING.BASIC.Rotation module
 -----------------------------------------------------
 
 .. automodule:: paws.core.operations.PROCESSING.BASIC.Rotation
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+paws.core.operations.PROCESSING.BASIC.Subtract module
+-----------------------------------------------------
+
+.. automodule:: paws.core.operations.PROCESSING.BASIC.Subtract
     :members:
     :undoc-members:
     :show-inheritance:

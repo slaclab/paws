@@ -8,7 +8,6 @@ Subpackages
 
     paws.core.operations.PROCESSING.BACKGROUND
     paws.core.operations.PROCESSING.BASIC
-    paws.core.operations.PROCESSING.FEATURE_EXTRACTION
     paws.core.operations.PROCESSING.INTEGRATION
     paws.core.operations.PROCESSING.PEAKS
     paws.core.operations.PROCESSING.SAXS

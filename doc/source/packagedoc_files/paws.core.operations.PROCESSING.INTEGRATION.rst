@@ -28,46 +28,6 @@ paws.core.operations.PROCESSING.INTEGRATION.BuildPyFAIIntegrator module
     :undoc-members:
     :show-inheritance:
 
-paws.core.operations.PROCESSING.INTEGRATION.Integrate1d module
---------------------------------------------------------------
-
-.. automodule:: paws.core.operations.PROCESSING.INTEGRATION.Integrate1d
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-paws.core.operations.PROCESSING.INTEGRATION.Integrate2d module
---------------------------------------------------------------
-
-.. automodule:: paws.core.operations.PROCESSING.INTEGRATION.Integrate2d
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-paws.core.operations.PROCESSING.INTEGRATION.Remesh module
----------------------------------------------------------
-
-.. automodule:: paws.core.operations.PROCESSING.INTEGRATION.Remesh
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-paws.core.operations.PROCESSING.INTEGRATION.RemeshXIntegration module
----------------------------------------------------------------------
-
-.. automodule:: paws.core.operations.PROCESSING.INTEGRATION.RemeshXIntegration
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-paws.core.operations.PROCESSING.INTEGRATION.RemeshZIntegration module
----------------------------------------------------------------------
-
-.. automodule:: paws.core.operations.PROCESSING.INTEGRATION.RemeshZIntegration
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 
 Module contents
 ---------------

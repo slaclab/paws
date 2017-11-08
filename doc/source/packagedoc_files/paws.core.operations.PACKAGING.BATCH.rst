@@ -4,10 +4,10 @@ paws.core.operations.PACKAGING.BATCH package
 Submodules
 ----------
 
-paws.core.operations.PACKAGING.BATCH.BuildListFromBatch module
---------------------------------------------------------------
+paws.core.operations.PACKAGING.BATCH.ListFromBatch module
+---------------------------------------------------------
 
-.. automodule:: paws.core.operations.PACKAGING.BATCH.BuildListFromBatch
+.. automodule:: paws.core.operations.PACKAGING.BATCH.ListFromBatch
     :members:
     :undoc-members:
     :show-inheritance:

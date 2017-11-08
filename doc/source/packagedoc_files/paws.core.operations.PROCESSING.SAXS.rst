@@ -4,6 +4,14 @@ paws.core.operations.PROCESSING.SAXS package
 Submodules
 ----------
 
+paws.core.operations.PROCESSING.SAXS.PostProcessTimeSeries module
+-----------------------------------------------------------------
+
+.. automodule:: paws.core.operations.PROCESSING.SAXS.PostProcessTimeSeries
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 paws.core.operations.PROCESSING.SAXS.SpectrumClassifier module
 --------------------------------------------------------------
 
@@ -16,6 +24,14 @@ paws.core.operations.PROCESSING.SAXS.SpectrumFit module
 -------------------------------------------------------
 
 .. automodule:: paws.core.operations.PROCESSING.SAXS.SpectrumFit
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+paws.core.operations.PROCESSING.SAXS.SpectrumMCAnneal module
+------------------------------------------------------------
+
+.. automodule:: paws.core.operations.PROCESSING.SAXS.SpectrumMCAnneal
     :members:
     :undoc-members:
     :show-inheritance:

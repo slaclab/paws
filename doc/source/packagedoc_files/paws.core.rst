@@ -9,8 +9,7 @@ Subpackages
     paws.core.models
     paws.core.operations
     paws.core.plugins
-    paws.core.tools
-    paws.core.workflow
+    paws.core.workflows
 
 Submodules
 ----------

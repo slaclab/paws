@@ -8,6 +8,7 @@ Subpackages
 
     paws.core.operations.PACKAGING.BATCH
     paws.core.operations.PACKAGING.BL15
+    paws.core.operations.PACKAGING.CALIBRATION
     paws.core.operations.PACKAGING.PIF
 
 Submodules
@@ -17,6 +18,14 @@ paws.core.operations.PACKAGING.LogLogZip module
 -----------------------------------------------
 
 .. automodule:: paws.core.operations.PACKAGING.LogLogZip
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+paws.core.operations.PACKAGING.Window module
+--------------------------------------------
+
+.. automodule:: paws.core.operations.PACKAGING.Window
     :members:
     :undoc-members:
     :show-inheritance:

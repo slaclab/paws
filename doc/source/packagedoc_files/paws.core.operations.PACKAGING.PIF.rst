@@ -12,6 +12,14 @@ paws.core.operations.PACKAGING.PIF.EmptyPif module
     :undoc-members:
     :show-inheritance:
 
+paws.core.operations.PACKAGING.PIF.Pif1dScatteringIntensity module
+------------------------------------------------------------------
+
+.. automodule:: paws.core.operations.PACKAGING.PIF.Pif1dScatteringIntensity
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 paws.core.operations.PACKAGING.PIF.PifNPSolutionSAXS module
 -----------------------------------------------------------
 

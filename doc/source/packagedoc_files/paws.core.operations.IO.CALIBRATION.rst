@@ -4,6 +4,14 @@ paws.core.operations.IO.CALIBRATION package
 Submodules
 ----------
 
+paws.core.operations.IO.CALIBRATION.Fit2DToPONI module
+------------------------------------------------------
+
+.. automodule:: paws.core.operations.IO.CALIBRATION.Fit2DToPONI
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 paws.core.operations.IO.CALIBRATION.NikaToPONI module
 -----------------------------------------------------
 

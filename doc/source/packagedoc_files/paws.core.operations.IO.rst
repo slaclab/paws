@@ -7,6 +7,7 @@ Subpackages
 .. toctree::
 
     paws.core.operations.IO.BL15
+    paws.core.operations.IO.BL42
     paws.core.operations.IO.CALIBRATION
     paws.core.operations.IO.CSV
     paws.core.operations.IO.IMAGE
