@@ -5,7 +5,7 @@ import pypif.obj as pifobj
 
 from ... import Operation as opmod 
 from ...Operation import Operation
-from ....tools.saxs import saxs_fit 
+from saxskit import saxs_fit 
 
 inputs=OrderedDict(uid=None,q_I=None)
 outputs=OrderedDict(pif=None)

@@ -27,14 +27,14 @@ class SpectrumParameterization(Operation):
         self.input_doc['q_I'] = 'n-by-2 array '\
             'of wave vectors(1/Angstrom) and intensities (counts)'
         self.input_doc['flags'] = 'dict of population flags, similar to the output '\
-            'of paws.core.tools.saxs.saxs_classify.SaxsClassifier.classify()'
+            'of saxskit.saxs_classify.SaxsClassifier.classify()'
         self.input_doc['fixed_params'] = 'list of strings indicating '\
             'which parameters should be fixed to specified values- '\
             'these correspond one-to-one with fixed_param_values.'
         self.input_doc['fixed_param_values'] = 'list of values '\
             'to which the corresponding fixed_params will be set.'
         self.output_doc['params'] = 'dict of scattering equation parameters, '\
-            'similar to the input of paws.core.tools.saxs.saxs_fit.compute_saxs()'
+            'similar to the input of saxskit.saxs_fit.compute_saxs()'
         self.output_doc['q_I_guess'] = 'n-by-2 array of q and the intensity spectrum '\
             'corresponding to the returned scattering equation parameters'
         self.input_type['q_I'] = opmod.workflow_item

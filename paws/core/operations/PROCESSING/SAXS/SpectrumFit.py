@@ -42,10 +42,6 @@ class SpectrumFit(Operation):
             'for each of the populations specified in the input flags'
         self.input_doc['fixed_params'] = 'list of strings (keys) indicating '\
             'which parameters to hold fixed during optimization'
-        #self.input_doc['objfun'] = 'string indicating objective function for optimization- '\
-        #    'see documentation of tools.saxs.saxs_fit.fit_spectrum() for supported objective functions'
-        #self.input_doc['constraints'] = 'list of strings indicating constraints- '\
-        #    'see documentation of tools.saxs.saxs_fit.fit_spectrum() for supported constraints'
         self.output_doc['params'] = 'dict of scattering equation parameters copied from inputs, '\
             'with values optimized for all keys not listed in fixed_params'
         self.output_doc['report'] = 'dict expressing the objective function, '\
