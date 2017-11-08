@@ -1,16 +1,15 @@
 import numpy as np
 from collections import OrderedDict
 
-from ... import Operation as opmod 
 from ...Operation import Operation
 
 inputs=OrderedDict(array_in=None)
 outputs=OrderedDict(array_out=None)
 
 class ArrayMirrorVertical(Operation):
-    """
-    Mirror an array across a vertical plane,
-    i.e., exchange indices along axis 1.
+    """Mirror an array across a vertical plane.
+    
+    Exchanges indices along axis 1.
     """
 
     def __init__(self):

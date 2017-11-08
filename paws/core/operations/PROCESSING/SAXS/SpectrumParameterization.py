@@ -6,7 +6,7 @@ from scipy.optimize import minimize
 
 from ... import Operation as opmod 
 from ...Operation import Operation
-from ....tools.saxs import saxs_fit 
+from saxskit import saxs_fit 
 
 inputs = OrderedDict(q_I=None,flags=None,fixed_params=[],fixed_param_values=[])
 outputs = OrderedDict(params=None,q_I_guess=None)

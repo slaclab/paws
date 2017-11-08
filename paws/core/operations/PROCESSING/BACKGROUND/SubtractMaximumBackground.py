@@ -4,8 +4,15 @@ from collections import OrderedDict
 from ... import Operation as opmod 
 from ...Operation import Operation
 
-inputs = OrderedDict(q_I=None,q_I_bg=None,dI=None,dI_bg=None)
-outputs = OrderedDict(q_I=None,dI=None,bg_factor=None)
+inputs = OrderedDict(
+    q_I=None,
+    q_I_bg=None,
+    dI=None,
+    dI_bg=None)
+outputs = OrderedDict(
+    q_I=None,
+    dI=None,
+    bg_factor=None)
 
 class SubtractMaximumBackground(Operation):
     """
@@ -36,7 +43,7 @@ class SubtractMaximumBackground(Operation):
             msg = 'SPECTRUM AND BACKGROUND ON DIFFERENT q DOMAINS'
             raise ValueError(msg)
         I = q_I[:,1]
-        I_bg = q_I[:,1]
+        I_bg = q_I_bg[:,1]
         bad_data = (I < 0) | (I_bg <= 0) | np.isnan(I) | np.isnan(I_bg)
         bg_factor = np.min(I[~bad_data] / I_bg[~bad_data])
         I_out = I-(bg_factor*I_bg)

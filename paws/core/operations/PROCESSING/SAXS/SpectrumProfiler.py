@@ -3,7 +3,7 @@ from collections import OrderedDict
 
 from ... import Operation as opmod 
 from ...Operation import Operation
-from ....tools.saxs import saxs_fit 
+from saxskit import saxs_fit 
 
 inputs = OrderedDict(q_I=None,dI=None)
 outputs = OrderedDict(features=None)

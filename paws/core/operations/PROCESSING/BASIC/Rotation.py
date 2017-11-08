@@ -16,7 +16,6 @@ class Rotation(Operation):
         self.input_doc['rotation_deg'] = 'rotation in degrees counter-clockwise: '\
             'must be one of 90, 180, or 270'
         self.output_doc['image_data'] = '2d array representing rotated image'
-        self.inputs['rotation_deg'] = 90 
 
     def run(self):
         """Rotate self.inputs['image_data'] and save as self.outputs['image_data']"""
