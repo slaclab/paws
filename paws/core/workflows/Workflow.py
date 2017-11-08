@@ -115,7 +115,7 @@ class Workflow(TreeModel):
                 d[wfoutnm] = self.get_data_from_uri(self.outputs[wfoutnm])
         return d
 
-    def get_wf_output(wf_output_name):
+    def get_wf_output(self,wf_output_name):
         """
         Fetch and return the Operation output(s)
         indicated by self.outputs[wf_output_name].

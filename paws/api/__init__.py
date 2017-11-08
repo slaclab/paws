@@ -213,9 +213,10 @@ class PawsAPI(object):
         self.get_wf(wfname).break_wf_output(wf_output_name) 
 
     def set_wf_input(self,wf_input_name,val=None,wfname=None):
-        if wfname is None:
-            wfname = self._current_wf_name
         self.get_wf(wfname).set_wf_input(wf_input_name,val) 
+
+    def get_wf_output(self,wf_output_name,wfname=None):
+        return self.get_wf(wfname).get_wf_output(wf_output_name)
 
     def set_input(self,opname,input_name,val=None,tp=None,wfname=None):
         if wfname is None:
@@ -314,7 +315,20 @@ class PawsAPI(object):
         #pawstools.update_file(wfl_filename,d)
         pawstools.save_file(wfl_filename,d)
 
-    def load_from_wfl(self,wfl_filename):
+    def load_from_wfl(self,wfl_filename,wf_names=None,plugin_names=None):
+        """Load a state from a .wfl file.
+
+        Parameters
+        ----------
+        wfl_filename : str
+            path to a .wfl file
+        wf_names : list of str, optional
+            names to substitute for the saved workflow names-
+            there must be one name for each workflow in the .wfl
+        plugin_names : list of str, optional
+            names to substitute for the saved plugin names-
+            there must be one name for each plugin in the .wfl
+        """
         f = open(wfl_filename,'r')
         d = yaml.load(f)
         f.close()
@@ -342,13 +356,17 @@ class PawsAPI(object):
                         self.deactivate_op(opname)
         if 'WORKFLOWS' in d.keys():
             wf_dict = d['WORKFLOWS']
-            for wfname,wfspec in wf_dict.items():
-                self._wf_manager.load_from_dict(wfname,wfspec,self._op_manager)
-                self.select_wf(wfname)
+            if wf_names is None:
+                wf_names = wf_dict.keys()
+            for wf_name,wf_spec in zip(wf_names,wf_dict.values()):
+                self._wf_manager.load_from_dict(wf_name,wf_spec,self._op_manager)
+                self.select_wf(wf_name)
         if 'PLUGINS' in d.keys():
-            pgin_dict = d['PLUGINS']
-            for pgin_name,pgin_spec in pgin_dict.items():
-                self._plugin_manager.load_from_dict(pgin_name,pgin_spec)
+            plugin_dict = d['PLUGINS']
+            if plugin_names is None:
+                plugin_names = plugin_dict.keys()
+            for plugin_name,plugin_spec in plugin_dict.items():
+                self._plugin_manager.load_from_dict(plugin_name,plugin_spec)
     
     def op_count(self,wfname=None):
         return self.get_wf(wfname).n_children()

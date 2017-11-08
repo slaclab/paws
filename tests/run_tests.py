@@ -5,6 +5,8 @@ import os
 import paws.api
 import test_api
 import test_op
+import test_wfl
+from paws.core import workflows as wfs
 
 runner = unittest.TextTestRunner(verbosity=3)
 
@@ -66,16 +68,15 @@ print('======================================================================')
 
 print('======================================================================')
 print('--- testing packaged workflows ---'+os.linesep)
-wf_tests = unittest.TestSuite()
-wf_list = [] # TODO: fetch from workflows package
-for wf_name in wf_list:
-    wf_tests.addTest(test_wf.TestWf('test_wf',wf_name,paw))
-runner.run(wf_tests)
+wfl_tests = unittest.TestSuite()
+for wfl_uri,wfl_path in wfs.wfl_modules.items():
+    wfl_tests.addTest(test_wfl.TestWfl('test_load_wfl',wfl_uri,paw))
+runner.run(wfl_tests)
 print('======================================================================')
-wf_run_tests = unittest.TestSuite()
-for wf_name in wf_list:
-    wf_run_tests.addTest(test_wf.TestWf('test_run',wf_name,paw))
-runner.run(wf_run_tests)
+wfl_run_tests = unittest.TestSuite()
+for wfl_uri,wfl_path in wfs.wfl_modules.items():
+    wfl_run_tests.addTest(test_wfl.TestWfl('test_run',wfl_uri,paw))
+runner.run(wfl_run_tests)
 print(os.linesep+'--- done testing packaged workflows ---')
 print('======================================================================')
 

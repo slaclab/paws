@@ -66,7 +66,7 @@ class WfManager(object):
                 for inpname,il in op.input_locator.items():
                     if il.tp not in [opmod.runtime_type,opmod.workflow_item]:
                         # runtime inputs should be set directly, without using il.val.
-                        # this is because il.val gets serialized in wf.wf_setup_dict().
+                        # this is because, when calling wf.wf_setup_dict(), il.val gets serialized.
                         # workflow_item inputs should be set later, during execution.
                         # the no_input case ends up setting the input to None
                         #op.inputs[inpname] = self.locate_input(il)
