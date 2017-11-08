@@ -5,6 +5,7 @@ python:
 - '3.5'
 - '3.6'
 script:
+- pip install -r all_requirements.txt
 - PYTHONPATH=`pwd` python tests/run_tests.py
 deploy:
   provider: pypi

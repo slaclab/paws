@@ -63,7 +63,7 @@ setup(
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
     install_requires=['pyyaml'],
-    python_requires='>=2.6',
+    python_requires='>=2.7',
 
     # List additional groups of dependencies here (e.g. development
     # dependencies). You can install these using the following syntax,
@@ -78,7 +78,7 @@ setup(
     # installed, specify them here.  If using Python 2.6 or less, then these
     # have to be included in MANIFEST.in as well.
     package_data={
-        '': ['contributors.txt'],
+        '': ['all_requirements.txt','contributors.txt'],
         'paws': ['qt/graphics/*.png','qt/qtui/*.ui','core/tools/modeling_data/*'],
     },
 
