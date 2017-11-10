@@ -5,7 +5,7 @@ import pypif.obj as pifobj
 
 from ... import Operation as opmod 
 from ...Operation import Operation
-from saxskit import saxs_fit 
+from saxskit import saxs_classify,saxs_fit 
 
 inputs=OrderedDict(
     uid_prefix=None,
@@ -18,9 +18,8 @@ inputs=OrderedDict(
 outputs=OrderedDict(pif=None)
 
 class PifNPSolutionSAXS(Operation):
-    """
-    Package SAXS results from a nanoparticle solution into a pypif.obj.ChemicalSystem record.
-    """
+    """Build a PIF record for a nanoparticle solution SAXS experiment"""
+    # TODO: include the scattering equation in this record somehow
 
     def __init__(self):
         super(PifNPSolutionSAXS,self).__init__(inputs,outputs)
@@ -62,105 +61,138 @@ class PifNPSolutionSAXS(Operation):
         csys.tags = []
         csys.ids = []
         if uid_pre is not None:
-            csys.ids.append(self.id_tag('EXPERIMENT_ID',uid_pre))
-        #if uid_pre is not None:
-        #    csys.tags.append('reaction id: '+uid_pre)
+            csys.ids.append(id_tag('EXPERIMENT_ID',uid_pre))
         if t_utc is not None:
             csys.tags.append('time (utc): '+str(int(t_utc)))
 
         if q_I is not None:
             # Process measured q_I into a property
-            pI = self.q_I_property(q_I)
-            if temp_C is not None:
-                pI.conditions.append(pifobj.Value('temperature',[pifobj.Scalar(temp_C)],None,None,None,'degrees Celsius'))
-            pI.name = 'SAXS intensity' 
+            pI = q_I_property(q_I,temp_C)
             csys.properties.append(pI)
-            # Store featurization of measured spectrum
-            prof = saxs_fit.profile_spectrum(q_I)
-            for fnm,fval in prof.items():
-                csys.properties.append(self.param_property(
-                fnm,fval,'','spectrum profiling heuristic quantity'))
 
         if q_I is not None and p is not None and f is not None:
             if not f['bad_data'] and not f['diffraction_peaks']:
                 I_computed = saxs_fit.compute_saxs(q_I[:,0],f,p)
-                pI_computed = self.q_I_property(np.array([q_I[:,0],I_computed]).T)
-                pI_computed.name = 'computed SAXS intensity'
+                pI_computed = q_I_property(
+                    np.array([q_I[:,0],I_computed]).T,
+                    propname='computed SAXS intensity')
                 csys.properties.append(pI_computed)
 
+        if q_I is not None:
+            # featurization of measured spectrum
+            prof = saxs_fit.profile_spectrum(q_I)
+            prof_props = profile_properties(prof)
+            csys.properties.extend(prof_props)
 
-        # TODO: include the scattering equation in this record somehow
+            # ML flags for this featurization
+            sxc = saxs_classify.SaxsClassifier()
+            ml_flags = sxc.classify(np.array(list(prof.values())).reshape(1,-1))
+            ml_flag_props = ml_flag_properties(ml_flags)
+            csys.properties.extend(ml_flag_props)
+
         if f is not None:
-            if f['bad_data']:
-                csys.properties.append(self.param_property(
-                'bad_data',1.,'probability of bad data','EXPERIMENTAL'))
-            if f['diffraction_peaks']:
-                csys.properties.append(self.param_property(
-                'diffraction_peaks',1.,'probability of diffraction peaks','EXPERIMENTAL'))
-            if f['form_factor_scattering']:
-                csys.properties.append(self.param_property(
-                'form_factor_scattering',1.,'probability of form factor scattering','EXPERIMENTAL'))
-            if f['precursor_scattering']:
-                csys.properties.append(self.param_property(
-                'precursor scattering',1.,'probability of precursor scattering','EXPERIMENTAL'))
+            fprops = ground_truth_flag_properties(f)
+            csys.properties.extend(fprops)
 
         if p is not None:
-            if 'I0_floor' in p:
-                csys.properties.append(self.param_property(
-                'I0_floor',p['I0_floor'],
-                'arb','flat background intensity','FIT'))
-            if 'G_precursor' in p:
-                csys.properties.append(self.param_property(
-                'G_precursor',p['G_precursor'],
-                'arb','precursor Guinier factor','FIT'))
-            if 'rg_precursor' in p:
-                csys.properties.append(self.param_property(
-                'rg_precursor',p['rg_precursor'],
-                'Angstrom','precursor radius of gyration','FIT'))
-            if 'I0_sphere' in p:
-                csys.properties.append(self.param_property(
-                'I0_sphere',p['I0_sphere'],
-                'arb','spherical scatterer intensity','FIT'))
-            if 'r0_sphere' in p:
-                csys.properties.append(self.param_property(
-                'r0_sphere',p['r0_sphere'],
-                'Angstrom','spherical scatterer mean radius','FIT'))
-            if 'sigma_sphere' in p:
-                csys.properties.append(self.param_property(
-                'sigma_sphere',p['sigma_sphere'],
-                '','fractional standard deviation of spherical scatterer radii','FIT'))
+            pprops = param_properties(p)
+            csys.properties.extend(pprops)
 
         if r is not None:
-            for rptnm,rptval in r.items():
-                if isinstance(rptval,float):
-                    csys.properties.append(self.param_property(
-                    rptnm,rptval,'','spectrum fitting reported quantity','FIT'))
-
+            rprops = fitreport_properties(p)
+            csys.properties.extend(rprops)
+        import pdb; pdb.set_trace()
         self.outputs['pif'] = csys
 
-    def id_tag(self,idname,idval,tags=None):
-        return pifobj.Id(idname,idval,tags)
+def id_tag(idname,idval,tags=None):
+    return pifobj.Id(idname,idval,tags)
 
-    def param_property(self,fname,fval,funits='',desc='',data_type=''):
-        pf = pifobj.Property()
-        pf.name = fname
-        pf.scalars = [pifobj.Scalar(fval)]
-        if funits:
-            pf.units = funits
-        if desc:
-            pf.tags = [desc]
-        if data_type:
-            pf.dataType = data_type 
-        return pf
+def q_I_property(q_I,temp_C=None,Iunits='arb',qunits='1/Angstrom',propname='SAXS intensity'):
+    pI = pifobj.Property()
+    n_qpoints = q_I.shape[0]
+    pI.scalars = [pifobj.Scalar(q_I[i,1]) for i in range(n_qpoints)]
+    pI.units = Iunits 
+    pI.conditions = []
+    pI.conditions.append( pifobj.Value('scattering vector', 
+                        [pifobj.Scalar(q_I[i,0]) for i in range(n_qpoints)],
+                        None,None,None,qunits) )
+    if temp_C is not None:
+        pI.conditions.append(pifobj.Value('temperature',
+            [pifobj.Scalar(temp_C)],None,None,None,'degrees Celsius'))
+    pI.name = propname 
+    return pI 
 
-    def q_I_property(self,q_I,Iunits='arb',qunits='1/Angstrom'):
-        pI = pifobj.Property()
-        n_qpoints = q_I.shape[0]
-        pI.scalars = [pifobj.Scalar(q_I[i,1]) for i in range(n_qpoints)]
-        pI.units = Iunits 
-        pI.conditions = []
-        pI.conditions.append( pifobj.Value('scattering vector', 
-                            [pifobj.Scalar(q_I[i,0]) for i in range(n_qpoints)],
-                            None,None,None,qunits) )
-        return pI 
-        
+def profile_properties(prof):
+    props = []
+    for fnm,fval in prof.items():
+        props.append(scalar_property(
+        fnm,fval,'','spectrum profiling quantity'))
+    return props
+
+def ml_flag_properties(ml_flags):
+    props = []
+    for fnm,fval in ml_flags.items():
+        props.append(scalar_property(
+            fnm+'_ML_flag',float(fval[0]),
+            '{} ML flag'.format(fnm),'MACHINE_LEARNING'))
+        props.append(scalar_property(
+            fnm+'_ML_flag_prob',fval[1],
+            '{} ML flag probability'.format(fnm),'MACHINE_LEARNING'))
+    return props
+
+def ground_truth_flag_properties(flags):
+    props = []
+    for fnm,fval in flags.items():
+        props.append(scalar_property(
+            fnm+'_flag',float(fval),
+            '{} ground truth flag'.format(fnm),'EXPERIMENTAL'))
+    return props
+
+def param_properties(params):
+    props = []
+    if 'I0_floor' in params:
+        props.append(scalar_property(
+        'I0_floor',params['I0_floor'],
+        'arb','flat background intensity','FIT'))
+    if 'G_precursor' in params:
+        props.append(scalar_property(
+        'G_precursor',params['G_precursor'],
+        'arb','precursor Guinier factor','FIT'))
+    if 'rg_precursor' in params:
+        props.append(scalar_property(
+        'rg_precursor',params['rg_precursor'],
+        'Angstrom','precursor radius of gyration','FIT'))
+    if 'I0_sphere' in params:
+        props.append(scalar_property(
+        'I0_sphere',params['I0_sphere'],
+        'arb','spherical scatterer intensity','FIT'))
+    if 'r0_sphere' in params:
+        props.append(scalar_property(
+        'r0_sphere',params['r0_sphere'],
+        'Angstrom','spherical scatterer mean radius','FIT'))
+    if 'sigma_sphere' in params:
+        props.append(scalar_property(
+        'sigma_sphere',params['sigma_sphere'],
+        '','fractional standard deviation of spherical scatterer radii','FIT'))
+    return props
+
+def fitreport_properties(r):
+    props = []
+    for rptnm,rptval in r.items():
+        #if isinstance(rptval,float):
+        props.append(scalar_property(
+        rptnm,rptval,'','spectrum fitting quantity','FIT'))
+    return props
+
+def scalar_property(fname,fval,funits='',desc='',data_type=''):
+    pf = pifobj.Property()
+    pf.name = fname
+    pf.scalars = [pifobj.Scalar(fval)]
+    if funits:
+        pf.units = funits
+    if desc:
+        pf.tags = [desc]
+    if data_type:
+        pf.dataType = data_type 
+    return pf
+

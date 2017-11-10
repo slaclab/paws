@@ -28,8 +28,6 @@ class LoadSAXSClassifier(Operation):
         self.output_doc['saxs_classifier'] = 'an object containing '\
             'scikit-learn classification models '\
             'designed for 1-d SAXS spectra.'
-        self.inputs['file_path'] = os.path.join(pawstools.sourcedir,
-            'core','tools','saxs','modeling_data','scalers_and_models.yml')
 
     def run(self):
         p = self.inputs['file_path']
