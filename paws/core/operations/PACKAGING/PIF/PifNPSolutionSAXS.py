@@ -101,7 +101,7 @@ class PifNPSolutionSAXS(Operation):
         if r is not None:
             rprops = fitreport_properties(p)
             csys.properties.extend(rprops)
-        import pdb; pdb.set_trace()
+        
         self.outputs['pif'] = csys
 
 def id_tag(idname,idval,tags=None):

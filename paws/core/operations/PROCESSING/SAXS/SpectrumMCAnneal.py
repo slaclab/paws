@@ -70,25 +70,12 @@ class SpectrumMCAnneal(Operation):
         T_burn = self.inputs['T_burn']
         T_anneal = self.inputs['T_anneal']
 
-        print('beginning burn ({} steps)'.format(ns_burn))
-        p_best,p_fin,rpt_burn = saxs_fit.MC_anneal_fit(q_I,f,p,stepsz,ns_burn,T_burn)
-        print('finished burn. objectives: \ninit: {} \nbest: {} \nfinal: {} \nRR: {}'
-            .format(rpt_burn['obj_init'],rpt_burn['obj_best'],rpt_burn['obj_final'],rpt_burn['reject_ratio']))
-
-        print('beginning anneal ({} steps)'.format(ns_burn))
-        p_best,p_fin,rpt_anneal = saxs_fit.MC_anneal_fit(q_I,f,p_best,stepsz,ns_anneal,T_anneal)
-        print('finished anneal. objectives: \ninit: {} \nbest: {} \nfinal: {} \nRR: {}'
-            .format(rpt_anneal['obj_init'],rpt_anneal['obj_best'],rpt_anneal['obj_final'],rpt_anneal['reject_ratio']))
-
-        print('beginning quench ({} steps)'.format(ns_quench))
-        p_best,p_fin,rpt_quench = saxs_fit.MC_anneal_fit(q_I,f,p_best,stepsz,ns_quench,0.)
-        print('finished quench. objectives: \ninit: {} \nbest: {} \nfinal: {} \nRR: {}'
-            .format(rpt_quench['obj_init'],rpt_quench['obj_best'],rpt_quench['obj_final'],rpt_quench['reject_ratio']))
-
-        rpt_quench['burn_reject_ratio'] = rpt_burn['reject_ratio']
-        rpt_quench['quench_reject_ratio'] = rpt_quench['reject_ratio']
-        rpt_quench['reject_ratio'] = rpt_anneal['reject_ratio']
-        self.outputs['best_params'] = p_best 
-        self.outputs['final_params'] = p_fin 
-        self.outputs['report'] = rpt_quench 
+        if not f['bad_data'] and not f['diffraction_peaks']:
+            p_best,p_fin,rpt_burn = saxs_fit.MC_anneal_fit(q_I,f,p,stepsz,ns_burn,T_burn)
+            p_best,p_fin,rpt_anneal = saxs_fit.MC_anneal_fit(q_I,f,p_best,stepsz,ns_anneal,T_anneal)
+            p_best,p_fin,rpt_quench = saxs_fit.MC_anneal_fit(q_I,f,p_best,stepsz,ns_quench,0.)
+            self.outputs['best_params'] = p_best 
+            self.outputs['final_params'] = p_fin 
+            rpt_anneal['objective_value'] = rpt_quench['objective_value']
+            self.outputs['report'] = rpt_anneal 
 

@@ -111,8 +111,8 @@ class EasyZingers1d(Operation):
         self.outputs['q_I_dz'] = np.array(zip(q,I_dz))
         self.outputs['zmask'] = zmask
 
-        if any(idx_z):
-        #if False:
+        #if any(idx_z):
+        if False:
             from matplotlib import pyplot as plt
             plt.figure(1)
             plt.semilogy(q,I)
