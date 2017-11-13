@@ -126,7 +126,7 @@ def profile_properties(prof):
     props = []
     for fnm,fval in prof.items():
         props.append(scalar_property(
-        fnm,fval,'','spectrum profiling quantity'))
+        fnm,fval,'spectrum profiling quantity'))
     return props
 
 def ml_flag_properties(ml_flags):
@@ -153,27 +153,27 @@ def param_properties(params):
     if 'I0_floor' in params:
         props.append(scalar_property(
         'I0_floor',params['I0_floor'],
-        'arb','flat background intensity','FIT'))
+        'flat background intensity','FIT','arb'))
     if 'G_precursor' in params:
         props.append(scalar_property(
         'G_precursor',params['G_precursor'],
-        'arb','precursor Guinier factor','FIT'))
+        'precursor Guinier factor','FIT','arb'))
     if 'rg_precursor' in params:
         props.append(scalar_property(
         'rg_precursor',params['rg_precursor'],
-        'Angstrom','precursor radius of gyration','FIT'))
+        'precursor radius of gyration','FIT','Angstrom'))
     if 'I0_sphere' in params:
         props.append(scalar_property(
         'I0_sphere',params['I0_sphere'],
-        'arb','spherical scatterer intensity','FIT'))
+        'spherical scatterer intensity','FIT','arb'))
     if 'r0_sphere' in params:
         props.append(scalar_property(
         'r0_sphere',params['r0_sphere'],
-        'Angstrom','spherical scatterer mean radius','FIT'))
+        'spherical scatterer mean radius','FIT','Angstrom'))
     if 'sigma_sphere' in params:
         props.append(scalar_property(
         'sigma_sphere',params['sigma_sphere'],
-        '','fractional standard deviation of spherical scatterer radii','FIT'))
+        'fractional standard deviation of spherical scatterer radii','FIT'))
     return props
 
 def fitreport_properties(r):
@@ -184,15 +184,15 @@ def fitreport_properties(r):
         rptnm,rptval,'','spectrum fitting quantity','FIT'))
     return props
 
-def scalar_property(fname,fval,funits='',desc='',data_type=''):
+def scalar_property(fname,fval,desc=None,data_type=None,funits=None):
     pf = pifobj.Property()
     pf.name = fname
     pf.scalars = [pifobj.Scalar(fval)]
-    if funits:
-        pf.units = funits
     if desc:
         pf.tags = [desc]
     if data_type:
         pf.dataType = data_type 
+    if funits:
+        pf.units = funits
     return pf
 
