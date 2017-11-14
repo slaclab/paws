@@ -6,8 +6,15 @@ from ... import Operation as opmod
 from ...Operation import Operation
 from saxskit import saxs_fit
 
-inputs = OrderedDict(q_I=None,flags=None,params=None,fixed_params=[])
-outputs = OrderedDict(params=None,report=None,q_I_opt=None)
+inputs = OrderedDict(
+    q_I=None,
+    flags=None,
+    params=None,
+    fixed_params=[])
+outputs = OrderedDict(
+    params=None,
+    report=None,
+    q_I_opt=None)
 
 class SpectrumFit(Operation):
     """

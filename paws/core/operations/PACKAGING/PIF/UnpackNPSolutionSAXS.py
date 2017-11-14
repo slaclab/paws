@@ -1,9 +1,8 @@
 from collections import OrderedDict
 
-import numpy as np
-
 from ... import Operation as opmod 
 from ...Operation import Operation
+from saxskit import saxs_pif
 
 inputs=OrderedDict(pif=None)
 outputs=OrderedDict(
@@ -27,35 +26,13 @@ class UnpackNPSolutionSAXS(Operation):
         self.input_type['pif'] = opmod.workflow_item
 
     def run(self):
-        p = self.inputs['pif']
-        
-        f = OrderedDict() 
-        par = OrderedDict() 
-        r = OrderedDict() 
-        for prop in p.properties:
-            print(prop.name)
-            if prop.name == 'SAXS intensity':
-                I = [float(sca.value) for sca in prop.scalars]
-                for val in prop.conditions:
-                    if val.name == 'scattering vector':
-                        q = [float(sca.value) for sca in val.scalars]
-                    if val.name == 'temperature':
-                        temp = float(val.scalars[0].value)
-                        self.outputs['temperature'] = temp 
-                q_I = np.array(zip(q,I)).T
-                self.outputs['q_I'] = q_I
-            elif prop.name[-5:] == '_flag' and prop.data_type == 'EXPERIMENTAL':
-                f[prop.name[:-5]] = bool(prop.scalars[0].value)
-            elif prop.name in ['I0_sphere','r0_sphere','sigma_sphere',\
-                            'G_precursor','rg_precursor',\
-                            'I0_floor']:
-                par[prop.name] = float(prop.scalars[0].value)
-            elif prop.tags is not None:
-                if 'spectrum fitting quantity' in prop.tags:
-                    r[prop.name] = float(prop.scalars[0].value)
+        pp = self.inputs['pif']
 
-        self.outputs['flags'] = f
+        q_I, T_C, flg, par, rpt = saxs_pif.unpack_pif(pp)
+
+        self.outputs['q_I'] = q_I 
+        self.outputs['temperature'] = T_C 
+        self.outputs['flags'] = flg
         self.outputs['params'] = par
-        self.outputs['report'] = r
+        self.outputs['report'] = rpt
 
-        import pdb; pdb.set_trace()
