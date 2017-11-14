@@ -24,8 +24,8 @@ outputs = OrderedDict(
 class SpectrumMCAnneal(Operation):
     """Anneal SAXS fitting parameters by Metropolis-Hastings Monte Carlo.
 
-    This Operation seeks a globally optimal fit 
-    for the parameters of a SAXS equation,
+    This Operation explores the space 
+    of parameters for a SAXS intensity equation,
     given some measured data.
     It is useful for refining optimizations 
     that tend to get stuck in local minima.
@@ -51,9 +51,8 @@ class SpectrumMCAnneal(Operation):
             'yielding the best fit over all trials'
         self.output_doc['final_params'] = 'dict of scattering parameters '\
             'obtained in the final step of the algorithm'
-        self.output_doc['report'] = 'dict expressing the objective function, '\
-            'its evaluation at the initial and final points of the fit, '\
-            'and the Metropolis rejection ratio'
+        self.output_doc['report'] = 'dict reporting '\
+            'the number of steps and reject ratio'
         self.input_type['q_I'] = opmod.workflow_item
         self.input_type['flags'] = opmod.workflow_item
         self.input_type['params'] = opmod.workflow_item
@@ -93,6 +92,10 @@ class SpectrumMCAnneal(Operation):
                     rpt_quench['reject_ratio']))
             self.outputs['best_params'] = p_best 
             self.outputs['final_params'] = p_fin 
-            rpt_anneal['objective_value'] = rpt_quench['objective_best']
-            self.outputs['report'] = rpt_anneal 
+            rpt = OrderedDict(
+                objective_init = rpt_burn['objective_init'],
+                objective_best = rpt_quench['objective_best'],
+                objective_final = rpt_quench['objective_final'],
+                reject_ratio = rpt_anneal['reject_ratio'])
+            self.outputs['report'] = rpt 
 

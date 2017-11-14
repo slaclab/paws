@@ -94,7 +94,7 @@ class EasyZingers1d(Operation):
             I_ratio_l = (Ii_l[-1]-Ii_l[-2])/Istd_l
             I_ratio_r = (Ii_r[0]-Ii_r[1])/Istd_r
             if I_ratio_l > I_ratio_limit or I_ratio_r > I_ratio_limit:
-                print('*** zinger found. *** \nI_ratio_l: {} \nI_ratio_r: {}'.format(I_ratio_l,I_ratio_r))
+                #print('*** zinger found. *** \nI_ratio_l: {} \nI_ratio_r: {}'.format(I_ratio_l,I_ratio_r))
                 idx_z.append(idx)
                 zmask[idx] = True
                 I_dz[idx] = np.nan
