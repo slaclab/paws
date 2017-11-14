@@ -52,7 +52,7 @@ class PifNPSolutionSAXS(Operation):
         par = self.inputs['params']
         rpt = self.inputs['report']
 
-        csys = saxs_pif.make_pif(uid_full,expt_id,t_utc,q_I,temp_C,flg,par,rpt)
+        csys = saxs_pif.make_pif(uid_full,uid_pre,t_utc,q_I,temp_C,flg,par,rpt)
 
         self.outputs['pif'] = csys
 
