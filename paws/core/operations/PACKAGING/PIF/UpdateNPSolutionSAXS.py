@@ -2,7 +2,7 @@ from collections import OrderedDict
 
 from ... import Operation as opmod 
 from ...Operation import Operation
-from saxskit import saxs_pif
+from ....tools import saxs_pif_tools
 
 inputs=OrderedDict(
     pif=None,
@@ -32,7 +32,7 @@ class UpdateNPSolutionSAXS(Operation):
         par = self.inputs['params'] 
         rpt = self.inputs['report'] 
 
-        pnew = saxs_pif.update_pif(pp,flg,par,rpt)
+        pnew = saxs_pif_tools.update_pif(pp,flg,par,rpt)
 
         self.outputs['pif'] = pnew
 

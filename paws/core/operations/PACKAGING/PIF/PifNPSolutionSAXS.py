@@ -2,7 +2,7 @@ from collections import OrderedDict
 
 from ... import Operation as opmod 
 from ...Operation import Operation
-from saxskit import saxs_classify,saxs_fit,saxs_pif 
+from ....tools import saxs_pif_tools
 
 inputs=OrderedDict(
     uid_prefix=None,
@@ -52,7 +52,7 @@ class PifNPSolutionSAXS(Operation):
         par = self.inputs['params']
         rpt = self.inputs['report']
 
-        csys = saxs_pif.make_pif(uid_full,uid_pre,t_utc,q_I,temp_C,flg,par,rpt)
+        csys = saxs_pif_tools.make_pif(uid_full,uid_pre,t_utc,q_I,temp_C,flg,par,rpt)
 
         self.outputs['pif'] = csys
 

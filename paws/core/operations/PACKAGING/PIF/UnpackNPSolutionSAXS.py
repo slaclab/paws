@@ -2,7 +2,7 @@ from collections import OrderedDict
 
 from ... import Operation as opmod 
 from ...Operation import Operation
-from saxskit import saxs_pif
+from ....tools import saxs_pif_tools
 
 inputs=OrderedDict(pif=None)
 outputs=OrderedDict(
@@ -28,7 +28,7 @@ class UnpackNPSolutionSAXS(Operation):
     def run(self):
         pp = self.inputs['pif']
 
-        q_I, T_C, flg, par, rpt = saxs_pif.unpack_pif(pp)
+        q_I, T_C, flg, par, rpt = saxs_pif_tools.unpack_pif(pp)
 
         self.outputs['q_I'] = q_I 
         self.outputs['temperature'] = T_C 
