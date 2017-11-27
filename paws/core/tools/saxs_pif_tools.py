@@ -50,6 +50,9 @@ def unpack_pif(pp):
     flg = OrderedDict() 
     par = OrderedDict() 
     rpt = OrderedDict() 
+    for tg in pp.tags:
+        if 'time (utc):' in tg:
+            t_utc = float(tg.replace('time (utc): ',''))
     for prop in pp.properties:
         if prop.name == 'SAXS intensity':
             I = [float(sca.value) for sca in prop.scalars]
@@ -68,7 +71,7 @@ def unpack_pif(pp):
         elif prop.tags is not None:
             if 'spectrum fitting quantity' in prop.tags:
                 rpt[prop.name] = float(prop.scalars[0].value)
-    return q_I,temp,flg,par,rpt
+    return q_I,t_utc,temp,flg,par,rpt
 
 def update_pif(pp,flags,params,report):
     q_I,temp_C,flg_old,par_old,rpt_old = unpack_pif(pp)
@@ -210,4 +213,21 @@ def scalar_property(fname,fval,desc=None,data_type=None,funits=None):
     if funits:
         pf.units = funits
     return pf
+
+def time_feature_property(fname,t_f,tunits=None,funits=None):
+    pf = pifobj.Property()
+    pf.name = fname 
+    npts = t_f.shape[0]
+    pf.scalars = [pifobj.Scalar(t_f[i,1]) for i in range(npts)]
+    if funits:
+        pf.units = funits 
+    pf.conditions = []
+    pf.conditions.append( pifobj.Value('reaction time',
+                    [pifobj.Scalar(t_f[i,0]) for i in range(npts)],
+                    None,None,None,tunits) )
+    return pf 
+
+def process_np_synth_recipe(rcp):
+    return None,None
+
 

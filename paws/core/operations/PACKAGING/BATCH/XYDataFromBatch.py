@@ -6,8 +6,16 @@ from ... import Operation as opmod
 from ...Operation import Operation
 from ... import optools
        
-inputs = OrderedDict(batch_outputs=None,x_key=None,y_key=None,x_shift_flag=False) 
-outputs = OrderedDict(x=None,y=None,x_y=None,x_y_sorted=None) 
+inputs = OrderedDict(
+    batch_outputs=None,
+    x_key=None,
+    y_key=None,
+    x_shift_flag=False) 
+outputs = OrderedDict(
+    x=None,
+    y=None,
+    x_y=None,
+    x_y_sorted=None) 
 
 class XYDataFromBatch(Operation):
     """
@@ -17,9 +25,9 @@ class XYDataFromBatch(Operation):
 
     def __init__(self):
         super(XYDataFromBatch,self).__init__(inputs,outputs)        
-        self.input_doc['batch_outputs'] = 'list of dicts produced by a batch execution.'
-        self.input_doc['x_uri'] = 'uri of data for x. Must be in batch.saved_items().'
-        self.input_doc['y_uri'] = 'uri of data for y. Must be in batch.saved_items().'
+        self.input_doc['batch_outputs'] = 'list of dicts produced by a batch execution'
+        self.input_doc['x_key'] = 'key for x data from batch_outputs'
+        self.input_doc['y_key'] = 'key for y data from batch_outputs'
         self.input_doc['x_shift_flag'] = 'if True, shift x data so that its minimum value is zero.' 
         self.input_type['batch_outputs'] = opmod.workflow_item
         self.output_doc['x'] = 'array of the x values in batch output order.'
