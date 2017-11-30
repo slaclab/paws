@@ -2,14 +2,15 @@ from collections import OrderedDict
 
 from ... import Operation as opmod 
 from ...Operation import Operation
-from ....tools import saxs_pif_tools
+
+from saxskit import saxs_piftools
 
 inputs=OrderedDict(
-    uid_prefix=None,
+    experiment_id=None,
     t_utc=None,
     temperature=None,
     q_I=None,
-    flags=None,
+    populations=None,
     params=None,
     report=None)
 outputs=OrderedDict(pif=None)
@@ -20,39 +21,40 @@ class PifNPSolutionSAXS(Operation):
 
     def __init__(self):
         super(PifNPSolutionSAXS,self).__init__(inputs,outputs)
-        self.input_doc['uid_prefix'] = 'string for pif uid prefix '\
-            '(pif uid = uid_prefix+t_utc), and also the '
+        self.input_doc['experiment_id'] = 'string experiment id '\
+            '(pif uid = experiment_id+"_"+t_utc)'
         self.input_doc['t_utc'] = 'time in seconds utc'
         self.input_doc['temperature'] = 'temperature of the system in degrees Celsius'
         self.input_doc['q_I'] = 'n-by-2 array of q values and corresponding saxs intensities'
-        self.input_doc['flags'] = 'dict of boolean flags indicating scatterer populations'
+        self.input_doc['populations'] = 'dict enumerating scatterer populations'
         self.input_doc['params'] = 'dict of scattering equation parameters fit to q_I'
         self.input_doc['report'] = 'dict reporting key results '\
             'for the SAXS processing workflow, including fitting objectives, etc.'
         self.output_doc['pif'] = 'pif object representing the input data'
+        self.input_type['experiment_id'] = opmod.workflow_item
         self.input_type['t_utc'] = opmod.workflow_item
         self.input_type['temperature'] = opmod.workflow_item
         self.input_type['q_I'] = opmod.workflow_item
-        self.input_type['flags'] = opmod.workflow_item
+        self.input_type['populations'] = opmod.workflow_item
         self.input_type['params'] = opmod.workflow_item
         self.input_type['report'] = opmod.workflow_item
 
     def run(self):
-        uid_pre = self.inputs['uid_prefix']
+        expt_id = self.inputs['experiment_id']
         t_utc = self.inputs['t_utc']
         uid_full = 'tmp'
-        if uid_pre is not None:
-            uid_full = uid_pre
+        if expt_id is not None:
+            uid_full = expt_id 
         if t_utc is not None:
             uid_full = uid_full+'_'+str(int(t_utc))
         temp_C = self.inputs['temperature']
         q_I = self.inputs['q_I']
 
-        flg = self.inputs['flags']
+        pops = self.inputs['populations']
         par = self.inputs['params']
         rpt = self.inputs['report']
 
-        csys = saxs_pif_tools.make_pif(uid_full,uid_pre,t_utc,q_I,temp_C,flg,par,rpt)
+        csys = saxs_piftools.make_pif(uid_full,expt_id,t_utc,q_I,temp_C,pops,par,rpt)
 
         self.outputs['pif'] = csys
 
