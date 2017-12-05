@@ -70,6 +70,7 @@ class SpectrumMCAnneal(Operation):
         T_burn = self.inputs['T_burn']
         T_anneal = self.inputs['T_anneal']
 
+        p_init = par
         p_best = par
         p_fin = par
         rpt = OrderedDict()
@@ -77,7 +78,12 @@ class SpectrumMCAnneal(Operation):
 
             sxf = saxs_fit.SaxsFitter(q_I,pops)
 
+            # the burn phase is for escaping local minima.
             p_best,p_fin,rpt_burn = sxf.MC_anneal_fit(par,stepsz,ns_burn,T_burn,par_fix)
+            p_best_burn = p_best
+            obj_init = rpt_burn['objective_init']
+            obj_best = rpt_burn['objective_best']
+
             if self.message_callback:
                 self.message_callback('finished burn. \ninit: {} \nbest: {} \nfinal: {} \nRR: {}'
                 .format(rpt_burn['objective_init'],
@@ -85,7 +91,15 @@ class SpectrumMCAnneal(Operation):
                     rpt_burn['objective_final'],
                     rpt_burn['reject_ratio']))
 
-            p_best,p_fin,rpt_anneal = sxf.MC_anneal_fit(p_best,stepsz,ns_anneal,T_anneal,par_fix)
+            # the anneal phase is expected to prefer regions of parameter space
+            # where the fit objective is low.
+            p_best,p_fin,rpt_anneal = sxf.MC_anneal_fit(p_fin,stepsz,ns_anneal,T_anneal,par_fix)
+            if rpt_anneal['objective_best'] < obj_best:
+                obj_best = rpt_anneal['objective_best']
+            else:
+                # if no better params were found during the anneal phase,
+                # fall back on the best params from the burn phase
+                p_best = p_best_burn
             if self.message_callback:
                 self.message_callback('finished anneal. \ninit: {} \nbest: {} \nfinal: {} \nRR: {}'
                 .format(rpt_anneal['objective_init'],
@@ -93,6 +107,9 @@ class SpectrumMCAnneal(Operation):
                     rpt_anneal['objective_final'],
                     rpt_anneal['reject_ratio']))
 
+            # the quench phase is expected to stochastically descend, 
+            # such that the objective never increases from one step to the next,
+            # effectively sinking deeper into the current local minimum.
             p_best,p_fin,rpt_quench = sxf.MC_anneal_fit(p_best,stepsz,ns_quench,0.,par_fix)
             if self.message_callback:
                 self.message_callback('finished quench. \ninit: {} \nbest: {} \nfinal: {} \nRR: {}'
@@ -101,8 +118,8 @@ class SpectrumMCAnneal(Operation):
                     rpt_quench['objective_final'],
                     rpt_quench['reject_ratio']))
             rpt = OrderedDict(
-                objective_init = rpt_burn['objective_init'],
-                objective_best = rpt_quench['objective_best'],
+                objective_init = obj_init,
+                objective_best = obj_best,
                 objective_final = rpt_quench['objective_final'],
                 reject_ratio = rpt_anneal['reject_ratio'])
         self.outputs['best_params'] = p_best 

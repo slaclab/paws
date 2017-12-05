@@ -11,8 +11,7 @@ inputs=OrderedDict(
     temperature=None,
     q_I=None,
     populations=None,
-    params=None,
-    report=None)
+    params=None)
 outputs=OrderedDict(pif=None)
 
 class PifNPSolutionSAXS(Operation):
@@ -28,16 +27,12 @@ class PifNPSolutionSAXS(Operation):
         self.input_doc['q_I'] = 'n-by-2 array of q values and corresponding saxs intensities'
         self.input_doc['populations'] = 'dict enumerating scatterer populations'
         self.input_doc['params'] = 'dict of scattering equation parameters fit to q_I'
-        self.input_doc['report'] = 'dict reporting key results '\
-            'for the SAXS processing workflow, including fitting objectives, etc.'
         self.output_doc['pif'] = 'pif object representing the input data'
-        self.input_type['experiment_id'] = opmod.workflow_item
         self.input_type['t_utc'] = opmod.workflow_item
         self.input_type['temperature'] = opmod.workflow_item
         self.input_type['q_I'] = opmod.workflow_item
         self.input_type['populations'] = opmod.workflow_item
         self.input_type['params'] = opmod.workflow_item
-        self.input_type['report'] = opmod.workflow_item
 
     def run(self):
         expt_id = self.inputs['experiment_id']
@@ -52,9 +47,8 @@ class PifNPSolutionSAXS(Operation):
 
         pops = self.inputs['populations']
         par = self.inputs['params']
-        rpt = self.inputs['report']
 
-        csys = saxs_piftools.make_pif(uid_full,expt_id,t_utc,q_I,temp_C,pops,par,rpt)
+        csys = saxs_piftools.make_pif(uid_full,expt_id,t_utc,q_I,temp_C,pops,par)
 
         self.outputs['pif'] = csys
 

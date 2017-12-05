@@ -10,7 +10,7 @@ inputs = OrderedDict(
     q_I=None,
     populations=None,
     params=None,
-    fixed_params=[])
+    fixed_params=None)
 outputs = OrderedDict(
     params=None,
     report=None,
@@ -30,31 +30,33 @@ class SpectrumFit(Operation):
         super(SpectrumFit, self).__init__(inputs, outputs)
         self.input_doc['q_I'] = 'n-by-2 array of wave vectors (1/Angstrom) and intensities (counts)'
         self.input_doc['populations'] = 'dict that counts scatterer populations'
-        self.input_doc['params'] = 'dict of parameters describing all `populations`'
+        self.input_doc['params'] = '(optional) dict of parameters '\
+            'used as initial condition for fit optimization. '\
+            'defaults are chosen if not provided.'
         self.input_doc['fixed_params'] = 'dict (subset of `params`) '\
             'indicating which `params` should be fixed during optimization'
-        self.output_doc['params'] = 'dict of scattering equation parameters copied from inputs, '\
+        self.output_doc['params'] = 'dict of scattering equation parameters, '\
             'with values optimized for all keys not listed in fixed_params'
         self.output_doc['report'] = 'dict expressing the objective function, '\
             'and its evaluation at the initial and final points of the fit'
         self.output_doc['q_I_opt'] = 'n-by-2 array of q and the optimized computed intensity spectrum'
         self.input_type['q_I'] = opmod.workflow_item
-        self.input_type['populations'] = opmod.workflow_item
-        self.input_type['params'] = opmod.workflow_item
 
     def run(self):
         q_I = self.inputs['q_I']
         pops = self.inputs['populations']
         pars = self.inputs['params']
-        fixkeys = self.inputs['fixed_params']
+        p_fix = self.inputs['fixed_params']
         
-        sxf = saxs_fit.SaxsFitter(q_I,pops)
-        p_opt,rpt = sxf.fit(pars,fixkeys,'chi2log')
+        all_pops = OrderedDict.fromkeys(saxs_math.population_keys)
+        all_pops.update(pops)
+        sxf = saxs_fit.SaxsFitter(q_I,all_pops)
+        p_opt,rpt = sxf.fit(pars,p_fix,'chi2log')
 
         q_I_opt = None
-        if not bool(pops['unidentified']) \
-        and not bool(pops['diffraction_peaks']):
-            I_opt = saxs_math.compute_saxs(q_I[:,0],pops,p_opt)
+        if not bool(all_pops['unidentified']) \
+        and not bool(all_pops['diffraction_peaks']):
+            I_opt = saxs_math.compute_saxs(q_I[:,0],all_pops,p_opt)
             q_I_opt = np.array([q_I[:,0],I_opt]).T
         self.outputs['params'] = p_opt 
         self.outputs['report'] = rpt

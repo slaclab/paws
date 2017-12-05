@@ -36,17 +36,6 @@ class UnpackNPSolutionSAXS(Operation):
 
         expt_id, t_utc, q_I, T_C, feats, pops, params, rpt = saxs_piftools.unpack_pif(pp)
 
-        if bool(pops['guinier_porod']) and not 'D_gp' in params.keys():
-            params['D_gp'] = [4.]
-
-        #for pkey in pops.keys():
-        #    if pops[pkey] is None:
-        #        pops.pop(pkey)
-
-        #for pkey in params.keys():
-        #    if params[pkey] is None:
-        #        params.pop(pkey)
-
         self.outputs['experiment_id'] = expt_id 
         self.outputs['t_utc'] = t_utc 
         self.outputs['q_I'] = q_I 
