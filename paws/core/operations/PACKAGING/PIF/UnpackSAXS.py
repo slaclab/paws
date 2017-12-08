@@ -15,11 +15,11 @@ outputs=OrderedDict(
     params=None,
     report=None)
 
-class UnpackNPSolutionSAXS(Operation):
-    """Unpack a nanoparticle solution SAXS record"""
+class UnpackSAXS(Operation):
+    """Unpack a SAXS PIF record"""
 
     def __init__(self):
-        super(UnpackNPSolutionSAXS,self).__init__(inputs,outputs)
+        super(UnpackSAXS,self).__init__(inputs,outputs)
         self.input_doc['pif'] = 'pif object to be unpacked'
         self.output_doc['experiment_id'] = 'string experiment id'
         self.output_doc['t_utc'] = 'time in seconds utc'

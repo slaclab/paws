@@ -3,7 +3,7 @@ from collections import OrderedDict
 from ... import Operation as opmod 
 from ...Operation import Operation
 
-from saxskit import saxs_piftools
+from saxskit import saxs_math, saxs_piftools
 
 inputs=OrderedDict(
     experiment_id=None,
@@ -14,12 +14,12 @@ inputs=OrderedDict(
     params=None)
 outputs=OrderedDict(pif=None)
 
-class PifNPSolutionSAXS(Operation):
-    """Build a PIF record for a nanoparticle solution SAXS experiment"""
+class PifSAXS(Operation):
+    """Build a PIF record for a SAXS spectrum"""
     # TODO: include the scattering equation in this record somehow
 
     def __init__(self):
-        super(PifNPSolutionSAXS,self).__init__(inputs,outputs)
+        super(PifSAXS,self).__init__(inputs,outputs)
         self.input_doc['experiment_id'] = 'string experiment id '\
             '(pif uid = experiment_id+"_"+t_utc)'
         self.input_doc['t_utc'] = 'time in seconds utc'
@@ -28,10 +28,7 @@ class PifNPSolutionSAXS(Operation):
         self.input_doc['populations'] = 'dict enumerating scatterer populations'
         self.input_doc['params'] = 'dict of scattering equation parameters fit to q_I'
         self.output_doc['pif'] = 'pif object representing the input data'
-        self.input_type['t_utc'] = opmod.workflow_item
-        self.input_type['temperature'] = opmod.workflow_item
         self.input_type['q_I'] = opmod.workflow_item
-        self.input_type['populations'] = opmod.workflow_item
         self.input_type['params'] = opmod.workflow_item
 
     def run(self):
@@ -45,10 +42,12 @@ class PifNPSolutionSAXS(Operation):
         temp_C = self.inputs['temperature']
         q_I = self.inputs['q_I']
 
+        all_pops = OrderedDict.fromkeys(saxs_math.population_keys)
         pops = self.inputs['populations']
         par = self.inputs['params']
+        all_pops.update(pops)
 
-        csys = saxs_piftools.make_pif(uid_full,expt_id,t_utc,q_I,temp_C,pops,par)
+        csys = saxs_piftools.make_pif(uid_full,expt_id,t_utc,q_I,temp_C,all_pops,par)
 
         self.outputs['pif'] = csys
 

@@ -1,4 +1,5 @@
 from collections import OrderedDict
+import os
 
 import numpy as np
 
@@ -12,7 +13,8 @@ outputs=OrderedDict(
     q=None,
     I=None,
     q_I=None,
-    dI=None)
+    dI=None,
+    filename=None) 
 
 class Loadtxt_q_I_dI(Operation):
     """Read in q, I, and (optionally) error estimate dI, with numpy.loadtxt."""
@@ -20,7 +22,8 @@ class Loadtxt_q_I_dI(Operation):
     def __init__(self):
         super(Loadtxt_q_I_dI, self).__init__(inputs, outputs)
         self.input_doc['file_path'] = 'path to data file'
-        self.input_doc['file_path'] = 'delimiter used in data file (optional)'
+        self.input_doc['delimiter'] = 'delimiter used in data file (optional)'
+        self.output_doc['filename'] = 'filename with path and extension stripped'
         self.output_doc['q'] = 'array of q values' 
         self.output_doc['I'] = 'array of intensities' 
         self.output_doc['q_I'] = 'n-by-2 array of q and intensity' 
@@ -29,6 +32,11 @@ class Loadtxt_q_I_dI(Operation):
     def run(self):
         p = self.inputs['file_path']
         dlm = self.inputs['delimiter']
+
+        filename = os.path.split(p)[1]
+        filename_noext = os.path.splitext(filename)[0]
+        self.outputs['filename'] = filename_noext 
+
         d = np.loadtxt(p, delimiter=dlm)
         self.outputs['q'] = d[:,0]
         self.outputs['I'] = d[:,1]

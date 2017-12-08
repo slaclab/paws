@@ -6,7 +6,9 @@ from ... import Operation as opmod
 from ...Operation import Operation
 from ... import optools
 
-inputs=OrderedDict(batch_outputs=None,output_key=None)
+inputs=OrderedDict(
+    batch_outputs=None,
+    output_key=None)
 outputs=OrderedDict(data_list=None)
 
 class ListFromBatch(Operation):

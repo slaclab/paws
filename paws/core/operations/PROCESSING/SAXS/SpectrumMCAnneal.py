@@ -4,7 +4,7 @@ import numpy as np
 
 from ... import Operation as opmod 
 from ...Operation import Operation
-from saxskit import saxs_fit
+from saxskit import saxs_math, saxs_fit
 
 inputs = OrderedDict(
     q_I=None,
@@ -55,7 +55,6 @@ class SpectrumMCAnneal(Operation):
         self.output_doc['report'] = 'dict reporting '\
             'the number of steps and reject ratio'
         self.input_type['q_I'] = opmod.workflow_item
-        self.input_type['populations'] = opmod.workflow_item
         self.input_type['params'] = opmod.workflow_item
 
     def run(self):
@@ -70,13 +69,16 @@ class SpectrumMCAnneal(Operation):
         T_burn = self.inputs['T_burn']
         T_anneal = self.inputs['T_anneal']
 
+        all_pops = OrderedDict.fromkeys(saxs_math.population_keys)
+        all_pops.update(pops)
+
         p_init = par
         p_best = par
         p_fin = par
         rpt = OrderedDict()
-        if not bool(pops['unidentified']) and not bool(pops['diffraction_peaks']):
+        if not bool(all_pops['unidentified']) and not bool(all_pops['diffraction_peaks']):
 
-            sxf = saxs_fit.SaxsFitter(q_I,pops)
+            sxf = saxs_fit.SaxsFitter(q_I,all_pops)
 
             # the burn phase is for escaping local minima.
             p_best,p_fin,rpt_burn = sxf.MC_anneal_fit(par,stepsz,ns_burn,T_burn,par_fix)
