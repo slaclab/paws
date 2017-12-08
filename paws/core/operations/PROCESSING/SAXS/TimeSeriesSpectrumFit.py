@@ -15,6 +15,7 @@ inputs = OrderedDict(
     t_reports = None,
     fixed_params = None,
     order = 'chronological',
+    n_test = 4,
     n_stop = None)
 outputs = OrderedDict(
     t_populations = None,
@@ -42,6 +43,7 @@ class TimeSeriesSpectrumFit(Operation):
             'to hold fixed during optimization of fit.'
         self.input_doc['order'] = 'choice of processing order, '\
             'either "chronological" or "highest_error".'
+        self.input_doc['n_test'] = 'try this many starting parameters'
         self.input_doc['n_stop'] = '(optional) '\
             'stop after this many fits have been performed. '
 
@@ -60,6 +62,7 @@ class TimeSeriesSpectrumFit(Operation):
         p_fix = self.inputs['fixed_params']
         odr = self.inputs['order']
         n_stop = self.inputs['n_stop'] 
+        n_test = self.inputs['n_test']
 
         nt = len(t_qI)
         it_order = range(nt)
@@ -92,7 +95,6 @@ class TimeSeriesSpectrumFit(Operation):
 
                 sxf = saxs_fit.SaxsFitter(q_I,pops)
                 # take parameters from the nearest time points
-                n_test = 4 
                 test_idx = range(max([0,it-n_test]),min(nt,it+n_test+1))
                 # compare objectives for all trial parameters
                 rpt_best = rpt

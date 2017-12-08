@@ -94,7 +94,7 @@ class CitrinationBatch(Operation):
                 self.data_callback('outputs.batch_outputs.'+str(i),copy.deepcopy(out_dict))
         self.message_callback('BATCH FINISHED')
 
-    def dsid_query_with_expt_id(self,dsid):
+    def dsid_query_with_expt_id(self,dsid,expt_id):
         query = PifSystemReturningQuery(
             from_index=0,
             size=100,
