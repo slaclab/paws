@@ -221,6 +221,10 @@ class PawsAPI(object):
     def set_input(self,opname,input_name,val=None,tp=None,wfname=None):
         if wfname is None:
             wfname = self._current_wf_name
+        if not opname in self.list_op_tags(wfname):
+            msg = 'Operation {} not found in workflow {}'\
+            .format(opname,wfname)
+            raise KeyError(msg)
         op = self.get_op(opname,wfname)
         if not input_name in op.inputs.keys():
             msg = str('Input name {} not valid for Operation {} ({}).'
