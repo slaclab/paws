@@ -5,7 +5,9 @@ import numpy as np
 from ... import Operation as opmod 
 from ...Operation import Operation
 
-inputs=OrderedDict(file_path=None)
+inputs=OrderedDict(
+    file_path=None,
+    delimiter=None)
 outputs=OrderedDict(array=None)
 
 class CSVToArray(Operation):

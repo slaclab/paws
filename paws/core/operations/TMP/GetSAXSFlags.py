@@ -25,9 +25,9 @@ class GetSAXSFlags(Operation):
         ds = self.inputs['dicts']
         k = self.inputs['dict_key']
         f = OrderedDict()
-        f['bad_data'] = ds['bad_data_flags'][k]
-        f['precursor_scattering'] = ds['precursor_flags'][k]
-        f['form_factor_scattering'] = ds['form_flags'][k]
-        f['diffraction_peaks'] = ds['structure_flags'][k]
+        f['unidentified'] = int(ds['bad_data_flags'][k])
+        f['guinier_porod'] = int(ds['precursor_flags'][k])
+        f['spherical_normal'] = int(ds['form_flags'][k])
+        f['diffraction_peaks'] = int(ds['structure_flags'][k])
         self.outputs['flags'] = f 
 

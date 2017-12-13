@@ -5,7 +5,9 @@ from ... import Operation as opmod
 from ...Operation import Operation
 
 inputs=OrderedDict(file_path=None)
-outputs=OrderedDict(header_dict=None,filename=None)
+outputs=OrderedDict(
+    header_dict=None,
+    filename=None)
 
 class ReadHeader_SSRL15(Operation):
     """

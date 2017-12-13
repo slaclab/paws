@@ -44,21 +44,10 @@ class CitrinationBatch(Operation):
         dsid = self.inputs['dataset_id']
         expt_id = self.inputs['experiment_id']
 
-        query = PifSystemReturningQuery(
-            from_index=0,
-            size=100,
-            query=DataQuery(
-                dataset=DatasetQuery(
-                    id=Filter(
-                        equal=dsid)),    
-                system=PifSystemQuery(
-                    ids=IdQuery(
-                        name=FieldQuery(
-                            filter=Filter(
-                                equal='EXPERIMENT_ID')),
-                        value=FieldQuery(
-                            filter=Filter(
-                                equal=expt_id))))))
+        if expt_id is not None:
+            query = self.dsid_query_with_expt_id(dsid,expt_id)
+        else:
+            query = self.dsid_query(dsid)
 
         all_hits = []
         n_hits = 0
@@ -104,4 +93,33 @@ class CitrinationBatch(Operation):
                 self.data_callback('outputs.batch_inputs.'+str(i),inp_dict)
                 self.data_callback('outputs.batch_outputs.'+str(i),copy.deepcopy(out_dict))
         self.message_callback('BATCH FINISHED')
+
+    def dsid_query_with_expt_id(self,dsid,expt_id):
+        query = PifSystemReturningQuery(
+            from_index=0,
+            size=100,
+            query=DataQuery(
+                dataset=DatasetQuery(
+                    id=Filter(
+                        equal=dsid)),    
+                system=PifSystemQuery(
+                    ids=IdQuery(
+                        name=FieldQuery(
+                            filter=Filter(
+                                equal='EXPERIMENT_ID')),
+                        value=FieldQuery(
+                            filter=Filter(
+                                equal=expt_id))))))
+        return query
+
+    def dsid_query(self,dsid):
+        query = PifSystemReturningQuery(
+            from_index=0,
+            size=100,
+            query=DataQuery(
+                dataset=DatasetQuery(
+                    id=Filter(
+                        equal=dsid))))
+        return query
+
 
