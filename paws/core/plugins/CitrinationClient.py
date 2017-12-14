@@ -12,11 +12,11 @@ inputs = OrderedDict(
     address=None,
     api_key_file=None)
 
-class CitrinationPlugin(PawsPlugin):
+class CitrinationClient(PawsPlugin):
     """PAWS Plugin wrapping a Citrination client"""
 
     def __init__(self):
-        super(CitrinationPlugin,self).__init__(inputs)
+        super(CitrinationClient,self).__init__(inputs)
         self.input_doc['address'] = 'web address of citrination instance'
         self.input_doc['api_key_file'] = 'path to a file in the local filesystem containing a valid citrination api key'
         self.ctn_client = None

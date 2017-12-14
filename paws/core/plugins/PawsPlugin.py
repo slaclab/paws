@@ -1,11 +1,10 @@
 from __future__ import print_function
-import abc
 from collections import OrderedDict
+import copy
 
 from ..operations import Operation as opmod
 
 class PawsPlugin(object):
-    __metaclass__ = abc.ABCMeta
     """Class template for implementing PAWS Plugins"""
 
     def __init__(self,inputs):

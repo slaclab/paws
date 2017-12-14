@@ -7,7 +7,13 @@ from ..operations import Operation as opmod
 inputs = OrderedDict(serial_io_file = None)
 
 class MitosPPumpClient(PawsPlugin):
+    """PAWS Plugin for controlling a Mitos P-pump.
 
+    Uses a virtual serial port 
+    to communicate to a USB_attached Mitos P-pump.
+    RS232 protocol settings: 
+    57600 baud, 8 data bits, 1 stop bit, no parity, no handshaking
+    """
     def __init__(self):
         super(MitosPPumpClient,self).__init__(inputs)
         self.input_doc['serial_io_file'] = 'filesystem path '\
@@ -21,7 +27,7 @@ class MitosPPumpClient(PawsPlugin):
         desc = 'MitosPPumpClient Plugin: '\
             'This is a TCP Client used to operate a Mitos P-Pump. '\
             'Startup requires a serial device, '\
-            'where it is expected that a Mitos P-pump will be listening.')
+            'where a Mitos P-pump should be listening.'
         return desc
 
     def content(self):

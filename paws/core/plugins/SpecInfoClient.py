@@ -30,14 +30,14 @@ class SpecInfoClient(PawsPlugin):
         desc = 'SpecInfoClient Plugin: '\
             'This is a TCP Client used to communicate with SpecInfoServer. '\
             'Startup requires a host name and a port number, '\
-            'where it is expected that SpecInfoServer will be listening.')
+            'where SpecInfoServer should be listening.'
         return desc
 
     def content(self):
         return {'inputs':self.inputs, 'history':self.history, 'socket':self.sock}
 
     def socket_error(errmsg):
-        msg = "SpecInfoClient socket error: {}".format(errmsg))
+        msg = "SpecInfoClient socket error: {}".format(errmsg)
         self.history.append(msg)
         if self.message_callback:
             self.message_callback(msg)
