@@ -31,7 +31,6 @@ class PostProcessTimeSeries(Operation):
             'SAXS equation parameters from batch_outputs' 
         self.input_doc['reports_key'] = 'dict key for '\
             'SAXS fitting report from batch_outputs' 
-        self.input_type['batch_outputs'] = opmod.workflow_item
         self.output_doc['new_outputs'] = 'list of dicts '\
             'containing time stamps and newly refined parameters'
 

@@ -29,7 +29,6 @@ class UnpackSAXS(Operation):
         self.output_doc['populations'] = 'dict enumerating scatterer populations'
         self.output_doc['params'] = 'dict of scattering equation parameters for each of the `populations`'
         self.output_doc['report'] = 'dict reporting fit objectives and related quantities'
-        self.input_type['pif'] = opmod.workflow_item
 
     def run(self):
         pp = self.inputs['pif']

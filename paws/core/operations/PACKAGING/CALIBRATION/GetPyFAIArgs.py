@@ -22,9 +22,6 @@ class GetPyFAIArgs(Operation):
         self.input_doc['mask_img'] = 'image data for mask'
         self.input_doc['polz_factor'] = 'polarization factor'
         self.output_doc['poni_dict'] = 'Dict of pyFAI calibration parameters'
-        #self.input_type['dark_img'] = opmod.workflow_item
-        #self.input_type['flat_img'] = opmod.workflow_item
-        #self.input_type['mask_img'] = opmod.workflow_item
 
     def run(self):
         pdict = dict(

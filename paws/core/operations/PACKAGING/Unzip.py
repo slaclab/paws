@@ -16,7 +16,6 @@ class Unzip(Operation):
         self.output_doc['x_y'] = 'list of 2-element x,y iterables'
         self.input_doc['x'] = 'x values'
         self.input_doc['y'] = 'y values'
-        self.input_type['x_y'] = opmod.workflow_item
 
     def run(self):
         x_y = self.inputs['x_y']

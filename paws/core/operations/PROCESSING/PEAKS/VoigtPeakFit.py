@@ -29,8 +29,6 @@ class VoigtPeakFit(Operation):
         self.input_doc['y'] = '1d array of y values (amplitudes)'
         self.input_doc['xguess'] = 'initial guess for the center of the voigt profile'
         self.input_doc['hwhm'] = 'initial guess for the half width at half max of the voigt profile'
-        self.input_type['x'] = opmod.workflow_item
-        self.input_type['y'] = opmod.workflow_item
         self.output_doc['y_voigt'] = 'the optimized voigt profile'
         self.output_doc['xguess'] = 'optimized voigt profile distribution center'
         self.output_doc['ypk'] = 'optimized voigt profile peak amplitude'

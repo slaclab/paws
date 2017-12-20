@@ -28,8 +28,6 @@ class PifSAXS(Operation):
         self.input_doc['populations'] = 'dict enumerating scatterer populations'
         self.input_doc['params'] = 'dict of scattering equation parameters fit to q_I'
         self.output_doc['pif'] = 'pif object representing the input data'
-        self.input_type['q_I'] = opmod.workflow_item
-        self.input_type['params'] = opmod.workflow_item
 
     def run(self):
         expt_id = self.inputs['experiment_id']

@@ -23,8 +23,6 @@ class SpectrumProfiler(Operation):
         self.input_doc['q_I'] = 'n-by-2 array of q(1/Angstrom) versus I(arb).'
         self.output_doc['features'] = 'dict profiling the input spectrum. '\
         'See the documentation of saxskit.saxs_fit.profile_spectrum().'
-        self.input_type['q_I'] = opmod.workflow_item
-        self.input_type['dI'] = opmod.no_input
 
     def run(self):
         q_I = self.inputs['q_I']

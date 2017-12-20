@@ -54,8 +54,6 @@ class SpectrumMCAnneal(Operation):
             'obtained in the final step of the algorithm'
         self.output_doc['report'] = 'dict reporting '\
             'the number of steps and reject ratio'
-        self.input_type['q_I'] = opmod.workflow_item
-        self.input_type['params'] = opmod.workflow_item
 
     def run(self):
         q_I = self.inputs['q_I']

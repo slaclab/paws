@@ -19,8 +19,6 @@ class LogLogZip(Operation):
         self.input_doc['x'] = '1d array'
         self.input_doc['y'] = '1d array, same size as x'
         self.output_doc['logx_logy'] = 'n x 2 array containing log(x) and log(y)'
-        self.input_type['x'] = opmod.workflow_item
-        self.input_type['y'] = opmod.workflow_item
 
     def run(self):
         x = self.inputs['x']

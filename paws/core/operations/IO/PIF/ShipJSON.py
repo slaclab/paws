@@ -18,8 +18,6 @@ class ShipJSON(Operation):
         self.input_doc['dsid'] = 'Data set ID where the pif will be stored on Citrination' 
         self.input_doc['ship_flag'] = 'Flag for actually shipping the pif' 
         self.output_doc['response'] = 'The Citrination server response to the shipment'
-        self.input_type['client'] = opmod.plugin_item
-        self.input_type['dsid'] = opmod.workflow_item
 
     def run(self):
         json_path = self.inputs['json_path']

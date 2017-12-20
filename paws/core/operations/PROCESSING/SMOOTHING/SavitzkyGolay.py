@@ -19,9 +19,6 @@ class SavitzkyGolay(Operation):
         self.input_doc['order'] = 'integer order of polynomial approximation (zero to five)'
         self.input_doc['base'] = '-1, 0, or positive integer; see class docs'
         self.output_doc['smoothdata'] = 'smoothed 1d array for y'
-        self.input_type['x'] = opmod.workflow_item
-        self.input_type['y'] = opmod.workflow_item
-        self.input_type['dy'] = opmod.workflow_item
 
     def run(self):
         x = self.inputs['x']

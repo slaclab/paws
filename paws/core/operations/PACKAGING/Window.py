@@ -19,7 +19,6 @@ class Window(Operation):
 
     def __init__(self):
         super(Window,self).__init__(inputs,outputs)        
-        self.input_type['x_y'] = opmod.workflow_item
         self.input_doc['x_y'] = 'n-by-2 array of x and y values'
         self.input_doc['x_min'] = 'inclusive minimum x value of output'
         self.input_doc['x_max'] = 'inclusive maximum x value of output'

@@ -19,7 +19,6 @@ class FFTRadialDistribution(Operation):
         self.output_doc['r_gofr'] = 'n-by-2 array of r (Angstrom) versus g(r).'
         self.output_doc['r_max'] = 'the integral from zero to r_max of g(r) '\
                             'is 0.99 times the full integral of g(r)'
-        self.input_type['q_I'] = opmod.workflow_item
 
     def run(self):
         q_I = self.inputs['q_I']

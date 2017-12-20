@@ -30,7 +30,6 @@ class XYDataFromBatch(Operation):
         self.input_doc['y_key'] = 'key for y data from batch_outputs'
         self.input_doc['x_sort_flag'] = 'if True, sort data for increasing x' 
         self.input_doc['x_shift_flag'] = 'if True, shift x data so that its minimum value is zero' 
-        self.input_type['batch_outputs'] = opmod.workflow_item
         self.output_doc['x'] = 'array of the x values'
         self.output_doc['y'] = 'array of the y values'
         self.output_doc['x_y'] = 'n-by-2 array of x and y values'

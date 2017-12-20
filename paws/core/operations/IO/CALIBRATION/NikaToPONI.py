@@ -7,7 +7,7 @@ import pyFAI
 from ... import Operation as opmod 
 from ...Operation import Operation
 
-inputs=OrderedDict(nika_file=None)
+inputs=OrderedDict(file_path=None)
 outputs=OrderedDict(poni_dict=None)
 
 class NikaToPONI(Operation):
@@ -39,12 +39,12 @@ class NikaToPONI(Operation):
     
     def __init__(self):
         super(NikaToPONI,self).__init__(inputs,outputs)
-        self.input_doc['nika_file'] = 'text file expressing nika automated calibration results- '\
+        self.input_doc['file_path'] = 'text file expressing nika automated calibration results- '\
             'see documentation of this operation class for the expected format of this file'
         self.output_doc['poni_dict'] = 'Dict of pyFAI calibration parameters, as found in a .poni file'
 
     def run(self):
-        fpath = self.inputs['nika_file']
+        fpath = self.inputs['file_path']
         for line in open(fpath,'r'):
             kv = line.strip().split('=')
             if kv[0] == 'sample_to_CCD_mm':

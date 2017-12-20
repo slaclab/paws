@@ -56,7 +56,6 @@ class EasyZingers1d(Operation):
             'used to evaluate sharpness of the pixel'
         self.output_doc['q_I_dz'] = 'same as input q_I but with zingers removed'
         self.output_doc['zmask'] = 'array of booleans, same shape as q, true if there is a zinger at q, else false'
-        self.input_type['q_I'] = opmod.workflow_item
 
     def run(self):
         q_I = self.inputs['q_I']

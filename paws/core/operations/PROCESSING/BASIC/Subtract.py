@@ -16,8 +16,6 @@ class Subtract(Operation):
         self.input_doc['data_2'] = 'second piece of data, used as minuend'
         self.output_doc['data_diff'] = 'the result of subtracting '\
             'data_1 from data_2, i.e. data_diff = data_2 - data_1'
-        self.input_type['data_1'] = opmod.workflow_item
-        self.input_type['data_2'] = opmod.workflow_item
 
     def run(self):
         self.outputs['data_diff'] = self.inputs['data_2'] - self.inputs['data_1']

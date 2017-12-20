@@ -36,8 +36,6 @@ class ApplyIntegrator2d(Operation):
             'to pass to pyFAI.AzimuthalIntegrator.integrate2d(). '\
             'Where relevant, the values in this dict will be replaced '\
             'by inputs to the operation, e.g. for npt_rad and npt_azim.' 
-        self.input_type['image_data'] = opmod.workflow_item
-        self.input_type['integrator'] = opmod.workflow_item
         self.output_doc['q'] = 'Scattering vector magnitude q array in 1/Angstrom.'
         self.output_doc['chi'] = 'Azimuthal angle array.'
         self.output_doc['I_at_q_chi'] = '2d array of integrated intensity at q,chi.'

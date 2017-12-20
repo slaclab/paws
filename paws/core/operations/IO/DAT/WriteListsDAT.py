@@ -29,7 +29,6 @@ class WriteListsDAT(Operation):
         self.input_doc['filetag'] = 'tag appended to filename- no extension is expected'
         self.output_doc['file_path'] = 'the path to the finished dat file: dir_path+filename+filetag+.dat'
         self.output_doc['file_path'] = 'the name of the output file: filename+filetag'
-        self.input_type['data_lists'] = opmod.workflow_item
 
     def run(self):
         col_hdrs = self.inputs['col_headers']
