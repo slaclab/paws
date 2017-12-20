@@ -209,18 +209,18 @@ class UiManager(QtCore.QObject):
             msg_ui.message_box.setPlainText(msg)
             msg_ui.show()
         else:
+            idx = self.ui.plugin_selector.currentIndex()
+            pgin_uri = self.ui.plugin_selector.model().list_data()[idx]
+            #try:
+            #    pgin = self.paw.load_plugin(pgin_uri)
+            #except pawstools.PluginLoadError as ex:
+            #    msg_ui = qttools.message_ui(self.ui)
+            #    msg_ui.setWindowTitle("Plugin Load Error")
+            #    msg_ui.message_box.setPlainText(ex.message)
+            #    msg_ui.show()
+            #    return
             try:
-                idx = self.ui.plugin_selector.currentIndex()
-                pgin_uri = self.ui.plugin_selector.model().list_data()[idx]
-                pgin = self.paw.load_plugin(pgin_uri)
-            except pawstools.PluginLoadError as ex:
-                msg_ui = qttools.message_ui(self.ui)
-                msg_ui.setWindowTitle("Plugin Load Error")
-                msg_ui.message_box.setPlainText(ex.message)
-                msg_ui.show()
-                return
-            try:
-                self.paw.add_plugin(pgin_name,pgin)
+                self.paw.add_plugin(pgin_name,pgin_uri)
             except pawstools.PluginNameError as ex:
                 msg_ui = qttools.message_ui(self.ui)
                 msg_ui.setWindowTitle("Plugin Name Error")
