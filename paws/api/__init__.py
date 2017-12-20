@@ -4,7 +4,6 @@ import os
 from functools import partial
 from collections import OrderedDict
 import re
-import importlib
 
 import yaml
 
@@ -99,7 +98,7 @@ class PawsAPI(object):
         then the environment satisfies the plugin dependencies.
         """
         pkg = plugins.__name__
-        mod = importlib.import_module('.'+pgin_name,pkg)
+        pgin_cls = self.load_plugin(pgin_name)
 
     def select_wf(self,wfname):
         """
