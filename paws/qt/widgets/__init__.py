@@ -1,16 +1,20 @@
-"""This package defines widgets that are used to communicate with paws."""
+from __future__ import print_function
+import pkgutil
+import os
 
 import numpy as np
-from PySide import QtGui
+from PySide import QtCore, QtGui, QtUiTools
 from matplotlib.figure import Figure
 
 from ...core.operations.Operation import Operation
 from ...core.workflows.Workflow import Workflow 
+from ...core import plugins
 from ...core.plugins.PawsPlugin import PawsPlugin
 from .. import qttools
 from .OpWidget import OpWidget
 from .WorkflowGraphView import WorkflowGraphView
 from .text_widgets import display_text, display_text_fast
+from . import plugin_widgets
 
 if qttools.have_qt47:
     from . import plotmaker_pqg as plotmaker
@@ -21,11 +25,15 @@ def make_widget(itm):
     if isinstance(itm,Workflow):
         w = WorkflowGraphView(itm)
     elif isinstance(itm,PawsPlugin):
-        w = QtGui.QTextEdit()
-        msg = str('selected plugin is a {}. '.format(type(itm).__name__)
-                + 'There are no display methods associated with this plugin. '
-                + 'Add a display method to {} to view this plugin.'.format(__name__))
-        w.setText(msg)
+        plugin_type = type(itm).__name__
+        # seek a Q widget definition for this plugin... 
+        plugin_widget_name = 'Q'+plugin_type
+        if plugin_widget_name in plugin_widgets.plugin_widget_list:
+            pgw = plugin_widgets.get_widget(plugin_widget_name)
+            pgw.connect_plugin(itm)
+            w = pgw.widget
+        else:
+            pgw = plugin_widgets.default_plugin_widget(plugin_type)
     elif isinstance(itm,Operation):
         w = OpWidget(itm)
     elif isinstance(itm,np.ndarray):
@@ -53,8 +61,7 @@ def make_widget(itm):
         t = display_text_fast(itm)
         w = QtGui.QTextEdit(t)
     elif type(itm).__name__ in ['System','ChemicalSystem']:
-        # TODO: consider what is the right level of support for
-        # (and therefore dependency on) pypif
+        # keeping this import out of the module dependencies for now
         from .PifWidget import PifWidget
         w = PifWidget(itm)
     else:
@@ -63,7 +70,4 @@ def make_widget(itm):
             + '<br><br>Printout of item: <br>{}'.format(itm))
         w = QtGui.QTextEdit(msg)
     return w
-
-
-
 
