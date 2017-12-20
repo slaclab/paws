@@ -49,7 +49,6 @@ class TestPlugin(unittest.TestCase):
     def test_load(self):
         from paws.core.plugins.PawsPlugin import PawsPlugin
         print('loading {} ...'.format(self.plugin_name),end=''); sys.stdout.flush()
-        import pdb; pdb.set_trace()
         pgin = self.paw.load_plugin(self.plugin_name)
         self.assertIsInstance(pgin(),PawsPlugin)
 
