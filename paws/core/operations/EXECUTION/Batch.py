@@ -2,9 +2,12 @@ from collections import OrderedDict
 import glob
 import copy
 
-from ...Operation import Operation
-from ... import Operation as opmod 
-from ... import optools
+import numpy as np
+
+from ..Operation import Operation
+from ...workflows.Workflow import Workflow
+from .. import Operation as opmod 
+from .. import optools
 
 inputs=OrderedDict(
     work_item=None,
@@ -18,12 +21,14 @@ inputs=OrderedDict(
 outputs=OrderedDict(
     batch_inputs=None,
     batch_outputs=None)
+        
+# TODO: unify Operation and Workflow APIs to eliminate instance checks
 
-class OrderedBatch(Operation):
+class Batch(Operation):
     """Batch-execute a Workflow or Operation in specific order"""
 
     def __init__(self):
-        super(OrderedBatch,self).__init__(inputs,outputs)
+        super(Batch,self).__init__(inputs,outputs)
         self.input_doc['work_item'] = 'the Operation '\
             'or Workflow object to be batch-executed'
 
@@ -65,29 +70,23 @@ class OrderedBatch(Operation):
         # index the execution order
         odrvals = self.inputs['order_array']
         odrfnc = self.inputs['order_function']
-        if odrfnc is not None:
-            odrvals = np.array([odrfnc(v) for v in odrvals])
-        odr_idx = np.argsort(odrvals)
-        #odr = odrvals[odr_idx]
 
         inps = self.inputs['input_arrays']
         inpks = self.inputs['input_keys']
+
+        if odrfnc is not None and odrvals is not None:
+            odrvals = np.array([odrfnc(v) for v in odrvals])
+            odr_idx = np.argsort(odrvals)
+        else:
+            odr_idx = np.arange(len(inps[0]))
+
+        #odr = odrvals[odr_idx]
         stat_inps = self.inputs['static_inputs']
         stat_inpks = self.inputs['static_input_keys']
 
         wrk = self.inputs['work_item']
 
         n_batch = len(odr_idx)
-
-        # TODO: unify APIs to eliminate instance checks
-
-        if any(stat_inpks): 
-            for inpnm,inpval in zip(stat_inpks,stat_inps):
-                if isinstance(wrk,Workflow):
-                    wrk.set_wf_input(inpnm,inpval)
-                else:
-                    # assume it's an Operation
-                    wrk.inputs[inpnm] = inpval
 
         # copy the work item and index it
         if isinstance(wrk,Workflow):
@@ -99,9 +98,9 @@ class OrderedBatch(Operation):
         batch_inp_dicts = []
         for idx,wrkitm in zip(odr_idx,wrkitms):
             batch_inps = OrderedDict.fromkeys(inpks)
-            for inpk,inpval in zip(inpks[idx],inps[idx]):
-                wrkitm.set_wf_input(inpk,inpval)
-                batch_inps[inpk] = inpval
+            for inpk,inp in zip(inpks,inps):
+                wrkitm.set_wf_input(inpk,inp[idx])
+                batch_inps[inpk] = inp[idx]
             batch_inp_dicts.append(batch_inps)
 
         self.outputs['batch_inputs'] = batch_inp_dicts 
@@ -113,17 +112,25 @@ class OrderedBatch(Operation):
         self.message_callback('STARTING BATCH')
         for i,idx in enumerate(odr_idx): 
             self.message_callback('BATCH RUN {} / {}'.format(i,n_batch-1))
-            if isinstance(wrkitms[idx],Workflow):
-                wrkitms[idx].execute()
-                out_dict = wrkitms[idx].wf_outputs_dict()
+            wrki = wrkitms[idx]
+
+            if any(stat_inpks): 
+                for inpnm,inpval in zip(stat_inpks,stat_inps):
+                    if isinstance(wrki,Workflow):
+                        wrki.set_wf_input(inpnm,inpval)
+                    else:
+                        # assume it's an Operation
+                        wrki.inputs[inpnm] = inpval
+
+            if isinstance(wrki,Workflow):
+                wrki.execute()
+                out_dict = wrki.wf_outputs_dict()
             else:
                 # assume Operation
-                wrkitms[idx].run()
-                out_dict = wrkitms[idx].outputs
-            self.outputs['batch_inputs'][i] = inp_dict
+                wrki.run()
+                out_dict = wrki.outputs
             self.outputs['batch_outputs'][i] = out_dict
             if self.data_callback: 
-                self.data_callback('outputs.batch_inputs.'+str(i),inp_dict)
                 self.data_callback('outputs.batch_outputs.'+str(i),copy.deepcopy(out_dict))
         self.message_callback('BATCH FINISHED')
 

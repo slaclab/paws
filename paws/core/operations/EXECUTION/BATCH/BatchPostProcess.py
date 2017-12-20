@@ -30,8 +30,6 @@ class BatchPostProcess(Operation):
         self.input_doc['input_keys'] = 'list of keys for setting workflow inputs, in corresponding order to output_keys'
         self.output_doc['batch_inputs'] = 'list of dicts of input_key:input_value for each of the input_keys'
         self.output_doc['batch_outputs'] = 'list of dicts of workflow outputs'
-        self.input_type['workflow'] = opmod.entire_workflow
-        self.input_type['batch_outputs'] = opmod.workflow_item
         
     def run(self):
         b_out = self.inputs['batch_outputs']
