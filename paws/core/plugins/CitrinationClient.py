@@ -29,7 +29,7 @@ class CitrinationClient(PawsPlugin):
         self.ctn_client = CitrinationClient(site=self.address,api_key=self.api_key)
 
     def stop(self):
-        pass
+        self.ctn_client = None
 
     def content(self): 
         return {'client':self.ctn_client,'inputs':self.inputs}
