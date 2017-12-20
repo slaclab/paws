@@ -3,7 +3,6 @@ numpy
 scipy
 sklearn
 six
-tifffile
 pillow
 h5py
 matplotlib

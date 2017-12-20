@@ -1,7 +1,7 @@
 import os
 from collections import OrderedDict
 
-import tifffile
+import fabio 
 
 from ... import Operation as opmod 
 from ...Operation import Operation
@@ -28,14 +28,14 @@ class ReadImageAndHeader_SSRL15(Operation):
         self.output_doc['filename'] = 'filename with path and extension stripped'
 
     def run(self):
-        tif_path = self.inputs['file_path']
-        dirpath,filename = os.path.split(tif_path)
+        p = self.inputs['file_path']
+        dirpath,filename = os.path.split(p)
         filename_noext = os.path.splitext(filename)[0]
-        path_noext = os.path.splitext(tif_path)[0]
+        path_noext = os.path.splitext(p)[0]
         hdr_file_path = path_noext + '.txt'
         self.outputs['dir_path'] = dirpath 
         self.outputs['filename'] = filename_noext 
-        self.outputs['image_data'] = tifffile.imread(tif_path)
+        self.outputs['image_data'] = fabio.open(p).data
         d = OrderedDict()
         for l in open(hdr_file_path,'r').readlines():
             if not l.strip() == '' and not l.strip()[0] == '#':
