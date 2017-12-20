@@ -18,8 +18,6 @@ class Pif1dScatteringIntensity(Operation):
         self.input_doc['uid'] = 'PIF uid (string)'
         self.input_doc['q_I'] = 'n-by-2 array of q values and corresponding scattering intensities'
         self.output_doc['pif'] = 'pif object representing the input data'
-        self.input_type['uid'] = opmod.workflow_item
-        self.input_type['q_I'] = opmod.workflow_item
 
     def run(self):
         uid = self.inputs['uid']

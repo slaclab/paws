@@ -7,9 +7,9 @@ import copy
 # Enumeration of valid types for workflow and plugin inputs
 no_input = 0            # ensure the input is set to None 
 
-basic_type = 1          # input is set by hand, 
+basic_type = 1          # input is specified directly, 
                         # and is of a basic type
-                        # that is easy to serialize 
+                        # that is easy to copy or serialize 
 
 workflow_item = 2       # the address (TreeModel uri)
                         # of an item in the workflow 

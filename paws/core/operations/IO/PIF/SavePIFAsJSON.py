@@ -19,8 +19,6 @@ class SavePIFAsJSON(Operation):
         self.input_doc['filename'] = 'Name of the .json file to be created. '\
             'The .json extension is appended automatically if not provided.' 
         self.output_doc['file_path'] = 'Full path to the newly saved .json file'
-        self.input_type['pif'] = opmod.workflow_item
-        self.input_type['filename'] = opmod.workflow_item
 
     def run(self):
         p = self.inputs['pif']        

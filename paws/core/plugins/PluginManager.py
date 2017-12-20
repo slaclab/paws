@@ -116,14 +116,15 @@ class PluginManager(TreeModel):
         return self.get_data_from_uri(pgin_tag)
 
     def load_plugin(self,pgin_module):    
-        try:
-            mod = importlib.import_module('.'+pgin_module,pgns.__name__)
-            return mod.__dict__[pgin_module]
-        except Exception as ex:
-            msg = str('Exception occurred while loading plugin {}. '
-            .format(pgin_module) + 'Error message: ' + ex.message)
-            self.write_log(msg)
-            raise pawstools.PluginLoadError(msg)   
+        """Given plugin module name, return plugin class"""
+        mod = importlib.import_module('.'+pgin_module,pgns.__name__)
+        return mod.__dict__[pgin_module]
+        #try:
+        #except Exception as ex:
+        #    msg = str('Exception occurred while loading plugin {}. '
+        #    .format(pgin_module) + 'Error message: ' + ex.message)
+        #    self.write_log(msg)
+        #    raise pawstools.PluginLoadError(msg)   
  
     def n_plugins(self):
         return self.n_children() 

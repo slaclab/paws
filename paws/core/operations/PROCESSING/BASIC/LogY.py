@@ -17,7 +17,6 @@ class LogY(Operation):
         super(LogY, self).__init__(inputs,outputs)
         self.input_doc['x_y'] = 'n-by-2 array of x and y values'
         self.output_doc['x_logy'] = 'n-by-2 array of x and log_10(y) values'
-        self.input_type['x_y'] = opmod.workflow_item
 
     def run(self):
         x_y = self.inputs['x_y']

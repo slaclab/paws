@@ -40,8 +40,6 @@ class ApplyIntegrator1d(Operation):
             'to pass to pyFAI.AzimuthalIntegrator.integrate1d(). '\
             'Where relevant, the values in this dict will be replaced '\
             'by inputs to the operation, e.g. for npt.' 
-        self.input_type['image_data'] = opmod.workflow_item
-        self.input_type['integrator'] = opmod.workflow_item
         self.output_doc['q'] = 'Scattering vector magnitude q in 1/Angstrom.'
         self.output_doc['I'] = 'Integrated intensity at q.'
         self.output_doc['q_I'] = 'q and I zipped together an a n-by-2 numpy array.'

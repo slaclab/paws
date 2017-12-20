@@ -24,8 +24,6 @@ class WindowZip(Operation):
 
     def __init__(self):
         super(WindowZip,self).__init__(inputs,outputs)        
-        self.input_type['x'] = opmod.workflow_item
-        self.input_type['y'] = opmod.workflow_item
         self.input_doc['x'] = 'array of x values'
         self.input_doc['y'] = 'array of y values'
         self.input_doc['x_min'] = 'inclusive minimum x value of output'

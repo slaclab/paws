@@ -18,8 +18,6 @@ class SpectrumClassifier(Operation):
             'as produced by IO.MODELS.SAXS.LoadSAXSClassifier.'
         self.output_doc['flags'] = 'Dict of boolean flags '\
             'indicating the presence of various scattering populations.'
-        self.input_type['features'] = opmod.workflow_item
-        self.input_type['classifier'] = opmod.workflow_item
 
     def run(self):
         x = self.inputs['features']

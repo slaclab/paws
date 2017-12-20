@@ -4,18 +4,19 @@ import numpy as np
 
 from ... import Operation as opmod 
 from ...Operation import Operation
-from saxskit import saxs_fit
+from saxskit import saxs_math, saxs_fit
 
 inputs = OrderedDict(
     q_I=None,
-    flags=None,
+    populations=None,
     params=None,
-    step_size=0.1,
+    fixed_params=None,
+    step_size=0.01,
     nsteps_burn=1000,
     nsteps_anneal=1000,
     nsteps_quench=1000,
-    T_anneal=0.1,
-    T_burn=0.2)
+    T_anneal=0.2,
+    T_burn=0.3)
 outputs = OrderedDict(
     best_params=None,
     final_params=None,
@@ -24,8 +25,8 @@ outputs = OrderedDict(
 class SpectrumMCAnneal(Operation):
     """Anneal SAXS fitting parameters by Metropolis-Hastings Monte Carlo.
 
-    This Operation seeks a globally optimal fit 
-    for the parameters of a SAXS equation,
+    This Operation explores the space 
+    of parameters for a SAXS intensity equation,
     given some measured data.
     It is useful for refining optimizations 
     that tend to get stuck in local minima.
@@ -35,34 +36,30 @@ class SpectrumMCAnneal(Operation):
         super(SpectrumMCAnneal, self).__init__(inputs, outputs)
         self.input_doc['q_I'] = 'n-by-2 array of measured data: '\
             'intensity (arb) with respect to scattering vector (1/Angstrom)'
-        self.input_doc['flags'] = 'dict of flags '\
-            'indicating which populations to fit'
+        self.input_doc['populations'] = 'dict enumerating scatterer populations'
         self.input_doc['params'] = 'dict of initial values '\
             'for the scattering equation parameters '
-        self.input_doc['step_size'] = 'random walk step size, '\
-            'as a fraction of intial params' 
+        self.input_doc['fixed_params'] = 'dict (subset of `params`) '\
+            'indicating which `params` should be fixed during anneal'
+        self.input_doc['step_size'] = 'random walk fractional step size'
         self.input_doc['nsteps_burn'] = 'number of iterations '\
             'to perform in the initial burn-off phase' 
         self.input_doc['nsteps_anneal'] = 'number of iterations '\
             'to perform in the annealing phase' 
         self.input_doc['nsteps_quench'] = 'number of iterations '\
             'to perform in the quenching (zero acceptance) phase' 
-        
         self.output_doc['best_params'] = 'dict of scattering parameters '\
             'yielding the best fit over all trials'
         self.output_doc['final_params'] = 'dict of scattering parameters '\
             'obtained in the final step of the algorithm'
-        self.output_doc['report'] = 'dict expressing the objective function, '\
-            'its evaluation at the initial and final points of the fit, '\
-            'and the Metropolis rejection ratio'
-        self.input_type['q_I'] = opmod.workflow_item
-        self.input_type['flags'] = opmod.workflow_item
-        self.input_type['params'] = opmod.workflow_item
+        self.output_doc['report'] = 'dict reporting '\
+            'the number of steps and reject ratio'
 
     def run(self):
         q_I = self.inputs['q_I']
-        f = self.inputs['flags']
-        p = self.inputs['params']
+        pops = self.inputs['populations']
+        par = self.inputs['params']
+        par_fix = self.inputs['fixed_params']
         stepsz = self.inputs['step_size']
         ns_burn = self.inputs['nsteps_burn']
         ns_anneal = self.inputs['nsteps_anneal']
@@ -70,25 +67,62 @@ class SpectrumMCAnneal(Operation):
         T_burn = self.inputs['T_burn']
         T_anneal = self.inputs['T_anneal']
 
-        print('beginning burn ({} steps)'.format(ns_burn))
-        p_best,p_fin,rpt_burn = saxs_fit.MC_anneal_fit(q_I,f,p,stepsz,ns_burn,T_burn)
-        print('finished burn. objectives: \ninit: {} \nbest: {} \nfinal: {} \nRR: {}'
-            .format(rpt_burn['obj_init'],rpt_burn['obj_best'],rpt_burn['obj_final'],rpt_burn['reject_ratio']))
+        all_pops = OrderedDict.fromkeys(saxs_math.population_keys)
+        all_pops.update(pops)
 
-        print('beginning anneal ({} steps)'.format(ns_burn))
-        p_best,p_fin,rpt_anneal = saxs_fit.MC_anneal_fit(q_I,f,p_best,stepsz,ns_anneal,T_anneal)
-        print('finished anneal. objectives: \ninit: {} \nbest: {} \nfinal: {} \nRR: {}'
-            .format(rpt_anneal['obj_init'],rpt_anneal['obj_best'],rpt_anneal['obj_final'],rpt_anneal['reject_ratio']))
+        p_init = par
+        p_best = par
+        p_fin = par
+        rpt = OrderedDict()
+        if not bool(all_pops['unidentified']) and not bool(all_pops['diffraction_peaks']):
 
-        print('beginning quench ({} steps)'.format(ns_quench))
-        p_best,p_fin,rpt_quench = saxs_fit.MC_anneal_fit(q_I,f,p_best,stepsz,ns_quench,0.)
-        print('finished quench. objectives: \ninit: {} \nbest: {} \nfinal: {} \nRR: {}'
-            .format(rpt_quench['obj_init'],rpt_quench['obj_best'],rpt_quench['obj_final'],rpt_quench['reject_ratio']))
+            sxf = saxs_fit.SaxsFitter(q_I,all_pops)
 
-        rpt_quench['burn_reject_ratio'] = rpt_burn['reject_ratio']
-        rpt_quench['quench_reject_ratio'] = rpt_quench['reject_ratio']
-        rpt_quench['reject_ratio'] = rpt_anneal['reject_ratio']
+            # the burn phase is for escaping local minima.
+            p_best,p_fin,rpt_burn = sxf.MC_anneal_fit(par,stepsz,ns_burn,T_burn,par_fix)
+            p_best_burn = p_best
+            obj_init = rpt_burn['objective_init']
+            obj_best = rpt_burn['objective_best']
+
+            if self.message_callback:
+                self.message_callback('finished burn. \ninit: {} \nbest: {} \nfinal: {} \nRR: {}'
+                .format(rpt_burn['objective_init'],
+                    rpt_burn['objective_best'],
+                    rpt_burn['objective_final'],
+                    rpt_burn['reject_ratio']))
+
+            # the anneal phase is expected to prefer regions of parameter space
+            # where the fit objective is low.
+            p_best,p_fin,rpt_anneal = sxf.MC_anneal_fit(p_fin,stepsz,ns_anneal,T_anneal,par_fix)
+            if rpt_anneal['objective_best'] < obj_best:
+                obj_best = rpt_anneal['objective_best']
+            else:
+                # if no better params were found during the anneal phase,
+                # fall back on the best params from the burn phase
+                p_best = p_best_burn
+            if self.message_callback:
+                self.message_callback('finished anneal. \ninit: {} \nbest: {} \nfinal: {} \nRR: {}'
+                .format(rpt_anneal['objective_init'],
+                    rpt_anneal['objective_best'],
+                    rpt_anneal['objective_final'],
+                    rpt_anneal['reject_ratio']))
+
+            # the quench phase is expected to stochastically descend, 
+            # such that the objective never increases from one step to the next,
+            # effectively sinking deeper into the current local minimum.
+            p_best,p_fin,rpt_quench = sxf.MC_anneal_fit(p_best,stepsz,ns_quench,0.,par_fix)
+            if self.message_callback:
+                self.message_callback('finished quench. \ninit: {} \nbest: {} \nfinal: {} \nRR: {}'
+                .format(rpt_quench['objective_init'],
+                    rpt_quench['objective_best'],
+                    rpt_quench['objective_final'],
+                    rpt_quench['reject_ratio']))
+            rpt = OrderedDict(
+                objective_init = obj_init,
+                objective_best = obj_best,
+                objective_final = rpt_quench['objective_final'],
+                reject_ratio = rpt_anneal['reject_ratio'])
         self.outputs['best_params'] = p_best 
         self.outputs['final_params'] = p_fin 
-        self.outputs['report'] = rpt_quench 
+        self.outputs['report'] = rpt 
 

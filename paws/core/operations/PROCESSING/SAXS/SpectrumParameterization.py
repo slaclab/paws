@@ -37,8 +37,6 @@ class SpectrumParameterization(Operation):
             'similar to the input of saxskit.saxs_fit.compute_saxs()'
         self.output_doc['q_I_guess'] = 'n-by-2 array of q and the intensity spectrum '\
             'corresponding to the returned scattering equation parameters'
-        self.input_type['q_I'] = opmod.workflow_item
-        self.input_type['flags'] = opmod.workflow_item
 
     def run(self):
         q_I = self.inputs['q_I']

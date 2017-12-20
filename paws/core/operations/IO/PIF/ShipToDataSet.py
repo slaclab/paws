@@ -32,8 +32,6 @@ class ShipToDataSet(Operation):
         self.input_doc['keep_json'] = 'Flag for whether or not to keep the json file' 
         self.input_doc['ship_flag'] = 'Flag for shipping the pif- set to False for a dry run' 
         self.output_doc['response'] = 'The Citrination server response to the shipment'
-        self.input_type['pif'] = opmod.workflow_item
-        self.input_type['client'] = opmod.plugin_item
 
     def run(self):
         cl = self.inputs['client'] 
@@ -47,17 +45,13 @@ class ShipToDataSet(Operation):
 
         json_flag = self.inputs['keep_json']
         ship_flag = self.inputs['ship_flag']
-        try:
-            # make p an array of pifs to get a big json that has all records
-            pif.dump(p, open(json_file,'w'))
-            if ship_flag:
-                r = cl.upload_file(json_file,dataset_id = dsid)
-            else:
-                r = 'dry run: no shipment occurred. pif object: {}'.format(pif.dumps(p))
-            if not json_flag:
-                os.remove(json_file) 
-        except Exception as ex:
-            r = 'An error occurred while shipping. Error message: {}'.format(ex.message)
+        pif.dump(p, open(json_file,'w'))
+        if ship_flag:
+            r = cl.upload_file(json_file,dataset_id = dsid)
+        else:
+            r = 'dry run: no shipment occurred.'
+        if not json_flag:
+            os.remove(json_file) 
         self.outputs['response'] = r
 
 

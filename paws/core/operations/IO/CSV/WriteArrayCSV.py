@@ -26,7 +26,6 @@ class WriteArrayCSV(Operation):
         self.input_doc['filetag'] = 'tag appended to filename- no extension is expected'
         self.output_doc['file_path'] = 'the path to the finished csv file: dir_path+filename+filetag+.csv'
         self.output_doc['file_path'] = 'the name of the output csv: filename+filetag'
-        self.input_type['array'] = opmod.workflow_item
 
     def run(self):
         a = self.inputs['array']

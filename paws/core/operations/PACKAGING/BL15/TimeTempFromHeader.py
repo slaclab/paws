@@ -18,7 +18,6 @@ class TimeTempFromHeader(Operation):
     """
     def __init__(self):
         super(TimeTempFromHeader,self).__init__(inputs,outputs)        
-        self.input_type['image_header'] = opmod.workflow_item
         self.input_doc['image_header'] = 'workflow uri of dict produced from detector output header file.'
         self.input_doc['time_key'] = 'key in image_header that refers to the time' 
         self.input_doc['temp_key'] = 'key in image_header that refers to the temperature' 

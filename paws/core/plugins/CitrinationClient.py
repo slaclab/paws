@@ -1,4 +1,5 @@
 from __future__ import print_function
+from collections import OrderedDict
 
 from pypif import pif
 from citrination_client import CitrinationClient 
@@ -7,30 +8,28 @@ from .. import pawstools
 from .PawsPlugin import PawsPlugin
 from ..operations import Operation as opmod
 
-class CitrinationPlugin(PawsPlugin):
-    """
-    Wrapper contains a Citrination client and
-    implements the PawsPlugin abc interface.
-    """
+inputs = OrderedDict(
+    address=None,
+    api_key_file=None)
+
+class CitrinationClient(PawsPlugin):
+    """PAWS Plugin wrapping a Citrination client"""
 
     def __init__(self):
-        input_names = ['address','api_key_file']
-        super(CitrinationPlugin,self).__init__(input_names)
+        super(CitrinationClient,self).__init__(inputs)
         self.input_doc['address'] = 'web address of citrination instance'
         self.input_doc['api_key_file'] = 'path to a file in the local filesystem containing a valid citrination api key'
-        self.inputs['address'] = 'http://citrination.com' 
         self.ctn_client = None
-        self.return_codes = {} 
 
     def start(self):
         self.address = self.inputs['address'] 
         f = open(self.inputs['api_key_file'],'r')
         self.api_key = str(f.readline()).strip()
         f.close()
-        self.ctn_client = CitrinationClient(api_key = self.api_key, site = self.address)
+        self.ctn_client = CitrinationClient(site=self.address,api_key=self.api_key)
 
     def stop(self):
-        pass
+        self.ctn_client = None
 
     def content(self): 
         return {'client':self.ctn_client,'inputs':self.inputs}

@@ -1,22 +1,18 @@
-import abc
+from __future__ import print_function
 from collections import OrderedDict
+import copy
 
 from ..operations import Operation as opmod
 
 class PawsPlugin(object):
-    __metaclass__ = abc.ABCMeta
-    """
-    Abstract class for imposing paws plugin structure via inheritance.
-    """
+    """Class template for implementing PAWS Plugins"""
 
-    def __init__(self,input_names):
+    def __init__(self,inputs):
         super(PawsPlugin,self).__init__()
-        self.inputs = OrderedDict()
-        self.input_doc = {}
-        # For each of the var names, assign to None 
-        for name in input_names: 
-            self.inputs[name] = None
-            self.input_doc[name] = None
+        self.inputs = OrderedDict(copy.deepcopy(inputs))
+        self.input_doc = OrderedDict.fromkeys(self.inputs.keys()) 
+        self.message_callback = print
+        self.data_callback = None 
 
     def __getitem__(self,key):
         d = self.content()

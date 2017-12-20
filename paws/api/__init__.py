@@ -4,7 +4,6 @@ import os
 from functools import partial
 from collections import OrderedDict
 import re
-import importlib
 
 import yaml
 
@@ -99,7 +98,7 @@ class PawsAPI(object):
         then the environment satisfies the plugin dependencies.
         """
         pkg = plugins.__name__
-        mod = importlib.import_module('.'+pgin_name,pkg)
+        pgin_cls = self.load_plugin(pgin_name)
 
     def select_wf(self,wfname):
         """
@@ -221,6 +220,10 @@ class PawsAPI(object):
     def set_input(self,opname,input_name,val=None,tp=None,wfname=None):
         if wfname is None:
             wfname = self._current_wf_name
+        if not opname in self.list_op_tags(wfname):
+            msg = 'Operation {} not found in workflow {}'\
+            .format(opname,wfname)
+            raise KeyError(msg)
         op = self.get_op(opname,wfname)
         if not input_name in op.inputs.keys():
             msg = str('Input name {} not valid for Operation {} ({}).'

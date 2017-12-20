@@ -17,7 +17,6 @@ class EmptyPif(Operation):
         super(EmptyPif,self).__init__(inputs,outputs)
         self.input_doc['uid'] = 'text string to use as pif record uid'
         self.output_doc['pif'] = 'an empty pif object'
-        self.input_type['uid'] = opmod.workflow_item
 
     def run(self):
         uid = self.inputs['uid']

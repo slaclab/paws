@@ -8,10 +8,13 @@ from ... import optools
 inputs = OrderedDict(
     q_I_meas=None,
     T_meas=None,
-    bg_batch_output=None,
+    bg_batch_outputs=None,
     q_I_bg_key=None,
     T_bg_key=None)
-outputs = OrderedDict(q_I_bgsub=None,T_bg=None,bg_factor=None)
+outputs = OrderedDict(
+    q_I_bgsub=None,
+    T_bg=None,
+    bg_factor=None)
 
 class BgSubtractByTemperature(Operation):
     """
@@ -29,7 +32,7 @@ class BgSubtractByTemperature(Operation):
         self.input_doc['q_I_meas'] = 'n-by-2 array of I(q) versus q'
         self.input_doc['T_meas'] = 'temperature as taken from the dict '\
             'produced by the detector header file'
-        self.input_doc['bg_batch_output'] = 'the output (list of dicts) '\
+        self.input_doc['bg_batch_outputs'] = 'the output (list of dicts) '\
             'of a batch of background spectra at different temperatures'
         self.input_doc['q_I_bg_key'] = 'the name of the bg_batch workflow output '\
             'containing n-by-2 array of q and I(q) for the background spectra '
@@ -40,16 +43,13 @@ class BgSubtractByTemperature(Operation):
         self.output_doc['T_bg'] = 'temperature of the subtracted background spectrum'
         self.output_doc['bg_factor'] = 'correction factor applied to background '\
             'before subtraction, to ensure positive background-subtracted intensities'
-        self.input_type['q_I_meas'] = opmod.workflow_item
-        self.input_type['T_meas'] = opmod.workflow_item
-        self.input_type['bg_batch_output'] = opmod.workflow_item
 
     def run(self):
         q_I_meas = self.inputs['q_I_meas']
         T_meas = self.inputs['T_meas']
         qIkey = self.inputs['q_I_bg_key']
         Tkey = self.inputs['T_bg_key']
-        bg_out = self.inputs['bg_batch_output']
+        bg_out = self.inputs['bg_batch_outputs']
         T_allbg = [d[Tkey] for d in bg_out]
         closest_T_idx = np.argmin(np.abs([T_bg - T_meas for T_bg in T_allbg]))
         T_bg = T_allbg[closest_T_idx]

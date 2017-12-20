@@ -2,8 +2,8 @@ from collections import OrderedDict
 
 import os.path
 
-from ..Operation import Operation
-from .. import Operation as opmod 
+from ...Operation import Operation
+from ... import Operation as opmod 
 
 inputs=OrderedDict(
     dir_path=None,
@@ -28,7 +28,6 @@ class BuildFilePath(Operation):
         self.input_doc['filename'] = 'name of the file, excluding any path, extension, prefix, or suffix'
         self.input_doc['suffix'] = 'any text to append to filename (comes after filename, before ext)'
         self.input_doc['ext'] = 'extension for the file- the . is optional'
-        self.input_type['filename'] = opmod.workflow_item
         self.output_doc['filename'] = 'filename will be <prefix><filename><suffix>' 
         self.output_doc['file_path'] = 'file_path will be <path><prefix><filename><suffix>.<ext>' 
 

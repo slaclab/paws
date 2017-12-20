@@ -61,7 +61,7 @@ class BatchFromDirectory(Operation):
             inp_dict = OrderedDict() 
             inp_dict[inpname] = filename
             wf.set_wf_input(inpname,filename)
-            self.message_callback('BATCH RUN {} / {}'.format(i,n_batch-1))
+            self.message_callback('BATCH RUN {} / {}: {}'.format(i,n_batch-1,filename))
             wf.execute()
             out_dict = wf.wf_outputs_dict()
             self.outputs['batch_inputs'][i] = inp_dict

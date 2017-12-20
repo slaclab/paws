@@ -25,8 +25,6 @@ class FindPeaksByWindow(Operation):
             'in either direction of a given point'
         self.input_doc['threshold'] = 'threshold on Ipk/I(window) '\
             'for being counted as a peak: set to zero to deactivate'
-        self.input_type['x'] = opmod.workflow_item
-        self.input_type['y'] = opmod.workflow_item
         self.output_doc['pk_idx'] = 'q values of found peaks'
         self.output_doc['x_pk'] = 'x values of found peaks'
         self.output_doc['y_pk'] = 'y values of found peaks'
