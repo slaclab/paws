@@ -52,7 +52,8 @@ class Operation(object):
             self.input_type[name] = basic_type 
         self.message_callback = print
         self.data_callback = None 
-    
+        self.stop_flag = False
+
     def __getitem__(self,key):
         if key == 'inputs':
             return self.inputs
@@ -87,6 +88,9 @@ class Operation(object):
         and set values for all of the items in Operation.outputs.
         """
         pass
+
+    def stop(self):
+        self.stop_flag = True
 
     @classmethod
     def clone(cls):

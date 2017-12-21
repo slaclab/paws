@@ -337,10 +337,7 @@ class UiManager(QtCore.QObject):
 
     def start_wf(self,wfname):
         self.ui.run_wf_button.setText("S&top")
-        # NOTE: this is where we choose between threaded or not.
-        # TODO: consider exposing both run modes to the user.
         self.paw.run_wf(wfname,self.threads)
-        #self.paw.run_wf(wfname,None)
 
     def stop_wf(self,wfname):
         # TODO: the interruption will have to be carried out by signals and slots.

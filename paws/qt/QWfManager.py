@@ -40,6 +40,7 @@ class QWfManager(WfManager,QtCore.QObject):
         super(QWfManager,self).__init__()
         self.app = qapp 
         self.wf_running = OrderedDict()
+        self.wf_clones = OrderedDict()
 
     def add_wf(self,wfname):
         """
@@ -61,8 +62,16 @@ class QWfManager(WfManager,QtCore.QObject):
         self.wfAdded.emit(wfname)
 
     def stop_wf(self,wfname):
+        self.logmethod('stopping workflow {}'.format(wfname))
+        wf = self.workflows[wfname]
+        wf.stop()
+        if wfname in self.wf_clones.keys():
+            # NOTE: cloned workflows are expected to be running in separate threads.
+            # TODO: think of the implications of manipulating workflows across threads.
+            self.wf_clones[wfname].stop()
+            self.wf_clones.pop(wfname)
         self.wf_running[wfname] = False
-        self.wfStopped.emit(wfname)
+        self.wfStopped.emit(wfname)     # informs ui that wf stopped
 
     def run_wf(self,wfname,pool=None):
         wf = self.workflows[wfname]
@@ -86,11 +95,11 @@ class QWfManager(WfManager,QtCore.QObject):
             wf_clone.data_callback = wf_clone.emitData.emit
             wf_clone.emitData.connect(wf.updateItem)
             wf_clone.wfFinished.connect( partial(self.stop_wf,wfname) )
+            self.wf_clones[wfname] = wf_clone
             # construct a QRunnable around a copy of the Workflow 
             qr = qttools.RunnableExecutor( wf_clone ) 
             # Call QThreadPool.start(QRunnable) - executes runnable.run()
             self.wf_running[wfname] = True
             pool.start(qr)
-
 
 

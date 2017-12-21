@@ -45,15 +45,19 @@ class WfManager(object):
         self.workflows[wfname] = wf
 
     def run_wf(self,wfname):
-        """
-        Execute the workflow indicated by input wfname
-        """
+        """Execute the workflow indicated by `wfname`"""
         wf = self.workflows[wfname]
         self.logmethod('preparing workflow {} for execution'.format(wfname))
         stk,diag = wf.execution_stack()
         self.prepare_wf(wf,stk)
         wf.execute()
         self.logmethod('execution finished')
+
+    def stop_wf(self,wfname):
+        """Stop the workflow indicated by `wfname`"""
+        self.logmethod('stopping workflow {}'.format(wfname))
+        wf = self.workflows[wfname]
+        wf.stop()
 
     def prepare_wf(self,wf,stk):
         """
@@ -68,7 +72,7 @@ class WfManager(object):
                         # runtime inputs should be set directly, without using il.val.
                         # this is because, when calling wf.wf_setup_dict(), il.val gets serialized.
                         # workflow_item inputs should be set later, during execution.
-                        # the no_input case ends up setting the input to None
+                        # the no_input case ends up setting the input to None.
                         #op.inputs[inpname] = self.locate_input(il)
                         wf.set_op_item(op_tag,'inputs.'+inpname,self.locate_input(il))
 

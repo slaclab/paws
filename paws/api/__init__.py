@@ -284,7 +284,10 @@ class PawsAPI(object):
         if wfname is None:
             wfname = self._current_wf_name
         self._wf_manager.run_wf(wfname)
-        
+
+    def stop_wf(self,wfname):
+        self._wf_manager.stop_wf(wfname)
+
     #def save_config(self):
     #    ops.save_config()
 

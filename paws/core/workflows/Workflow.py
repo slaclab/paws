@@ -24,6 +24,7 @@ class Workflow(TreeModel):
         self.outputs = OrderedDict()
         self.message_callback = print
         self.data_callback = None
+        self.stop_flag = False
 
     #def __getitem__(self,key):
     #    optags = self.keys()
@@ -144,21 +145,34 @@ class Workflow(TreeModel):
                 self.set_item(uri,val)
 
     def execute(self):
+        self.stop_flag = False
         stk,diag = self.execution_stack()
         bad_diag_keys = [k for k in diag.keys() if diag[k]]
         for k in bad_diag_keys:
             self.message_callback('WARNING- {} is not ready: {}'.format(k,diag[k]))
         self.message_callback('workflow queue:'+os.linesep+self.print_stack(stk))
         for lst in stk:
+            if self.stop_flag:
+                self.message_callback('Workflow stopped.')
+                return
             self.message_callback('running: {}'.format(lst))
             for op_tag in lst: 
                 op = self.get_data_from_uri(op_tag) 
                 for inpnm,il in op.input_locator.items():
                     if il.tp == opmod.workflow_item:
                         self.set_op_item(op_tag,'inputs.'+inpnm,self.locate_input(il))
+                op.stop_flag = False
                 op.run() 
                 for outnm,outdata in op.outputs.items():
                     self.set_op_item(op_tag,'outputs.'+outnm,outdata)
+
+    def stop(self):
+        self.stop_flag = True
+        stk,diag = self.execution_stack()
+        for lst in stk:
+            for op_tag in lst: 
+                op = self.get_data_from_uri(op_tag) 
+                op.stop()
 
     def locate_input(self,il):
         if isinstance(il.val,list):
