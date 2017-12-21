@@ -144,6 +144,14 @@ class Workflow(TreeModel):
                 # these two types should be loaded for immediate use
                 self.set_item(uri,val)
 
+    def get_wf_input_value(self,wf_input_name):
+        uri = self.inputs[wf_input_name]
+        if isinstance(uri,list):
+            uri = uri[0]
+        p = uri.split('.')
+        il = self.get_data_from_uri(p[0]).input_locator[p[2]]
+        return il.val  
+
     def execute(self):
         self.stop_flag = False
         stk,diag = self.execution_stack()
