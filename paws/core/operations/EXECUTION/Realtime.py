@@ -13,7 +13,7 @@ inputs=OrderedDict(
     static_inputs=None,
     static_input_keys=None,
     delay=1000,
-    max_delay=None)
+    max_delay=float('inf'))
 
 outputs=OrderedDict(
     realtime_inputs=None,
@@ -80,6 +80,7 @@ class Realtime(Operation):
             inps_ready = False
             nd = 0 # number of consecutive delays
             while keep_going and not inps_ready:
+
                 if self.stop_flag:
                     self.message_callback('Realtime execution stopped.')
                     return
@@ -89,6 +90,8 @@ class Realtime(Operation):
                         inp_dict[k] = gen.next()
                 if all([inp_dict[k] is not None for k in inpks]):
                     inps_ready = True
+                    if self.data_callback: 
+                        self.data_callback('outputs.realtime_inputs.'+str(nx),inp_dict)
                 else:
                     # delay
                     time.sleep(float(dly)/1000.) 
@@ -96,9 +99,8 @@ class Realtime(Operation):
                     currentdly = nd*dly
                     self.message_callback('... WAITING FOR INPUTS ({}/{} ms)'
                         .format(currentdly,maxdly))
-                    if maxdly is not None:
-                        if currentdly >= maxdly:
-                            keep_going = False 
+                    if currentdly >= maxdly:
+                        keep_going = False 
             if keep_going:
                 for inpnm,inpval in inp_dict.items():
                     if isinstance(wrk,Workflow):

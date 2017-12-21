@@ -411,7 +411,8 @@ class UiManager(QtCore.QObject):
         """
         Start a modal window dialog to choose a .wfl to load a previously saved configuration 
         """
-        load_ui = qttools.start_load_ui(self.ui)
+        wfl_path = os.path.join(pawstools.sourcedir,'core','workflows')
+        load_ui = qttools.start_load_ui(self.ui,wfl_path)
         load_ui.setWindowTitle('paws loader')
         load_ui.tree_box.setTitle('Select a .wfl file to load a saved paws configuration.')
         load_ui.load_button.clicked.connect( partial(self.finish_load_state,load_ui) )
