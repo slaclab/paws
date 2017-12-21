@@ -6,7 +6,6 @@ import numpy as np
 
 from ..Operation import Operation
 from ...workflows.Workflow import Workflow
-from .. import Operation as opmod 
 from .. import optools
 
 inputs=OrderedDict(
@@ -32,17 +31,19 @@ class Batch(Operation):
         self.input_doc['work_item'] = 'the Operation '\
             'or Workflow object to be batch-executed'
 
-        self.input_doc['order_array'] = 'array, similar to input_arrays, '\
-            'used in conjunction with `order_function` to determine '\
-            'the order of execution of the batch. '\
+        self.input_doc['order_array'] = '(optional) array, '\
+            'similar to input_arrays, used in conjunction '\
+            'with `order_function` to determine '\
+            'the order of execution of the batch- '\
             'if `order_function` is not provided, '\
             '`order_array` should be an array of real numbers'
-        self.input_doc['order_function'] = 'function called on elements '\
-            'of `order_array` to determine execution order, which will be '\
+        self.input_doc['order_function'] = '(optional) function '\
+            'called on elements of `order_array` to determine '\
+            'execution order, which will be '\
             'in increasing order of the return value'
 
         self.input_doc['input_arrays'] = 'one array for each of '\
-            'the `input_keys`, to be iterated over during batch execution.'
+            'the `input_keys`, to be iterated over during batch execution'
         self.input_doc['input_keys'] = 'list of keys for setting '\
             'batch inputs of the `work_item`- these should correspond to '\
             'either Operation.inputs or Workflow.inputs, '\
@@ -64,28 +65,22 @@ class Batch(Operation):
             'where each dict presents the `work_item` outputs, '\
             'in batch execution order'
 
-        self.input_type['workflow'] = opmod.entire_workflow
-        
     def run(self):
-        # index the execution order
-        odrvals = self.inputs['order_array']
-        odrfnc = self.inputs['order_function']
+        wrk = self.inputs['work_item']
 
         inps = self.inputs['input_arrays']
         inpks = self.inputs['input_keys']
+        stat_inps = self.inputs['static_inputs']
+        stat_inpks = self.inputs['static_input_keys']
 
+        # index the execution order
+        odrvals = self.inputs['order_array']
+        odrfnc = self.inputs['order_function']
         if odrfnc is not None and odrvals is not None:
             odrvals = np.array([odrfnc(v) for v in odrvals])
             odr_idx = np.argsort(odrvals)
         else:
             odr_idx = np.arange(len(inps[0]))
-
-        #odr = odrvals[odr_idx]
-        stat_inps = self.inputs['static_inputs']
-        stat_inpks = self.inputs['static_input_keys']
-
-        wrk = self.inputs['work_item']
-
         n_batch = len(odr_idx)
 
         # copy the work item and index it
@@ -111,6 +106,11 @@ class Batch(Operation):
 
         self.message_callback('STARTING BATCH')
         for i,idx in enumerate(odr_idx): 
+
+            if self.stop_flag:
+                self.message_callback('Batch stopped.')
+                return
+                
             self.message_callback('BATCH RUN {} / {}'.format(i,n_batch-1))
             wrki = wrkitms[idx]
 
