@@ -67,6 +67,7 @@ class DictTree(object):
         """
         try:
             itm = self._root
+            parent_uri = '' 
             if '.' in uri:
                 parent_uri = uri[:uri.rfind('.')]
                 itm = self.get_from_uri(parent_uri)
@@ -74,15 +75,25 @@ class DictTree(object):
             # TODO: Is there a more graceful way to handle lists?
             if k:
                 if isinstance(itm,list):
-                    itm[int(k)] = val
+                    list_idx = int(k)
+                    highest_idx = len(itm)
+                    if list_idx == highest_idx: 
+                        itm.append(val)
+                    elif list_idx < highest_idx:
+                        itm[list_idx] = val
+                    else:
+                        msg = 'Attempted to set index {} '.format(list_idx)\
+                            + 'of item at {} '.format(parent_uri)\
+                            + 'with current maximum index {}'.format(len(itm))
+                        raise IndexError(msg)
                 else:
                     # Note- parent items must implement __setitem__
                     itm[k] = val
                 #if not uri in self._all_uris:
                 #    self._all_uris.append(uri)
         except Exception as ex:
-            msg = str('\n[{}] Encountered an error while trying to set uri {} to val {}: \n'
-            .format(__name__,uri,val)) + ex.message
+            msg = str('\n[{}] Encountered an error while trying to set uri {}: \n'
+            .format(__name__,uri)) + ex.message
             raise KeyError(msg)
 
     def get_from_uri(self,uri=''):
