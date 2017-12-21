@@ -54,7 +54,7 @@ class QSourceEdit(QtGui.QTextEdit):
         else:
             super(QSourceEdit,self).keyPressEvent(evnt)
 
-def text_widget(text):
+def c_hdr_widget(text):
     """
     Produce a Read-only Center-aligned QtGui.QLineEdit from input text.
     """

@@ -57,3 +57,5 @@ paw.set_input('write_csv','dir_path','read_image.outputs.dir_path','workflow ite
 paw.set_input('write_csv','filename','read_image.outputs.filename','workflow item')
 paw.set_input('write_csv','filetag','_dz')
 
+paw.save_to_wfl(os.path.join(pawstools.sourcedir,'core','workflows','SAXS','saxs_integrate.wfl'))
+

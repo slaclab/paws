@@ -314,7 +314,7 @@ class PawsAPI(object):
         If the given filename does not have the .wfl extension,
         it will be appended.
         """
-        self.logmethod( 'saving current state to {}'.format(wfl_filename) )
+        #self.logmethod( 'saving current state to {}'.format(wfl_filename) )
         if not os.path.splitext(wfl_filename)[1] == '.wfl':
             wfl_filename = wfl_filename + '.wfl'
         d = self.wfl_dict()

@@ -13,7 +13,7 @@ inputs=OrderedDict(
     static_inputs=None,
     static_input_keys=None,
     delay=1000,
-    max_delay=1000000)
+    max_delay=None)
 
 outputs=OrderedDict(
     realtime_inputs=None,
@@ -46,8 +46,8 @@ class Realtime(Operation):
             
         self.input_doc['delay'] = 'delay in milliseconds '\
             'between attempts to generate new inputs'
-        self.input_doc['max_delay'] = 'maximum delay in milliseconds '\
-            'before giving up and stopping execution'
+        self.input_doc['max_delay'] = '(optional) maximum delay '\
+            'in milliseconds before giving up and stopping execution'
             
         self.output_doc['realtime_inputs'] = 'list of dicts '\
             'containing [input_name:input_value] '\
@@ -96,8 +96,9 @@ class Realtime(Operation):
                     currentdly = nd*dly
                     self.message_callback('... WAITING FOR INPUTS ({}/{} ms)'
                         .format(currentdly,maxdly))
-                    if currentdly >= maxdly:
-                        keep_going = False 
+                    if maxdly is not None:
+                        if currentdly >= maxdly:
+                            keep_going = False 
             if keep_going:
                 for inpnm,inpval in inp_dict.items():
                     if isinstance(wrk,Workflow):
