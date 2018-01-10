@@ -10,12 +10,12 @@ from .. import optools
 
 inputs=OrderedDict(
     work_item=None,
+    input_arrays=[],
+    input_keys=[],
+    static_inputs=[],
+    static_input_keys=[],
     order_array=None,
-    order_function=None,
-    input_arrays=None,
-    input_keys=None,
-    static_inputs=None,
-    static_input_keys=None)
+    order_function=None)
 
 outputs=OrderedDict(
     batch_inputs=None,
@@ -31,19 +31,9 @@ class Batch(Operation):
         self.input_doc['work_item'] = 'the Operation '\
             'or Workflow object to be batch-executed'
 
-        self.input_doc['order_array'] = '(optional) array, '\
-            'similar to input_arrays, used in conjunction '\
-            'with `order_function` to determine '\
-            'the order of execution of the batch- '\
-            'if `order_function` is not provided, '\
-            '`order_array` should be an array of real numbers'
-        self.input_doc['order_function'] = '(optional) function '\
-            'called on elements of `order_array` to determine '\
-            'execution order, which will be '\
-            'in increasing order of the return value'
-
-        self.input_doc['input_arrays'] = 'one array for each of '\
-            'the `input_keys`, to be iterated over during batch execution'
+        self.input_doc['input_arrays'] = 'list of arrays, '\
+            'one for each of the `input_keys`, '\
+            'to be iterated over during batch execution'
         self.input_doc['input_keys'] = 'list of keys for setting '\
             'batch inputs of the `work_item`- these should correspond to '\
             'either Operation.inputs or Workflow.inputs, '\
@@ -57,6 +47,17 @@ class Batch(Operation):
             'either Operation.inputs or Workflow.inputs, '\
             'depending on whether `work_item` is an Operation or a Workflow'
             
+        self.input_doc['order_array'] = '(optional) array, '\
+            'similar to input_arrays, used in conjunction '\
+            'with `order_function` to determine '\
+            'the order of execution of the batch- '\
+            'if `order_function` is not provided, '\
+            '`order_array` should be an array of real numbers'
+        self.input_doc['order_function'] = '(optional) function '\
+            'called on elements of `order_array` to determine '\
+            'execution order, which will be '\
+            'in increasing order of the return value'
+
         self.output_doc['batch_inputs'] = 'list of dicts, '\
             'where each dict gives the input_key:input_value pairs '\
             'used in each execution of `work_item`, '\
@@ -64,6 +65,11 @@ class Batch(Operation):
         self.output_doc['batch_outputs'] = 'list of dicts, '\
             'where each dict presents the `work_item` outputs, '\
             'in batch execution order'
+
+        self.input_datatype['input_arrays'] = 'list'
+        self.input_datatype['input_keys'] = 'list'
+        self.input_datatype['static_inputs'] = 'list'
+        self.input_datatype['static_input_keys'] = 'list'
 
     def run(self):
         wrk = self.inputs['work_item']
