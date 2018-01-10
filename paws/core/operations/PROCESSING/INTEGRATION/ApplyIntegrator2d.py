@@ -6,9 +6,18 @@ import pyFAI
 from ... import Operation as opmod 
 from ...Operation import Operation
 
-inputs = OrderedDict(image_data=None,integrator=None,
-    npt_rad=1000,npt_azim=1000,polz_factor=1.,unit='q_A^-1',integrate_args={})
-outputs = OrderedDict(q=None,chi=None,I_at_q_chi=None)
+inputs = OrderedDict(
+    image_data=None,
+    integrator=None,
+    npt_rad=1000,
+    npt_azim=1000,
+    polz_factor=0.,
+    unit='q_A^-1',
+    integrate_args={})
+outputs = OrderedDict(
+    q=None,
+    chi=None,
+    I_at_q_chi=None)
 
 class ApplyIntegrator2d(Operation):
     """Integrate an image using an existing PyFAI.AzimuthalIntegrator.
@@ -39,6 +48,11 @@ class ApplyIntegrator2d(Operation):
         self.output_doc['q'] = 'Scattering vector magnitude q array in 1/Angstrom.'
         self.output_doc['chi'] = 'Azimuthal angle array.'
         self.output_doc['I_at_q_chi'] = '2d array of integrated intensity at q,chi.'
+        self.input_datatype['unit'] = 'str'
+        self.input_datatype['integrate_args'] = 'dict'
+        self.input_datatype['npt_rad'] = 'int'
+        self.input_datatype['npt_azim'] = 'int'
+        self.input_datatype['polz_factor'] = 'float'
 
     def run(self):
         img = self.inputs['image_data']
