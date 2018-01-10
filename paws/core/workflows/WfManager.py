@@ -69,20 +69,17 @@ class WfManager(object):
                 op = wf.get_data_from_uri(op_tag)
                 for inpname,il in op.input_locator.items():
                     if il.tp not in [opmod.runtime_type,opmod.workflow_item]:
-                        # runtime inputs should be set directly, without using il.val.
+                        # NOTE 1: runtime inputs should be set directly, without using il.val.
                         # this is because, when calling wf.wf_setup_dict(), il.val gets serialized.
-                        # workflow_item inputs should be set later, during execution.
-                        # the no_input case ends up setting the input to None.
-                        #op.inputs[inpname] = self.locate_input(il)
+                        # NOTE 2: workflow_item inputs should be set later, during execution.
                         wf.set_op_item(op_tag,'inputs.'+inpname,self.locate_input(il))
 
     def locate_input(self,il):
         """
         Return the data pointed to by a given InputLocator object.
         """
-        if il.tp == opmod.no_input or il.val is None:
-            return None
-        elif il.tp == opmod.basic_type:
+        # note, workflow items will be fetched by the workflow during execution
+        if il.tp == opmod.basic_type:
             return il.val
         elif il.tp == opmod.entire_workflow:
             wf = self.workflows[il.val]
@@ -95,44 +92,6 @@ class WfManager(object):
                 return [self.plugin_manager.get_data_from_uri(v) for v in il.val]
             else:
                 return self.plugin_manager.get_data_from_uri(il.val)
-        # changed: let basic_type inputs be loaded directly,
-        # without using InputLocators.
-        #elif il.tp == opmod.basic_type:
-        #    return il.val
-
-    # TODO: the following
-    def check_wf(self,wf):
-        """
-        Check the dependencies of the workflow.
-        Ensure that all loaded operations have inputs that make sense.
-        Return a status code and message for each of the Operations.
-        """
-        pass
-
-    def uri_to_embedded_dict(self,uri,data=None):
-        path = uri.split('.')
-        endtag = path[-1]
-        d = OrderedDict()
-        d[endtag] = data
-        for tag in path[:-1][::-1]:
-            parent_d = OrderedDict()
-            parent_d[tag] = d
-            d = parent_d
-        return d
-
-    def update_embedded_dict(self,d,d_new):
-        for k,v in d_new.items():
-            if k in d.keys():
-                if isinstance(d[k],dict) and isinstance(d_new[k],dict):
-                    # embedded dicts: recurse
-                    d[k] = self.update_embedded_dict(d[k],d_new[k])
-                else:
-                    # existing d[k] is not dict, and d_new[k] is dict: replace  
-                    d[k] = d_new[k]
-            else:
-                # d[k] does not exist: insert
-                d[k] = v
-        return d
 
     def load_from_dict(self,wfname,wf_spec,op_manager):
         """
@@ -150,7 +109,31 @@ class WfManager(object):
         for outname,outval in wfouts.items():
             self.workflows[wfname].connect_wf_output(outname,outval)
         for op_tag, op_setup in wf_spec.items():
-            self.workflows[wfname].add_op(op_tag,\
-            self.workflows[wfname].build_op_from_dict(op_setup,op_manager))
+            self.workflows[wfname].add_op_from_dict(op_tag,op_setup,op_manager)
             self.workflows[wfname].set_op_enabled(op_tag,opflags[op_tag])
+
+    #def uri_to_embedded_dict(self,uri,data=None):
+    #    path = uri.split('.')
+    #    endtag = path[-1]
+    #    d = OrderedDict()
+    #    d[endtag] = data
+    #    for tag in path[:-1][::-1]:
+    #        parent_d = OrderedDict()
+    #        parent_d[tag] = d
+    #        d = parent_d
+    #    return d
+
+    #def update_embedded_dict(self,d,d_new):
+    #    for k,v in d_new.items():
+    #        if k in d.keys():
+    #            if isinstance(d[k],dict) and isinstance(d_new[k],dict):
+    #                # embedded dicts: recurse
+    #                d[k] = self.update_embedded_dict(d[k],d_new[k])
+    #            else:
+    #                # existing d[k] is not dict, and d_new[k] is dict: replace  
+    #                d[k] = d_new[k]
+    #        else:
+    #            # d[k] does not exist: insert
+    #            d[k] = v
+    #    return d
 
