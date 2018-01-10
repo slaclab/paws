@@ -83,7 +83,7 @@ class QWfManager(WfManager,QtCore.QObject):
             #wf.data_callback = None
             self.wf_running[wfname] = True
             wf.execute()
-            self.logmethod('execution finished')
+            #self.logmethod('execution finished')
         else:
             # Copy the workflow so it can be moved off the main thread.
             # Connect some signals so that the local copy gets updated

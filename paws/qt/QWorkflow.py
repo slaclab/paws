@@ -78,10 +78,9 @@ class QWorkflow(Workflow,QTreeSelectionModel):
                 op.stop_flag = False
                 op.run()
                 for outnm,outdata in op.outputs.items():
+                    self.set_op_item(op_tag,'outputs.'+outnm,outdata)
                     if self.data_callback:
-                        out_uri = op_tag+'.outputs.'+outnm
-                        if outdata is not None:
-                            self.data_callback(out_uri,outdata)
+                        self.data_callback(op_tag+'.outputs.'+outnm,outdata)
                         #print('done setting {}'.format(out_uri))
                 self.opFinished.emit(op_tag)
                     #self.record_op_output(op_tag,outnm,outdata)

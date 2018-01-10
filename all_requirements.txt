@@ -10,6 +10,7 @@ silx
 fabio
 pyfai
 pypif
+citrination_client
 pytz
 tzlocal
 saxskit

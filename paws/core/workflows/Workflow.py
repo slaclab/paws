@@ -56,8 +56,12 @@ class Workflow(TreeModel):
         #new_wf = copy.copy(self)
         new_wf.inputs = copy.deepcopy(self.inputs)
         new_wf.outputs = copy.deepcopy(self.outputs)
-        # NOTE: is it ok if I don't copy.copy the callbacks? 
+        # NOTE 1: the cloned workflows will all dump messages to self.message_callback 
         new_wf.message_callback = self.message_callback
+        # NOTE 2: they will also dump their data to self.data_callback.
+        # In cases where this is undesirable,
+        # e.g. when running multiple clones in parallel, 
+        # this data_callback must be disconnected after cloning.
         new_wf.data_callback = self.data_callback
         for op_tag in self.list_op_tags():
             op = self.get_data_from_uri(op_tag)
