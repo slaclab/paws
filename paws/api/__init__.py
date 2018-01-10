@@ -4,11 +4,13 @@ import os
 from functools import partial
 from collections import OrderedDict
 import re
+import importlib
 
 import yaml
 
 from ..core import pawstools
 from ..core import operations as ops
+from ..core import workflows as wfs
 from ..core import plugins 
 from ..core.operations import Operation as opmod
 from ..core.operations import optools
@@ -75,20 +77,26 @@ class PawsAPI(object):
         Import the Operation indicated by op_uri, and tag it as active.
         The Operation becomes available to add to workflows via paws.api.add_op()
         """
-        self._op_manager.set_op_enabled(op_uri)
+        self._op_manager.set_op_activated(op_uri)
 
     def deactivate_op(self,op_uri):
         """
         Disable the Operation indicated by op_uri.
         The Operation cannot be added to Workflows until it is enabled again. 
         """
-        self._op_manager.set_op_enabled(op_uri,False)
+        self._op_manager.set_op_activated(op_uri,False)
 
     def enable_op(self,op_tag,wfname=None):
         self.get_wf(wfname).set_op_enabled(op_tag,True)
 
     def disable_op(self,op_tag,wfname=None):
         self.get_wf(wfname).set_op_enabled(op_tag,False)
+
+    def is_op_enabled(self,op_tag,wfname=None):
+        return self.get_wf(wfname).is_op_enabled(op_tag)
+
+    def is_op_activated(self,op_uri):
+        return self._op_manager.is_op_activated(op_uri)
 
     def enable_plugin(self,pgin_name=''):
         """
@@ -135,17 +143,15 @@ class PawsAPI(object):
     def get_op(self,opname,wfname=None):
         return self.get_wf(wfname).get_data_from_uri(opname) 
 
-    def add_op(self,op_tag,op_spec,wfname=None):
-        if self._op_manager.is_op_enabled(op_spec):
+    def add_op(self,op_tag,op_uri,wfname=None):
+        if self.is_op_activated(op_uri):
             wf = self.get_wf(wfname)
-            # get the op referred to by op_spec
-            op = self._op_manager.get_data_from_uri(op_spec)
-            # instantiate with default inputs
+            op = self._op_manager.get_data_from_uri(op_uri)
             op = op()
-            op.load_defaults()
+            #op.load_defaults()
             wf.add_op(op_tag,op)
         else:
-            msg = str('Attempted to add Operation {}, '.format(op_spec)
+            msg = str('Attempted to add Operation {}, '.format(op_uri)
             + 'but this Operation has not been activated. '
             + 'Activate it with paws.api.activate_op() '
             + 'before adding it to a workflow.')
@@ -284,13 +290,16 @@ class PawsAPI(object):
         if wfname is None:
             wfname = self._current_wf_name
         self._wf_manager.run_wf(wfname)
-        
+
+    def stop_wf(self,wfname):
+        self._wf_manager.stop_wf(wfname)
+
     #def save_config(self):
     #    ops.save_config()
 
     def wfl_dict(self):
         d = {} 
-        d['OP_ACTIVATION_FLAGS'] = {k:True for k in ops.op_keys if self._op_manager.is_op_enabled(k)}
+        d['OP_ACTIVATION_FLAGS'] = {k:True for k in ops.op_keys if self.is_op_activated(k)}
         d['PAWS_VERSION'] = pawstools.version 
         wfman_dict = OrderedDict()
         for wfname,wf in self._wf_manager.workflows.items():
@@ -311,12 +320,24 @@ class PawsAPI(object):
         If the given filename does not have the .wfl extension,
         it will be appended.
         """
-        self.logmethod( 'saving current state to {}'.format(wfl_filename) )
+        #self.logmethod( 'saving current state to {}'.format(wfl_filename) )
         if not os.path.splitext(wfl_filename)[1] == '.wfl':
             wfl_filename = wfl_filename + '.wfl'
         d = self.wfl_dict()
         #pawstools.update_file(wfl_filename,d)
         pawstools.save_file(wfl_filename,d)
+
+    def load_packaged_workflow(self,workflow_uri):
+        workflow_modpath = workflow_uri.split('.')
+
+        wf_mod = importlib.import_module('.'+workflow_uri,wfs.__name__)
+
+        wfl_path = pawstools.sourcedir
+        wfl_path = os.path.join(wfl_path,'core','workflows')
+        for mp in workflow_modpath:
+            wfl_path = os.path.join(wfl_path,mp)
+        wfl_filename = wfl_path+'.wfl'
+        self.load_from_wfl(wfl_filename)
 
     def load_from_wfl(self,wfl_filename,wf_names=None,plugin_names=None):
         """Load a state from a .wfl file.

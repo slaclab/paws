@@ -12,7 +12,9 @@ inputs=OrderedDict(
     dir_path=None,
     filename=None,
     filetag='')
-outputs=OrderedDict(file_path=None,filename=None)
+outputs=OrderedDict(
+    file_path=None,
+    filename=None)
 
 class WriteArrayCSV(Operation):
     """Write a 2d array to a csv file"""
@@ -26,6 +28,10 @@ class WriteArrayCSV(Operation):
         self.input_doc['filetag'] = 'tag appended to filename- no extension is expected'
         self.output_doc['file_path'] = 'the path to the finished csv file: dir_path+filename+filetag+.csv'
         self.output_doc['file_path'] = 'the name of the output csv: filename+filetag'
+        self.input_datatype['headers'] = 'list'
+        self.input_datatype['dir_path'] = 'str'
+        self.input_datatype['filename'] = 'str'
+        self.input_datatype['filetag'] = 'str'
 
     def run(self):
         a = self.inputs['array']

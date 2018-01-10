@@ -51,12 +51,12 @@ runner.run(api_tests)
 
 print('--- testing packaged workflows ---'+os.linesep)
 wfl_tests = unittest.TestSuite()
-for wfl_uri,wfl_path in wfs.wfl_modules.items():
+for wfl_uri,wfl_path in wfs.wf_modules.items():
     wfl_tests.addTest(pt.TestWfl('test_load_wfl',wfl_uri,paw))
 runner.run(wfl_tests)
 
 wfl_run_tests = unittest.TestSuite()
-for wfl_uri,wfl_path in wfs.wfl_modules.items():
+for wfl_uri,wfl_path in wfs.wf_modules.items():
     wfl_run_tests.addTest(pt.TestWfl('test_run',wfl_uri,paw))
 runner.run(wfl_run_tests)
 

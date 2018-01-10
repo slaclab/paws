@@ -5,34 +5,33 @@ from collections import OrderedDict
 import copy
 
 # Enumeration of valid types for workflow and plugin inputs
-no_input = 0            # ensure the input is set to None 
-
-basic_type = 1          # input is specified directly, 
+basic_type = 0          # input is specified directly, 
                         # and is of a basic type
                         # that is easy to copy or serialize 
 
-workflow_item = 2       # the address (TreeModel uri)
+workflow_item = 1       # the address (TreeModel uri)
                         # of an item in the workflow 
 
-entire_workflow = 3     # the name of a Workflow
+entire_workflow = 2     # the name of a Workflow
                         # in the current WfManager
 
-plugin_item = 4         # the address (TreeModel uri)
+plugin_item = 3         # the address (TreeModel uri)
                         # of an item in the PluginManager
 
-runtime_type = 5        # input is generated and set during execution,
+runtime_type = 4        # input is generated and set during execution,
                         # and serialization should not be attempted
 
 
-valid_types = [no_input,basic_type,workflow_item,entire_workflow,plugin_item,runtime_type]
-input_types = ['none','basic','workflow item','entire workflow','plugin item','runtime']
+valid_types = [basic_type,workflow_item,entire_workflow,plugin_item,runtime_type]
+input_types = ['basic','workflow item','entire workflow','plugin item','runtime']
+input_datatypes = ['int','float','str','bool','list','dict']
 
 class InputLocator(object):
     """
     Objects of this class are used as containers for inputs to an Operation.
     They contain the information needed to find the relevant input data.
     """
-    def __init__(self,tp=no_input,val=None):
+    def __init__(self,tp=basic_type,val=None):
         self.tp = tp
         self.val = val 
         #self.data = None 
@@ -46,13 +45,28 @@ class Operation(object):
         self.input_locator = OrderedDict.fromkeys(self.inputs.keys())
         self.outputs = OrderedDict.fromkeys(self.outputs.keys()) 
         self.input_doc = OrderedDict.fromkeys(self.inputs.keys()) 
+
+        # input types determine how inputs are handled 
+        # when workflows using the operation are executed or serialized
         self.input_type = OrderedDict.fromkeys(self.inputs.keys()) 
+
+        # input datatypes are used for typecasting,
+        # for when values are set indirectly,
+        # e.g. through a gui.
+        # if an input is not likely to be set via gui,
+        # e.g. if it is a complicated or duck-typed object, 
+        # this should be left to None,
+        # in which case gui applications should have some default behavior.
+        self.input_datatype = OrderedDict.fromkeys(self.inputs.keys())
+
         self.output_doc = OrderedDict.fromkeys(self.outputs.keys()) 
         for name in self.inputs.keys(): 
             self.input_type[name] = basic_type 
+            self.input_locator[name] = InputLocator(basic_type,self.inputs[name])
         self.message_callback = print
         self.data_callback = None 
-    
+        self.stop_flag = False
+
     def __getitem__(self,key):
         if key == 'inputs':
             return self.inputs
@@ -72,14 +86,14 @@ class Operation(object):
     def keys(self):
         return ['inputs','outputs']
 
-    def load_defaults(self):
-        """
-        Set default types and values into the Operation.input_locators.
-        """
-        for name in self.inputs.keys():
-            tp = self.input_type[name]
-            val = self.inputs[name]
-            self.input_locator[name] = InputLocator(tp,val)
+    #def load_defaults(self):
+    #    """
+    #    Set default types and values into the Operation.input_locators.
+    #    """
+    #    for name in self.inputs.keys():
+    #        tp = self.input_type[name]
+    #        val = self.inputs[name]
+    #        self.input_locator[name] = InputLocator(tp,val)
 
     def run(self):
         """
@@ -87,6 +101,9 @@ class Operation(object):
         and set values for all of the items in Operation.outputs.
         """
         pass
+
+    def stop(self):
+        self.stop_flag = True
 
     @classmethod
     def clone(cls):
@@ -102,7 +119,7 @@ class Operation(object):
         e.g. after calling WfManager.prepare_wf().
         """
         new_op = self.clone()
-        new_op.load_defaults()
+        #new_op.load_defaults()
         for nm,il in self.input_locator.items():
             new_il = InputLocator()
             new_il.tp = copy.copy(il.tp)

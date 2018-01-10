@@ -28,8 +28,11 @@ class UiManager(QtCore.QObject):
         qpaw.set_logmethod( self.msg_board_log )
         qpaw._wf_manager.emitMessage.connect( self.logMessage )
         self.paw = qpaw
+        self.ui.viewer_tabwidget.clear()
+        self.viewer_widgets = {}
         self.make_viewer()
-        self.build()
+        self.make_wf_editor()
+        self.qt_connect()
         self.threads = QtCore.QThreadPool()
 
     @QtCore.Slot(str)
@@ -55,8 +58,6 @@ class UiManager(QtCore.QObject):
         and display the paws logo 
         in the main viewer
         """
-        self.ui.viewer_tabwidget.clear()
-        self.viewer_widgets = {}
 
         self._viewer_frame = QtGui.QFrame()
         self._viewer_layout = QtGui.QGridLayout()
@@ -81,7 +82,14 @@ class UiManager(QtCore.QObject):
         self.ui.setWindowTitle("paws v{}".format(pawstools.version))
         self.ui.setWindowIcon(pixmap)
 
-    def build(self):
+    def make_wf_editor(self):
+        self._wf_editor_frame = QtGui.QFrame()
+        self._wf_editor_layout = QtGui.QGridLayout()
+        self._wf_editor_frame.setLayout(self._wf_editor_layout)
+        self.viewer_widgets['workflow editor'] = self._wf_editor_frame
+        self.ui.viewer_tabwidget.addTab(self._wf_editor_frame,'workflow editor')
+
+    def qt_connect(self):
         """
         Set up QObjects and model views 
         for communicating with paws objects 
@@ -182,6 +190,7 @@ class UiManager(QtCore.QObject):
         wf_idx = self.ui.wf_selector.model().list_data().index(wfname)
         self.ui.wf_selector.setCurrentIndex(wf_idx)
         self.set_wf_treeview(wfname)
+        self.set_wf_editor(wfname)
 
     def set_wf_treeview(self,wfname):
         wf = self.paw.get_wf(wfname)
@@ -192,11 +201,38 @@ class UiManager(QtCore.QObject):
         self.ui.wf_tree.setColumnWidth(0,200)
         self.update_run_wf_button()
 
+    def set_wf_editor(self,wfname):
+        # TODO: add some attributes to Workflows to specify data types,
+        # then change these widgets to take entry of the correct type.
+        for i in range(self._wf_editor_layout.count())[::-1]: 
+            w = self._wf_editor_layout.takeAt(i).widget()
+            if w:
+                w.setParent(None)
+                w.deleteLater()
+        wf = self.paw.get_wf(wfname)
+        self._wf_editor_layout.addWidget(
+            qttools.c_hdr_widget('-- workflow inputs --'),0,0,3,1)
+        for row,inpk in enumerate(wf.inputs.keys()):
+            inp_hdr = qttools.r_hdr_widget(inpk)
+            inp_entry = QtGui.QLineEdit(str(wf.get_wf_input_value(inpk)))
+            inp_loader = QtGui.QPushButton('set input')
+            self._wf_editor_layout.addWidget(inp_hdr,row+1,0,1,1)
+            self._wf_editor_layout.addWidget(inp_entry,row+1,1,1,1)
+            self._wf_editor_layout.addWidget(inp_loader,row+1,2,1,1)
+            inp_loader.clicked.connect( 
+                partial(self.set_wf_input_from_editor,wf,inpk,inp_entry) )
+        # TODO: Add a spacer to the bottom somehow,
+        # to push these widgets to the top of the layout
+
+    def set_wf_input_from_editor(self,wf,input_name,input_entry):
+        wf.set_wf_input(input_name,input_entry.text())
+
     def set_wf(self,wf_selector_idx):
         wfname = self.ui.wf_selector.model().list_data()[wf_selector_idx]
         if not wfname == self.paw.current_wf_name():
             self.paw.select_wf(wfname)
             self.set_wf_treeview(wfname)
+            self.set_wf_editor(wfname)
 
     def add_plugin(self):
         pgin_name = self.ui.plugin_name_entry.text()
@@ -255,15 +291,15 @@ class UiManager(QtCore.QObject):
                 return
             self.append_to_wf_selector(wfname)
             #self.ui.wf_selector.setCurrentIndex(self.paw.n_wf()-1)
-            self.paw.set_wf(wfname)
+            self.paw.select_wf(wfname)
             self.ui.wf_name_entry.clear()
             # Add a tab to the viewer for this workflow 
-            self.add_wf_tab(wfname)
+            #self.add_wf_tab(wfname)
 
-    def add_wf_tab(self,wfname):
-        wf = self.paw.get_wf(wfname)
-        g = WorkflowGraphView(wf,self.ui)
-        tab_idx = self.ui.viewer_tabwidget.addTab(g,wfname) 
+    #def add_wf_tab(self,wfname):
+    #    wf = self.paw.get_wf(wfname)
+    #    g = WorkflowGraphView(wf,self.ui)
+    #    tab_idx = self.ui.viewer_tabwidget.addTab(g,wfname) 
 
     def display_op_item(self,idx):
         """
@@ -337,10 +373,7 @@ class UiManager(QtCore.QObject):
 
     def start_wf(self,wfname):
         self.ui.run_wf_button.setText("S&top")
-        # NOTE: this is where we choose between threaded or not.
-        # TODO: consider exposing both run modes to the user.
         self.paw.run_wf(wfname,self.threads)
-        #self.paw.run_wf(wfname,None)
 
     def stop_wf(self,wfname):
         # TODO: the interruption will have to be carried out by signals and slots.
@@ -378,6 +411,8 @@ class UiManager(QtCore.QObject):
         """
         Start a modal window dialog to choose a .wfl to load a previously saved configuration 
         """
+        #wfl_path = os.path.join(pawstools.sourcedir,'core','workflows')
+        #load_ui = qttools.start_load_ui(self.ui,wfl_path)
         load_ui = qttools.start_load_ui(self.ui)
         load_ui.setWindowTitle('paws loader')
         load_ui.tree_box.setTitle('Select a .wfl file to load a saved paws configuration.')

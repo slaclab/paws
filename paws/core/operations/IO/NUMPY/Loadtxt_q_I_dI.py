@@ -14,6 +14,7 @@ outputs=OrderedDict(
     I=None,
     q_I=None,
     dI=None,
+    dir_path=None,
     filename=None) 
 
 class Loadtxt_q_I_dI(Operation):
@@ -28,11 +29,14 @@ class Loadtxt_q_I_dI(Operation):
         self.output_doc['I'] = 'array of intensities' 
         self.output_doc['q_I'] = 'n-by-2 array of q and intensity' 
         self.output_doc['dI'] = 'array of intensity error estimates' 
+        self.input_datatype['file_path'] = 'str'
+        self.input_datatype['delimiter'] = 'str'
 
     def run(self):
         p = self.inputs['file_path']
         dlm = self.inputs['delimiter']
 
+        self.outputs['dir_path'] = os.path.split(p)[0]
         filename = os.path.split(p)[1]
         filename_noext = os.path.splitext(filename)[0]
         self.outputs['filename'] = filename_noext 

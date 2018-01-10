@@ -57,16 +57,16 @@ class QPawsAPI(pawsapi.PawsAPI,QtCore.QObject):
         super(QPawsAPI,self).select_wf(wfname)
         self.wfSelectionChanged.emit(wfname)
         
-    def stop_wf(self,wfname):
-        self._wf_manager.stop_wf(wfname)
-
     def run_wf(self,wfname,pool=None):
         """
         Run the workflow indicated by wfname.
         If optional threadpool is provided,
         the workflow attempts to run in that threadpool.
         """
+        # NOTE: this is where we choose between threaded or not.
+        # TODO: consider exposing both run modes to the user.
         self._wf_manager.run_wf(wfname,pool)
 
     def is_wf_running(self,wfname):
         return self._wf_manager.wf_running[wfname]
+

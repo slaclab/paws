@@ -1,11 +1,8 @@
 from collections import OrderedDict
 import glob
 import os
-import copy
 
 from ...Operation import Operation
-from ... import Operation as opmod 
-from ... import optools
 
 inputs=OrderedDict(
     dir_path=None,

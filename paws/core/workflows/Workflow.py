@@ -24,6 +24,7 @@ class Workflow(TreeModel):
         self.outputs = OrderedDict()
         self.message_callback = print
         self.data_callback = None
+        self.stop_flag = False
 
     #def __getitem__(self,key):
     #    optags = self.keys()
@@ -61,6 +62,8 @@ class Workflow(TreeModel):
         for op_tag in self.list_op_tags():
             op = self.get_data_from_uri(op_tag)
             new_wf.add_op(op_tag,op.clone_op())
+            if not self.is_op_enabled(op_tag):
+                new_wf.set_op_enabled(op_tag,False)
         return new_wf
 
     @classmethod
@@ -126,6 +129,9 @@ class Workflow(TreeModel):
         else:
             return self.get_data_from_uri(r)
 
+    def get_op_output(self,op_name,output_name):
+        return self.get_data_from_uri(op_name+'.outputs.'+output_name)
+
     def set_wf_input(self,wf_input_name,val):
         """
         Take the Operation input(s) 
@@ -136,29 +142,55 @@ class Workflow(TreeModel):
         if not isinstance(urilist,list):
             urilist = [urilist]
         for uri in urilist:
-            p = uri.split('.')
-            il = self.get_data_from_uri(p[0]).input_locator[p[2]]
-            il.val = val
-            if il.tp in [opmod.basic_type,opmod.runtime_type]:
-                # these two types should be loaded for immediate use
-                self.set_item(uri,val)
+            self.setup_op_input(uri,val)
+
+    def setup_op_input(self,op_input_uri,val,tp=None):
+        p = op_input_uri.split('.')
+        il = self.get_data_from_uri(p[0]).input_locator[p[2]]
+        il.val = val
+        if tp is not None:
+            il.tp = tp
+        if il.tp in [opmod.basic_type,opmod.runtime_type]:
+            # these types should be loaded for immediate use
+            self.set_item(op_input_uri,val)
+
+    def get_wf_input_value(self,wf_input_name):
+        uri = self.inputs[wf_input_name]
+        if isinstance(uri,list):
+            uri = uri[0]
+        p = uri.split('.')
+        il = self.get_data_from_uri(p[0]).input_locator[p[2]]
+        return il.val  
 
     def execute(self):
+        self.stop_flag = False
         stk,diag = self.execution_stack()
         bad_diag_keys = [k for k in diag.keys() if diag[k]]
         for k in bad_diag_keys:
             self.message_callback('WARNING- {} is not ready: {}'.format(k,diag[k]))
         self.message_callback('workflow queue:'+os.linesep+self.print_stack(stk))
         for lst in stk:
+            if self.stop_flag:
+                self.message_callback('Workflow stopped.')
+                return
             self.message_callback('running: {}'.format(lst))
             for op_tag in lst: 
                 op = self.get_data_from_uri(op_tag) 
                 for inpnm,il in op.input_locator.items():
                     if il.tp == opmod.workflow_item:
                         self.set_op_item(op_tag,'inputs.'+inpnm,self.locate_input(il))
+                op.stop_flag = False
                 op.run() 
                 for outnm,outdata in op.outputs.items():
                     self.set_op_item(op_tag,'outputs.'+outnm,outdata)
+
+    def stop(self):
+        self.stop_flag = True
+        stk,diag = self.execution_stack()
+        for lst in stk:
+            for op_tag in lst: 
+                op = self.get_data_from_uri(op_tag) 
+                op.stop()
 
     def locate_input(self,il):
         if isinstance(il.val,list):
@@ -203,8 +235,8 @@ class Workflow(TreeModel):
                     diagnostics.update(op_diag)
                     if op_rdy:
                         ops_rdy.append(op_tag)
-                    else:
-                        ops_not_rdy.append(op_tag)
+                    #else:
+                    #    ops_not_rdy.append(op_tag)
             if any(ops_rdy):
                 stk.append(ops_rdy)
                 for op_tag in ops_rdy:
@@ -224,18 +256,21 @@ class Workflow(TreeModel):
         wf_dict['OP_ENABLE_FLAGS'] = self.op_enable_flags()
         return wf_dict
 
-    def build_op_from_dict(self,op_setup,op_manager):
+    def add_op_from_dict(self,op_tag,op_setup,op_manager):
         op_uri = op_setup['op_module']
-        op_manager.set_op_enabled(op_uri)
+        op_manager.set_op_activated(op_uri)
         op = op_manager.get_data_from_uri(op_uri)()
-        op.load_defaults()
+        self.add_op(op_tag,op)
+        #op.load_defaults()
         il_setup_dict = op_setup['inputs']
         for nm in op.inputs.keys():
             if nm in il_setup_dict.keys():
                 tp = il_setup_dict[nm]['tp']
                 val = il_setup_dict[nm]['val']
-                op.input_locator[nm] = opmod.InputLocator(tp,val) 
-        return op
+                op_input_uri = op_tag+'.inputs.'+nm
+                self.setup_op_input(op_input_uri,val,tp)
+        #        op.input_locator[nm] = opmod.InputLocator(tp,val) 
+        #return op
 
     @staticmethod
     def stack_contains(itm,stk):

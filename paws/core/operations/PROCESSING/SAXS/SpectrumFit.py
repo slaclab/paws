@@ -40,6 +40,9 @@ class SpectrumFit(Operation):
         self.output_doc['report'] = 'dict expressing the objective function, '\
             'and its evaluation at the initial and final points of the fit'
         self.output_doc['q_I_opt'] = 'n-by-2 array of q and the optimized computed intensity spectrum'
+        self.input_datatype['populations'] = 'dict'
+        self.input_datatype['params'] = 'dict'
+        self.input_datatype['fixed_params'] = 'dict'
 
     def run(self):
         q_I = self.inputs['q_I']

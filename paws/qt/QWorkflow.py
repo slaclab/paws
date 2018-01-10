@@ -62,6 +62,7 @@ class QWorkflow(Workflow,QTreeSelectionModel):
             return super(QWorkflow,self).headerData(section,orientation,data_role)    
 
     def execute(self):
+        self.stop_flag = False
         stk,diag = self.execution_stack()
         self.message_callback(os.linesep+'running workflow:'+os.linesep+self.print_stack(stk))
         for lst in stk:
@@ -74,6 +75,7 @@ class QWorkflow(Workflow,QTreeSelectionModel):
                         self.set_op_item(op_tag,'inputs.'+inpnm,self.locate_input(il))
                         if self.data_callback:
                             self.data_callback(op_tag+'.inputs.'+inpnm,op.inputs[inpnm])
+                op.stop_flag = False
                 op.run()
                 for outnm,outdata in op.outputs.items():
                     if self.data_callback:
