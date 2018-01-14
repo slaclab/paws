@@ -51,6 +51,10 @@ class PawsAPI(object):
         self._current_wf_name = None 
         self.logmethod = print
 
+
+
+
+    # TODO: move this method to apis for each manager.
     def set_logmethod(self,lm):
         """
         Sets the logmethod, which is the function
@@ -66,12 +70,10 @@ class PawsAPI(object):
         self._plugin_manager.logmethod = lm
         self._wf_manager.logmethod = lm
 
-    def info(self):   
-        info_msg = str('PAWS: the Platform for Automated Workflows by SSRL. '
-        + 'Version: {}'.format(pawstools.version))
-        print(info_msg)
-        return info_msg
- 
+
+
+
+    # TODO: move this to opmanager api 
     def activate_op(self,op_uri):
         """
         Import the Operation indicated by op_uri, and tag it as active.
@@ -86,6 +88,13 @@ class PawsAPI(object):
         """
         self._op_manager.set_op_activated(op_uri,False)
 
+    def is_op_activated(self,op_uri):
+        return self._op_manager.is_op_activated(op_uri)
+
+
+
+
+    # TODO: move this to workflow api
     def enable_op(self,op_tag,wfname=None):
         self.get_wf(wfname).set_op_enabled(op_tag,True)
 
@@ -95,9 +104,28 @@ class PawsAPI(object):
     def is_op_enabled(self,op_tag,wfname=None):
         return self.get_wf(wfname).is_op_enabled(op_tag)
 
-    def is_op_activated(self,op_uri):
-        return self._op_manager.is_op_activated(op_uri)
+    def get_op(self,opname,wfname=None):
+        return self.get_wf(wfname).get_data_from_uri(opname) 
 
+    def add_op(self,op_tag,op_uri,wfname=None):
+        if self.is_op_activated(op_uri):
+            wf = self.get_wf(wfname)
+            op = self._op_manager.get_data_from_uri(op_uri)
+            op = op()
+            #op.load_defaults()
+            wf.add_op(op_tag,op)
+        else:
+            msg = str('Attempted to add Operation {}, '.format(op_uri)
+            + 'but this Operation has not been activated. '
+            + 'Activate it with paws.api.activate_op() '
+            + 'before adding it to a workflow.')
+            self.logmethod(msg) 
+            raise pawstools.OperationDisabledError(msg)
+
+
+
+
+    # TODO: move this to pluginmanager api
     def enable_plugin(self,pgin_name=''):
         """
         This tests the compatibility between the environment and the named plugin
@@ -108,6 +136,33 @@ class PawsAPI(object):
         pkg = plugins.__name__
         pgin_cls = self.load_plugin(pgin_name)
 
+    def add_plugin(self,pgin_tag,pgin_name):
+        pgin = self._plugin_manager.load_plugin(pgin_name)
+        self._plugin_manager.add_plugin(pgin_tag,pgin())
+
+    def load_plugin(self,pgin_module):
+        return self._plugin_manager.load_plugin(pgin_module)
+
+    def set_plugin_input(self,pgin_tag,input_name,val=None):
+        pgin = self._plugin_manager.get_data_from_uri(pgin_tag)
+        pgin.inputs[input_name] = val
+
+    def start_plugin(self,pgin_name):
+        pgin = self.get_plugin(pgin_name)
+        pgin.start()
+
+    def get_plugin(self,pgin_name):
+        return self._plugin_manager.get_plugin(pgin_name)
+
+    def list_plugin_tags(self):
+        return self._plugin_manager.list_plugin_tags()
+
+
+
+
+
+
+    # TODO: move this to wfmanager api
     def select_wf(self,wfname):
         """
         Sets the current workflow for the API instance.
@@ -140,24 +195,6 @@ class PawsAPI(object):
         else:
             return self._wf_manager.workflows[wfname]
 
-    def get_op(self,opname,wfname=None):
-        return self.get_wf(wfname).get_data_from_uri(opname) 
-
-    def add_op(self,op_tag,op_uri,wfname=None):
-        if self.is_op_activated(op_uri):
-            wf = self.get_wf(wfname)
-            op = self._op_manager.get_data_from_uri(op_uri)
-            op = op()
-            #op.load_defaults()
-            wf.add_op(op_tag,op)
-        else:
-            msg = str('Attempted to add Operation {}, '.format(op_uri)
-            + 'but this Operation has not been activated. '
-            + 'Activate it with paws.api.activate_op() '
-            + 'before adding it to a workflow.')
-            self.logmethod(msg) 
-            raise pawstools.OperationDisabledError(msg)
-
     def add_wf(self,wfname):
         """
         Adds a workflow to the workflow manager.
@@ -170,27 +207,24 @@ class PawsAPI(object):
         if not self._current_wf_name:
             self.select_wf(wfname)
 
-    def add_plugin(self,pgin_tag,pgin_name):
-        pgin = self._plugin_manager.load_plugin(pgin_name)
-        self._plugin_manager.add_plugin(pgin_tag,pgin())
+    def list_wf_tags(self):
+        return self._wf_manager.workflows.keys()
+    
 
-    def load_plugin(self,pgin_module):
-        return self._plugin_manager.load_plugin(pgin_module)
 
-    def set_plugin_input(self,pgin_tag,input_name,val=None):
-        pgin = self._plugin_manager.get_data_from_uri(pgin_tag)
-        pgin.inputs[input_name] = val
 
-    def start_plugin(self,pgin_name):
-        pgin = self.get_plugin(pgin_name)
-        pgin.start()
 
-    def get_plugin(self,pgin_name):
-        return self._plugin_manager.get_plugin(pgin_name)
 
+    # TODO: move to workflows api
     def remove_op(self,op_tag,wfname=None):
         wf = self.get_wf(wfname)
         wf.remove_item(op_tag)
+
+    def op_count(self,wfname=None):
+        return self.get_wf(wfname).n_children()
+
+    def list_op_tags(self,wfname=None):
+        return self.get_wf(wfname).list_op_tags()
 
     def add_wf_input(self,wf_input_name,input_uris,wfname=None):
         """
@@ -286,6 +320,13 @@ class PawsAPI(object):
         else:
             return op.outputs
 
+
+
+
+
+
+
+    # TODO: Move this to wfmanager api
     def execute(self,wfname=None):
         if wfname is None:
             wfname = self._current_wf_name
@@ -392,15 +433,3 @@ class PawsAPI(object):
             for plugin_name,plugin_spec in plugin_dict.items():
                 self._plugin_manager.load_from_dict(plugin_name,plugin_spec)
     
-    def op_count(self,wfname=None):
-        return self.get_wf(wfname).n_children()
-
-    def list_wf_tags(self):
-        return self._wf_manager.workflows.keys()
-    
-    def list_op_tags(self,wfname=None):
-        return self.get_wf(wfname).list_op_tags()
-
-    def list_plugin_tags(self):
-        return self._plugin_manager.list_plugin_tags()
-
