@@ -2,135 +2,113 @@ from __future__ import print_function
 import importlib
 from collections import OrderedDict
 
-from ..operations.Operation import Operation
-from ..workflows.Workflow import Workflow
 from ..models.TreeModel import TreeModel
 from .. import plugins as pgns
 from .. import pawstools
 from .PawsPlugin import PawsPlugin
 
 class PluginManager(TreeModel):
-    """
-    Tree structure for managing paws plugins.
-    """
+    """Tree for storing, browsing, and managing PawsPlugins"""
 
-    def __init__(self,**kwargs):
+    def __init__(self):
         flag_dict = OrderedDict()
         flag_dict['select'] = False
         super(PluginManager,self).__init__(flag_dict)
-        self.logmethod = print 
+        self.plugins = self._root_dict
+        self.message_callback = print 
 
-    #def __getitem__(self,key):
-    #    pgintags = self.keys()
-    #    if key in pgintags:
-    #        return self.get_data_from_uri(key) 
-    #    else:
-    #        raise KeyError('[{}] {}.__getitem__ only recognizes keys {}'
-    #        .format(__name__,type(self).__name__,pgintags))
-    #def __setitem__(self,key,data):
-    #    pgin_tags = self.keys() 
-    #    if key in pgin_tags:
-    #        self.set_item(key,data)
-    #    else:
-    #        raise KeyError('[{}] {}.__setitem__ only recognizes keys {}'
-    #        .format(__name__,type(self).__name__,pgin_tags))
-    #def keys(self):
-    #    return self.list_plugin_tags() 
+    def add_plugin(self,plugin_name,plugin_module):
+        """Import, name, and add a plugin.
 
-    def write_log(self,msg):
-        self.logmethod(msg)
+        After a plugin is added to a plugin_manager,
+        it is available as plugin_manager.plugins[plugin_name].
 
-    def plugin_setup_dict(self,pgin):
-        pgin_mod = pgin.__module__[pgin.__module__.find('plugins'):]
-        pgin_mod = pgin_mod[pgin_mod.find('.')+1:]
-        dct = OrderedDict() 
-        dct['plugin_module'] = pgin_mod
-        dct['inputs'] = pgin.inputs 
-        return dct
-
-    def load_from_dict(self,pgin_name,pgin_spec):
+        Parameters
+        ----------
+        plugin_name : str
+            Name that will be used to refer to this plugin after it is added.
+        plugin_module : str
+            Name of the plugin module.
+            Example: If class MyPlugin is in the CATEGORY.MyPlugin module,
+            retrieve it with `plugin_module` = 'CATEGORY.MyPlugin'.
         """
-        Load plugins from a dict that specifies their setup parameters.
-        """
-        #for tag, pgin_spec in plugin_dict.items():
-        pgin_module = pgin_spec['plugin_module']
-        pgin = self.load_plugin(pgin_module)
-        if pgin is not None:
-            if not issubclass(pgin,PawsPlugin):
-                self.write_log('Did not find Plugin {} - skipping.'.format(pgin_uri))
-            else:
-                pgin = pgin()
-                for name in pgin.inputs.keys():
-                    if name in pgin_spec['inputs']:
-                        pgin.inputs[name] = pgin_spec['inputs'][name]
-                pgin.start()
-                # if already have this uri, first generate auto_tag
-                #if self.tree_contains_uri(uri):
-                #    uri = self.auto_tag(uri)
-                #self.add_plugin(uri,pgin)
-                self.set_item(pgin_name,pgin)
-        else:
-            self.write_log('Did not find Plugin {} - skipping.'.format(ptype))
+        pgin = self.get_plugin(plugin_uri)
+        if not self.is_tag_valid(plugin_name): 
+            raise pawstools.PluginNameError(self.tag_error_message(plugin_name))
+        self.set_item(plugin_name,pgin)
 
-    #def tree_update(self,parent_idx,itm_tag,itm_data):
-    #    if isinstance(itm_data,Operation) or isinstance(itm_data,PawsPlugin):
-    #        super(PluginManager,self).tree_update(parent_idx,itm_tag,self.build_tree(itm_data))
-    #    else:
-    #        super(PluginManager,self).tree_update(parent_idx,itm_tag,itm_data)
+    def get_plugin(self,plugin_module):    
+        """Import and return a PawsPlugin from its module.
 
-    def add_plugin(self,pgin_name,pgin):
+        This can also be used to test the Python environment 
+        for compatibility with a plugin.
+
+        Parameters
+        ----------
+        plugin_module : str
+            Name of the plugin module.
+            See add_plugin().
+
+        Returns
+        -------
+        PawsPlugin 
+            An instance of the PawsPlugin subclass defined in `plugin_module`. 
         """
-        Add a plugin, with key specified by pgin_name.
-        If pgin_name is not unique (i.e. a plugin with that name already exists),
-        this method will overwrite the existing plugin with a new one.
+        mod = importlib.import_module('.'+pgin_module,pgns.__name__)
+        return mod.__dict__[pgin_module]()
+
+    def set_input(self,plugin_name,input_name,val=None):
+        """Set a plugin input to the provided value.
+
+        Parameters
+        ----------
+        plugin_name : str
+            Name that will be used to refer to this plugin after it is added.
+        input_name : str
+            name of the input to be set
+        val : object
+            the data to be used as plugin input
         """
-        if not self.is_tag_valid(pgin_name): 
-            raise pawstools.PluginNameError(self.tag_error_message(pgin_name))
-        self.set_item(pgin_name,pgin)
+        self.set_item(plugin_name+'.inputs.'+input_name,val)
+
+    def load_plugin(self,plugin_name,plugin_setup_dict):
+        """Load, set up, and start() a PawsPlugin, given its setup_dict().
+
+        Parameters
+        ----------
+        plugin_name : str
+            Name that will be used to refer to this plugin after it is added.
+        plugin_setup_dict : dict 
+            Dict specifying plugin setup,
+            probably generated by calling the plugin's own setup_dict() method.
+        """
+        pgin_mod = plugin_setup_dict['plugin_module']
+        pgin = self.get_plugin(pgin_mod)
+        self.set_item(plugin_name,pgin)
+        for inp_name in pgin.inputs.keys():
+            if inp_name in plugin_setup_dict['inputs'].keys():
+                self.set_input(plugin_name,inp_name,plugin_setup_dict['inputs'][inp_name])
+        pgin.start()
+
+    def n_plugins(self):
+        """Return number of plugins currently loaded."""
+        return len(self.plugins) 
 
     def build_tree(self,x):
-        """
-        Reimplemented TreeModel.build_tree() 
-        so that TreeItems are built from PawsPlugins
-        and Workflows and Operations.
+        """Return a dict describing a tree-like structure of this object.
+
+        This is a reimplemention of TreeModel.build_tree() 
+        to define this object's child tree structure.
+        For a PluginManager, a dict is provided for each PawsPlugin,
+        where the dict contains the results of calling
+        self.build_tree(plugin.inputs) and self.build_tree(plugin.content()). 
         """
         if isinstance(x,PawsPlugin):
-            #d = x.content()
-            d = OrderedDict()
-            for k,v in x.content().items():
-                d[k] = self.build_tree(v)
-        elif isinstance(x,Workflow):
-            #d = x.op_dict()
-            d = OrderedDict()
-            for k,v in x.op_dict().items():
-                d[k] = self.build_tree(v)
-        elif isinstance(x,Operation):
             d = OrderedDict()
             d['inputs'] = self.build_tree(x.inputs)
-            d['outputs'] = self.build_tree(x.outputs)
+            d['content'] = self.build_tree(x.content())
         else:
             return super(PluginManager,self).build_tree(x) 
         return d
 
-    def get_plugin(self,pgin_tag):
-        return self.get_data_from_uri(pgin_tag)
-
-    def load_plugin(self,pgin_module):    
-        """Given plugin module name, return plugin class"""
-        mod = importlib.import_module('.'+pgin_module,pgns.__name__)
-        return mod.__dict__[pgin_module]
-        #try:
-        #except Exception as ex:
-        #    msg = str('Exception occurred while loading plugin {}. '
-        #    .format(pgin_module) + 'Error message: ' + ex.message)
-        #    self.write_log(msg)
-        #    raise pawstools.PluginLoadError(msg)   
- 
-    def n_plugins(self):
-        return self.n_children() 
-
-    def list_plugin_tags(self):
-        return self.root_tags()
-        #r = self.get_from_idx(self.root_index())
-        #return [itm.tag for itm in r.children]
 

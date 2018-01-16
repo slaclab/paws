@@ -4,7 +4,8 @@ import re
 from collections import OrderedDict
 import copy
 
-# Enumeration of valid types for workflow and plugin inputs
+# TODO: move to Workflow api
+# Enumeration of valid types
 basic_type = 0          # input is specified directly, 
                         # and is of a basic type
                         # that is easy to copy or serialize 
