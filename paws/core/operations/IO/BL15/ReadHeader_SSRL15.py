@@ -1,5 +1,6 @@
+from __future__ import print_function
 from collections import OrderedDict
-from os.path import splitext, split
+import os
 
 from ... import Operation as opmod 
 from ...Operation import Operation
@@ -7,6 +8,7 @@ from ...Operation import Operation
 inputs=OrderedDict(file_path=None)
 outputs=OrderedDict(
     header_dict=None,
+    dir_path=None,
     filename=None)
 
 class ReadHeader_SSRL15(Operation):
@@ -21,29 +23,26 @@ class ReadHeader_SSRL15(Operation):
         self.output_doc['filename'] = 'filename with path and extension stripped'
 
     def run(self):
-        file_path = self.inputs['file_path']
-        filename = split(file_path)[1]
-        filename_noext = splitext(filename)[0]
-        self.outputs['filename'] = filename_noext 
+        p = self.inputs['file_path']
+        dir_path = os.path.split(p)[0]
+        file_nopath = os.path.split(p)[1]
+        file_noext = os.path.splitext(file_nopath)[0]
+        self.outputs['filename'] = file_noext 
+        self.outputs['dir_path'] = dir_path 
         d = OrderedDict()
-        for l in open(file_path,'r').readlines():
-            try:
-                if not l.strip() == '' and not l.strip()[0] == '#':
-                    kvs = l.split(',')
-                    # special case for the string headers on line 1
-                    if not kvs[0].find('User') == -1:
-                        u_str = kvs[0].split('User:')[1].strip()
-                        t_str = kvs[1].split('time:')[1].strip()
-                        d['User'] = u_str
-                        d['time'] = t_str
-                    # and filter out the redundant temperature line
-                    elif not (len(kvs)==1 and kvs[0].strip()[-1]=='C'):
-                        for kv in kvs:
-                            kv_arr = kv.split('=')
-                            d[kv_arr[0].strip()] = float(kv_arr[1].strip())
-                self.outputs['header_dict'] = d
-            except Exception as e:
-                d['ERROR'] = e.message
-                self.outputs['header_dict'] = d
-                raise e
+        for l in open(p,'r').readlines():
+           if not l.strip() == '' and not l.strip()[0] == '#':
+                kvs = l.split(',')
+                # special case for the string headers on line 1
+                if not kvs[0].find('User') == -1:
+                    u_str = kvs[0].split('User:')[1].strip()
+                    t_str = kvs[1].split('time:')[1].strip()
+                    d['User'] = u_str
+                    d['time'] = t_str
+                # and filter out the redundant temperature line
+                elif not (len(kvs)==1 and kvs[0].strip()[-1]=='C'):
+                    for kv in kvs:
+                        kv_arr = kv.split('=')
+                        d[kv_arr[0].strip()] = float(kv_arr[1].strip())
+        self.outputs['header_dict'] = d
 

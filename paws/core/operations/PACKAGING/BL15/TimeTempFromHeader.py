@@ -7,8 +7,14 @@ import tzlocal
 from ... import Operation as opmod 
 from ...Operation import Operation
 
-inputs=OrderedDict(image_header=None,time_key=None,temp_key=None)
-outputs=OrderedDict(date_time=None,time=None,temperature=None)
+inputs=OrderedDict(
+    image_header=None,
+    time_key=None,
+    temp_key=None)
+outputs=OrderedDict(
+    date_time=None,
+    time=None,
+    temperature=None)
 
 class TimeTempFromHeader(Operation):
     """
