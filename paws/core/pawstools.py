@@ -1,11 +1,13 @@
 from collections import OrderedDict
 from datetime import datetime as dt
+import importlib
 import os
 import re
 
 import yaml
 
-from . import operations as ops
+from . import operations
+from . import workflows
 
 p = os.path.abspath(__file__)
 # p = (pawsroot)/paws/core/pawstools.py
@@ -132,17 +134,15 @@ def save_to_wfl(wfl_filename,wf_manager):
     d = save_to_dict(wf_manager)
     save_file(wfl_filename,d)
 
-def load_packaged_wfl(workflow_uri):
-    workflow_modpath = workflow_uri.split('.')
-
-    wf_mod = importlib.import_module('.'+workflow_uri,wfs.__name__)
-
+def load_packaged_wfl(workflow_uri,wf_manager):
+    wf_mod = importlib.import_module('.'+workflow_uri,workflows.__name__)
     wfl_path = sourcedir
     wfl_path = os.path.join(wfl_path,'core','workflows')
-    for mp in workflow_modpath:
+    p = workflow_uri.split('.')
+    for mp in p:
         wfl_path = os.path.join(wfl_path,mp)
     wfl_filename = wfl_path+'.wfl'
-    load_from_wfl(wfl_filename)
+    load_wfl(wfl_filename,wf_manager)
 
 def load_wfl(wfl_filename,wf_manager):
     """Set up a OpManager, PluginManager, and WfManager from a .wfl file.
@@ -171,7 +171,7 @@ def load_wfl(wfl_filename,wf_manager):
         'under the current version.'.format(__version__,wfl_version))  
     if 'OP_ACTIVATION_FLAGS' in d.keys():
         for op_module,flag in d['OP_ACTIVATION_FLAGS'].items():
-            if op_module in ops.op_modules:
+            if op_module in operations.op_modules:
                 if flag:
                     wf_manager.op_manager.activate_op(op_module)
     if 'WORKFLOWS' in d.keys():

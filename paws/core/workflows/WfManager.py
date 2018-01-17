@@ -136,12 +136,12 @@ class WfManager(object):
         wfouts = wf_setup_dict.pop('WORKFLOW_OUTPUTS')
         opflags = wf_setup_dict.pop('OP_ENABLE_FLAGS')
         for inpname,inpval in wfins.items():
-            self.workflows[wf_name].connect_wf_input(inpname,inpval)
+            self.workflows[wf_name].connect_input(inpname,inpval)
         for outname,outval in wfouts.items():
-            self.workflows[wf_name].connect_wf_output(outname,outval)
+            self.workflows[wf_name].connect_output(outname,outval)
         for op_tag, op_setup_dict in wf_setup_dict.items():
             self.workflows[wf_name].load_operation(op_tag,op_setup_dict,self.op_manager)
             if not opflags[op_tag]:
-                self.workflows[wf_name].disable_op(op_tag,opflags[op_tag])
+                self.workflows[wf_name].disable_op(op_tag)
 
 

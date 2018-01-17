@@ -118,7 +118,7 @@ class OpManager(TreeModel):
     def n_ops(self):
         return len(self.cat_op_list) 
 
-    def list_ops(self):
+    def list_operations(self):
         return [catnm+'.'+opnm for catnm,opnm in self.cat_op_list] 
 
     def print_cat(self,cat_uri,rowprefix='    '):

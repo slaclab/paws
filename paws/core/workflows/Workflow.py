@@ -65,12 +65,11 @@ class Workflow(TreeModel):
         op = op_manager.get_data_from_uri(op_uri)()
         self.add_operation(op_name,op)
         il_setup_dict = op_setup_dict['inputs']
-        for nm in op.inputs.keys():
-            if nm in il_setup_dict.keys():
-                tp = il_setup_dict[nm]['tp']
-                val = il_setup_dict[nm]['val']
-                op_input_uri = op_name+'.inputs.'+nm
-                self.setup_op_input(op_input_uri,val,tp)
+        for inp_name in op.inputs.keys():
+            if inp_name in il_setup_dict.keys():
+                tp = il_setup_dict[inp_name]['tp']
+                val = il_setup_dict[inp_name]['val']
+                self.set_op_input(op_name,inp_name,val,tp)
 
     def remove_operation(self,op_name):
         """Remove an Operation by providing its name as `op_name`."""
@@ -79,7 +78,7 @@ class Workflow(TreeModel):
     def n_operations(self):
         return len(self.operations) 
 
-    def setup_op_input(self,op_input_uri,val,tp=None):
+    def set_op_input(self,op_name,input_name,val,tp=None):
         """Set up the Operation input at `op_input_uri`.
 
         This changes op.input_locator indicated by `op_input_uri`
@@ -91,10 +90,10 @@ class Workflow(TreeModel):
 
         Parameters
         ----------
-        op_input_uri : str
-            string indicating the tree uri for an Operation input.
-            For example, for `op_input_uri` = 'process.inputs.arg1', 
-            self.operations['process'].inputs['arg1'] will be set to `val`.
+        op_name : str
+            name of the Operation 
+        input_name : str
+            name of the input
         val : object
             any object to set as the Operation input value
         tp : str or int, optional
@@ -109,9 +108,6 @@ class Workflow(TreeModel):
             or any integer in paws.core.operations.Operation.valid_types.
             If not provided, the type is left at its previous setting.
         """
-        p = op_input_uri.split('.')
-        op_name = p[0]
-        input_name = p[2]
         if not op_name in self.operations.keys():
             msg = 'Operation {} not found in workflow'\
             .format(op_name)
@@ -120,7 +116,7 @@ class Workflow(TreeModel):
             msg = str('Input name {} not valid for Operation {} ({}).'
             .format(input_name,op_name,type(self.operations[op_name]).__name__))
             raise KeyError(msg)
-        if not tp in opmod.valid_types and not tp in opmod.input_types:
+        if tp is not None and not tp in opmod.valid_types and not tp in opmod.input_types:
             # tp is neither a string or an enum
             msg = '[{}] failed to parse input type: {}'.format(
             __name__,tp)
@@ -139,7 +135,7 @@ class Workflow(TreeModel):
             il.val = None
         if il.tp in [opmod.basic_type,opmod.runtime_type]:
             # these types should be loaded for immediate use
-            self.set_item(op_input_uri,val)
+            self.set_item(op_name+'.inputs.'+input_name,val)
 
     def execution_stack(self):
         """Determine order of execution and diagnostics for the Workflow.
@@ -348,7 +344,7 @@ class Workflow(TreeModel):
         if not isinstance(urilist,list):
             urilist = [urilist]
         for uri in urilist:
-            self.setup_op_input(uri,val,tp)
+            self.set_op_input(uri,val,tp)
 
     def get_wf_input_value(self,wf_input_name):
         uri = self.inputs[wf_input_name]
