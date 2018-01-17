@@ -1,2 +1,3 @@
 include all_requirements.txt
+include gui_requirements.txt
 include contributors.txt
