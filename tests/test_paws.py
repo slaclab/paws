@@ -7,7 +7,10 @@ import numpy as np
 
 import paws
 from paws.core import pawstools
-from paws.core import operations as ops
+from paws.core import plugins
+from paws.core import operations
+from paws.core import workflows 
+from paws.core.plugins.PawsPlugin import PawsPlugin
 from paws.core.workflows.WfManager import WfManager
 from paws.core.workflows.Workflow import Workflow 
 from paws.core.operations.Operation import Operation
@@ -57,66 +60,37 @@ def test_get_output():
     p = wf_manager.workflows['test'].get_wf_output('primes')
     print(p)
 
-#def test_load_plugins():
-#        from paws.core.plugins.PawsPlugin import PawsPlugin
-#        print('loading {} ...'.format(self.plugin_name),end=''); sys.stdout.flush()
-#        pgin = self.paw.load_plugin(self.plugin_name)
-#        self.assertIsInstance(pgin(),PawsPlugin)
-#
-#class TestOp(unittest.TestCase):
-#
-#    def __init__(self,test_name,op_uri,paw):
-#        super(TestOp,self).__init__(test_name)
-#        self.op_uri = op_uri
-#        self.paw = paw
-#
-#    def test_activate_op(self):
-#        print('activating {} ...'.format(self.op_uri),end=''); sys.stdout.flush()
-#        try:
-#            self.paw.activate_op(self.op_uri) 
-#        except ImportError as ex:
-#            msg = 'Caught ImportError: '\
-#            'may be missing dependencies for {}. '.format(self.op_uri)
-#            self.skipTest(msg)            
-#
-#    def test_op(self):
-#        from paws.core.operations.Operation import Operation
-#        print('testing {} ...'.format(self.op_uri),end=''); sys.stdout.flush()
-#        op = self.paw._op_manager.get_data_from_uri(self.op_uri)
-#        op = op()
-#        self.assertIsInstance(op,Operation)
-#    
-#    def test_run(self):
-#        print('running {} ...'.format(self.op_uri),end=''); sys.stdout.flush()
-#        op = self.paw._op_manager.get_data_from_uri(self.op_uri)
-#        op = op()
-#        op.load_defaults()
-#        op.run() 
-#
-#class TestWfl(unittest.TestCase):
-#
-#    def __init__(self,test_name,wfl_uri,paw):
-#        super(TestWfl,self).__init__(test_name)
-#        self.wfl_uri = wfl_uri
-#        self.paw = paw
-#        #self.wf_name = 'test_'+self.wf_uri[self.wf_uri.rfind('.')+1:]
-#
-#    def test_load_wfl(self):
-#        import paws.core.workflows as wfs 
-#        from paws.core.workflows.Workflow import Workflow
-#        print('loading {} ...'.format(self.wfl_uri),end=''); sys.stdout.flush()
-#        wfl_mod = importlib.import_module('.'+self.wfl_uri,wfs.__name__)
-#        self.paw.load_from_wfl(wfs.wf_modules[self.wfl_uri]+'.wfl')
-#        for wf_name in self.paw.list_wf_tags(): 
-#            wf = self.paw.get_wf(wf_name)
-#            self.assertIsInstance(wf,Workflow)
-#
-#    def test_run(self):
-#        import paws.core.workflows as wfs 
-#        print('testing {} ...'.format(self.wfl_uri),end=''); sys.stdout.flush()
-#        wfl_mod = importlib.import_module('.'+self.wfl_uri,wfs.__name__)
-#        #wfl_mod.test_setup(self.paw)
-#        #results = wfl_mod.test_run(self.paw) 
-#        #for r in results:
-#        #    self.assertIsInstance(r[0],r[1])
-#
+def test_load_plugins():
+    wf_manager = WfManager()
+    for i,plugin_name in enumerate(plugins.plugin_name_list):
+        print('loading {} ...'.format(plugin_name))
+        pgin = wf_manager.plugin_manager.get_plugin(plugin_name)
+        wf_manager.plugin_manager.add_plugin('plugin_'+str(i),plugin_name)
+        assert isinstance(pgin,PawsPlugin)
+
+def test_load_operations():
+    wf_manager = WfManager()
+    for op_module in wf_manager.op_manager.list_operations():
+        print('loading {} ...'.format(op_module))
+        op = wf_manager.op_manager.get_operation(op_module)
+        assert isinstance(op,Operation)
+
+def test_run_operations():
+    wf_manager = WfManager()
+    runnable_ops = dict.fromkeys(wf_manager.op_manager.list_operations())
+    for op_module in wf_manager.op_manager.list_operations():
+        print('running {} ...'.format(op_module))
+        op = wf_manager.op_manager.get_operation(op_module)
+        try:
+            op.run()
+        except Exception as ex:
+            runnable_ops[op_module] = False
+        runnable_ops[op_module] = True 
+    return runnable_ops
+
+def test_load_wfls():
+    for wf_mod in workflows.wf_modules:
+        wf_manager = WfManager()
+        print('loading {} ...'.format(wf_mod))
+        pawstools.load_packaged_wfl(wf_mod,wf_manager)
+
