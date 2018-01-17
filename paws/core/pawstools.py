@@ -1,7 +1,11 @@
-import os
+from collections import OrderedDict
 from datetime import datetime as dt
+import os
+import re
 
 import yaml
+
+from . import operations as ops
 
 p = os.path.abspath(__file__)
 # p = (pawsroot)/paws/core/pawstools.py
@@ -26,20 +30,16 @@ if not os.path.exists(paws_cfg_dir):
 if not os.path.exists(paws_scratch_dir):
     os.mkdir(paws_scratch_dir)
 
-# Get the code version from the paws_config.py file, store as __version__
+# Get the code version from the paws_config.py file.
+# Reference version string as __version__
 with open(os.path.join(sourcedir,'paws_config.py')) as f: 
     exec(f.read())
-version=__version__
 
 class WorkflowAborted(Exception):
     pass
-    #def __init__(self,msg):
-    #    super(WorkflowAborted,self).__init__(self,msg)
 
 class OperationDisabledError(Exception):
     pass
-    #def __init__(self,msg):
-    #    super(WorkflowAborted,self).__init__(self,msg)
 
 class WfNameError(Exception):
     pass
@@ -48,6 +48,9 @@ class PluginNameError(Exception):
     pass
 
 class PluginLoadError(Exception):
+    pass
+
+class OperationLoadError(Exception):
     pass
 
 def dtstr():
@@ -97,11 +100,10 @@ def load_cfg(cfg_file):
 
 
 
-# TODO: move to pawstools
 def save_to_dict(wf_manager):
     d = {} 
-    d['OP_ACTIVATION_FLAGS'] = {k:True for k in ops.op_keys if wf_manager.op_manager.is_op_activated(k)}
-    d['PAWS_VERSION'] = version 
+    d['OP_ACTIVATION_FLAGS'] = {k:True for k in wf_manager.op_manager.keys() if wf_manager.op_manager.is_op_activated(k)}
+    d['PAWS_VERSION'] = __version__
     wfman_dict = OrderedDict()
     for wfname,wf in wf_manager.workflows.items():
         wfman_dict[wfname] = wf.setup_dict() 
@@ -142,7 +144,7 @@ def load_packaged_wfl(workflow_uri):
     wfl_filename = wfl_path+'.wfl'
     load_from_wfl(wfl_filename)
 
-def load_wfl(self,wfl_filename,wf_manager):
+def load_wfl(wfl_filename,wf_manager):
     """Set up a OpManager, PluginManager, and WfManager from a .wfl file.
 
     Parameters
@@ -159,14 +161,14 @@ def load_wfl(self,wfl_filename,wf_manager):
         wfl_version = '0.0.0'
     wfl_vparts = re.match(r'(\d+)\.(\d+)\.(\d+)',wfl_version)
     wfl_vparts = list(map(int,wfl_vparts.groups()))
-    current_vparts = re.match(r'(\d+)\.(\d+)\.(\d+)',pawstools.version)  
+    current_vparts = re.match(r'(\d+)\.(\d+)\.(\d+)',__version__)  
     current_vparts = list(map(int,current_vparts.groups()))
     if wfl_vparts[0] < current_vparts[0] or wfl_vparts[1] < current_vparts[1]:
         warnings.warn('WARNING: paws (version {}) '\
         'is trying to load a state built in version {} - '\
         'this is likely to cause things to crash, '\
         'until the workflows and plugins are reviewed/refactored '\
-        'under the current version.'.format(pawstools.version,wfl_version))  
+        'under the current version.'.format(__version__,wfl_version))  
     if 'OP_ACTIVATION_FLAGS' in d.keys():
         for op_module,flag in d['OP_ACTIVATION_FLAGS'].items():
             if op_module in ops.op_modules:
@@ -174,14 +176,10 @@ def load_wfl(self,wfl_filename,wf_manager):
                     wf_manager.op_manager.activate_op(op_module)
     if 'WORKFLOWS' in d.keys():
         wf_dict = d['WORKFLOWS']
-        if wf_names is None:
-            wf_names = wf_dict.keys()
-        for wf_name,wf_setup_dict in zip(wf_names,wf_dict.values()):
-            wf_manager.load_workflow(wf_name,wf_setup_dict,wf_manager.op_manager)
+        for wf_name,wf_setup_dict in wf_dict.items():
+            wf_manager.load_workflow(wf_name,wf_setup_dict)
     if 'PLUGINS' in d.keys():
         plugins_dict = d['PLUGINS']
-        if plugin_names is None:
-            plugin_names = plugins_dict.keys()
         for plugin_name,plugin_setup_dict in plugins_dict.items():
             wf_manager.plugin_manager.load_plugin(plugin_name,plugin_setup_dict)
 

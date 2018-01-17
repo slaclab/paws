@@ -44,8 +44,8 @@ class Workflow(TreeModel):
             name to give to the new Operation 
         """
         op.message_callback = self.message_callback
-        op.data_callback = partial( self.set_op_item,op_tag )
-        self.set_item(op_tag,op)
+        op.data_callback = partial(self.set_op_item,op_name)
+        self.set_item(op_name,op)
 
     def load_operation(self,op_name,op_setup_dict,op_manager):
         """Load an Operation from a dict that specifies its parameters.
@@ -63,13 +63,13 @@ class Workflow(TreeModel):
         if not op_manager.is_op_activated(op_uri):
             op_manager.activate_op(op_uri)
         op = op_manager.get_data_from_uri(op_uri)()
-        self.add_op(op_name,op)
-        il_setup_dict = op_setup['inputs']
+        self.add_operation(op_name,op)
+        il_setup_dict = op_setup_dict['inputs']
         for nm in op.inputs.keys():
             if nm in il_setup_dict.keys():
                 tp = il_setup_dict[nm]['tp']
                 val = il_setup_dict[nm]['val']
-                op_input_uri = op_tag+'.inputs.'+nm
+                op_input_uri = op_name+'.inputs.'+nm
                 self.setup_op_input(op_input_uri,val,tp)
 
     def remove_operation(self,op_name):
@@ -165,30 +165,28 @@ class Workflow(TreeModel):
         while not self.stack_size(stk) == self.n_operations() and continue_flag:
             ops_rdy = []
             ops_not_rdy = []
-            for op_tag in self.operations.keys():
-                if not self.is_op_enabled(op_tag):
+            for op_name in self.operations.keys():
+                if not self.is_op_enabled(op_name):
                     op_rdy = False
-                    op_diag = {op_tag:'Operation is disabled'}
-                elif not self.stack_contains(op_tag,stk):
-                    op = self.get_data_from_uri(op_tag)
-                    op_rdy,op_diag = self.is_op_ready(op_tag,valid_wf_inputs)
+                    op_diag = {op_name:'Operation is disabled'}
+                elif not self.stack_contains(op_name,stk):
+                    op = self.get_data_from_uri(op_name)
+                    op_rdy,op_diag = self.is_op_ready(op_name,valid_wf_inputs)
                     diagnostics.update(op_diag)
                     if op_rdy:
-                        ops_rdy.append(op_tag)
-                    #else:
-                    #    ops_not_rdy.append(op_tag)
+                        ops_rdy.append(op_name)
             if any(ops_rdy):
                 stk.append(ops_rdy)
-                for op_tag in ops_rdy:
-                    op = self.get_data_from_uri(op_tag)
-                    valid_wf_inputs += self.get_valid_wf_inputs(op_tag,op)
+                for op_name in ops_rdy:
+                    op = self.get_data_from_uri(op_name)
+                    valid_wf_inputs += self.get_valid_wf_inputs(op_name,op)
             else:
                 continue_flag = False
         return stk,diagnostics
 
-    def is_op_ready(self,op_tag,valid_wf_inputs):
+    def is_op_ready(self,op_name,valid_wf_inputs):
         """self.execution_stack() uses this to check if an Operation is ready"""
-        op = self.get_data_from_uri(op_tag)
+        op = self.get_data_from_uri(op_name)
         inputs_rdy = []
         diagnostics = {} 
         for name,il in op.input_locator.items():
@@ -207,7 +205,7 @@ class Workflow(TreeModel):
             else:
                 inp_rdy = True
             inputs_rdy.append(inp_rdy)
-            diagnostics[op_tag+'.inputs.'+name] = msg
+            diagnostics[op_name+'.inputs.'+name] = msg
         if all(inputs_rdy):
             op_rdy = True
         else:
@@ -231,15 +229,15 @@ class Workflow(TreeModel):
                 self.message_callback('Workflow stopped.')
                 return
             self.message_callback('running: {}'.format(lst))
-            for op_tag in lst: 
-                op = self.get_data_from_uri(op_tag) 
+            for op_name in lst: 
+                op = self.get_data_from_uri(op_name) 
                 for inpnm,il in op.input_locator.items():
                     if il.tp == opmod.workflow_item:
-                        self.set_op_item(op_tag,'inputs.'+inpnm,self.locate_input(il))
+                        self.set_op_item(op_name,'inputs.'+inpnm,self.locate_input(il))
                 op.stop_flag = False
                 op.run() 
                 for outnm,outdata in op.outputs.items():
-                    self.set_op_item(op_tag,'outputs.'+outnm,outdata)
+                    self.set_op_item(op_name,'outputs.'+outnm,outdata)
 
     def stop(self):
         """Stop the Workflow.
@@ -251,8 +249,8 @@ class Workflow(TreeModel):
         self.stop_flag = True
         stk,diag = self.execution_stack()
         for lst in stk:
-            for op_tag in lst: 
-                op = self.get_data_from_uri(op_tag) 
+            for op_name in lst: 
+                op = self.get_data_from_uri(op_name) 
                 op.stop()
 
     def enable_op(self,opname):
@@ -300,7 +298,7 @@ class Workflow(TreeModel):
         # of cloning the workflow to run it in a separate thread.
         new_wf.data_callback = self.data_callback
         for op_name,op in self.operations.items():
-            new_wf.add_op(op_name,op.clone_op())
+            new_wf.add_operation(op_name,op.clone_op())
             if not self.is_op_enabled(op_name):
                 new_wf.disable_op(op_name)
         return new_wf
@@ -373,9 +371,9 @@ class Workflow(TreeModel):
             if self.contains_uri(r):
                 return self.get_data_from_uri(r)
 
-    def set_op_item(self,op_tag,item_uri,item_data):
+    def set_op_item(self,op_name,item_uri,item_data):
         """Subroutine for use with functools.partial for callbacks"""
-        full_uri = op_tag+'.'+item_uri
+        full_uri = op_name+'.'+item_uri
         self.set_item(full_uri,item_data)
 
     def locate_input(self,il):
@@ -407,7 +405,7 @@ class Workflow(TreeModel):
         return sz
 
     @staticmethod
-    def get_valid_wf_inputs(op_tag,op):
+    def get_valid_wf_inputs(op_name,op):
         """Get all valid uris referring to Operation data.
 
         Returns the TreeModel uris of the Operation,
@@ -415,9 +413,9 @@ class Workflow(TreeModel):
         and each of the data items in the inputs and outputs dicts.
         """
         # valid_wf_inputs should be the operation, its input and output dicts, and their respective entries
-        valid_wf_inputs = [op_tag,op_tag+'.inputs',op_tag+'.outputs']
-        valid_wf_inputs += [op_tag+'.outputs.'+k for k in op.outputs.keys()]
-        valid_wf_inputs += [op_tag+'.inputs.'+k for k in op.inputs.keys()]
+        valid_wf_inputs = [op_name,op_name+'.inputs',op_name+'.outputs']
+        valid_wf_inputs += [op_name+'.outputs.'+k for k in op.outputs.keys()]
+        valid_wf_inputs += [op_name+'.inputs.'+k for k in op.inputs.keys()]
         return valid_wf_inputs
 
     @staticmethod

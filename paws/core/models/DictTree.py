@@ -207,7 +207,7 @@ class DictTree(object):
         else:
             try:
                 rootks = itm.keys()
-            except AttributeError as ex:
+            except Exception as ex:
                 # non-parental nodes may have no keys()
                 rootks = []
         if root_uri:

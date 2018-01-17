@@ -15,7 +15,34 @@ class OpManager(TreeModel):
         default_flags['active'] = False
         super(OpManager,self).__init__(default_flags)
         self.message_callback = print 
-        self.cat_op_list = [] 
+        self.cat_op_list = []
+        self.load_operations()
+
+    def get_operation(self,operation_uri):
+        """Get an Operation, activate it if needed, instantiate, return.
+
+        Parameters
+        ----------
+        operation_uri : str
+            uri indicating the operation module,
+            e.g. PROCESSING.TESTS.Fibonacci.
+
+        Returns
+        -------
+        op : Operation
+            the instantiated Operation 
+        """
+        if not self.is_op_activated(operation_uri):
+            try:
+                self.activate_op(operation_uri)
+            except ImportError as ex:
+                from paws.core.pawstools import OperationLoadError
+                msg = 'Most likely, the system '\
+                    'does not have the right dependencies '\
+                    'for Operation {}'.format(operation_uri)
+                raise OperationLoadError(msg) 
+        op = self.get_data_from_uri(operation_uri)
+        return op()
 
     def load_operations(self,cat_op_list=ops.cat_op_list):
         """Load Operations into OpManager.
@@ -50,11 +77,11 @@ class OpManager(TreeModel):
 
     def add_op(self,cat_module,op_name):
         """Add label for an Operation at `op_name` under category `cat_module`."""
-        op_uri = cat+'.'+op_name
+        op_uri = cat_module+'.'+op_name
         self.set_item(op_uri,None)
 
     def activate_op(self,op_module):
-        """Test for environment compatibility with an Operation module.
+        """Import Operation module and add its Operation subclass to the tree.
 
         This method imports the Operation to check compatibility,
         and then sets the 'active' flag to True.

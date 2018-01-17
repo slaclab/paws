@@ -4,11 +4,12 @@ import copy
 import traceback
 import time
 
-from .. import operations as ops
+from ..operations import optools
+from ..operations.OpManager import OpManager
+from ..plugins.PluginManager import PluginManager
 from .Workflow import Workflow
 from ..operations import Operation as opmod
-from ..operations.Operation import Operation#, Batch, Realtime        
-from ..operations import optools
+from ..operations.Operation import Operation
 from .. import pawstools
 
 class WfManager(object):
@@ -20,10 +21,25 @@ class WfManager(object):
     for access to PawsPlugins.
     """
 
-    def __init__(self):
+    def __init__(self,op_manager=None,plugin_manager=None):
+        """Initialize a workflow manager.
+
+        Parameters
+        ----------
+        op_manager : OpManager (optional)
+            an operations manager (paws.core.operations.OpManager.OpManager)-
+            if not provided, a default OpManager will be created.
+        plugin_manager : PluginManager (optional)
+            a plugins manager (paws.core.plugins.PluginManager.PluginManager)-
+            if not provided, a default PluginManager will be created.
+        """
         super(WfManager,self).__init__()
-        self.op_manager = None
-        self.plugin_manager = None
+        if not op_manager:
+            op_manager = OpManager()
+        if not plugin_manager:
+            plugin_manager = PluginManager()
+        self.op_manager = op_manager 
+        self.plugin_manager = plugin_manager 
         self.workflows = OrderedDict() 
         self.message_callback = print 
 
@@ -36,13 +52,19 @@ class WfManager(object):
         Parameters
         ----------
         wf_name : str
-            name to give to the new workflow
+            name to give to the new Workflow
+
+        Returns
+        -------
+        wf : Workflow
+            a reference to the new Workflow
         """
         wf = Workflow()
         if not wf.is_tag_valid(wf_name): 
             raise pawstools.WfNameError(wf.tag_error_message(wf_name))
         wf.message_callback = self.message_callback
         self.workflows[wf_name] = wf
+        return wf
 
     def n_workflows(self):
         """Return the current number of Workflows"""
