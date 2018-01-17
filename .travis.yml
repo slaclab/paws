@@ -6,7 +6,7 @@ python:
 - '3.6'
 script:
 - pip install -r all_requirements.txt
-- pytest -s 
+- PYTHONPATH=`pwd` pytest -s ./tests
 deploy:
   provider: pypi
   user: lensonp
