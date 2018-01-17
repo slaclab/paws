@@ -14,3 +14,4 @@ citrination_client
 pytz
 tzlocal
 saxskit
+tifffile
