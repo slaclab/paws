@@ -8,85 +8,118 @@ from .. import operations as ops
 from ..operations.Operation import Operation
 
 class OpManager(TreeModel):
-    """
-    Tree structure for categorized storage and retrieval of Operations.
-    """
+    """OpManager provides access to and control over paws Operations."""
 
     def __init__(self):
         default_flags = OrderedDict()
         default_flags['active'] = False
         super(OpManager,self).__init__(default_flags)
-        self.logmethod = print 
-        self._n_ops = 0
+        self.message_callback = print 
+        self.cat_op_list = []
+        self.load_operations()
 
-    def is_op_activated(self,op_uri):
-        op_itm = self.get_from_uri(op_uri)
+    def get_operation(self,operation_uri):
+        """Get an Operation, activate it if needed, instantiate, return.
+
+        Parameters
+        ----------
+        operation_uri : str
+            uri indicating the operation module,
+            e.g. PROCESSING.TESTS.Fibonacci.
+
+        Returns
+        -------
+        op : Operation
+            the instantiated Operation 
+        """
+        if not self.is_op_activated(operation_uri):
+            try:
+                self.activate_op(operation_uri)
+            except ImportError as ex:
+                from paws.core.pawstools import OperationLoadError
+                msg = 'Most likely, the system '\
+                    'does not have the right dependencies '\
+                    'for Operation {}'.format(operation_uri)
+                raise OperationLoadError(msg) 
+        op = self.get_data_from_uri(operation_uri)
+        return op()
+
+    def load_operations(self,cat_op_list=ops.cat_op_list):
+        """Load Operations into OpManager.
+
+        Parameters
+        ----------
+        cat_op_list : list of (str,str), optional
+            Each element in the list is a tuple containing two strings.
+            The first string in the tuple indicates the category subpackage.
+            The second string in the tuple indicates the operation module.
+            The default is to load all operations 
+            detected by paws.core.operations at startup.
+        """
+        for cat_op in cat_op_list:
+            self.add_cat(cat_op[0])
+            if cat_op[1]:
+                self.add_op(cat_op[0],cat_op[1])
+                self.cat_op_list.append((cat_op[0],cat_op[1]))
+
+    def add_cat(self,cat_module):
+        """Add category `cat_module` to the tree."""
+        itm = self._root_item
+        cat_tags = cat_module.split('.')
+        cat_uri = cat_tags[0]
+        if not self.contains_uri(cat_uri):
+            self.set_item(cat_uri,{})
+        if len(cat_tags) > 1:
+            for cat_tag in cat_tags[1:]:
+                cat_uri = cat_uri+'.'+cat_tag
+                if not self.contains_uri(cat_uri):
+                    self.set_item(cat_uri,{})
+
+    def add_op(self,cat_module,op_name):
+        """Add label for an Operation at `op_name` under category `cat_module`."""
+        op_uri = cat_module+'.'+op_name
+        self.set_item(op_uri,None)
+
+    def activate_op(self,op_module):
+        """Import Operation module and add its Operation subclass to the tree.
+
+        This method imports the Operation to check compatibility,
+        and then sets the 'active' flag to True.
+        After this, the Operation is available
+        via self.get_op()
+
+        Parameters
+        ----------
+        op_module : str
+            Name of the Operation module.
+            Example: If class MyOperation is in the CATEGORY.MyOperation module,
+            retrieve it with `op_module` = 'CATEGORY.MyOperation'.
+        """
+        op_name = op_module.split('.')[-1]
+        m = importlib.import_module('.'+op_module,ops.__name__)
+        op = getattr(m,op_name)
+        optest = op()
+        self.set_item(op_module,op)
+        op_itm = self.get_from_uri(op_module)
+        self.set_flagged(op_itm,'active',True)
+
+    def is_op_activated(self,op_module):
+        """Return boolean indicating whether Operation is active.
+
+        Parameters
+        ----------
+        op_module : str
+            Name of the Operation module.
+            see activate_op().
+        """
+        op_itm = self.get_from_uri(op_module)
         return op_itm.flags['active']
 
     def n_ops(self):
-        return self._n_ops
+        return len(self.cat_op_list) 
 
-    def list_ops(self):
-        return [catnm+'.'+opnm for catnm,opnm in ops.cat_op_list] 
-
-    def load_cats(self,cat_list):
-        for cat in cat_list:
-            itm = self._root_item
-            cat_tags = cat.split('.')
-            cat_uri = cat_tags[0]
-            if not self.contains_uri(cat_uri):
-                self.set_item(cat_uri,{})
-                #self._n_cats += 1
-            if len(cat_tags) > 1:
-                for cat_tag in cat_tags[1:]:
-                    #if not cat_tag in self.list_child_tags(cat_uri):
-                    cat_uri = cat_uri+'.'+cat_tag
-                    if not self.contains_uri(cat_uri):
-                        #print('set cat {}'.format(cat_uri))
-                        self.set_item(cat_uri,{})
-                        #self._n_cats += 1
-
-    def load_ops(self,cat_op_list):
-        """
-        Load OpManager tree from input cat_op_list.
-        Format of cat_op_list is [(category1,opname1),(category2,opname2),...].
-        i.e. each operation in cat_op_list is specified by a tuple,
-        where the first element is a category,
-        and the second element is the name of the Operation.
-        load_cats() should be called before load_ops()
-        and should ensure that all cats in cat_op_list exist in the tree.
-        """
-        for cat_op in cat_op_list:
-            self.add_op(cat_op[0],cat_op[1])
-            self._n_ops += 1
-
-    def add_op(self,cat,opname):
-        """
-        Add op name to the tree under category cat.
-        """
-        op_uri = cat+'.'+opname
-        self.set_item(op_uri,None)
-
-    def set_op_activated(self,op_uri,flag=True):
-        cat = op_uri[:op_uri.rfind('.')]
-        opname = op_uri.split('.')[-1]
-        if flag:
-            mod = importlib.import_module('.'+op_uri,ops.__name__)
-            op = getattr(mod,opname)
-            optest = op()
-            self.set_item(op_uri,op)
-            op_itm = self.get_from_uri(op_uri)
-            self.set_flagged(op_itm,'active',flag)
-        else:
-            # disable the op: set ops.load_flags so that
-            # add_op() replaces the treedata with None
-            #ops.load_flags[op_uri] = False
-            self.set_item(op_uri,None)
-
-    def remove_op(self,op_uri):
-        """Remove op from the tree by its full category.opname uri"""
-        self.remove_item(op_uri)
-        self._n_ops -= 1
+    def list_operations(self):
+        return [catnm+'.'+opnm for catnm,opnm in self.cat_op_list] 
 
     def print_cat(self,cat_uri,rowprefix='    '):
         """
@@ -108,6 +141,5 @@ class OpManager(TreeModel):
                     # the only remaining case is an activated operation
                     tree_string = tree_string + rowprefix + '{} \n'.format(k)
         return tree_string
-
 
 

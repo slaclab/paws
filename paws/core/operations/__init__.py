@@ -1,7 +1,7 @@
 import os
 import pkgutil
 
-op_keys = []
+op_modules = []
 def load_ops_from_path(path_,pkg,cat_root=''):
     ops = []
     cats = []
@@ -24,7 +24,7 @@ def load_ops_from_path(path_,pkg,cat_root=''):
             if not cat_root in cats:
                 cats.append(cat_root)
             ops.append( (cat_root,modname) )
-            op_keys.append(cat_root+'.'+modname)
+            op_modules.append(cat_root+'.'+modname)
     return ops, cats
 
 cat_op_list, cat_list = load_ops_from_path(__path__,__name__)

@@ -5,6 +5,7 @@ from collections import OrderedDict
 from PySide import QtGui, QtCore, QtUiTools
 import yaml
 
+from . import QWfManager,QPluginManager,QOpManager
 from ..core.operations.Operation import Operation
 from . import qttools
 from . import widgets 
@@ -14,20 +15,20 @@ from ..core.models.ListModel import ListModel
 from .widgets import WorkflowGraphView
 
 class UiManager(QtCore.QObject):
-    """
-    Uses the QPawsAPI and PySide Qt to provide a widget that controls PAWS.
-    """
+    """A PySide Qt widget that controls PAWS"""
 
     def __init__(self,qpaw):
+
         super(UiManager,self).__init__()
         ui_file = QtCore.QFile(os.path.join(pawstools.sourcedir,'qt','qtui','main.ui'))
         ui_file.open(QtCore.QFile.ReadOnly)
         self.ui = QtUiTools.QUiLoader().load(ui_file)
         ui_file.close()
         self.ui.setAttribute(QtCore.Qt.WA_DeleteOnClose)
-        qpaw.set_logmethod( self.msg_board_log )
-        qpaw._wf_manager.emitMessage.connect( self.logMessage )
-        self.paw = qpaw
+
+        #qpaw.set_logmethod( self.msg_board_log )
+        #qpaw._wf_manager.emitMessage.connect( self.logMessage )
+        #self.paw = qpaw
         self.ui.viewer_tabwidget.clear()
         self.viewer_widgets = {}
         self.make_viewer()

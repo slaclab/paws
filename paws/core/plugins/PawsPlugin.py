@@ -2,10 +2,8 @@ from __future__ import print_function
 from collections import OrderedDict
 import copy
 
-from ..operations import Operation as opmod
-
 class PawsPlugin(object):
-    """Class template for implementing PAWS Plugins"""
+    """Base class for building PAWS Plugins."""
 
     def __init__(self,inputs):
         super(PawsPlugin,self).__init__()
@@ -15,53 +13,60 @@ class PawsPlugin(object):
         self.data_callback = None 
 
     def __getitem__(self,key):
-        d = self.content()
-        if key in d.keys():
-            return d[key]
+        if key == 'inputs':
+            return self.inputs
+        elif key == 'content':
+            return self.content()
         else:
-            raise KeyError('[{}] {}.__getitem__ only recognizes keys {}'
-            .format(__name__,type(self).__name__,d.keys()))
-    def __setitem__(self,key,data):
-        d = self.content()
-        if key in d.keys():
-            d[key] = data
-        else:
-            raise KeyError('[{}] {}.__setitem__ only recognizes keys {}'
-            .format(__name__,type(self).__name__,d.keys()))
+            raise KeyError('[{}] PawsPlugins only recognize keys {}'
+            .format(__name__,self.keys()))
     def keys(self):
-        return self.content().keys() 
+        return ['inputs','content'] 
+
+    def content(self):
+        """Return a dict containing meaningful plugin content.
+
+        This method is used to fetch Plugin content.
+        It should be reimplemented for most practical PawsPlugin subclasses.
+        """
+        return {}
+
+    def description(self):
+        """Describe the plugin.
+
+        PawsPlugin.description() returns a string 
+        documenting the functionality of the PawsPlugin,
+        the current input settings, etc.
+        Reimplement this in PawsPlugin subclasses.
+        """
+        return str(self.setup_dict()) 
 
     def start(self):
-        """
-        PawsPlugin.start() should perform any setup required by the plugin,
-        for instance setting up connections and reading files used by the plugin.
-        The default implementation does nothing.
+        """Start the plugin.
+
+        Assuming a plugin's inputs have been set,
+        PawsPlugin.start() should prepare the plugin for use, 
+        e.g. by opening connections, reading files, etc. 
+        Reimplement this in PawsPlugin subclasses as needed.
         """
         pass
 
     def stop(self):
-        """
+        """Stop the plugin.
+
         PawsPlugin.stop() should provide a clean end for the plugin,
-        for instance closing all connections and files used by the plugin.
-        The default implementation does nothing, 
-        assumes the plugin can be cleanly terminated by dereferencing. 
+        for instance closing connections used by the plugin.
+        Reimplement this in PawsPlugin subclasses as needed.
         """
         pass
 
-    def description(self):
-        """
-        PawsPlugin.description() returns a string 
-        documenting the functionality of the PawsPlugin.
-        The default implementation returns no description. 
-        """
-        return "No description available"
-
-    def content(self):
-        """
-        PawsPlugin.content() returns a dict
-        containing the meaningful objects contained in the plugin.
-        The default implementation returns an empty dict. 
-        """
-        return {}
+    def setup_dict(self):
+        """Return a dict that states the plugin's module and inputs."""
+        pgin_mod = self.__module__[self.__module__.find('plugins'):]
+        pgin_mod = pgin_mod[pgin_mod.find('.')+1:]
+        dct = OrderedDict() 
+        dct['plugin_module'] = pgin_mod
+        dct['inputs'] = self.inputs 
+        return dct
 
 
