@@ -197,6 +197,7 @@ wf.set_op_input('bg_subtract','T_bg_key','temperature')
 wf.set_op_input('log_I','x_y','bg_subtract.outputs.q_I_bgsub','workflow item')
 wf.set_op_input('output_CSV','array','bg_subtract.outputs.q_I_bgsub','workflow item')
 wf.set_op_input('output_CSV','headers',['q (1/angstrom)','intensity (arb)'])
+wf.set_op_input('output_CSV','dir_path','read_image.outputs.dir_path','workflow item')
 wf.set_op_input('output_CSV','filename','read_image.outputs.filename','workflow item')
 wf.set_op_input('output_CSV','filetag','_dz_bgsub')
 
