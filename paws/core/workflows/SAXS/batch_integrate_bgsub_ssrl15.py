@@ -15,8 +15,8 @@ op_maps['main']['read_calibration'] = 'IO.CALIBRATION.NikaToPONI'
 op_maps['main']['build_integrator'] = 'PROCESSING.INTEGRATION.BuildPyFAIIntegrator'
 op_maps['main']['background_files'] = 'IO.FILESYSTEM.BuildFileList'
 op_maps['main']['background_batch'] = 'EXECUTION.Batch'
-op_maps['main']['sample_files'] = 'IO.FILESYSTEM.FileIterator'
-op_maps['main']['sample_realtime'] = 'EXECUTION.Realtime'
+op_maps['main']['sample_files'] = 'IO.FILESYSTEM.BuildFileList'
+op_maps['main']['sample_batch'] = 'EXECUTION.Batch'
 
 op_maps['background_process']['read_header'] = 'IO.BL15.ReadHeader_SSRL15'
 op_maps['background_process']['time_temp'] = 'PACKAGING.BL15.TimeTempFromHeader'
@@ -73,13 +73,6 @@ wf.connect_input('sample_dir','sample_files.inputs.dir_path')
 wf.set_op_input('sample_files','regex','*.txt')
 wf.connect_input('sample_regex','sample_files.inputs.regex')
 
-# input 5: whether or not to process new files
-wf.set_op_input('sample_files','new_files_only',False)
-wf.connect_input('new_files_only','sample_files.inputs.new_files_only')
-
-# input 6: maximum delay for realtime to bail 
-wf.set_op_input('sample_realtime','max_delay',100000)
-wf.connect_input('max_delay','sample_realtime.inputs.max_delay')
 
 wf.set_op_input('build_integrator','poni_dict','read_calibration.outputs.poni_dict','workflow item')
 
@@ -89,14 +82,14 @@ wf.set_op_input('background_batch','input_keys',['header_file'])
 wf.set_op_input('background_batch','static_inputs',['build_integrator.outputs.integrator'],'workflow item')
 wf.set_op_input('background_batch','static_input_keys',['integrator'])
 
-wf.set_op_input('sample_realtime','work_item','sample_process','entire workflow')
-wf.set_op_input('sample_realtime','input_generators',['sample_files.outputs.file_iterator'],'workflow item')
-wf.set_op_input('sample_realtime','input_keys',['header_file'])
-wf.set_op_input('sample_realtime','static_inputs',
+wf.set_op_input('sample_batch','work_item','sample_process','entire workflow')
+wf.set_op_input('sample_batch','input_generators',['sample_files.outputs.file_iterator'],'workflow item')
+wf.set_op_input('sample_batch','input_keys',['header_file'])
+wf.set_op_input('sample_batch','static_inputs',
     ['build_integrator.outputs.integrator',
      'background_batch.outputs.batch_outputs'],
     'workflow item')
-wf.set_op_input('sample_realtime','static_input_keys',
+wf.set_op_input('sample_batch','static_input_keys',
     ['integrator',
      'bg_batch_outputs'])
 
@@ -207,5 +200,5 @@ wf.set_op_input('output_CSV','headers',['q (1/angstrom)','intensity (arb)'])
 wf.set_op_input('output_CSV','filename','read_image.outputs.filename','workflow item')
 wf.set_op_input('output_CSV','filetag','_dz_bgsub')
 
-pawstools.save_to_wfl(os.path.join(pawstools.sourcedir,'core','workflows','SAXS','realtime_integrate_bgsub_ssrl15.wfl'),wfmgr)
+pawstools.save_to_wfl(os.path.join(pawstools.sourcedir,'core','workflows','SAXS','batch_integrate_bgsub_ssrl15.wfl'),wfmgr)
 
