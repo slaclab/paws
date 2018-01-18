@@ -48,13 +48,13 @@ class NikaToPONI(Operation):
         fpath = self.inputs['file_path']
         for line in open(fpath,'r'):
             kv = line.strip().split('=')
-            if 'Sample_to_CCD_mm' in kv[0]:
-                d_mm = float(kv[1])         # Nika reports direct detector distance, 
-                                            # from sample to where beam axis intersects detector plane, in mm.
+
+            if 'sample_to_CCD_mm' in kv[0]:
+                d_mm = float(kv[1])
             if 'pixel_size_x_mm' in kv[0]:
-                pxsz_x_mm = float(kv[1])    # Nika uses pixel dimensions in mm- this is the 'horzontal' dimension. 
+                pxsz_x_mm = float(kv[1])
             if 'pixel_size_y_mm' in kv[0]:
-                pxsz_y_mm = float(kv[1])    # Nika uses pixel dimensions in mm- this is the 'vertical' dimension. 
+                pxsz_y_mm = float(kv[1])
             if 'beam_center_x_pix' in kv[0]:
                 bcx_px = float(kv[1])       # Nika reports the x coord relative to 'bottom left' corner of detector
                                             # where beam axis intersects detector plane, in pixels 
@@ -71,7 +71,7 @@ class NikaToPONI(Operation):
         wl_m = wl_A*1E-10
         pxsz_x_um = pxsz_x_mm * 1000
         pxsz_y_um = pxsz_y_mm * 1000
-        # TODO: figure out if these rotation angle mappings are correct. 
+        # TODO: check whether these rotation angle mappings are correct. 
         tilt_deg = -1.*htilt_deg
         rot_fit2d = vtilt_deg
         # use a pyFAI.AzimuthalIntegrator() to do the conversion

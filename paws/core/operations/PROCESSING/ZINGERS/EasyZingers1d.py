@@ -26,18 +26,20 @@ class EasyZingers1d(Operation):
     Let pixel_i be a candidate zinger. The analysis is as follows:
     1. Take window_width pixels on either side of pixel_i.
         Call these pixels_left and pixels_right.
-    2. 
+
+    2. (TODO: finish this)
         
-        
-    3. 
+    3. (TODO: finish this) 
         
     4. If either of the results in step (3) is greater than sharpness_limit,
         flag pixel_i as a zinger.
 
     After all zingers are flagged, they are replaced.
     Going over all pixels again, let pixel_i be a zinger:
+
     1. For pixel_i, take the average of all pixels_left and pixels_right,
         counting only pixels that are not flagged as zingers. 
+
     2. Replace I(pixel_i) with this window-average value.
 
     Note, this will result in unusually "flat" 
@@ -90,13 +92,14 @@ class EasyZingers1d(Operation):
             #I_ratio_r = Ii_r[0]/Istd_r
             #I_ratio_l = (Ii_l[-1]-Ii_l[-2])/Imean_diff_l
             #I_ratio_r = (Ii_r[0]-Ii_r[1])/Imean_diff_r
-            I_ratio_l = (Ii_l[-1]-Ii_l[-2])/Istd_l
-            I_ratio_r = (Ii_r[0]-Ii_r[1])/Istd_r
-            if I_ratio_l > I_ratio_limit or I_ratio_r > I_ratio_limit:
-                #print('*** zinger found. *** \nI_ratio_l: {} \nI_ratio_r: {}'.format(I_ratio_l,I_ratio_r))
-                idx_z.append(idx)
-                zmask[idx] = True
-                I_dz[idx] = np.nan
+            if Istd_l and Istd_r:
+                I_ratio_l = (Ii_l[-1]-Ii_l[-2])/Istd_l
+                I_ratio_r = (Ii_r[0]-Ii_r[1])/Istd_r
+                if I_ratio_l > I_ratio_limit or I_ratio_r > I_ratio_limit:
+                    self.message_callback('found a zinger: q = {}, I = {}'.format(q[idx],I[idx]))
+                    idx_z.append(idx)
+                    zmask[idx] = True
+                    I_dz[idx] = np.nan
             idx = test_range.next() 
         q_z = [q[i] for i in idx_z]
         I_z = [I[i] for i in idx_z]
