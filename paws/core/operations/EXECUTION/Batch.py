@@ -130,7 +130,7 @@ class Batch(Operation):
 
             if isinstance(wrki,Workflow):
                 wrki.execute()
-                out_dict = wrki.wf_outputs_dict()
+                out_dict = wrki.workflow_outputs()
             else:
                 # assume Operation
                 wrki.run()

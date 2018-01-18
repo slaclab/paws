@@ -335,7 +335,7 @@ class Workflow(TreeModel):
     def workflow_outputs(self):
         d = OrderedDict()
         for wf_out_name in self.outputs.keys():
-            d[wf_out_name] = self.get_wf_output(self.outputs[wfoutnm])
+            d[wf_out_name] = self.get_wf_output(wf_out_name)
         return d
 
     def set_wf_input(self,wf_input_name,val,tp=None):
@@ -344,7 +344,11 @@ class Workflow(TreeModel):
         if not isinstance(urilist,list):
             urilist = [urilist]
         for uri in urilist:
-            self.set_op_input(uri,val,tp)
+            p = uri.split('.')
+            if len(p) > 2 and p[1] == 'inputs':
+                self.set_op_input(p[0],p[2],val,tp)
+            else:
+                self.set_item(uri,val)
 
     def get_wf_input_value(self,wf_input_name):
         uri = self.inputs[wf_input_name]
