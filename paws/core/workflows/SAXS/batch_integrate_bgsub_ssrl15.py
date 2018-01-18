@@ -83,7 +83,7 @@ wf.set_op_input('background_batch','static_inputs',['build_integrator.outputs.in
 wf.set_op_input('background_batch','static_input_keys',['integrator'])
 
 wf.set_op_input('sample_batch','work_item','sample_process','entire workflow')
-wf.set_op_input('sample_batch','input_generators',['sample_files.outputs.file_iterator'],'workflow item')
+wf.set_op_input('sample_batch','input_arrays',['sample_files.outputs.file_list'],'workflow item')
 wf.set_op_input('sample_batch','input_keys',['header_file'])
 wf.set_op_input('sample_batch','static_inputs',
     ['build_integrator.outputs.integrator',
