@@ -207,5 +207,5 @@ wf.set_op_input('output_CSV','headers',['q (1/angstrom)','intensity (arb)'])
 wf.set_op_input('output_CSV','filename','read_image.outputs.filename','workflow item')
 wf.set_op_input('output_CSV','filetag','_dz_bgsub')
 
-pawstools.save_to_wfl(os.path.join(pawstools.sourcedir,'core','workflows','SAXS','realtime_integrate_bgsub_ssrl15.wfl'),wfmgr)
+pawstools.save_to_wfl(os.path.join(pawstools.sourcedir,'core','workflows','SAXS','BL15','realtime_integrate_bgsub.wfl'),wfmgr)
 

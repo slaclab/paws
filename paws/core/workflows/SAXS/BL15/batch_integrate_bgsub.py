@@ -114,7 +114,7 @@ wf.connect_input('q_min','q_window.inputs.x_min')
 wf.connect_input('q_max','q_window.inputs.x_max')
 
 # input 4: key for fetching temperature from header dictionary 
-wf.set_op_input('time_temp','temp_key','CTEMP')
+wf.set_op_input('time_temp','temp_key','TEMP')
 wf.connect_input('temp_key','time_temp.inputs.temp_key')
 
 # input 5: pyfai.AzimuthalIntegrator
@@ -162,7 +162,7 @@ wf.connect_input('q_min','q_window.inputs.x_min')
 wf.connect_input('q_max','q_window.inputs.x_max')
 
 # input 4: key for fetching temperature from header dictionary 
-wf.set_op_input('time_temp','temp_key','CTEMP')
+wf.set_op_input('time_temp','temp_key','TEMP')
 wf.connect_input('temp_key','time_temp.inputs.temp_key')
 
 # input 5: pyfai.AzimuthalIntegrator
@@ -201,5 +201,5 @@ wf.set_op_input('output_CSV','dir_path','read_image.outputs.dir_path','workflow 
 wf.set_op_input('output_CSV','filename','read_image.outputs.filename','workflow item')
 wf.set_op_input('output_CSV','filetag','_dz_bgsub')
 
-pawstools.save_to_wfl(os.path.join(pawstools.sourcedir,'core','workflows','SAXS','batch_integrate_bgsub_ssrl15.wfl'),wfmgr)
+pawstools.save_to_wfl(os.path.join(pawstools.sourcedir,'core','workflows','SAXS','BL15','batch_integrate_bgsub.wfl'),wfmgr)
 
