@@ -10,8 +10,9 @@ inputs=OrderedDict(file_path=None)
 outputs=OrderedDict(yaml_output=None)
 
 class LoadYAML(Operation):
-    """
-    Load a YAML file, save the output of yaml.load(open(file_path,'r')) 
+    """Load data from a YAML file
+
+    Returns the output of yaml.load() 
     """
 
     def __init__(self):
