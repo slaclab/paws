@@ -137,6 +137,57 @@ class Workflow(TreeModel):
             # these types should be loaded for immediate use
             self.set_item(op_name+'.inputs.'+input_name,val)
 
+    def connect_input(self,wf_input_name,op_input_uris):
+        self.inputs[wf_input_name] = op_input_uris
+
+    def connect_output(self,wf_output_name,op_output_uris):
+        self.outputs[wf_output_name] = op_output_uris
+
+    def break_input(self,wf_input_name):
+        self.inputs.pop(wf_input_name)
+    
+    def break_output(self,wf_output_name):
+        self.outputs.pop(wf_output_name)
+
+    def workflow_outputs(self):
+        d = OrderedDict()
+        for wf_out_name in self.outputs.keys():
+            d[wf_out_name] = self.get_wf_output(wf_out_name)
+        return d
+
+    def set_wf_input(self,wf_input_name,val,tp=None):
+        """Set a value for all inputs in self.inputs[`wf_input_name`]."""
+        urilist = self.inputs[wf_input_name]
+        if not isinstance(urilist,list):
+            urilist = [urilist]
+        for uri in urilist:
+            p = uri.split('.')
+            if len(p) > 2 and p[1] == 'inputs':
+                self.set_op_input(p[0],p[2],val,tp)
+            else:
+                self.set_item(uri,val)
+
+    def get_wf_input_value(self,wf_input_name):
+        uri = self.inputs[wf_input_name]
+        if isinstance(uri,list):
+            uri = uri[0]
+        p = uri.split('.')
+        il = self.get_data_from_uri(p[0]).input_locator[p[2]]
+        return il.val  
+
+    def get_wf_output(self,wf_output_name):
+        """Get all outputs in self.outputs[`wf_output_name`]."""
+        r = self.outputs[wf_output_name]
+        if isinstance(r,list):
+            dl = []
+            for rr in r:
+                if self.contains_uri(rr):
+                    dl.append(self.get_data_from_uri(rr))
+            return dl
+        else:
+            if self.contains_uri(r):
+                return self.get_data_from_uri(r)
+
     def execution_stack(self):
         """Determine order of execution and diagnostics for the Workflow.
 
@@ -320,56 +371,6 @@ class Workflow(TreeModel):
         else:
             return super(Workflow,self).build_tree(x) 
 
-    def connect_input(self,wf_input_name,op_input_uris):
-        self.inputs[wf_input_name] = op_input_uris
-
-    def connect_output(self,wf_output_name,op_output_uris):
-        self.outputs[wf_output_name] = op_output_uris
-
-    def break_input(self,wf_input_name):
-        self.inputs.pop(wf_input_name)
-    
-    def break_output(self,wf_output_name):
-        self.outputs.pop(wf_output_name)
-
-    def workflow_outputs(self):
-        d = OrderedDict()
-        for wf_out_name in self.outputs.keys():
-            d[wf_out_name] = self.get_wf_output(wf_out_name)
-        return d
-
-    def set_wf_input(self,wf_input_name,val,tp=None):
-        """Set a value for all inputs in self.inputs[`wf_input_name`]."""
-        urilist = self.inputs[wf_input_name]
-        if not isinstance(urilist,list):
-            urilist = [urilist]
-        for uri in urilist:
-            p = uri.split('.')
-            if len(p) > 2 and p[1] == 'inputs':
-                self.set_op_input(p[0],p[2],val,tp)
-            else:
-                self.set_item(uri,val)
-
-    def get_wf_input_value(self,wf_input_name):
-        uri = self.inputs[wf_input_name]
-        if isinstance(uri,list):
-            uri = uri[0]
-        p = uri.split('.')
-        il = self.get_data_from_uri(p[0]).input_locator[p[2]]
-        return il.val  
-
-    def get_wf_output(self,wf_output_name):
-        """Get all outputs in self.outputs[`wf_output_name`]."""
-        r = self.outputs[wf_output_name]
-        if isinstance(r,list):
-            dl = []
-            for rr in r:
-                if self.contains_uri(rr):
-                    dl.append(self.get_data_from_uri(rr))
-            return dl
-        else:
-            if self.contains_uri(r):
-                return self.get_data_from_uri(r)
 
     def set_op_item(self,op_name,item_uri,item_data):
         """Subroutine for use with functools.partial for callbacks"""
