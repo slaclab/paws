@@ -48,7 +48,7 @@ class TreeModel(object):
         itm.flags[flag_key] = bool(val)
 
     def __getitem__(self,uri):
-        return self.get_from_uri(uri)
+        return self.get_data_from_uri(uri)
 
     def __setitem__(self,uri,val):
         self.set_item(uri,val)

@@ -118,7 +118,7 @@ class DictTree(object):
                     if k in itm.keys():
                         itm = itm[k]
                     else:
-                        # this could be a dict with a key containing a '.'
+                        # special case: this could be a dict with a key containing a '.'
                         found = False
                         while not found:
                             k = k+'.'+path.pop(0)                        
