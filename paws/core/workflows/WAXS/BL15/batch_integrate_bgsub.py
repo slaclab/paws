@@ -133,7 +133,7 @@ wf.connect_output('q_I','integrate.outputs.q_I')
 wf.connect_output('q_I_dz','dezinger.outputs.q_I_dz')
 wf.connect_output('q_logI_dz','log_I.outputs.x_logy')
 
-wf.set_op_input('time_temp','image_header','read_header.outputs.header_dict','workflow item')
+wf.set_op_input('time_temp','header_dict','read_header.outputs.header_dict','workflow item')
 wf.set_op_input('time_temp','time_key','time')
 
 wf.set_op_input('image_path','filename','read_header.outputs.filename','workflow item')
@@ -199,7 +199,7 @@ wf.connect_output('q_I_dz','dezinger.outputs.q_I_dz')
 wf.connect_output('q_I_dz_bgsub','bg_subtract.outputs.q_I_bgsub')
 wf.connect_output('bg_factor','bg_subtract.outputs.bg_factor')
 
-wf.set_op_input('time_temp','image_header','read_header.outputs.header_dict','workflow item')
+wf.set_op_input('time_temp','header_dict','read_header.outputs.header_dict','workflow item')
 wf.set_op_input('time_temp','time_key','time')
 
 wf.set_op_input('image_path','filename','read_header.outputs.filename','workflow item')
