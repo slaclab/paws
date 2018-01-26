@@ -183,10 +183,14 @@ class Workflow(TreeModel):
             for rr in r:
                 if self.contains_uri(rr):
                     dl.append(self.get_data_from_uri(rr))
+                else:
+                    dl.append(None)
             return dl
         else:
             if self.contains_uri(r):
                 return self.get_data_from_uri(r)
+            else:
+                return None
 
     def execution_stack(self):
         """Determine order of execution and diagnostics for the Workflow.
