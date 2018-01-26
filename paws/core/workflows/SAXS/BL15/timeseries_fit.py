@@ -88,7 +88,7 @@ wf.connect_output('q_I_opt','fit_spectrum.outputs.q_I_opt')
 wf.connect_output('q_logI_opt','log_Ifit.outputs.x_logy')
 wf.connect_output('fit_params','fit_spectrum.outputs.params')
 
-wf.set_op_input('time_temp','image_header','read_header.outputs.header_dict','workflow item')
+wf.set_op_input('time_temp','header_dict','read_header.outputs.header_dict','workflow item')
 wf.set_op_input('time_temp','time_key','time')
 wf.set_op_input('spectrum_path','filename','read_header.outputs.filename','workflow item')
 wf.set_op_input('spectrum_path','suffix','_dz_bgsub')

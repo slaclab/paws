@@ -9,7 +9,7 @@ from ...Operation import Operation
 inputs=OrderedDict(file_path=None)
 outputs=OrderedDict(
     image_data=None,
-    image_header=None,
+    header_dict=None,
     dir_path=None,
     filename=None)
 
@@ -23,7 +23,7 @@ class ReadImageAndHeader_SSRL15(Operation):
             'A .txt header file is expected '\
             'in the same directory as this .tif file.'
         self.output_doc['image_data'] = 'the image data as an ndarray'
-        self.output_doc['image_header'] = 'the header data as a python dictionary'
+        self.output_doc['header_dict'] = 'the header data as a python dictionary'
         self.output_doc['dir_path'] = 'the directory portion of the input file_path'
         self.output_doc['filename'] = 'filename with path and extension stripped'
 
@@ -51,5 +51,5 @@ class ReadImageAndHeader_SSRL15(Operation):
                     for kv in kvs:
                         kv_arr = kv.split('=')
                         d[kv_arr[0].strip()] = float(kv_arr[1].strip())
-            self.outputs['image_header'] = d
+            self.outputs['header_dict'] = d
 
