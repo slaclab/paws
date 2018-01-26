@@ -34,7 +34,7 @@ class SpectrumClassifierGUI(Operation):
         for ip, pop in enumerate(pops.keys()):
             ax_pop = plt.axes([0.25,0.05*(1+ip),0.6,0.03],facecolor = slider_color)
             sldr = Slider(ax_pop,pop,0.,5.,valinit=0.,valfmt="%i")
-            cid = sldr.on_changed(partial(self.set_slider,sldr))
+            sldr.on_changed(partial(self.set_slider,sldr))
             sliders.append(sldr)
 
         plt.show()
