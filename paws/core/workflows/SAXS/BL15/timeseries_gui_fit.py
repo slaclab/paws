@@ -88,7 +88,7 @@ wf.connect_output('q_I_opt','fit_spectrum.outputs.q_I_opt')
 #wf.connect_output('q_logI_opt','log_Ifit.outputs.x_logy')
 wf.connect_output('fit_params','fit_spectrum.outputs.params')
 
-wf.set_op_input('time_temp','image_header','read_header.outputs.header_dict','workflow item')
+wf.set_op_input('time_temp','header_dict','read_header.outputs.header_dict','workflow item')
 wf.set_op_input('time_temp','time_key','time')
 wf.set_op_input('spectrum_path','filename','read_header.outputs.filename','workflow item')
 wf.set_op_input('spectrum_path','suffix','_dz_bgsub')
@@ -114,7 +114,7 @@ wf.set_op_input('populations_path','filename','read_header.outputs.filename','wo
 wf.set_op_input('populations_path','suffix','_populations')
 wf.set_op_input('populations_path','ext','yaml')
 wf.set_op_input('output_populations','file_path','populations_path.outputs.file_path','workflow item')
-wf.set_op_input('output_populations','data','select_populations.outputs.populations','workflow item')
+wf.set_op_input('output_populations','data','fit_spectrum.outputs.populations','workflow item')
 
 pawstools.save_to_wfl(os.path.join(pawstools.sourcedir,'core','workflows','SAXS','BL15','timeseries_gui_fit.wfl'),wfmgr)
 
