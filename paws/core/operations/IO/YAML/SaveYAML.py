@@ -24,8 +24,6 @@ class SaveYAML(Operation):
         p = self.inputs['file_path']
         d = self.inputs['data']
 
-        print(yaml.dump(d))
-
         stream = file(p,'w')
         yaml.dump(d, stream)
 
