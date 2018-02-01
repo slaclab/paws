@@ -118,8 +118,11 @@ class SpectrumFitGUI(Operation):
                 vinit = val
                 vfmt = "%.3f" 
                 param_change_func = partial(self._set_param,param_name,ival)
-                if param_name in ['r0_sphere','rg_gp','I0_floor','G_gp','I0_sphere','I_pkcenter']\
-                and not vinit < llim and not vinit < 1.E-6:
+                log_slider = param_name in ['r0_sphere','rg_gp','I0_floor',\
+                    'G_gp','I0_sphere','I_pkcenter']\
+                    and not vinit < llim\
+                    and not vinit < 1.E-6
+                if log_slider:
                     sldr_name = sldr_name + ' (log)' 
                     if llim == 0.:
                         llim = 1.E-6
@@ -130,6 +133,8 @@ class SpectrumFitGUI(Operation):
                     param_change_func = partial(self._set_param_logarithmic,param_name,ival)
                 sldr = Slider(ax_param,sldr_name,
                     llim,ulim,valinit=vinit,valfmt=vfmt)
+                if log_slider: 
+                    sldr.valtext.set_text(sldr.valfmt % 10.**vinit)
                 sldr.on_changed(param_change_func)
                 self.param_axes[param_name].append(ax_param)
                 self.param_sliders[param_name].append(sldr)
