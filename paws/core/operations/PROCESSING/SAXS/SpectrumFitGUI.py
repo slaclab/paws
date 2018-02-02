@@ -11,7 +11,10 @@ from saxskit.saxs_regression import SaxsRegressor
 from ... import Operation as opmod
 from ...Operation import Operation
 
-inputs = OrderedDict(q_I=None)
+inputs = OrderedDict(
+    q_I=None,
+    populations=None,
+    params=None)
 outputs = OrderedDict(
     populations=None,
     params=None,
@@ -25,21 +28,31 @@ class SpectrumFitGUI(Operation):
     def __init__(self):
         super(SpectrumFitGUI, self).__init__(inputs, outputs)
         self.input_doc['q_I'] = 'n-by-2 array of q(1/Angstrom) versus I(arb).'
-        self.output_doc['populations'] = 'Dict indicating the number of '\
-            'each of a variety of potential scatterer populations.'
-        self.output_doc['params'] = 'Dict of parameters '\
-            'describing each population.'
+        self.input_doc['populations'] = 'Dict indicating the number of '\
+            'each of a variety of potential scatterer populations (optional). '\
+            'If not provided, the populations are estimated by saxskit.'
+        self.input_doc['params'] = 'Dict of parameters '\
+            'describing scattering characteristics of each population (optional). '\
+            'If not provided, the parameters are estimated by saxskit.'
+        self.output_doc['populations'] = 'The output `populations`, '\
+            'as represented in the GUI when the Operation is finished.' 
+        self.output_doc['params'] = 'The output `params`, '\
+            'as represented in the GUI when the Operation is finished.' 
         self.output_doc['success_flag'] = 'Boolean indicating whether '\
             'or not the user was satisfied with the fit.'
 
     def run(self):
         self.q_I = self.inputs['q_I']
         self.feats = saxs_math.profile_spectrum(self.q_I)
+        self.populations = self.inputs['populations']
         self.saxs_cls = SaxsClassifier()
-        self.populations, certs = self.saxs_cls.classify(self.feats)
+        if self.populations is None:
+            self.populations, certs = self.saxs_cls.classify(self.feats)
+        self.params = self.inputs['params']
         self.saxs_reg = SaxsRegressor()
         self.saxs_fitter = saxs_fit.SaxsFitter(self.q_I,self.populations)
-        self.params = self.predict_params()
+        if self.params is None:
+            self.params = self.predict_params()
         self.setup_plots()
         self.pop_axes = OrderedDict()
         self.pop_sliders = OrderedDict()
@@ -124,8 +137,10 @@ class SpectrumFitGUI(Operation):
                     and not vinit < 1.E-6
                 if log_slider:
                     sldr_name = sldr_name + ' (log)' 
-                    if llim == 0.:
+                    if llim <= 0.:
                         llim = 1.E-6
+                    if ulim is None:
+                        ulim = 1.E7
                     llim = np.log10(llim)
                     ulim = np.log10(ulim)
                     vinit = np.log10(vinit)

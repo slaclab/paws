@@ -20,12 +20,16 @@ op_maps['saxs_fit']['read_header'] = 'IO.BL15.ReadHeader_SSRL15'
 op_maps['saxs_fit']['time_temp'] = 'PACKAGING.BL15.TimeTempFromHeader'
 op_maps['saxs_fit']['spectrum_path'] = 'IO.FILESYSTEM.BuildFilePath'
 op_maps['saxs_fit']['read_spectrum'] = 'IO.NUMPY.Loadtxt_q_I_dI'
-op_maps['saxs_fit']['fit_spectrum'] = 'PROCESSING.SAXS.SpectrumFitGUI'
-
-op_maps['saxs_fit']['output_CSV'] = 'IO.CSV.WriteArrayCSV'
 op_maps['saxs_fit']['populations_path'] = 'IO.FILESYSTEM.BuildFilePath'
-op_maps['saxs_fit']['output_populations'] = 'IO.YAML.SaveYAML'
 op_maps['saxs_fit']['params_path'] = 'IO.FILESYSTEM.BuildFilePath'
+
+op_maps['saxs_fit']['check_populations_file'] = 'IO.FILESYSTEM.CheckFilePath'
+op_maps['saxs_fit']['check_params_file'] = 'IO.FILESYSTEM.CheckFilePath'
+op_maps['saxs_fit']['fit_decision'] = 'EXECUTION.Conditional'
+
+op_maps['saxs_fit']['fit_spectrum'] = 'PROCESSING.SAXS.SpectrumFitGUI'
+op_maps['saxs_fit']['output_CSV'] = 'IO.CSV.WriteArrayCSV'
+op_maps['saxs_fit']['output_populations'] = 'IO.YAML.SaveYAML'
 op_maps['saxs_fit']['output_params'] = 'IO.YAML.SaveYAML'
 
 wfmgr = WfManager()
@@ -97,6 +101,26 @@ wf.set_op_input('spectrum_path','suffix','_dz_bgsub')
 wf.set_op_input('spectrum_path','ext','csv')
 wf.set_op_input('read_spectrum','file_path','spectrum_path.outputs.file_path','workflow item')
 wf.set_op_input('read_spectrum','delimiter',',')
+
+wf.set_op_input('params_path','dir_path','read_header.outputs.dir_path','workflow item')
+wf.set_op_input('params_path','filename','read_header.outputs.filename','workflow item')
+wf.set_op_input('params_path','suffix','_saxs_params')
+wf.set_op_input('params_path','ext','yaml')
+wf.set_op_input('populations_path','dir_path','read_header.outputs.dir_path','workflow item')
+wf.set_op_input('populations_path','filename','read_header.outputs.filename','workflow item')
+wf.set_op_input('populations_path','suffix','_populations')
+wf.set_op_input('populations_path','ext','yaml')
+wf.set_op_input('check_populations_file','file_path','populations_path.outputs.file_path','workflow item')
+wf.set_op_input('check_params_file','file_path','populations_path.outputs.file_path','workflow item')
+wf.set_op_input('fit_decision','work_item','fit_spectrum','workflow item')
+wf.set_op_input('fit_decision','condition',
+    ['check_populations_file.outputs.file_exists_flag',
+    'check_params_file.outputs.file_exists_flag'],
+    'workflow item')
+wf.set_op_input('fit_decision','run_condition',[True,True])
+wf.set_op_input('fit_decision','input_keys',['q_I'])
+wf.set_op_input('fit_decision','inputs',['read_spectrum.outputs.q_I'],'workflow item')
+
 #wf.set_op_input('log_I','x_y','read_spectrum.outputs.q_I','workflow item')
 wf.set_op_input('fit_spectrum','q_I','read_spectrum.outputs.q_I','workflow item')
 #wf.set_op_input('log_Ifit','x_y','fit_spectrum.outputs.q_I_opt','workflow item')
@@ -105,16 +129,8 @@ wf.set_op_input('output_CSV','headers',['q (1/angstrom)','intensity (arb)'])
 wf.set_op_input('output_CSV','dir_path','read_spectrum.outputs.dir_path','workflow item')
 wf.set_op_input('output_CSV','filename','read_spectrum.outputs.filename','workflow item')
 wf.set_op_input('output_CSV','filetag','_fit')
-wf.set_op_input('params_path','dir_path','read_header.outputs.dir_path','workflow item')
-wf.set_op_input('params_path','filename','read_header.outputs.filename','workflow item')
-wf.set_op_input('params_path','suffix','_saxs_params')
-wf.set_op_input('params_path','ext','yaml')
 wf.set_op_input('output_params','file_path','params_path.outputs.file_path','workflow item')
 wf.set_op_input('output_params','data','fit_spectrum.outputs.params','workflow item')
-wf.set_op_input('populations_path','dir_path','read_header.outputs.dir_path','workflow item')
-wf.set_op_input('populations_path','filename','read_header.outputs.filename','workflow item')
-wf.set_op_input('populations_path','suffix','_populations')
-wf.set_op_input('populations_path','ext','yaml')
 wf.set_op_input('output_populations','file_path','populations_path.outputs.file_path','workflow item')
 wf.set_op_input('output_populations','data','fit_spectrum.outputs.populations','workflow item')
 
