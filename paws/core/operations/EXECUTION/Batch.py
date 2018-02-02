@@ -86,6 +86,7 @@ class Batch(Operation):
         inpks = self.inputs['input_keys']
         stat_inps = self.inputs['static_inputs']
         stat_inpks = self.inputs['static_input_keys']
+        pass_thru_params = self.inputs['pass_thru_params']
 
         # index the execution order
         odrvals = self.inputs['order_array']
@@ -136,8 +137,8 @@ class Batch(Operation):
                     else:
                         wrki.inputs[inpnm] = inpval
 
-            if any(pass_thru_args) and out_dict is not None:
-                for inp_name,out_name in pass_thru_args.items():
+            if any(pass_thru_params) and out_dict is not None:
+                for inp_name,out_name in pass_thru_params.items():
                     if isinstance(wrki,Workflow):
                         wrki.set_wf_input(inp_name,out_dict[out_name])
                     else:
