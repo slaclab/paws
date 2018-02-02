@@ -52,6 +52,7 @@ wf.connect_output('params_vs_t','fit_params.outputs.x_y')
 wf.set_op_input('batch','work_item','saxs_fit','entire workflow')
 wf.set_op_input('batch','input_arrays',['header_files.outputs.file_list'],'workflow item')
 wf.set_op_input('batch','input_keys',['header_file'])
+wf.set_op_input('batch','pass_thru_params',{'params':'params','populations':'populations'})
 
 wf.set_op_input('fit_params','batch_outputs','batch.outputs.batch_outputs','workflow item')
 wf.set_op_input('fit_params','x_key','time')
@@ -75,9 +76,9 @@ wf.connect_input('spectrum_dir','spectrum_path.inputs.dir_path')
 wf.set_op_input('time_temp','temp_key','TEMP')
 wf.connect_input('temp_key','time_temp.inputs.temp_key')
 
-# input 3: populations dict
-#wf.set_op_input('parameterize_spectrum','populations',{'guinier_porod':1})
-#wf.connect_input('populations','parameterize_spectrum.inputs.populations')
+# input 3: populations and params dicts
+wf.connect_input('populations','fit_spectrum.inputs.populations')
+wf.connect_input('params','fit_spectrum.inputs.params')
 
 wf.connect_output('filename','read_spectrum.outputs.filename')
 wf.connect_output('time','time_temp.outputs.time')
@@ -86,7 +87,8 @@ wf.connect_output('q_I','read_spectrum.outputs.q_I')
 #wf.connect_output('q_logI','log_I.outputs.x_logy')
 wf.connect_output('q_I_opt','fit_spectrum.outputs.q_I_opt')
 #wf.connect_output('q_logI_opt','log_Ifit.outputs.x_logy')
-wf.connect_output('fit_params','fit_spectrum.outputs.params')
+wf.connect_output('populations','fit_spectrum.outputs.populations')
+wf.connect_output('params','fit_spectrum.outputs.params')
 
 wf.set_op_input('time_temp','header_dict','read_header.outputs.header_dict','workflow item')
 wf.set_op_input('time_temp','time_key','time')
