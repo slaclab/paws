@@ -20,12 +20,16 @@ op_maps['saxs_fit']['read_header'] = 'IO.BL15.ReadHeader_SSRL15'
 op_maps['saxs_fit']['time_temp'] = 'PACKAGING.BL15.TimeTempFromHeader'
 op_maps['saxs_fit']['spectrum_path'] = 'IO.FILESYSTEM.BuildFilePath'
 op_maps['saxs_fit']['read_spectrum'] = 'IO.NUMPY.Loadtxt_q_I_dI'
-op_maps['saxs_fit']['fit_spectrum'] = 'PROCESSING.SAXS.SpectrumFitGUI'
-
-op_maps['saxs_fit']['output_CSV'] = 'IO.CSV.WriteArrayCSV'
 op_maps['saxs_fit']['populations_path'] = 'IO.FILESYSTEM.BuildFilePath'
-op_maps['saxs_fit']['output_populations'] = 'IO.YAML.SaveYAML'
 op_maps['saxs_fit']['params_path'] = 'IO.FILESYSTEM.BuildFilePath'
+
+op_maps['saxs_fit']['check_populations_file'] = 'IO.FILESYSTEM.CheckFilePath'
+op_maps['saxs_fit']['check_params_file'] = 'IO.FILESYSTEM.CheckFilePath'
+op_maps['saxs_fit']['fit_decision'] = 'EXECUTION.Conditional'
+
+op_maps['saxs_fit']['fit_spectrum'] = 'PROCESSING.SAXS.SpectrumFitGUI'
+op_maps['saxs_fit']['output_CSV'] = 'IO.CSV.WriteArrayCSV'
+op_maps['saxs_fit']['output_populations'] = 'IO.YAML.SaveYAML'
 op_maps['saxs_fit']['output_params'] = 'IO.YAML.SaveYAML'
 
 wfmgr = WfManager()
@@ -52,6 +56,7 @@ wf.connect_output('params_vs_t','fit_params.outputs.x_y')
 wf.set_op_input('batch','work_item','saxs_fit','entire workflow')
 wf.set_op_input('batch','input_arrays',['header_files.outputs.file_list'],'workflow item')
 wf.set_op_input('batch','input_keys',['header_file'])
+wf.set_op_input('batch','pass_thru_params',{'params':'params','populations':'populations'})
 
 wf.set_op_input('fit_params','batch_outputs','batch.outputs.batch_outputs','workflow item')
 wf.set_op_input('fit_params','x_key','time')
@@ -75,9 +80,9 @@ wf.connect_input('spectrum_dir','spectrum_path.inputs.dir_path')
 wf.set_op_input('time_temp','temp_key','TEMP')
 wf.connect_input('temp_key','time_temp.inputs.temp_key')
 
-# input 3: populations dict
-#wf.set_op_input('parameterize_spectrum','populations',{'guinier_porod':1})
-#wf.connect_input('populations','parameterize_spectrum.inputs.populations')
+# input 3: populations and params dicts
+wf.connect_input('populations','fit_spectrum.inputs.populations')
+wf.connect_input('params','fit_spectrum.inputs.params')
 
 wf.connect_output('filename','read_spectrum.outputs.filename')
 wf.connect_output('time','time_temp.outputs.time')
@@ -86,15 +91,36 @@ wf.connect_output('q_I','read_spectrum.outputs.q_I')
 #wf.connect_output('q_logI','log_I.outputs.x_logy')
 wf.connect_output('q_I_opt','fit_spectrum.outputs.q_I_opt')
 #wf.connect_output('q_logI_opt','log_Ifit.outputs.x_logy')
-wf.connect_output('fit_params','fit_spectrum.outputs.params')
+wf.connect_output('populations','fit_spectrum.outputs.populations')
+wf.connect_output('params','fit_spectrum.outputs.params')
 
-wf.set_op_input('time_temp','image_header','read_header.outputs.header_dict','workflow item')
+wf.set_op_input('time_temp','header_dict','read_header.outputs.header_dict','workflow item')
 wf.set_op_input('time_temp','time_key','time')
 wf.set_op_input('spectrum_path','filename','read_header.outputs.filename','workflow item')
 wf.set_op_input('spectrum_path','suffix','_dz_bgsub')
 wf.set_op_input('spectrum_path','ext','csv')
 wf.set_op_input('read_spectrum','file_path','spectrum_path.outputs.file_path','workflow item')
 wf.set_op_input('read_spectrum','delimiter',',')
+
+wf.set_op_input('params_path','dir_path','read_header.outputs.dir_path','workflow item')
+wf.set_op_input('params_path','filename','read_header.outputs.filename','workflow item')
+wf.set_op_input('params_path','suffix','_saxs_params')
+wf.set_op_input('params_path','ext','yaml')
+wf.set_op_input('populations_path','dir_path','read_header.outputs.dir_path','workflow item')
+wf.set_op_input('populations_path','filename','read_header.outputs.filename','workflow item')
+wf.set_op_input('populations_path','suffix','_populations')
+wf.set_op_input('populations_path','ext','yaml')
+wf.set_op_input('check_populations_file','file_path','populations_path.outputs.file_path','workflow item')
+wf.set_op_input('check_params_file','file_path','populations_path.outputs.file_path','workflow item')
+wf.set_op_input('fit_decision','work_item','fit_spectrum','workflow item')
+wf.set_op_input('fit_decision','condition',
+    ['check_populations_file.outputs.file_exists_flag',
+    'check_params_file.outputs.file_exists_flag'],
+    'workflow item')
+wf.set_op_input('fit_decision','run_condition',[True,True])
+wf.set_op_input('fit_decision','input_keys',['q_I'])
+wf.set_op_input('fit_decision','inputs',['read_spectrum.outputs.q_I'],'workflow item')
+
 #wf.set_op_input('log_I','x_y','read_spectrum.outputs.q_I','workflow item')
 wf.set_op_input('fit_spectrum','q_I','read_spectrum.outputs.q_I','workflow item')
 #wf.set_op_input('log_Ifit','x_y','fit_spectrum.outputs.q_I_opt','workflow item')
@@ -103,18 +129,10 @@ wf.set_op_input('output_CSV','headers',['q (1/angstrom)','intensity (arb)'])
 wf.set_op_input('output_CSV','dir_path','read_spectrum.outputs.dir_path','workflow item')
 wf.set_op_input('output_CSV','filename','read_spectrum.outputs.filename','workflow item')
 wf.set_op_input('output_CSV','filetag','_fit')
-wf.set_op_input('params_path','dir_path','read_header.outputs.dir_path','workflow item')
-wf.set_op_input('params_path','filename','read_header.outputs.filename','workflow item')
-wf.set_op_input('params_path','suffix','_saxs_params')
-wf.set_op_input('params_path','ext','yaml')
 wf.set_op_input('output_params','file_path','params_path.outputs.file_path','workflow item')
 wf.set_op_input('output_params','data','fit_spectrum.outputs.params','workflow item')
-wf.set_op_input('populations_path','dir_path','read_header.outputs.dir_path','workflow item')
-wf.set_op_input('populations_path','filename','read_header.outputs.filename','workflow item')
-wf.set_op_input('populations_path','suffix','_populations')
-wf.set_op_input('populations_path','ext','yaml')
 wf.set_op_input('output_populations','file_path','populations_path.outputs.file_path','workflow item')
-wf.set_op_input('output_populations','data','select_populations.outputs.populations','workflow item')
+wf.set_op_input('output_populations','data','fit_spectrum.outputs.populations','workflow item')
 
 pawstools.save_to_wfl(os.path.join(pawstools.sourcedir,'core','workflows','SAXS','BL15','timeseries_gui_fit.wfl'),wfmgr)
 

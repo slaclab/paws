@@ -61,7 +61,6 @@ class SpectrumClassifierGUI(Operation):
         self.btns.on_clicked(self.set_unidentified)
         if bool(self.pops['unidentified']):
             self.set_active(1)
-
         plt.show()
 
         # after the plot is closed,
