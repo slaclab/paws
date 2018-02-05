@@ -10,6 +10,7 @@ build_dist.sh
 dist
 doc/tex
 doc/html
+.pytest_cache
 *.cache
 *.egg-info
 *.pyc
