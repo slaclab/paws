@@ -15,7 +15,7 @@ class MitosPPumpController(PawsPlugin):
     57600 baud, 8 data bits, 1 stop bit, no parity, no handshaking
     """
     def __init__(self):
-        super(MitosPPumpClient,self).__init__(inputs)
+        super(MitosPPumpController,self).__init__(inputs)
         self.input_doc['serial_io_file'] = 'filesystem path '\
             'pointing to serial device io pseudo-file'
         self.history = [] 
