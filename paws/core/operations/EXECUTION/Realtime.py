@@ -12,7 +12,8 @@ inputs=OrderedDict(
     static_inputs=None,
     static_input_keys=None,
     delay=1000,
-    max_delay=float('inf'))
+    max_delay=float('inf'),
+    max_exec=float('inf'))
 
 outputs=OrderedDict(
     realtime_inputs=None,
@@ -45,8 +46,10 @@ class Realtime(Operation):
             
         self.input_doc['delay'] = 'delay in milliseconds '\
             'between attempts to generate new inputs'
-        self.input_doc['max_delay'] = '(optional) maximum delay '\
-            'in milliseconds before giving up and stopping execution'
+        self.input_doc['max_delay'] = '(optional) maximum delay'\
+            'in milliseconds, before giving up and stopping execution'
+        self.input_doc['max_exec'] = '(optional) maximum number '\
+            'of executions of `work_item`'
             
         self.output_doc['realtime_inputs'] = 'list of dicts '\
             'containing [input_name:input_value] '\
