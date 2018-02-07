@@ -5,8 +5,13 @@ from ...Operation import Operation
 
 inputs=OrderedDict(
     spec_infoclient=None,
-    exposure_time=None)
-outputs=OrderedDict(response=None)
+    n_scan=1,
+    exposure_time=10.,
+    delay_time=10.,
+    status_code=True)
+outputs=OrderedDict(
+    report=None,
+    status_code=False)
         
 class LoopScan(Operation):
     """Run a loop scan through a SpecInfoClient"""
@@ -19,7 +24,17 @@ class LoopScan(Operation):
 
     def run(self):
         cl = self.inputs['spec_infoclient'] 
+        n_scan = self.inputs['n_scan'] 
         t_exp = self.inputs['exposure_time'] 
-        import pdb; pdb.set_trace()
+        t_delay = self.inputs['delay_time'] 
+        stat = self.inputs['status_code']
+        if stat:
+            resp = cl.run_loopscan(n_scan,t_exp,t_delay)
+            self.outputs['report'] = resp
+            self.outputs['status_code'] = bool(resp['status_code'])
+        else:
+            self.outputs['report'] = {'STATUS':bool(stat)}
+            self.outputs['status_code'] = False 
+
 
 
