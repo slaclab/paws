@@ -18,9 +18,9 @@ op_maps['main']['build_integrator'] = 'PROCESSING.INTEGRATION.BuildPyFAIIntegrat
 op_maps['main']['background_batch'] = 'EXECUTION.Batch'
 op_maps['main']['realtime_synthesis'] = 'EXECUTION.Realtime'
 
-#op_maps['run_recipe']['set_recipe'] = 'IO.SPEC.SetPPumps'
-#op_maps['run_recipe']['set_temperature'] = 'IO.SPEC.SetCryoCon'
-#op_maps['run_recipe']['run_loopscan'] = 'IO.SPEC.LoopScan'
+op_maps['run_recipe']['set_recipe'] = 'IO.SPEC.SetPPumps'
+op_maps['run_recipe']['set_temperature'] = 'IO.SPEC.SetCryoCon'
+op_maps['run_recipe']['run_loopscan'] = 'IO.SPEC.LoopScan'
 op_maps['run_recipe']['header_files'] = 'IO.FILESYSTEM.FileIterator'
 op_maps['run_recipe']['background_data'] = 'PACKAGING.Copy'
 op_maps['run_recipe']['build_integrator'] = 'PROCESSING.INTEGRATION.BuildPyFAIIntegrator'
@@ -91,7 +91,7 @@ wf.set_op_input('background_batch','static_input_keys',['integrator'])
 
 wf.set_op_input('realtime_synthesis','work_item','run_recipe','entire workflow')
 wf.set_op_input('realtime_synthesis','input_generators',['np_synth_designer'],'plugin item')
-wf.set_op_input('realtime_synthesis','input_keys',['recipe_dict'])
+wf.set_op_input('realtime_synthesis','input_keys',['recipe'])
 wf.set_op_input('realtime_synthesis','static_inputs',
     ['read_calibration.outputs.poni_dict','background_batch.outputs.batch_outputs'],
     'workflow item')
@@ -105,26 +105,26 @@ wf.set_op_input('realtime_synthesis','delay',1000)
 
 wf = wfmgr.workflows['run_recipe']
 
-# input 0: recipe dict 
-wf.connect_input('recipe_dict','set_recipe.inputs.recipe_dict')
-wf.set_op_input('set_recipe','recipe_dict',{})
+# input 0: recipe (list of flow rates) 
+wf.connect_input('recipe','set_recipe.inputs.set_points')
+wf.set_op_input('set_recipe','set_points',None)
 
 # input 1: temperature set point 
 wf.connect_input('temperature','set_temperature.inputs.T_set')
 wf.set_op_input('set_temperature','T_set',25.)
 
-# input 2: loop scan delay
-wf.connect_input('scan_delay','run_loopscan.inputs.delay')
-wf.set_op_input('run_loopscan','delay',10.)
+# input 2: number of scans
+wf.connect_input('n_scan',
+    ['run_loopscan.inputs.n_scan','realtime_analysis.inputs.max_exec'])
+wf.set_op_input('run_loopscan','n_scan',10)
 
 # input 3: loop scan exposure time
 wf.connect_input('exposure_time','run_loopscan.inputs.exposure_time')
 wf.set_op_input('run_loopscan','exposure_time',10.)
 
-# input 4: number of scans
-wf.connect_input('n_scan',
-    ['run_loopscan.inputs.n_scan','realtime_analysis.inputs.max_exec'])
-wf.set_op_input('run_loopscan','n_scan',10)
+# input 4: loop scan delay
+wf.connect_input('scan_delay','run_loopscan.inputs.delay')
+wf.set_op_input('run_loopscan','delay',10.)
 
 # input 5: path to directory for header files 
 wf.connect_input('header_dir',

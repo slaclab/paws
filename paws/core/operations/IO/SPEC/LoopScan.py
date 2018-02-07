@@ -7,7 +7,7 @@ inputs=OrderedDict(
     spec_infoclient=None,
     n_scan=1,
     exposure_time=10.,
-    delay_time=10.,
+    delay=10.,
     status_code=True)
 outputs=OrderedDict(
     report=None,
@@ -26,7 +26,7 @@ class LoopScan(Operation):
         cl = self.inputs['spec_infoclient'] 
         n_scan = self.inputs['n_scan'] 
         t_exp = self.inputs['exposure_time'] 
-        t_delay = self.inputs['delay_time'] 
+        t_delay = self.inputs['delay'] 
         stat = self.inputs['status_code']
         if stat:
             resp = cl.run_loopscan(n_scan,t_exp,t_delay)
