@@ -21,10 +21,10 @@ class SpecInfoClient(PawsPlugin):
     def start(self):
         hst = self.inputs['host'] 
         prt = self.inputs['port'] 
-        try:
-            self.sock = socket.create_connection((hst,prt)) 
-        except:
-            self.socket_error(self.sock.error)
+        #try:
+        self.sock = socket.create_connection((hst,prt)) 
+        #except:
+        #    self.socket_error(self.sock.error)
 
     def description(self):
         desc = 'SpecInfoClient Plugin: '\
@@ -50,19 +50,19 @@ class SpecInfoClient(PawsPlugin):
     def receiveLine(self):
         # Handle lines received from Spec server
         bfr = bytearray(b' ' * 1024) 
-        try:
-            ln = self.sock.recv_into(bfr) 
-        except:
-            self.socket_error(self.sock.error)
-            return "ERRCOMM"
+        #try:
+        ln = self.sock.recv_into(bfr) 
+        #except:
+        #    self.socket_error(self.sock.error)
+        #    return "ERRCOMM"
         bfr = bfr.strip()
         return bfr
     
     def sendLine(self, line):
-        try:
-            self.sock.sendall(bytearray(line))
-        except:
-            self.socket_error(self.sock.error)
+        #try:
+        self.sock.sendall(bytearray(line))
+        #except:
+        #    self.socket_error(self.sock.error)
 
     def sendCmd(self, cmd):
         reply = ""
@@ -72,6 +72,7 @@ class SpecInfoClient(PawsPlugin):
             self.sendLine(cmd)
             reply = self.receiveLine()
         self.history.append('COMMAND: {} RESPONSE: {}'.format(cmd,reply))
+        return reply
 
     def send_commands(self, cmd_list):
         for s in cmd_list:
@@ -85,4 +86,32 @@ class SpecInfoClient(PawsPlugin):
 #    p.addCommand("!cmd runme")
 #    p.addCommand("?sta")
 #
+
+
+
+
+# General controls
+# !rqc                  -> requests control
+# !cmd mar_enable       -> enables mar det as a counter
+# !cmd pd enable        -> enables pilatus as a counter
+
+
+# Temperature control macro:
+# macro definition: /usr/local/lib/spec.d/cryocon_ctrl.mac
+#
+# Direct SIS commands:
+# !cmd ctemp_enable     -> establishes communication with CryoCon
+# 
+# !cmd csettemp 40      -> sets temperature
+# !cmd cmeasuretemp     -> reads temperature, saves as 
+#
+# !cmd CRYO_DEGC        -> sets up a query on the CRYO_DEGC variable
+# followed by:
+# ?res                  -> gets result of CRYO_DEGC query
+
+
+# Loop Scanning
+#
+# !cmd loopscan n_points exposure_time sleep_time
+
 

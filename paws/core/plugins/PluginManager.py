@@ -86,6 +86,10 @@ class PluginManager(TreeModel):
         """
         self.set_item(plugin_name+'.inputs.'+input_name,val)
 
+    def start_plugin(self,plugin_name):
+        """Start the plugin referred to by `plugin_name`."""
+        self.plugins[plugin_name].start()
+
     def load_plugin(self,plugin_name,plugin_setup_dict):
         """Load, set up, and start() a PawsPlugin, given its setup_dict().
 
