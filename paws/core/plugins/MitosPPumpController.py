@@ -6,7 +6,7 @@ from ..operations import Operation as opmod
 
 inputs = OrderedDict(serial_io_file = None)
 
-class MitosPPumpClient(PawsPlugin):
+class MitosPPumpController(PawsPlugin):
     """PAWS Plugin for controlling a Mitos P-pump.
 
     Uses a virtual serial port 
