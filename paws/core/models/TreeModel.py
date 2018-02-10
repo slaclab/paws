@@ -18,6 +18,7 @@ class TreeModel(object):
         self._root_item = TreeItem(None,'ROOT')
         # the underlying data are stored in a DictTree. 
         self._tree = DictTree()
+        self._root_dict = self._tree._root
         # any TreeItems will be given these default_flags,
         # unless subclasses override TreeModel.create_tree_item()
         self.default_flags = default_flags
@@ -47,7 +48,7 @@ class TreeModel(object):
         itm.flags[flag_key] = bool(val)
 
     def __getitem__(self,uri):
-        return self.get_from_uri(uri)
+        return self.get_data_from_uri(uri)
 
     def __setitem__(self,uri,val):
         self.set_item(uri,val)

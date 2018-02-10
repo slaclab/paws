@@ -4,11 +4,12 @@ import copy
 import traceback
 import time
 
-from .. import operations as ops
+from ..operations import optools
+from ..operations.OpManager import OpManager
+from ..plugins.PluginManager import PluginManager
 from .Workflow import Workflow
 from ..operations import Operation as opmod
-from ..operations.Operation import Operation#, Batch, Realtime        
-from ..operations import optools
+from ..operations.Operation import Operation
 from .. import pawstools
 
 class WfManager(object):
@@ -20,43 +21,68 @@ class WfManager(object):
     for access to PawsPlugins.
     """
 
-    def __init__(self):
-        super(WfManager,self).__init__()
-        self.workflows = OrderedDict() 
-        self.logmethod = print 
-        self.plugin_manager = None
+    def __init__(self,op_manager=None,plugin_manager=None):
+        """Initialize a workflow manager.
 
-    def get_op(self,wfname,op_tag):
-        return self.workflows[wfname].get_data_from_uri(op_tag)
-
-    def n_wf(self):
-        return len(self.workflows)
-
-    def add_wf(self,wfname):
+        Parameters
+        ----------
+        op_manager : OpManager (optional)
+            an operations manager (paws.core.operations.OpManager.OpManager)-
+            if not provided, a default OpManager will be created.
+        plugin_manager : PluginManager (optional)
+            a plugins manager (paws.core.plugins.PluginManager.PluginManager)-
+            if not provided, a default PluginManager will be created.
         """
-        Add a workflow to self.workflows, with key specified by wfname.
-        If wfname is not unique (i.e. a workflow with that name already exists),
+        super(WfManager,self).__init__()
+        if not op_manager:
+            op_manager = OpManager()
+        if not plugin_manager:
+            plugin_manager = PluginManager()
+        self.op_manager = op_manager 
+        self.plugin_manager = plugin_manager 
+        self.workflows = OrderedDict() 
+        self.message_callback = print 
+
+    def add_workflow(self,wf_name):
+        """Name and add a workflow.
+
+        If `wf_name` is not unique (i.e. a workflow with that name already exists),
         this method will overwrite the existing workflow with a new one.
+
+        Parameters
+        ----------
+        wf_name : str
+            name to give to the new Workflow
+
+        Returns
+        -------
+        wf : Workflow
+            a reference to the new Workflow
         """
         wf = Workflow()
-        if not wf.is_tag_valid(wfname): 
-            raise pawstools.WfNameError(wf.tag_error_message(wfname))
-        wf.message_callback = self.logmethod
-        self.workflows[wfname] = wf
+        if not wf.is_tag_valid(wf_name): 
+            raise pawstools.WfNameError(wf.tag_error_message(wf_name))
+        wf.message_callback = self.message_callback
+        self.workflows[wf_name] = wf
+        return wf
 
-    def run_wf(self,wfname):
-        """Execute the workflow indicated by `wfname`"""
-        wf = self.workflows[wfname]
-        self.logmethod('preparing workflow {} for execution'.format(wfname))
+    def n_workflows(self):
+        """Return the current number of Workflows"""
+        return len(self.workflows)
+
+    def run_workflow(self,wf_name):
+        """Execute the workflow indicated by `wf_name`"""
+        wf = self.workflows[wf_name]
+        self.message_callback('preparing workflow {} for execution'.format(wf_name))
         stk,diag = wf.execution_stack()
         self.prepare_wf(wf,stk)
         wf.execute()
-        self.logmethod('execution finished')
+        self.message_callback('execution finished')
 
-    def stop_wf(self,wfname):
-        """Stop the workflow indicated by `wfname`"""
-        self.logmethod('stopping workflow {}'.format(wfname))
-        wf = self.workflows[wfname]
+    def stop_wf(self,wf_name):
+        """Stop the workflow indicated by `wf_name`"""
+        self.message_callback('stopping workflow {}'.format(wf_name))
+        wf = self.workflows[wf_name]
         wf.stop()
 
     def prepare_wf(self,wf,stk):
@@ -70,7 +96,7 @@ class WfManager(object):
                 for inpname,il in op.input_locator.items():
                     if il.tp not in [opmod.runtime_type,opmod.workflow_item]:
                         # NOTE 1: runtime inputs should be set directly, without using il.val.
-                        # this is because, when calling wf.wf_setup_dict(), il.val gets serialized.
+                        # this is because, when saving a workflow, il.val gets serialized.
                         # NOTE 2: workflow_item inputs should be set later, during execution.
                         wf.set_op_item(op_tag,'inputs.'+inpname,self.locate_input(il))
 
@@ -93,47 +119,29 @@ class WfManager(object):
             else:
                 return self.plugin_manager.get_data_from_uri(il.val)
 
-    def load_from_dict(self,wfname,wf_spec,op_manager):
+    def load_workflow(self,wf_name,wf_setup_dict):
+        """Load a workflow from a dict that specifies its parameters.
+
+        If `wf_name` is not unique, self.workflows[wf_name] is overwritten.
+
+        Parameters
+        ----------
+        wf_name : str
+            name to be given to the new workflow
+        wf_setup_dict : dict
+            dict specifying workflow setup
         """
-        Create a workflow with name wfname.
-        If wfname is not unique, self.workflows[wfname] is overwritten.
-        Input dict wf_spec specifies Workflow setup,
-        including all operations, Workflow.inputs, and Workflow.outputs.
-        """
-        self.add_wf(wfname)
-        wfins = wf_spec.pop('WORKFLOW_INPUTS')
-        wfouts = wf_spec.pop('WORKFLOW_OUTPUTS')
-        opflags = wf_spec.pop('OP_ENABLE_FLAGS')
+        self.add_workflow(wf_name)
+        wfins = wf_setup_dict.pop('WORKFLOW_INPUTS')
+        wfouts = wf_setup_dict.pop('WORKFLOW_OUTPUTS')
+        opflags = wf_setup_dict.pop('OP_ENABLE_FLAGS')
         for inpname,inpval in wfins.items():
-            self.workflows[wfname].connect_wf_input(inpname,inpval)
+            self.workflows[wf_name].connect_input(inpname,inpval)
         for outname,outval in wfouts.items():
-            self.workflows[wfname].connect_wf_output(outname,outval)
-        for op_tag, op_setup in wf_spec.items():
-            self.workflows[wfname].add_op_from_dict(op_tag,op_setup,op_manager)
-            self.workflows[wfname].set_op_enabled(op_tag,opflags[op_tag])
+            self.workflows[wf_name].connect_output(outname,outval)
+        for op_tag, op_setup_dict in wf_setup_dict.items():
+            self.workflows[wf_name].load_operation(op_tag,op_setup_dict,self.op_manager)
+            if not opflags[op_tag]:
+                self.workflows[wf_name].disable_op(op_tag)
 
-    #def uri_to_embedded_dict(self,uri,data=None):
-    #    path = uri.split('.')
-    #    endtag = path[-1]
-    #    d = OrderedDict()
-    #    d[endtag] = data
-    #    for tag in path[:-1][::-1]:
-    #        parent_d = OrderedDict()
-    #        parent_d[tag] = d
-    #        d = parent_d
-    #    return d
-
-    #def update_embedded_dict(self,d,d_new):
-    #    for k,v in d_new.items():
-    #        if k in d.keys():
-    #            if isinstance(d[k],dict) and isinstance(d_new[k],dict):
-    #                # embedded dicts: recurse
-    #                d[k] = self.update_embedded_dict(d[k],d_new[k])
-    #            else:
-    #                # existing d[k] is not dict, and d_new[k] is dict: replace  
-    #                d[k] = d_new[k]
-    #        else:
-    #            # d[k] does not exist: insert
-    #            d[k] = v
-    #    return d
 

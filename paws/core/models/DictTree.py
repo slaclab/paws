@@ -118,7 +118,7 @@ class DictTree(object):
                     if k in itm.keys():
                         itm = itm[k]
                     else:
-                        # this could be a dict with a key containing a '.'
+                        # special case: this could be a dict with a key containing a '.'
                         found = False
                         while not found:
                             k = k+'.'+path.pop(0)                        
@@ -207,7 +207,7 @@ class DictTree(object):
         else:
             try:
                 rootks = itm.keys()
-            except AttributeError as ex:
+            except Exception as ex:
                 # non-parental nodes may have no keys()
                 rootks = []
         if root_uri:

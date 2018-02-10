@@ -1,4 +1,5 @@
 from collections import OrderedDict
+import copy
 
 import os
 import numpy as np
@@ -39,9 +40,10 @@ class WriteArrayCSV(Operation):
         p = self.inputs['dir_path']
         fnm = self.inputs['filename']
         tag = self.inputs['filetag']
-        csv_path = os.path.join(p,self.inputs['filename']+tag+'.csv')
+        csv_path = os.path.join(p,self.inputs['filename']+tag)
         self.outputs['file_path'] = csv_path
         self.outputs['filename'] = fnm+tag 
+
         if h is not None:
             h_str = ''
             for i in range(len(h)-1):

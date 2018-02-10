@@ -7,8 +7,14 @@ import tzlocal
 from ... import Operation as opmod 
 from ...Operation import Operation
 
-inputs=OrderedDict(image_header=None,time_key=None,temp_key=None)
-outputs=OrderedDict(date_time=None,time=None,temperature=None)
+inputs=OrderedDict(
+    header_dict=None,
+    time_key=None,
+    temp_key=None)
+outputs=OrderedDict(
+    date_time=None,
+    time=None,
+    temperature=None)
 
 class TimeTempFromHeader(Operation):
     """
@@ -18,15 +24,15 @@ class TimeTempFromHeader(Operation):
     """
     def __init__(self):
         super(TimeTempFromHeader,self).__init__(inputs,outputs)        
-        self.input_doc['image_header'] = 'workflow uri of dict produced from detector output header file.'
-        self.input_doc['time_key'] = 'key in image_header that refers to the time' 
-        self.input_doc['temp_key'] = 'key in image_header that refers to the temperature' 
+        self.input_doc['header_dict'] = 'dict produced from detector output header file.'
+        self.input_doc['time_key'] = 'key in header_dict that refers to the time' 
+        self.input_doc['temp_key'] = 'key in header_dict that refers to the temperature' 
         self.output_doc['date_time'] = 'string representation of the time'
         self.output_doc['time'] = 'UTC time in seconds'
         self.output_doc['temperature'] = 'Temperature'
 
     def run(self):
-        d = self.inputs['image_header']
+        d = self.inputs['header_dict']
         ktime = self.inputs['time_key']
         ktemp = self.inputs['temp_key']
         time_str = str(d[ktime])

@@ -14,6 +14,7 @@ inputs=OrderedDict(
     input_keys=[],
     static_inputs=[],
     static_input_keys=[],
+    pass_thru_params={},
     order_array=None,
     order_function=None)
 
@@ -46,7 +47,13 @@ class Batch(Operation):
             'static inputs of the `work_item`- these should correspond to '\
             'either Operation.inputs or Workflow.inputs, '\
             'depending on whether `work_item` is an Operation or a Workflow'
-            
+
+        self.input_doc['pass_thru_params'] = 'dict of '\
+            'input_name:output_name pairs, where the `work_item` input '\
+            'for input_name is set using the `work_item` output output_name '\
+            'from the previous execution of `work_item`. '\
+            'This step is skipped for the first `work_item` in the batch. '
+
         self.input_doc['order_array'] = '(optional) array, '\
             'similar to input_arrays, used in conjunction '\
             'with `order_function` to determine '\
@@ -70,6 +77,7 @@ class Batch(Operation):
         self.input_datatype['input_keys'] = 'list'
         self.input_datatype['static_inputs'] = 'list'
         self.input_datatype['static_input_keys'] = 'list'
+        self.input_datatype['pass_thru_params'] = 'dict'
 
     def run(self):
         wrk = self.inputs['work_item']
@@ -78,6 +86,7 @@ class Batch(Operation):
         inpks = self.inputs['input_keys']
         stat_inps = self.inputs['static_inputs']
         stat_inpks = self.inputs['static_input_keys']
+        pass_thru_params = self.inputs['pass_thru_params']
 
         # index the execution order
         odrvals = self.inputs['order_array']
@@ -111,6 +120,7 @@ class Batch(Operation):
             self.data_callback('outputs.batch_outputs',[None for ib in range(n_batch)])
 
         self.message_callback('STARTING BATCH')
+        out_dict = None
         for i,idx in enumerate(odr_idx): 
 
             if self.stop_flag:
@@ -125,12 +135,18 @@ class Batch(Operation):
                     if isinstance(wrki,Workflow):
                         wrki.set_wf_input(inpnm,inpval)
                     else:
-                        # assume it's an Operation
                         wrki.inputs[inpnm] = inpval
+
+            if any(pass_thru_params) and out_dict is not None:
+                for inp_name,out_name in pass_thru_params.items():
+                    if isinstance(wrki,Workflow):
+                        wrki.set_wf_input(inp_name,out_dict[out_name])
+                    else:
+                        wrki.inputs[inp_name] = out_dict[out_name]
 
             if isinstance(wrki,Workflow):
                 wrki.execute()
-                out_dict = wrki.wf_outputs_dict()
+                out_dict = wrki.workflow_outputs()
             else:
                 # assume Operation
                 wrki.run()

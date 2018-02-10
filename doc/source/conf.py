@@ -61,7 +61,7 @@ author = u'Lenson A. Pellouchoud'
 #
 # TODO: load version here.
 here = os.path.abspath(os.path.dirname(__file__))
-with open(os.path.join(here,'..','..','paws','paws_config.py')) as f: 
+with open(os.path.join(here,'..','..','paws','config.py')) as f: 
     exec(f.read())
 ver = __version__.split('.') 
 # The short X.Y version.

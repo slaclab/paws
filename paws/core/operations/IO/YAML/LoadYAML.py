@@ -10,8 +10,9 @@ inputs=OrderedDict(file_path=None)
 outputs=OrderedDict(yaml_output=None)
 
 class LoadYAML(Operation):
-    """
-    Load a YAML file, save the output of yaml.load(open(file_path,'r')) 
+    """Load data from a YAML file
+
+    Returns the output of yaml.load() 
     """
 
     def __init__(self):
@@ -24,6 +25,24 @@ class LoadYAML(Operation):
         f = open(p,'r')
         ds = yaml.load(f)
         f.close()
+
+        #
+        #
+        #
+        #
+        for k,v in ds.items():
+            if isinstance(v,list) or isinstance(v,np.ndarray):
+                ds[k] = float(v[0])
+            elif ds[k] is None:
+                ds.pop(k)
+            else:
+                ds[k] = float(v)
+        #
+        #
+        #
+        #
+
         self.outputs['yaml_output'] = ds 
+
 
 

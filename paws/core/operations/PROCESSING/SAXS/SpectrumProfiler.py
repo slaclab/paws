@@ -5,8 +5,11 @@ from ... import Operation as opmod
 from ...Operation import Operation
 from saxskit import saxs_math 
 
-inputs = OrderedDict(q_I=None,dI=None)
-outputs = OrderedDict(features=None)
+inputs = OrderedDict(
+    q_I=None,
+    dI=None)
+outputs = OrderedDict(
+    features=None)
 
 class SpectrumProfiler(Operation):
     """Profile a SAXS spectrum and return some numerical metrics.
