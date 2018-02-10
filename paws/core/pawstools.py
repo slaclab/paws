@@ -32,9 +32,9 @@ if not os.path.exists(paws_cfg_dir):
 if not os.path.exists(paws_scratch_dir):
     os.mkdir(paws_scratch_dir)
 
-# Get the code version from the paws_config.py file.
+# Get the code version from the config.py file.
 # Reference version string as __version__
-with open(os.path.join(sourcedir,'paws_config.py')) as f: 
+with open(os.path.join(sourcedir,'config.py')) as f: 
     exec(f.read())
 
 class WorkflowAborted(Exception):

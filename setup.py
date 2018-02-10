@@ -24,8 +24,8 @@ with open(path.join(here,'contributors.txt')) as f:
         __authorship__ += line.strip()+', '
 __authorship__ = __authorship__[:-2]
 
-# Executing paws/paws_config.py defines __version__ 
-with open(path.join(here,'paws','paws_config.py')) as f: 
+# Executing paws/config.py defines __version__ 
+with open(path.join(here,'paws','config.py')) as f: 
     exec(f.read())
 
 setup(
