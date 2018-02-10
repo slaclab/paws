@@ -15,6 +15,3 @@ pytz
 tzlocal
 saxskit
 tifffile
-pyside
-pyqtgraph
-qdarkstyle
