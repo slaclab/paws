@@ -1,3 +1,0 @@
-pyside
-pyqtgraph
-qdarkstyle
