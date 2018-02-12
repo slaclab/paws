@@ -79,7 +79,7 @@ class WfManager(object):
         wf.execute()
         self.message_callback('execution finished')
 
-    def stop_wf(self,wf_name):
+    def stop_workflow(self,wf_name):
         """Stop the workflow indicated by `wf_name`"""
         self.message_callback('stopping workflow {}'.format(wf_name))
         wf = self.workflows[wf_name]
