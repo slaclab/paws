@@ -138,6 +138,13 @@ class Workflow(TreeModel):
             self.set_item(op_name+'.inputs.'+input_name,val)
 
     def connect_input(self,wf_input_name,op_input_uris):
+        if not isinstance(op_input_uris,list):
+            op_input_uris = [op_input_uris]
+        for u in op_input_uris:
+            if not u in self.keys():
+                msg = 'Operation input {} not found in {}'\
+                .format(u,self.keys())
+                raise KeyError(msg)
         self.inputs[wf_input_name] = op_input_uris
 
     def connect_output(self,wf_output_name,op_output_uris):
@@ -149,23 +156,28 @@ class Workflow(TreeModel):
     def break_output(self,wf_output_name):
         self.outputs.pop(wf_output_name)
 
-    def workflow_outputs(self):
+    def get_outputs(self):
         d = OrderedDict()
         for wf_out_name in self.outputs.keys():
             d[wf_out_name] = self.get_wf_output(wf_out_name)
         return d
 
-    def set_wf_input(self,wf_input_name,val,tp=None):
+    def set_input(self,wf_input_name,val,tp=None):
         """Set a value for all inputs in self.inputs[`wf_input_name`]."""
         urilist = self.inputs[wf_input_name]
         if not isinstance(urilist,list):
             urilist = [urilist]
         for uri in urilist:
             p = uri.split('.')
-            if len(p) > 2 and p[1] == 'inputs':
+            if len(p) == 3 and p[1] == 'inputs':
                 self.set_op_input(p[0],p[2],val,tp)
             else:
-                self.set_item(uri,val)
+                # TODO: consider whether any other structure should be allowed.
+                # For now, raise an exception.
+                #self.set_item(uri,val)
+                msg = 'uri {} does not seem to '\
+                'be an Operation input'.format(uri)
+                raise KeyError(msg)
 
     def get_wf_input_value(self,wf_input_name):
         uri = self.inputs[wf_input_name]
@@ -263,7 +275,7 @@ class Workflow(TreeModel):
             op_rdy = False
         return op_rdy,diagnostics 
 
-    def execute(self):
+    def run(self):
         """Execute the Workflow.
 
         All of the operations in the Workflow that are ready
@@ -334,7 +346,7 @@ class Workflow(TreeModel):
         wf_dict['OP_ENABLE_FLAGS'] = self.op_enable_flags()
         return wf_dict
 
-    def clone_wf(self):
+    def build_clone(self):
         """Produce a clone of this Workflow."""
         new_wf = self.clone() 
         new_wf.inputs = copy.deepcopy(self.inputs)
@@ -349,7 +361,7 @@ class Workflow(TreeModel):
         # of cloning the workflow to run it in a separate thread.
         new_wf.data_callback = self.data_callback
         for op_name,op in self.operations.items():
-            new_wf.add_operation(op_name,op.clone_op())
+            new_wf.add_operation(op_name,op.build_clone())
             if not self.is_op_enabled(op_name):
                 new_wf.disable_op(op_name)
         return new_wf

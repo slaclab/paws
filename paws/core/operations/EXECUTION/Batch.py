@@ -5,7 +5,6 @@ import copy
 import numpy as np
 
 from ..Operation import Operation
-from ...workflows.Workflow import Workflow
 from .. import optools
 
 inputs=OrderedDict(
@@ -22,8 +21,6 @@ outputs=OrderedDict(
     batch_inputs=None,
     batch_outputs=None)
         
-# TODO: unify Operation and Workflow APIs to eliminate instance checks
-
 class Batch(Operation):
     """Batch-execute a Workflow or Operation in specific order"""
 
@@ -98,18 +95,13 @@ class Batch(Operation):
             odr_idx = np.arange(len(inps[0]))
         n_batch = len(odr_idx)
 
-        # copy the work item and index it
-        if isinstance(wrk,Workflow):
-            wrkitms = [wrk.clone_wf() for idx in odr_idx]
-        else:
-            # assume Operation
-            wrkitms = [wrk.clone_op() for idx in odr_idx]
+        wrkitms = [wrk.build_clone() for idx in odr_idx]
             
         batch_inp_dicts = []
         for idx,wrkitm in zip(odr_idx,wrkitms):
             batch_inps = OrderedDict.fromkeys(inpks)
             for inpk,inp in zip(inpks,inps):
-                wrkitm.set_wf_input(inpk,inp[idx])
+                wrkitm.set_input(inpk,inp[idx])
                 batch_inps[inpk] = inp[idx]
             batch_inp_dicts.append(batch_inps)
 
@@ -132,25 +124,14 @@ class Batch(Operation):
 
             if any(stat_inpks): 
                 for inpnm,inpval in zip(stat_inpks,stat_inps):
-                    if isinstance(wrki,Workflow):
-                        wrki.set_wf_input(inpnm,inpval)
-                    else:
-                        wrki.inputs[inpnm] = inpval
+                    wrki.set_input(inpnm,inpval)
 
             if any(pass_thru_params) and out_dict is not None:
                 for inp_name,out_name in pass_thru_params.items():
-                    if isinstance(wrki,Workflow):
-                        wrki.set_wf_input(inp_name,out_dict[out_name])
-                    else:
-                        wrki.inputs[inp_name] = out_dict[out_name]
+                    wrki.set_input(inp_name,out_dict[out_name])
 
-            if isinstance(wrki,Workflow):
-                wrki.execute()
-                out_dict = wrki.workflow_outputs()
-            else:
-                # assume Operation
-                wrki.run()
-                out_dict = wrki.outputs
+            wrki.run()
+            out_dict = wrki.get_outputs()
             self.outputs['batch_outputs'][i] = out_dict
             if self.data_callback: 
                 self.data_callback('outputs.batch_outputs.'+str(i),copy.deepcopy(out_dict))

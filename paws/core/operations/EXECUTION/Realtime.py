@@ -3,7 +3,6 @@ import copy
 import time
 
 from ..Operation import Operation
-from ...workflows.Workflow import Workflow
 from .. import optools
 
 inputs=OrderedDict(
@@ -103,26 +102,13 @@ class Realtime(Operation):
                         keep_going = False 
             if keep_going:
                 for inpnm,inpval in inp_dict.items():
-                    if isinstance(wrk,Workflow):
-                        wrk.set_wf_input(inpnm,inpval)
-                    else:
-                        # assume Operation
-                        wrk.inputs[inpnm] = inpval
+                    wrk.set_input(inpnm,inpval)
                 if any(stat_inpks): 
                     for inpnm,inpval in zip(stat_inpks,stat_inps):
-                        if isinstance(wrk,Workflow):
-                            wrk.set_wf_input(inpnm,inpval)
-                        else:
-                            # assume Operation
-                            wrk.inputs[inpnm] = inpval
+                        wrk.set_input(inpnm,inpval)
                 self.message_callback('REALTIME RUN {}'.format(nx))
-                if isinstance(wrk,Workflow):
-                    wrk.execute()
-                    out_dict = wrk.wf_outputs_dict()
-                else:
-                    # assume Operation
-                    wrk.run()
-                    out_dict = wrk.outputs
+                wrk.run()
+                out_dict = wrk.get_outputs()
                 self.outputs['realtime_outputs'].append(out_dict)
                 if self.data_callback: 
                     self.data_callback('outputs.realtime_outputs.'+str(nx),copy.deepcopy(out_dict))

@@ -180,7 +180,7 @@ wf.connect_output('temperature','time_temp.outputs.temperature')
 wf.connect_output('q_I','integrate.outputs.q_I')
 wf.connect_output('q_I_dz','dezinger.outputs.q_I_dz')
 wf.connect_output('q_I_dz_bgsub','bg_subtract.outputs.q_I_bgsub')
-wf.connect_output('q_logI_dz_bgsub','logI.outputs.x_logy')
+wf.connect_output('q_logI_dz_bgsub','log_I.outputs.x_logy')
 
 wf.set_op_input('image_path','filename','read_header.outputs.filename','workflow item')
 wf.set_op_input('image_path','ext','tif')

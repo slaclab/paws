@@ -16,6 +16,10 @@ class PluginManager(TreeModel):
         super(PluginManager,self).__init__(flag_dict)
         self.plugins = self._root_dict
         self.message_callback = print 
+        # dict of clones for plugins across threads:
+        self.plugin_clones = OrderedDict()
+        # dict of bools to keep track of who is at work:
+        self.plugin_running = OrderedDict() 
 
     def add_plugin(self,plugin_name,plugin_module):
         """Import, name, and add a plugin.
@@ -33,9 +37,20 @@ class PluginManager(TreeModel):
             retrieve it with `plugin_module` = 'CATEGORY.MyPlugin'.
         """
         p = self.get_plugin(plugin_module)
+        p.message_callback = self.message_callback
         if not self.is_tag_valid(plugin_name): 
             raise pawstools.PluginNameError(self.tag_error_message(plugin_name))
+        # NOTE: set_item() is used here, because subclasses reimplement set_item().
         self.set_item(plugin_name,p)
+        self.plugin_running[plugin_name] = False 
+
+    def start_plugin(self,plugin_name):
+        self.plugin_running[plugin_name] = True
+        self.plugins[plugin_name].start()
+
+    def stop_plugin(self,plugin_name):
+        self.plugins[plugin_name].stop()
+        self.plugin_running[plugin_name] = False
 
     def get_plugin(self,plugin_module): 
         """Import, instantiate, return a PawsPlugin from its module.
