@@ -1,4 +1,5 @@
 from __future__ import print_function
+from multiprocessing import Process,Pool
 from collections import OrderedDict
 import copy
 import traceback
@@ -41,7 +42,12 @@ class WfManager(object):
         self.op_manager = op_manager 
         self.plugin_manager = plugin_manager 
         self.workflows = OrderedDict() 
-        self.message_callback = print 
+        # dict of workflow clones for executing across threads:
+        self.wf_clones = OrderedDict()
+        # dict of bools to keep track of who is at work:
+        self.wf_running = OrderedDict() 
+        self.message_callback = print
+        self.wf_threads = OrderedDict()
 
     def add_workflow(self,wf_name):
         """Name and add a workflow.
@@ -64,26 +70,51 @@ class WfManager(object):
             raise pawstools.WfNameError(wf.tag_error_message(wf_name))
         wf.message_callback = self.message_callback
         self.workflows[wf_name] = wf
+        self.wf_running[wf_name] = False
         return wf
 
     def n_workflows(self):
         """Return the current number of Workflows"""
         return len(self.workflows)
 
-    def run_workflow(self,wf_name):
+    def run_workflow(self,wf_name,pool=None):
         """Execute the workflow indicated by `wf_name`"""
         wf = self.workflows[wf_name]
         self.message_callback('preparing workflow {} for execution'.format(wf_name))
         stk,diag = wf.execution_stack()
         self.prepare_wf(wf,stk)
-        wf.execute()
-        self.message_callback('execution finished')
+        if pool is None:
+            self.wf_running[wf_name] = True
+            wf.run()
+            self.message_callback('execution finished')
+        else:
+            wf_clone = wf.build_clone()
+            wf_clone.message_callback = wf.message_callback
+            wf_clone.data_callback = wf.set_item
+            # TODO: how do we know when a cloned wf is finished? 
+            # need to implement a finished_callback?
+            # or is there something in the Process that can help?
+            #wf_clone.wfFinished.connect( partial(self.stop_workflow,wf_name) )
+            for op_name,op in wf_clone.operations.items():
+                op.message_callback = wf.message_callback
+                op.data_callback = partial( wf.set_op_item,op_name )
+            self.wf_clones[wf_name] = wf_clone
+            # temporary for debugging:
+            wf_clone.run()
+            self.message_callback('execution finished')
+            #wf_proc = Process(target=wf_clone.run,name=wf_name)
+            #pool[wf_name] = wf_proc 
 
     def stop_workflow(self,wf_name):
         """Stop the workflow indicated by `wf_name`"""
         self.message_callback('stopping workflow {}'.format(wf_name))
-        wf = self.workflows[wf_name]
-        wf.stop()
+        if wf_name in self.wf_clones.keys():
+            wf = self.wf_clones.pop(wf_name)
+            wf.stop()
+        else:
+            wf = self.workflows[wf_name]
+            wf.stop()
+        self.wf_running[wf_name] = False
 
     def prepare_wf(self,wf,stk):
         """
@@ -135,13 +166,13 @@ class WfManager(object):
         wfins = wf_setup_dict.pop('WORKFLOW_INPUTS')
         wfouts = wf_setup_dict.pop('WORKFLOW_OUTPUTS')
         opflags = wf_setup_dict.pop('OP_ENABLE_FLAGS')
-        for inpname,inpval in wfins.items():
-            self.workflows[wf_name].connect_input(inpname,inpval)
-        for outname,outval in wfouts.items():
-            self.workflows[wf_name].connect_output(outname,outval)
         for op_tag, op_setup_dict in wf_setup_dict.items():
             self.workflows[wf_name].load_operation(op_tag,op_setup_dict,self.op_manager)
             if not opflags[op_tag]:
                 self.workflows[wf_name].disable_op(op_tag)
+        for inpname,inpval in wfins.items():
+            self.workflows[wf_name].connect_input(inpname,inpval)
+        for outname,outval in wfouts.items():
+            self.workflows[wf_name].connect_output(outname,outval)
 
 

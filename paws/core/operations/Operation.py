@@ -106,11 +106,14 @@ class Operation(object):
     def stop(self):
         self.stop_flag = True
 
+    def get_outputs(self):
+        return self.outputs
+
     @classmethod
     def clone(cls):
         return cls()
 
-    def clone_op(self):
+    def build_clone(self):
         """Clone the Operation.
 
         If this is used to provide a copy of the Operation
@@ -127,7 +130,7 @@ class Operation(object):
             new_il.val = copy.copy(il.val)
             if il.tp == entire_workflow:
                 if self.inputs[nm]:
-                    new_wf = self.inputs[nm].clone_wf()
+                    new_wf = self.inputs[nm].build_clone()
                     new_op.inputs[nm] = new_wf 
             else: 
                 # NOTE: have to implement __deepcopy__
@@ -156,7 +159,10 @@ class Operation(object):
             inp_dct[nm] = {'tp':copy.copy(il.tp),'val':copy.copy(il.val)}
         dct['inputs'] = inp_dct 
         return dct
-    
+
+    def set_input(self,input_name,val):
+        self.inputs[input_name] = val    
+
     def clear_outputs(self):
         for k,v in self.outputs.items():
             self.outputs[k] = None
