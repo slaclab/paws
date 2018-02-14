@@ -45,21 +45,25 @@ class SetPPumps(Operation):
                 tgt = tgts[ipp]
                 setpt = setpts[ipp]
                 prec = precs[ipp]
-                ppc.set_target(tgt,setpt,prec)
-            done = False
-            while not done:
-                done = True
-                for ipp,ppc in enumerate(ppcs):
-                    tgt = tgts[ipp]
-                    setpt = setpts[ipp]
-                    prec = precs[ipp]
-                    vals[ipp] = ppc.get_current_value(tgt)
-                    if not abs(vals[ipp]-setpt)/setpt < prec:
-                        done = False
-                # TODO:
-                # delay, then check again
-                # implement a maximum wait time
-            rpt = dict(targets=tgts,final_values=vals)
+                if tgt == 'flowrate':
+                    ppc.set_flowrate(tgt,setpt,prec)
+                elif tgt == 'pressure':
+                    ppc.set_pressure(tgt,setpt,prec)
+            #done = False
+            #while not done:
+            #    done = True
+            #    for ipp,ppc in enumerate(ppcs):
+            #        tgt = tgts[ipp]
+            #        setpt = setpts[ipp]
+            #        prec = precs[ipp]
+            #        vals[ipp] = ppc.get_current_value(tgt)
+            #        if not abs(vals[ipp]-setpt)/setpt < prec:
+            #            done = False
+            #    # TODO:
+            #    # delay, then check again
+            #    # implement a maximum wait time
+            #rpt = dict(targets=tgts,final_values=vals)
+            rpt = {} 
             self.outputs['report'] = rpt
             self.outputs['status_code'] = True
         else:
