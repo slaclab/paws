@@ -11,6 +11,7 @@ fabio
 pyfai
 pypif
 citrination_client
+pyserial
 pytz
 tzlocal
 saxskit
