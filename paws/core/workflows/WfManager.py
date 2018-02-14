@@ -1,16 +1,12 @@
 from __future__ import print_function
-from multiprocessing import Process,Pool
 from collections import OrderedDict
-import copy
-import traceback
-import time
+from functools import partial
+#from multiprocessing import Process,Pool
 
-from ..operations import optools
 from ..operations.OpManager import OpManager
 from ..plugins.PluginManager import PluginManager
 from .Workflow import Workflow
-from ..operations import Operation as opmod
-from ..operations.Operation import Operation
+from ..operations import Operation
 from .. import pawstools
 
 class WfManager(object):
@@ -28,10 +24,10 @@ class WfManager(object):
         Parameters
         ----------
         op_manager : OpManager (optional)
-            an operations manager (paws.core.operations.OpManager.OpManager)-
+            an operations manager (see paws.core.operations.OpManager)-
             if not provided, a default OpManager will be created.
         plugin_manager : PluginManager (optional)
-            a plugins manager (paws.core.plugins.PluginManager.PluginManager)-
+            a plugins manager (see paws.core.plugins.PluginManager)-
             if not provided, a default PluginManager will be created.
         """
         super(WfManager,self).__init__()
@@ -82,28 +78,22 @@ class WfManager(object):
         wf = self.workflows[wf_name]
         self.message_callback('preparing workflow {} for execution'.format(wf_name))
         stk,diag = wf.execution_stack()
-        self.prepare_wf(wf,stk)
-        if pool is None:
-            self.wf_running[wf_name] = True
-            wf.run()
-            self.message_callback('execution finished')
-        else:
-            wf_clone = wf.build_clone()
-            wf_clone.message_callback = wf.message_callback
-            wf_clone.data_callback = wf.set_item
-            # TODO: how do we know when a cloned wf is finished? 
-            # need to implement a finished_callback?
-            # or is there something in the Process that can help?
-            #wf_clone.wfFinished.connect( partial(self.stop_workflow,wf_name) )
-            for op_name,op in wf_clone.operations.items():
-                op.message_callback = wf.message_callback
-                op.data_callback = partial( wf.set_op_item,op_name )
-            self.wf_clones[wf_name] = wf_clone
-            # temporary for debugging:
-            wf_clone.run()
-            self.message_callback('execution finished')
-            #wf_proc = Process(target=wf_clone.run,name=wf_name)
-            #pool[wf_name] = wf_proc 
+        wf_clone = self.prepare_wf(wf,stk)
+        self.wf_clones[wf_name] = wf_clone
+        #if pool is None:
+        self.wf_running[wf_name] = True
+        wf_clone.run()
+        self.message_callback('execution finished')
+        #else:
+        #    # TODO: how do we know when a cloned wf is finished? 
+        #    # need to implement a finished_callback?
+        #    # or is there something in the Process that can help?
+        #    #wf_clone.wfFinished.connect( partial(self.stop_workflow,wf_name) )
+        #    # temporary for debugging:
+        #    wf_clone.run()
+        #    self.message_callback('execution finished')
+        #    #wf_proc = Process(target=wf_clone.run,name=wf_name)
+        #    #pool[wf_name] = wf_proc 
 
     def stop_workflow(self,wf_name):
         """Stop the workflow indicated by `wf_name`"""
@@ -111,9 +101,9 @@ class WfManager(object):
         if wf_name in self.wf_clones.keys():
             wf = self.wf_clones.pop(wf_name)
             wf.stop()
-        else:
-            wf = self.workflows[wf_name]
-            wf.stop()
+        #else:
+        #    wf = self.workflows[wf_name]
+        #    wf.stop()
         self.wf_running[wf_name] = False
 
     def prepare_wf(self,wf,stk):
@@ -121,34 +111,49 @@ class WfManager(object):
         For all of the operations in stack stk,
         load all inputs that are not workflow items. 
         """
+        wf_clone = wf.build_clone()
+        wf_clone.message_callback = wf.message_callback
+        wf_clone.data_callback = wf.set_item
+        for op_name,op in wf_clone.operations.items():
+            op.message_callback = wf.message_callback
+            op.data_callback = partial( wf.set_op_item,op_name )
+        wf_clone.plugins = OrderedDict()
         for lst in stk:
             for op_tag in lst:
-                op = wf.get_data_from_uri(op_tag)
+                op = wf_clone.get_data_from_uri(op_tag)
                 for inpname,il in op.input_locator.items():
-                    if il.tp not in [opmod.runtime_type,opmod.workflow_item]:
-                        # NOTE 1: runtime inputs should be set directly, without using il.val.
-                        # this is because, when saving a workflow, il.val gets serialized.
-                        # NOTE 2: workflow_item inputs should be set later, during execution.
-                        wf.set_op_item(op_tag,'inputs.'+inpname,self.locate_input(il))
+                    if il.tp == Operation.plugin_item and il.val is not None:
+                        vals = il.val
+                        if not isinstance(vals,list):
+                            vals = [vals]
+                        for val in vals:
+                            pgin_name = val.split('.')[0]
+                            if not pgin_name in plugins.keys():
+                                wf_clone.plugins[pgin_name] = self.plugin_manager.get_data_from_uri(pgin_name)
+                    elif il.tp not in [Operation.runtime_type,Operation.workflow_item]:
+                        # NOTE 1: runtime inputs should be set later, 
+                        # to avoid il.val getting serialized.
+                        # NOTE 2: workflow_item and plugin_item inputs
+                        # should be set later, during execution.
+                        wf_clone.set_op_item(op_tag,'inputs.'+inpname,self.locate_input(il))
+        return wf_clone
 
     def locate_input(self,il):
-        """
-        Return the data pointed to by a given InputLocator object.
-        """
-        # note, workflow items will be fetched by the workflow during execution
-        if il.tp == opmod.basic_type:
+        """Use an InputLocator to find a piece of input data"""
+        # note, workflow and plugin items will be fetched by the workflow during execution
+        if il.tp == Operation.basic_type:
             return il.val
-        elif il.tp == opmod.entire_workflow:
+        elif il.tp == Operation.entire_workflow:
             wf = self.workflows[il.val]
             stk,diag = wf.execution_stack()
-            self.prepare_wf(wf,stk)
-            return wf
+            wf_clone = self.prepare_wf(wf,stk)
+            return wf_clone
             #return self.workflows[il.val]
-        elif il.tp == opmod.plugin_item:
-            if isinstance(il.val,list):
-                return [self.plugin_manager.get_data_from_uri(v) for v in il.val]
-            else:
-                return self.plugin_manager.get_data_from_uri(il.val)
+        #elif il.tp == Operation.plugin_item:
+        #    if isinstance(il.val,list):
+        #        return [self.plugin_manager.get_data_from_uri(v) for v in il.val]
+        #    else:
+        #        return self.plugin_manager.get_data_from_uri(il.val)
 
     def load_workflow(self,wf_name,wf_setup_dict):
         """Load a workflow from a dict that specifies its parameters.

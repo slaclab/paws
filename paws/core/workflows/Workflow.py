@@ -6,9 +6,7 @@ import traceback
 import os
 
 from ..models.TreeModel import TreeModel
-from ..operations import Operation as opmod
-from ..operations.Operation import Operation
-from ..operations import optools
+from ..operations import Operation
 
 class Workflow(TreeModel):
     """Workflow built from paws Operations, with TreeModel interface.
@@ -27,6 +25,7 @@ class Workflow(TreeModel):
         super(Workflow,self).__init__(flag_dict)
         self.inputs = OrderedDict()
         self.outputs = OrderedDict()
+        self.plugins = OrderedDict()
         self.operations = self._root_dict
         self.message_callback = print
         self.data_callback = None
@@ -116,24 +115,24 @@ class Workflow(TreeModel):
             msg = str('Input name {} not valid for Operation {} ({}).'
             .format(input_name,op_name,type(self.operations[op_name]).__name__))
             raise KeyError(msg)
-        if tp is not None and not tp in opmod.valid_types and not tp in opmod.input_types:
+        if tp is not None and not tp in Operation.valid_types and not tp in Operation.input_types:
             # tp is neither a string or an enum
             msg = '[{}] failed to parse input type: {}'.format(
             __name__,tp)
             raise ValueError(msg)
         il = self.operations[op_name].input_locator[input_name]
         if tp is not None:
-            if tp in opmod.input_types:
-                tp = opmod.input_types.index(tp)
-            il.tp = opmod.valid_types[tp]
-        if not il.tp == opmod.runtime_type:
+            if tp in Operation.input_types:
+                tp = Operation.input_types.index(tp)
+            il.tp = Operation.valid_types[tp]
+        if not il.tp == Operation.runtime_type:
             il.val = val
         else:
             # set inputlocator.val to None, 
             # so that this object will NOT attempt
             # to be serialized when save_to_wfl() is called.
             il.val = None
-        if il.tp in [opmod.basic_type,opmod.runtime_type]:
+        if il.tp in [Operation.basic_type,Operation.runtime_type]:
             # these types should be loaded for immediate use
             self.set_item(op_name+'.inputs.'+input_name,val)
 
@@ -254,7 +253,7 @@ class Workflow(TreeModel):
         diagnostics = {} 
         for name,il in op.input_locator.items():
             msg = ''
-            if il.tp == opmod.workflow_item:
+            if il.tp == Operation.workflow_item:
                 inp_rdy = False
                 if isinstance(il.val,list):
                     if all([v in valid_wf_inputs for v in il.val]):
@@ -295,7 +294,7 @@ class Workflow(TreeModel):
             for op_name in lst: 
                 op = self.get_data_from_uri(op_name) 
                 for inpnm,il in op.input_locator.items():
-                    if il.tp == opmod.workflow_item:
+                    if il.tp in [Operation.workflow_item,Operation.plugin_item]:
                         self.set_op_item(op_name,'inputs.'+inpnm,self.locate_input(il))
                 op.stop_flag = False
                 op.run() 
@@ -379,7 +378,7 @@ class Workflow(TreeModel):
         where the operation dict contains the results of calling
         self.build_tree(op.inputs) and self.build_tree(op.outputs). 
         """
-        if isinstance(x,Operation):
+        if isinstance(x,Operation.Operation):
             d = OrderedDict()
             d['inputs'] = self.build_tree(x.inputs)
             d['outputs'] = self.build_tree(x.outputs)
@@ -394,10 +393,31 @@ class Workflow(TreeModel):
         self.set_item(full_uri,item_data)
 
     def locate_input(self,il):
-        if isinstance(il.val,list):
-            return [self.get_data_from_uri(v) for v in il.val]
+        if il.tp == Operation.workflow_item:
+            if isinstance(il.val,list):
+                return [self.get_data_from_uri(v) for v in il.val]
+            else:
+                return self.get_data_from_uri(il.val)
+        elif il.tp == Operation.plugin_item:
+            if isinstance(il.val,list):
+                return [self.get_plugin_item(v) for v in il.val]
+            else:
+                return self.get_plugin_item(il.val)
+
+    def get_plugin_item(self,item_uri):
+        p = item_uri.split('.')
+        pgin_name = p[0]
+        if not pgin_name in self.plugins.keys():
+            msg = 'plugin {} not found in plugins ({})'\
+            .format(pgin_name,self.plugins.keys())
+            raise KeyError(msg)
+        if len(p) > 1:
+            c = self.plugins[pgin_name].content()
+            for pp in p[1:]:
+                c = c[pp]
+            return c
         else:
-            return self.get_data_from_uri(il.val)
+            return self.plugins[pgin_name]        
 
     @staticmethod
     def stack_contains(itm,stk):
