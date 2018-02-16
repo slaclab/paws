@@ -78,7 +78,7 @@ class WfManager(object):
         wf = self.workflows[wf_name]
         self.message_callback('preparing workflow {} for execution'.format(wf_name))
         stk,diag = wf.execution_stack()
-        wf_clone = self.prepare_wf(wf,stk)
+        wf_clone = self.prepare_wf(wf,stk,pool)
         self.wf_clones[wf_name] = wf_clone
         #if pool is None:
         self.wf_running[wf_name] = True
@@ -106,18 +106,17 @@ class WfManager(object):
         #    wf.stop()
         self.wf_running[wf_name] = False
 
-    def prepare_wf(self,wf,stk):
+    def prepare_wf(self,wf,stk,pool=None):
         """
         For all of the operations in stack stk,
         load all inputs that are not workflow items. 
         """
         wf_clone = wf.build_clone()
-        wf_clone.message_callback = wf.message_callback
-        wf_clone.data_callback = wf.set_item
+        for pgn_name,pgn in wf_clone.plugins.items():
+            self.plugin_manager.start_plugin(pgn_name,pool) 
         for op_name,op in wf_clone.operations.items():
             op.message_callback = wf.message_callback
             op.data_callback = partial( wf.set_op_item,op_name )
-        wf_clone.plugins = OrderedDict()
         for lst in stk:
             for op_tag in lst:
                 op = wf_clone.get_data_from_uri(op_tag)
@@ -128,7 +127,7 @@ class WfManager(object):
                             vals = [vals]
                         for val in vals:
                             pgin_name = val.split('.')[0]
-                            if not pgin_name in plugins.keys():
+                            if not pgin_name in wf_clone.plugins.keys():
                                 wf_clone.plugins[pgin_name] = self.plugin_manager.get_data_from_uri(pgin_name)
                     elif il.tp not in [Operation.runtime_type,Operation.workflow_item]:
                         # NOTE 1: runtime inputs should be set later, 

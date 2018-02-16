@@ -11,6 +11,7 @@ class PawsPlugin(object):
         self.input_doc = OrderedDict.fromkeys(self.inputs.keys()) 
         self.message_callback = print
         self.data_callback = None 
+        self.running = False
 
     def __getitem__(self,key):
         if key == 'inputs':
@@ -49,7 +50,7 @@ class PawsPlugin(object):
         e.g. by opening connections, reading files, etc. 
         Reimplement this in PawsPlugin subclasses as needed.
         """
-        pass
+        self.running = True 
 
     def stop(self):
         """Stop the plugin.
@@ -58,7 +59,22 @@ class PawsPlugin(object):
         for instance closing connections used by the plugin.
         Reimplement this in PawsPlugin subclasses as needed.
         """
-        pass
+        self.running = False 
+
+    @classmethod
+    def clone(cls):
+        return cls()
+
+    def build_clone(self):
+        """Clone the Plugin."""
+        new_pgn = self.clone()
+        for inp_nm,val in self.inputs.items():
+            new_pgn.inputs[inp_nm] = copy.deepcopy(self.inputs[inp_nm]) 
+        new_pgn.data_callback = self.data_callback
+        new_pgn.message_callback = self.message_callback
+        #if self.running:
+        #    new_pgn.start()
+        return new_pgn
 
     def setup_dict(self):
         """Return a dict that states the plugin's module and inputs."""

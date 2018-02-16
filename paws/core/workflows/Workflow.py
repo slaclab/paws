@@ -19,9 +19,7 @@ class Workflow(TreeModel):
     """
 
     def __init__(self):
-        flag_dict = OrderedDict()
-        flag_dict['select'] = False
-        flag_dict['enable'] = True
+        flag_dict = OrderedDict(select=False,enable=True)
         super(Workflow,self).__init__(flag_dict)
         self.inputs = OrderedDict()
         self.outputs = OrderedDict()
@@ -35,7 +33,7 @@ class Workflow(TreeModel):
         """Name and add an Operation to the Workflow.
 
         If `op_name` is not unique, 
-        this existing Operation is overwritten.
+        the existing Operation is overwritten.
 
         Parameters
         ----------
@@ -359,6 +357,10 @@ class Workflow(TreeModel):
         # This default setting is mostly intended for the use case
         # of cloning the workflow to run it in a separate thread.
         new_wf.data_callback = self.data_callback
+        new_wf.plugins = self.plugins 
+        #new_wf.plugins = OrderedDict()
+        #for pgn_name,pgn in self.plugins.items():
+        #    new_wf.plugins[pgn_name] = pgn
         for op_name,op in self.operations.items():
             new_wf.add_operation(op_name,op.build_clone())
             if not self.is_op_enabled(op_name):
