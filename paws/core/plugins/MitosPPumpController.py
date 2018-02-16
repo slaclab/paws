@@ -42,14 +42,8 @@ class MitosPPumpController(PawsPlugin):
                             2:'TARE', \
                             3:'ERROR', \
                             4:'LEAK TEST'}
-        import pdb; pdb.set_trace()
+        self.ser = None
         self.connected = False
-        self.ser = serial.Serial(
-            self.inputs['serial_device'], 
-            57600, timeout=1, 
-            parity = serial.PARITY_NONE, 
-            bytesize = serial.EIGHTBITS, 
-            xonxoff = 0, rtscts = 0)
         
         self.commands = []
         self.flow_setpt = 0
@@ -59,6 +53,14 @@ class MitosPPumpController(PawsPlugin):
         self.commands.append(cmd)
 
     def start(self):
+        if not self.connected:
+            self.ser = serial.Serial(
+                self.inputs['serial_device'], 
+                57600, timeout=1, 
+                parity = serial.PARITY_NONE, 
+                bytesize = serial.EIGHTBITS, 
+                xonxoff = 0, rtscts = 0)
+            self.connected = True
         stat = self.read_status()
         if not stat['state_code'] == 1:
             # attempt to enter remote control mode 
@@ -72,7 +74,7 @@ class MitosPPumpController(PawsPlugin):
             self.history = []
             if self.data_callback:
                 self.data_callback('content.history',self.history)
-            self.controller = PumpController(self.inputs['serial_device'])
+            #self.controller = PumpController(self.inputs['serial_device'])
             dt = self.inputs['dt']
             self.history = [self.pump_status()]
             if self.data_callback:
