@@ -43,7 +43,11 @@ class WfManager(object):
         # dict of bools to keep track of who is at work:
         self.wf_running = OrderedDict() 
         self.message_callback = print
-        self.wf_threads = OrderedDict()
+        self.pool=None
+
+    def set_pool(self,pool):
+        self.pool = pool
+        self.plugin_manager.pool = pool
 
     def add_workflow(self,wf_name):
         """Name and add a workflow.

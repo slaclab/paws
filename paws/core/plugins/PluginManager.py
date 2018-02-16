@@ -21,6 +21,7 @@ class PluginManager(TreeModel):
         self.plugin_clones = OrderedDict()
         # dict of bools to keep track of who is at work:
         self.plugin_running = OrderedDict() 
+        self.pool = None
 
     def add_plugin(self,plugin_name,plugin_module):
         """Import, name, and add a plugin.
