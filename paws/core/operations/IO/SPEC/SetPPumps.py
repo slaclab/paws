@@ -8,7 +8,7 @@ inputs=OrderedDict(
     ppump_controllers=None,
     targets=None,
     set_points=None,
-    precision=0.01,
+    precisions=None,
     status_code=True)
 outputs=OrderedDict(
     report=None,
@@ -23,8 +23,8 @@ class SetPPumps(Operation):
         self.input_doc['targets'] = 'list of control modes (strings) for each pump- '\
             'each entry should be either "flowrate" or "pressure"' 
         self.input_doc['set_points'] = 'list of set points for each pump' 
-        self.input_doc['precision'] = 'either a float or a list of floats, '\
-            'specifying the fractional precision for each target.'
+        self.input_doc['precisions'] = 'list of floats '\
+            'specifying the fractional precision for each target'
         self.input_doc['status_code'] = 'boolean flag for whether or not to proceed' 
         self.output_doc['report'] = 'dict reporting details of final state' 
         self.output_doc['status_code'] = 'boolean, positive iff the targets were achieved' 
@@ -33,11 +33,7 @@ class SetPPumps(Operation):
         ppcs = self.inputs['ppump_controllers'] 
         tgts = self.inputs['targets']
         setpts = self.inputs['set_points']
-        prec = self.inputs['precision']
-        if isinstance(prec,list):
-            precs = prec
-        else:
-            precs = [float(prec) for ppc in ppcs]
+        precs = self.inputs['precisions']
         stat = self.inputs['status_code']
         vals = [None for ppc in ppcs] 
         if bool(stat):
@@ -46,9 +42,9 @@ class SetPPumps(Operation):
                 setpt = setpts[ipp]
                 prec = precs[ipp]
                 if tgt == 'flowrate':
-                    ppc.set_flowrate(tgt,setpt,prec)
+                    ppc.set_flowrate(setpt,prec)
                 elif tgt == 'pressure':
-                    ppc.set_pressure(tgt,setpt,prec)
+                    ppc.set_pressure(setpt,prec)
             #done = False
             #while not done:
             #    done = True
