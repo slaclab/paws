@@ -32,13 +32,14 @@ class BuildFilePath(Operation):
         self.output_doc['file_path'] = 'file_path will be <path><prefix><filename><suffix>.<ext>' 
 
     def run(self):
-        p = self.inputs['dir_path']
-        fn = self.inputs['filename']
-        ext = self.inputs['ext']
-        if not ext[0] == '.' and not ext == '':
-            ext = '.'+ext
-        pf = self.inputs['prefix']
-        sf = self.inputs['suffix']
+        p = str(self.inputs['dir_path'])
+        fn = str(self.inputs['filename'])
+        ext = str(self.inputs['ext'])
+        if bool(ext):
+            if not ext[0] == '.':
+                ext = '.'+ext
+        pf = str(self.inputs['prefix'])
+        sf = str(self.inputs['suffix'])
         self.outputs['filename'] = str(pf+fn+sf) 
         full_filename = self.outputs['filename']+ext
         self.outputs['file_path'] = os.path.join(p,full_filename)
