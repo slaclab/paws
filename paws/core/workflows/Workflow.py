@@ -23,7 +23,6 @@ class Workflow(TreeModel):
         super(Workflow,self).__init__(flag_dict)
         self.inputs = OrderedDict()
         self.outputs = OrderedDict()
-        self.plugins = OrderedDict()
         self.operations = self._root_dict
         self.message_callback = print
         self.data_callback = None
@@ -128,7 +127,7 @@ class Workflow(TreeModel):
         else:
             # set inputlocator.val to None, 
             # so that this object will NOT attempt
-            # to be serialized when save_to_wfl() is called.
+            # to be serialized
             il.val = None
         if il.tp in [Operation.basic_type,Operation.runtime_type]:
             # these types should be loaded for immediate use
@@ -292,8 +291,9 @@ class Workflow(TreeModel):
             for op_name in lst: 
                 op = self.get_data_from_uri(op_name) 
                 for inpnm,il in op.input_locator.items():
-                    if il.tp in [Operation.workflow_item,Operation.plugin_item]:
-                        self.set_op_item(op_name,'inputs.'+inpnm,self.locate_input(il))
+                    if il.tp == Operation.workflow_item:
+                        self.set_op_item(op_name,'inputs.'+inpnm,
+                        self.get_wf_data(il))
                 op.stop_flag = False
                 op.run() 
                 for outnm,outdata in op.outputs.items():
@@ -303,7 +303,7 @@ class Workflow(TreeModel):
         """Stop the Workflow.
 
         If any long-running Operations in the Workflow
-        are written to examine their _stop_flag periodically,
+        are written to examine their stop_flag periodically,
         all execution should exit relatively soon.
         """
         self.stop_flag = True
@@ -349,20 +349,20 @@ class Workflow(TreeModel):
         new_wf.inputs = copy.deepcopy(self.inputs)
         new_wf.outputs = copy.deepcopy(self.outputs)
         # NOTE 1: cloned workflows will dump messages to self.message_callback 
-        new_wf.message_callback = self.message_callback
+        #new_wf.message_callback = self.message_callback
         # NOTE 2: they will also dump their data to self.data_callback.
         # In cases where this is undesirable,
         # e.g. when running multiple clones in parallel, 
         # this data_callback should be disconnected after cloning.
         # This default setting is mostly intended for the use case
         # of cloning the workflow to run it in a separate thread.
-        new_wf.data_callback = self.data_callback
-        new_wf.plugins = self.plugins 
+        #new_wf.data_callback = self.data_callback
         #new_wf.plugins = OrderedDict()
         #for pgn_name,pgn in self.plugins.items():
         #    new_wf.plugins[pgn_name] = pgn
         for op_name,op in self.operations.items():
-            new_wf.add_operation(op_name,op.build_clone())
+            new_op = op.build_clone()
+            new_wf.add_operation(op_name,new_op)
             if not self.is_op_enabled(op_name):
                 new_wf.disable_op(op_name)
         return new_wf
@@ -388,38 +388,16 @@ class Workflow(TreeModel):
         else:
             return super(Workflow,self).build_tree(x) 
 
-
     def set_op_item(self,op_name,item_uri,item_data):
         """Subroutine for use with functools.partial for callbacks"""
         full_uri = op_name+'.'+item_uri
         self.set_item(full_uri,item_data)
 
-    def locate_input(self,il):
-        if il.tp == Operation.workflow_item:
-            if isinstance(il.val,list):
-                return [self.get_data_from_uri(v) for v in il.val]
-            else:
-                return self.get_data_from_uri(il.val)
-        elif il.tp == Operation.plugin_item:
-            if isinstance(il.val,list):
-                return [self.get_plugin_item(v) for v in il.val]
-            else:
-                return self.get_plugin_item(il.val)
-
-    def get_plugin_item(self,item_uri):
-        p = item_uri.split('.')
-        pgin_name = p[0]
-        if not pgin_name in self.plugins.keys():
-            msg = 'plugin {} not found in plugins ({})'\
-            .format(pgin_name,self.plugins.keys())
-            raise KeyError(msg)
-        if len(p) > 1:
-            c = self.plugins[pgin_name].content()
-            for pp in p[1:]:
-                c = c[pp]
-            return c
+    def get_wf_data(self,il):
+        if isinstance(il.val,list):
+            return [self.get_data_from_uri(v) for v in il.val]
         else:
-            return self.plugins[pgin_name]        
+            return self.get_data_from_uri(il.val)
 
     @staticmethod
     def stack_contains(itm,stk):

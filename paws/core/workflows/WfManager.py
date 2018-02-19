@@ -1,6 +1,7 @@
 from __future__ import print_function
 from collections import OrderedDict
 from functools import partial
+import copy
 #from multiprocessing import Process,Pool
 
 from ..operations.OpManager import OpManager
@@ -42,6 +43,7 @@ class WfManager(object):
         self.wf_clones = OrderedDict()
         # dict of bools to keep track of who is at work:
         self.wf_running = OrderedDict() 
+        self.plugin_names = OrderedDict()
         self.message_callback = print
         self.pool=None
 
@@ -77,12 +79,14 @@ class WfManager(object):
         """Return the current number of Workflows"""
         return len(self.workflows)
 
-    def run_workflow(self,wf_name,pool=None):
+    def run_workflow(self,wf_name):
         """Execute the workflow indicated by `wf_name`"""
         wf = self.workflows[wf_name]
         self.message_callback('preparing workflow {} for execution'.format(wf_name))
         stk,diag = wf.execution_stack()
-        wf_clone = self.prepare_wf(wf,stk,pool)
+        wf_clone = self.prepare_wf(wf_name,stk)
+        wf_clone.data_callback = wf.data_callback
+        wf_clone.message_callback = wf.message_callback
         self.wf_clones[wf_name] = wf_clone
         #if pool is None:
         self.wf_running[wf_name] = True
@@ -104,26 +108,56 @@ class WfManager(object):
         self.message_callback('stopping workflow {}'.format(wf_name))
         if wf_name in self.wf_clones.keys():
             wf = self.wf_clones.pop(wf_name)
+            wf_pgn_names = self.plugin_names.pop(wf_name)
             wf.stop()
+            for pgn_name in wf_pgn_names:
+                if not any(pgn_name in pnms for pnms in self.plugin_names.values()):
+                    self.plugin_manager.stop_plugin(pgn_name)
         #else:
         #    wf = self.workflows[wf_name]
         #    wf.stop()
         self.wf_running[wf_name] = False
 
-    def prepare_wf(self,wf,stk,pool=None):
+    def prepare_wf(self,wf_name,stk):
         """
         For all of the operations in stack stk,
         load all inputs that are not workflow items. 
-        """
+        """ 
+        wf = self.workflows[wf_name]
         wf_clone = wf.build_clone()
-        for pgn_name,pgn in wf_clone.plugins.items():
-            self.plugin_manager.start_plugin(pgn_name,pool) 
-        for op_name,op in wf_clone.operations.items():
-            op.message_callback = wf.message_callback
-            op.data_callback = partial( wf.set_op_item,op_name )
+        plugin_names = []
+        #for op_name,op in wf_clone.operations.items():
+        #    op.message_callback = wf.message_callback
+        #    op.data_callback = partial( wf.set_op_item,op_name )
         for lst in stk:
             for op_tag in lst:
                 op = wf_clone.get_data_from_uri(op_tag)
+                for inpname,il in op.input_locator.items():
+                    if il.tp == Operation.plugin_item:
+                        # Plugins are expected to be safe to use from any thread,
+                        # so they need not be cloned or copied
+                        wf_clone.set_op_item(op_tag,'inputs.'+inpname,
+                        self.get_plugin_data(il))
+                    elif il.tp == Operation.entire_workflow:
+                        if il.val in self.workflows.keys():
+                            wf_name = il.val
+                            input_wf = self.workflows[il.val]
+                            input_wf_stk,diag = input_wf.execution_stack()
+                            new_wf = self.prepare_wf(wf_name,input_wf_stk)
+                            #new_wf = wf.build_clone()
+                            # NOTE: setting this data_callback causes segfaults.
+                            # TODO: figure out why the segfaults,
+                            # and think of a good way to relay data back to the original workflow
+                            #new_wf.data_callback = self.workflows[wf_name].data_callback
+                            new_wf.message_callback = self.workflows[wf_name].message_callback
+                            wf_clone.set_op_item(op_tag,'inputs.'+inpname,new_wf)
+                    elif il.tp not in [Operation.runtime_type,Operation.workflow_item]:
+                        # NOTE 1: runtime inputs are set at runtime, 
+                        # so that the input does not get serialized
+                        # when and if this workflow gets serialized
+                        # NOTE 2: workflow_item inputs are retrieved during execution
+                        wf_clone.set_op_item(op_tag,'inputs.'+inpname,
+                        copy.deepcopy(il.val))
                 for inpname,il in op.input_locator.items():
                     if il.tp == Operation.plugin_item and il.val is not None:
                         vals = il.val
@@ -131,32 +165,19 @@ class WfManager(object):
                             vals = [vals]
                         for val in vals:
                             pgin_name = val.split('.')[0]
-                            if not pgin_name in wf_clone.plugins.keys():
-                                wf_clone.plugins[pgin_name] = self.plugin_manager.get_data_from_uri(pgin_name)
-                    elif il.tp not in [Operation.runtime_type,Operation.workflow_item]:
-                        # NOTE 1: runtime inputs should be set later, 
-                        # to avoid il.val getting serialized.
-                        # NOTE 2: workflow_item and plugin_item inputs
-                        # should be set later, during execution.
-                        wf_clone.set_op_item(op_tag,'inputs.'+inpname,self.locate_input(il))
+                            if not pgin_name in plugin_names:
+                                plugin_names.append(pgin_name)
+        self.plugin_names[wf_name] = plugin_names
+        for pgn_name in plugin_names:
+            if not self.plugin_manager.plugin_running[pgn_name]:
+                self.plugin_manager.start_plugin(pgn_name) 
         return wf_clone
 
-    def locate_input(self,il):
-        """Use an InputLocator to find a piece of input data"""
-        # note, workflow and plugin items will be fetched by the workflow during execution
-        if il.tp == Operation.basic_type:
-            return il.val
-        elif il.tp == Operation.entire_workflow:
-            wf = self.workflows[il.val]
-            stk,diag = wf.execution_stack()
-            wf_clone = self.prepare_wf(wf,stk)
-            return wf_clone
-            #return self.workflows[il.val]
-        #elif il.tp == Operation.plugin_item:
-        #    if isinstance(il.val,list):
-        #        return [self.plugin_manager.get_data_from_uri(v) for v in il.val]
-        #    else:
-        #        return self.plugin_manager.get_data_from_uri(il.val)
+    def get_plugin_data(self,il):
+        if isinstance(il.val,list):
+            return [self.plugin_manager.get_data_from_uri(v) for v in il.val]
+        else:
+            return self.plugin_manager.get_data_from_uri(il.val)
 
     def load_workflow(self,wf_name,wf_setup_dict):
         """Load a workflow from a dict that specifies its parameters.
