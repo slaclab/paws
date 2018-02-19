@@ -1,16 +1,18 @@
 from collections import OrderedDict
+import time
 import os
 
 from ...Operation import Operation
 
 inputs=OrderedDict(
     spec_infoclient=None,
+    T_ramp=None,
     T_set=None,
-    precision=0.01,
-    status_code=True)
+    delay_time=None,
+    flag=True)
 outputs=OrderedDict(
     report=None,
-    status_code=False)
+    flag=False)
         
 class SetCryoCon(Operation):
     """Set the temperature of the CryoCon"""
@@ -18,33 +20,31 @@ class SetCryoCon(Operation):
     def __init__(self):
         super(SetCryoCon,self).__init__(inputs,outputs)
         self.input_doc['spec_infoclient'] = 'A SpecInfoClient'
+        self.input_doc['T_ramp'] = 'Desired temperature ramp in degrees C per minute' 
         self.input_doc['T_set'] = 'Desired setpoint in degrees C' 
-        self.input_doc['precision'] = 'fractional precision for temperature' 
-        self.input_doc['status_code'] = 'boolean flag for whether or not to proceed' 
+        self.input_doc['delay_time'] = 'seconds to wait after setting temperature' 
+        self.input_doc['flag'] = 'boolean flag for whether or not to proceed' 
         self.output_doc['report'] = 'dict reporting details of final state' 
-        self.output_doc['status_code'] = 'boolean, positive iff the targets were achieved' 
+        self.output_doc['flag'] = 'boolean, positive if the Operation finished' 
 
     def run(self):
         cl = self.inputs['spec_infoclient'] 
+        delay = self.inputs['delay_time'] 
+        T_ramp = self.inputs['T_ramp'] 
         T_set = self.inputs['T_set'] 
-        prec = self.inputs['report'] 
-        stat = self.inputs['status_code'] 
+        stat = self.inputs['flag']
         if bool(stat):
-            cl.set_cryocon(T_set)
-            done = False
-            while not done:
-                val = cl.read_cryocon()
-                if abs(val-T_set)/T_set < prec:
-                    done = True
-                # TODO:
-                # delay, then check again
-                # implement a maximum wait time
+            cl.enable_cryocon()
+            cl.set_cryocon(T_set,T_ramp)
+            if delay:
+                self.message_callback('waiting {} seconds...'.format(delay))
+                time.sleep(delay)
+                # TODO: implement a control to ensure the setpoint
+            val = cl.read_cryocon()
             rpt = dict(targets=[T_set],final_values=[val])
             self.outputs['report'] = rpt
-            self.outputs['status_code'] = True
+            self.outputs['flag'] = True
         else:
             self.outputs['report'] = {'STATUS':bool(stat)}
-            self.outputs['status_code'] = False 
-
-
+            self.outputs['flag'] = False 
 

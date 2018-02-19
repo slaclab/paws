@@ -8,11 +8,11 @@ inputs=OrderedDict(
     ppump_controllers=None,
     targets=None,
     set_points=None,
-    precisions=None,
-    status_code=True)
+    delay_time=1.,
+    flag=True)
 outputs=OrderedDict(
     report=None,
-    status_code=False)
+    flag=False)
         
 class SetPPumps(Operation):
     """Set the flow or pressure for an array of P-pump controllers."""
@@ -23,28 +23,28 @@ class SetPPumps(Operation):
         self.input_doc['targets'] = 'list of control modes (strings) for each pump- '\
             'each entry should be either "flowrate" or "pressure"' 
         self.input_doc['set_points'] = 'list of set points for each pump' 
-        self.input_doc['precisions'] = 'list of floats '\
-            'specifying the fractional precision for each target'
-        self.input_doc['status_code'] = 'boolean flag for whether or not to proceed' 
+        self.input_doc['delay_time'] = 'seconds to wait after setting `set_points`' 
+        self.input_doc['flag'] = 'boolean flag for whether or not to proceed' 
         self.output_doc['report'] = 'dict reporting details of final state' 
-        self.output_doc['status_code'] = 'boolean, positive iff the targets were achieved' 
+        self.output_doc['flag'] = 'flag for whether the Operation finished' 
 
     def run(self):
         ppcs = self.inputs['ppump_controllers'] 
         tgts = self.inputs['targets']
         setpts = self.inputs['set_points']
-        precs = self.inputs['precisions']
-        stat = self.inputs['status_code']
+        delay = self.inputs['delay_time']
+        stat = self.inputs['flag']
         vals = [None for ppc in ppcs] 
         if bool(stat):
             for ipp,ppc in enumerate(ppcs):
                 tgt = tgts[ipp]
                 setpt = setpts[ipp]
-                prec = precs[ipp]
                 if tgt == 'flowrate':
-                    ppc.set_flowrate(setpt,prec)
+                    ppc.set_flowrate(setpt)
                 elif tgt == 'pressure':
-                    ppc.set_pressure(setpt,prec)
+                    ppc.set_pressure(setpt)
+            self.message_callback('SetPPumps waiting {} seconds...'.format(delay))
+            time.sleep(delay)
             #done = False
             #while not done:
             #    done = True
@@ -61,12 +61,8 @@ class SetPPumps(Operation):
             #rpt = dict(targets=tgts,final_values=vals)
             rpt = {} 
             self.outputs['report'] = rpt
-            self.outputs['status_code'] = True
+            self.outputs['flag'] = True
         else:
             self.outputs['report'] = {'STATUS':bool(stat)}
-            self.outputs['status_code'] = False 
-
-
- 
-
+            self.outputs['flag'] = False 
 
