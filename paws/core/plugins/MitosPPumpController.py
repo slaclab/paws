@@ -2,10 +2,14 @@ from __future__ import print_function
 from collections import OrderedDict
 import datetime
 import serial
-import Queue as queue
 import time
 import copy
 import os
+import sys
+if int(sys.version[0]) == 2:
+    import Queue as queue
+else:
+    import queue 
 
 import tzlocal
 

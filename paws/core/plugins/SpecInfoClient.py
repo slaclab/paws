@@ -6,6 +6,11 @@ import time
 import socket 
 import datetime
 import os
+import sys
+if int(sys.version[0]) == 2:
+    import Queue as queue
+else:
+    import queue 
 
 import tzlocal
 
