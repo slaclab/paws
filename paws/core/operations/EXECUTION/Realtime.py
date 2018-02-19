@@ -59,12 +59,13 @@ class Realtime(Operation):
             'for each execution of `work_item`'
         
     def run(self):
-        wrk = self.inputs['work_item'] 
+        wrk = self.inputs['work_item']
         inp_gens = self.inputs['input_generators']
         inpks = self.inputs['input_keys']
         stat_inps = self.inputs['static_inputs']
         stat_inpks = self.inputs['static_input_keys']
         maxdly = self.inputs['max_delay']
+        maxexec = self.inputs['max_exec']
         dly = self.inputs['delay']
 
         self.outputs['realtime_inputs'] = [] 
@@ -81,6 +82,10 @@ class Realtime(Operation):
             inp_dict = OrderedDict.fromkeys(inpks)
             inps_ready = False
             nd = 0 # number of consecutive delays
+            if nx > maxexec:
+                msg = 'Reached maximum executions ({}): Realtime stopping.'.format(maxexec) 
+                self.message_callback(msg)
+                keep_going = False
             while keep_going and not inps_ready:
 
                 if self.stop_flag:
@@ -93,7 +98,7 @@ class Realtime(Operation):
                 if all([inp_dict[k] is not None for k in inpks]):
                     inps_ready = True
                     if self.data_callback: 
-                        self.data_callback('outputs.realtime_inputs.'+str(nx),inp_dict)
+                        self.data_callback('outputs.realtime_inputs.'+str(nx),copy.deepcopy(inp_dict))
                 else:
                     # delay
                     time.sleep(float(dly)/1000.) 

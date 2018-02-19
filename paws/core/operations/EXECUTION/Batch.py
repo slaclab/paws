@@ -1,3 +1,4 @@
+from __future__ import print_function
 from collections import OrderedDict
 import glob
 import copy
@@ -15,11 +16,13 @@ inputs=OrderedDict(
     static_input_keys=[],
     pass_thru_params={},
     order_array=None,
-    order_function=None)
+    order_function=None,
+    flag=True)
 
 outputs=OrderedDict(
     batch_inputs=None,
-    batch_outputs=None)
+    batch_outputs=None,
+    flag=False)
         
 class Batch(Operation):
     """Batch-execute a Workflow or Operation in specific order"""
@@ -61,6 +64,7 @@ class Batch(Operation):
             'called on elements of `order_array` to determine '\
             'execution order, which will be '\
             'in increasing order of the return value'
+        self.input_doc['flag'] = 'Flag for whether or not to run the batch' 
 
         self.output_doc['batch_inputs'] = 'list of dicts, '\
             'where each dict gives the input_key:input_value pairs '\
@@ -69,6 +73,7 @@ class Batch(Operation):
         self.output_doc['batch_outputs'] = 'list of dicts, '\
             'where each dict presents the `work_item` outputs, '\
             'in batch execution order'
+        self.output_doc['flag'] = 'Flag for whether or not the batch completed' 
 
         self.input_datatype['input_arrays'] = 'list'
         self.input_datatype['input_keys'] = 'list'
@@ -77,63 +82,73 @@ class Batch(Operation):
         self.input_datatype['pass_thru_params'] = 'dict'
 
     def run(self):
-        wrk = self.inputs['work_item']
+        wrkitm = self.inputs['work_item']
 
         inps = self.inputs['input_arrays']
         inpks = self.inputs['input_keys']
         stat_inps = self.inputs['static_inputs']
         stat_inpks = self.inputs['static_input_keys']
         pass_thru_params = self.inputs['pass_thru_params']
+        f = self.inputs['flag']
 
-        # index the execution order
-        odrvals = self.inputs['order_array']
-        odrfnc = self.inputs['order_function']
-        if odrfnc is not None and odrvals is not None:
-            odrvals = np.array([odrfnc(v) for v in odrvals])
-            odr_idx = np.argsort(odrvals)
-        else:
-            odr_idx = np.arange(len(inps[0]))
-        n_batch = len(odr_idx)
+        if bool(f):
+            # index the execution order
+            odrvals = self.inputs['order_array']
+            odrfnc = self.inputs['order_function']
+            if odrfnc is not None and odrvals is not None:
+                odrvals = np.array([odrfnc(v) for v in odrvals])
+                odr_idx = np.argsort(odrvals)
+            else:
+                odr_idx = np.arange(len(inps[0]))
+            n_batch = len(odr_idx)
 
-        wrkitms = [wrk.build_clone() for idx in odr_idx]
+            #wrkitms = [wrk.build_clone() for idx in odr_idx]
+            #wrkitms = [wrk for idx in odr_idx]
             
-        batch_inp_dicts = []
-        for idx,wrkitm in zip(odr_idx,wrkitms):
-            batch_inps = OrderedDict.fromkeys(inpks)
-            for inpk,inp in zip(inpks,inps):
-                wrkitm.set_input(inpk,inp[idx])
-                batch_inps[inpk] = inp[idx]
-            batch_inp_dicts.append(batch_inps)
+            batch_inp_dicts = []
+            for idx in odr_idx:
+                batch_inps = OrderedDict.fromkeys(inpks)
+                for inpk,inp in zip(inpks,inps):
+                    #wrkitm.set_input(inpk,inp[idx])
+                    batch_inps[inpk] = inp[idx]
+                batch_inp_dicts.append(batch_inps)
 
-        self.outputs['batch_inputs'] = batch_inp_dicts 
-        self.outputs['batch_outputs'] = [None for ib in range(n_batch)] 
-        if self.data_callback: 
-            self.data_callback('outputs.batch_inputs',copy.deepcopy(batch_inp_dicts))
-            self.data_callback('outputs.batch_outputs',[None for ib in range(n_batch)])
-
-        self.message_callback('STARTING BATCH')
-        out_dict = None
-        for i,idx in enumerate(odr_idx): 
-
-            if self.stop_flag:
-                self.message_callback('Batch stopped.')
-                return
-                
-            self.message_callback('BATCH RUN {} / {}'.format(i,n_batch-1))
-            wrki = wrkitms[idx]
-
-            if any(stat_inpks): 
-                for inpnm,inpval in zip(stat_inpks,stat_inps):
-                    wrki.set_input(inpnm,inpval)
-
-            if any(pass_thru_params) and out_dict is not None:
-                for inp_name,out_name in pass_thru_params.items():
-                    wrki.set_input(inp_name,out_dict[out_name])
-
-            wrki.run()
-            out_dict = wrki.get_outputs()
-            self.outputs['batch_outputs'][i] = out_dict
+            self.outputs['batch_inputs'] = batch_inp_dicts 
+            self.outputs['batch_outputs'] = [None for ib in range(n_batch)] 
             if self.data_callback: 
-                self.data_callback('outputs.batch_outputs.'+str(i),copy.deepcopy(out_dict))
-        self.message_callback('BATCH FINISHED')
+                self.data_callback('outputs.batch_inputs',copy.deepcopy(batch_inp_dicts))
+                self.data_callback('outputs.batch_outputs',[None for ib in range(n_batch)])
 
+            self.message_callback('STARTING BATCH')
+            out_dict = None
+            for i,idx in enumerate(odr_idx): 
+
+                if self.stop_flag:
+                    self.message_callback('Batch stopped.')
+                    return
+               
+                inp_dict = batch_inp_dicts[idx]
+                for inp_name,inp_value in inp_dict.items():
+                    wrkitm.set_input(inp_name,inp_value)
+ 
+                self.message_callback('BATCH RUN {} / {}'.format(i,n_batch-1))
+                #wrki = wrkitms[idx]
+
+                if any(stat_inpks): 
+                    for inpnm,inpval in zip(stat_inpks,stat_inps):
+                        wrkitm.set_input(inpnm,inpval)
+
+                if any(pass_thru_params) and out_dict is not None:
+                    for inp_name,out_name in pass_thru_params.items():
+                        wrkitm.set_input(inp_name,out_dict[out_name])
+
+                wrkitm.run()
+                out_dict = copy.deepcopy(wrkitm.get_outputs())
+                self.outputs['batch_outputs'][i] = out_dict
+                if self.data_callback: 
+                    self.data_callback('outputs.batch_outputs.'+str(i),copy.deepcopy(out_dict))
+            self.outputs['flag'] = True
+            self.message_callback('BATCH FINISHED')
+        else:
+            self.outputs['flag'] = False 
+            self.message_callback('BATCH SKIPPED')
