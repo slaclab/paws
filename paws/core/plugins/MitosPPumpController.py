@@ -2,9 +2,15 @@ from __future__ import print_function
 from collections import OrderedDict
 import datetime
 import serial
+import Queue as queue
+import time
+import copy
+import os
+
+import tzlocal
 
 from .PawsPlugin import PawsPlugin
-from ..operations import Operation as opmod
+from .. import pawstools
 
 inputs = OrderedDict(
     serial_device=None,
@@ -26,12 +32,11 @@ class MitosPPumpController(PawsPlugin):
         super(MitosPPumpController,self).__init__(inputs)
         self.input_doc['serial_device'] = 'string serial device indicator '\
             '(e.g. "COM2") or filesystem path (e.g. "/dev/ttyUSB0")'
-        self.history = []
         self.ErrorsDict = { 0:'None', \
                             1:'Supply than maximum', \
                             2:'Tare time out', \
                             3:'Tare supply still connected ', \
-                            4:' Control start time out', \
+                            4:'Control start time out', \
                             5:'Pressure target too low', \
                             6:'Pressure target too high', \
                             7:'Leak test supply pressure too low', \
@@ -43,75 +48,120 @@ class MitosPPumpController(PawsPlugin):
                             3:'ERROR', \
                             4:'LEAK TEST'}
         self.ser = None
-        self.connected = False
-        
-        self.commands = []
-        self.flow_setpt = 0
-        self.pressure_setpt = 0
-
-    def add_command(self,cmd):
-        self.commands.append(cmd)
+        self.state = OrderedDict(
+            error_code = None,
+            state_code = None, 
+            chamber_pressure = None, 
+            supply_pressure = None, 
+            target_pressure = None, 
+            flow_rate = None, 
+            target_flow_rate = None)
+        self.history = []
+        self.n_events = 0
+        self.content = OrderedDict(
+            history=self.history,
+            state=self.state)
+        self.commands = queue.Queue() 
 
     def start(self):
-        if not self.connected:
-            self.ser = serial.Serial(
-                self.inputs['serial_device'], 
-                57600, timeout=1, 
-                parity = serial.PARITY_NONE, 
-                bytesize = serial.EIGHTBITS, 
-                xonxoff = 0, rtscts = 0)
-            self.connected = True
-        stat = self.read_status()
-        if not stat['state_code'] == 1:
+        self.tz = tzlocal.get_localzone()
+        self.t_0 = datetime.datetime.now(self.tz)
+        t_utc = time.mktime(self.t_0.timetuple())
+        cmd='clock started'
+        resp='t_0 = {}'.format(t_utc)
+        self.add_to_history(cmd,resp)
+        self.ser = serial.Serial(
+            self.inputs['serial_device'], 
+            57600, timeout=1, 
+            parity = serial.PARITY_NONE, 
+            bytesize = serial.EIGHTBITS, 
+            xonxoff = 0, rtscts = 0)
+        self.add_to_history('connected {}'.format(self.inputs['serial_device']),'')
+        # clear the pump...
+        cmd = "C"
+        self.send_line(cmd)
+        resp = self.receive_line()
+        self.add_to_history(cmd,resp)
+        self.read_status()
+        if not self.state['state_code'] == 1:
             # attempt to enter remote control mode 
-            self.ser.write("A1\r\n")  
-            res = self.ser.readline()
-            if not res == "#A0\r\n":
+            cmd = "A1"
+            self.send_line(cmd)  
+            resp = self.receive_line()
+            self.add_to_history(cmd,resp)
+            if not resp == "#A0":
                 msg = "Pump failed to enter REMOTE control mode"
+                self.add_to_history('ERROR',msg)
+                self.dump_history()
                 raise RuntimeError(msg)
-        if not self.running:
-            self.running = True
-            self.history = []
-            if self.data_callback:
-                self.data_callback('content.history',self.history)
-            #self.controller = PumpController(self.inputs['serial_device'])
-            dt = self.inputs['dt']
-            self.history = [self.pump_status()]
-            if self.data_callback:
-                self.data_callback('content.history.0',self.history[0])
-            self.n_points = 1
-            self.t_0 = datetime.datetime.now()
-            while self.running:
-                time.sleep(dt)
-                if len(self.commands) > 0:
-                    for i in range(len(self.commands)):
-                        cmd = self.commands.pop[0]
-                        self.ser.write(cmd+"\r\n")
-                        self.ser.readline()
-                self.history.append(self.pump_status())
-                if self.data_callback:
-                    self.data_callback('content.history.{:i}'.format(self.n_points),self.history[self.n_points])
-                    self.n_points += 1
-            #self.controller.ser.write("A0\r\n")  
-            #self.controller.ser.close()
-            #self.controller = None
-            #self.history.append("MitosPPumpController stop")
+        self.read_status()
+        self.running = True
+        while self.running:
+            while self.commands.qsize() > 0: 
+                cmd = copy.deepcopy(self.commands.get())
+                self.commands.task_done()
+                self.send_line(cmd)
+                resp = self.receive_line()
+                self.add_to_history(cmd,resp)
+            self.read_status()
+            time.sleep(self.inputs['dt'])
+        cmd = "C"
+        self.send_line(cmd) 
+        resp = self.receive_line()
+        self.add_to_history(cmd,resp)
+        self.read_status()
+        t_now = datetime.datetime.now(self.tz)
+        while not self.state['state_code'] == 0:
+            # wait for IDLE mode 
+            time.sleep(self.inputs['dt'])
+            t_passed = (datetime.datetime.now(self.tz)-t_now).total_seconds()    
+            if t_passed > 30:
+                msg = 'Waited more than 30 seconds for pump to go IDLE'
+                raise RuntimeError(msg)
+        cmd = "A0"
+        self.send_line(cmd)
+        resp = self.receive_line()
+        self.add_to_history(cmd,resp)
+        self.ser.close()
+        self.add_to_history('closed {}'.format(self.inputs['serial_device']),'')
+        self.dump_history()
 
-    def pump_status(self):
-        s = OrderedDict()
-        stat_i = self.read_status()
-        t_i = datetime.datetime.now()
-        t_rel = t_i - self.t_0
-        s['t'] = t_rel
-        s.update(stat_i)
-        return s
+    def send_line(self,line):
+        self.ser.write("{}\r\n".format(line))  
 
-    def content(self):
-        return {'inputs':self.inputs,'history':self.history}
+    def receive_line(self):
+        r = self.ser.readline()
+        return r.strip()
 
-    def stop(self):
-        if self.running:
-            self.running = False
+    def add_to_history(self,cmd,resp):
+        self.history.append(self.event(cmd,resp))
+        if self.data_callback:
+            self.data_callback('content.history.{}'.format(self.n_events),
+                copy.deepcopy(self.history[self.n_events]))
+        self.n_events += 1
+
+    def event(self,cmd,resp):
+        t = (datetime.datetime.now(self.tz) - self.t_0).total_seconds()
+        event = OrderedDict(t=t,command=cmd,response=resp)
+        return event
+
+
+    def dump_history(self):
+        dump_path = os.path.join(pawstools.paws_scratch_dir,'ppump_controller_{}.log'.format(self))
+        dump_file = open(dump_path,'w')
+        dump_file.write('t \tcommand \tresponse\n')
+        for ev in self.history:
+            dump_file.write('{} \t{} \t{}\n'.format(ev['t'],ev['command'],ev['response']))
+        dump_file.close()
+
+    #def pump_status(self):
+    #    s = OrderedDict()
+    #    t_i = datetime.datetime.now()
+    #    t_rel = float((t_i - self.t_0).total_seconds())
+    #    s['t'] = t_rel
+    #    self.read_status()
+    #    s.update(copy.deepcopy(self.state)) 
+    #    return s
 
     def read_status(self):
         """ Read pump status.
@@ -151,37 +201,38 @@ class MitosPPumpController(PawsPlugin):
             This consists of an upper nibble, 
             middle nibble and lower nibble.
         """
-        self.ser.write("s\r\n") 
-        tmpStrArray = self.ser.readline().split(',')
-        stat = OrderedDict()
-        ec = int(tmpStrArray[0][2:])
-        st = int(tmpStrArray[1])
-        chamber_p = int(tmpStrArray[3])
-        supply_p = int(tmpStrArray[4])
-        target_p = int(tmpStrArray[5])
-        flow_rate = int(tmpStrArray[6])
-        target_flow = int(tmpStrArray[7])
-        stat['error_code'] = ec
-        stat['state_code'] = st 
-        stat['chamber_pressure'] = chamber_p 
-        stat['supply_pressure'] = supply_p 
-        stat['target_pressure'] = target_p
-        stat['flow_rate'] = flow_rate 
-        stat['target_flow_rate'] = target_flow 
-        return stat
+        cmd = "s"
+        self.send_line(cmd)
+        resp = self.receive_line()
+        s = resp.split(',')
+        while '' in s or len(s) < 8:
+            self.send_line(cmd)
+            resp = self.receive_line()
+            s = resp.split(',')
+        self.add_to_history(cmd,resp)
+        self.state['error_code'] = int(s[0][2:])
+        self.state['state_code'] = int(s[1])
+        self.state['chamber_pressure'] = float(s[3])
+        self.state['supply_pressure'] = float(s[4])
+        self.state['target_pressure'] = float(s[5])
+        self.state['flow_rate'] = float(s[6])
+        self.state['target_flow_rate'] = float(s[7])
+        if self.data_callback:
+            self.data_callback('content.state',copy.deepcopy(self.state))
 
-    def print_status(self):
-        stat = self.read_status()
-        msg = '----------- PUMP STATUS -----------'+os.linesep
-        msg += 'Error code: {} ({})'.format(stat['error_code'],self.ErrorsDict[stat['error_code']])+os.linesep
-        msg += 'State code: {} ({})'.format(stat['state_code'],self.StateDict[stat['state_code']])+os.linesep
-        msg += 'Chamber pressure: \t{}'.format(stat['chamber_pressure'])+os.linesep 
-        msg += 'Supply pressure: \t{}'.format(stat['supply_pressure'])+os.linesep 
-        msg += 'Target pressure: \t{}'.format(stat['target_pressure'])+os.linesep 
-        msg += 'Current flow rate: \t{}'.format(stat['flow_rate'])+os.linesep 
-        msg += 'Target flow rate: \t{}'.format(stat['target_flow_rate'])+os.linesep 
-        msg += '-----------------------------------'
-        return msg
+    #def print_status(self):
+    #    msg = '----------- PUMP STATUS -----------'+os.linesep
+    #    msg += 'Error code: {} ({})'.format(self.state['error_code'],
+    #        self.ErrorsDict[self.state['error_code']])+os.linesep
+    #    msg += 'State code: {} ({})'.format(self.state['state_code'],
+    #        self.StateDict[self.state['state_code']])+os.linesep
+    #    msg += 'Chamber pressure: \t{}'.format(self.state['chamber_pressure'])+os.linesep 
+    #    msg += 'Supply pressure: \t{}'.format(self.state['supply_pressure'])+os.linesep 
+    #    msg += 'Target pressure: \t{}'.format(self.state['target_pressure'])+os.linesep 
+    #    msg += 'Current flow rate: \t{}'.format(self.state['flow_rate'])+os.linesep 
+    #    msg += 'Target flow rate: \t{}'.format(self.state['target_flow_rate'])+os.linesep 
+    #    msg += '-----------------------------------'
+    #    return msg
 
     def set_flowrate(self,rate):
         """Set the pump flow rate to the provided value.
@@ -193,9 +244,7 @@ class MitosPPumpController(PawsPlugin):
             For example, rate=2000 sends 'F2000',
             which sets the flow rate to 2000 pl/s. 
         """
-        self.pressure_setpt = 0
-        self.flow_setpt = rate 
-        self.commands.append("F{:i}\r\n".format(rate)) 
+        self.plugin_clone.commands.put("F{}".format(rate)) 
 
     def set_pressure(self,pressure):
         """Set the pump pressure to the provided value.
@@ -207,9 +256,7 @@ class MitosPPumpController(PawsPlugin):
             A value of 1000 sends the 'P1000' command,
             which sets target pressure to 1000 mbar. 
         """
-        self.pressure_setpt = pressure 
-        self.flow_setpt = 0 
-        self.commands.append("P{:i}\r\n".format(pressure)) 
+        self.plugin_clone.commands.put("P{}".format(pressure)) 
 
     def dispense_volume(self, vol):
         """Control the pump to dispense a specified volume.
@@ -220,5 +267,4 @@ class MitosPPumpController(PawsPlugin):
             The volume to dispense 
         """
         pass
-
 

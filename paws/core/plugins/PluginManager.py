@@ -87,11 +87,13 @@ class PluginManager(TreeModel):
     def start_plugin(self,plugin_name):
         """Start the plugin referred to by `plugin_name`."""
         pgn = self.plugins[plugin_name]
-        self.plugin_clones[plugin_name] = pgn.build_clone()
+        pgn.plugin_clone = pgn.build_clone() 
+        self.plugin_clones[plugin_name] = pgn.plugin_clone
         self.plugin_running[plugin_name] = True
         self.plugin_clones[plugin_name].start()
 
     def stop_plugin(self,plugin_name):
+        self.message_callback('stopping plugin {}'.format(plugin_name))
         if plugin_name in self.plugin_clones.keys():
             self.plugin_clones[plugin_name].stop()
         self.plugin_running[plugin_name] = False
@@ -125,12 +127,12 @@ class PluginManager(TreeModel):
         to define this object's child tree structure.
         For a PluginManager, a dict is provided for each PawsPlugin,
         where the dict contains the results of calling
-        self.build_tree(plugin.inputs) and self.build_tree(plugin.content()). 
+        self.build_tree(plugin.inputs) and self.build_tree(plugin.content). 
         """
         if isinstance(x,PawsPlugin):
             d = OrderedDict()
             d['inputs'] = self.build_tree(x.inputs)
-            d['content'] = self.build_tree(x.content())
+            d['content'] = self.build_tree(x.content)
         else:
             return super(PluginManager,self).build_tree(x) 
         return d

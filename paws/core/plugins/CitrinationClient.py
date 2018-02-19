@@ -19,20 +19,17 @@ class CitrinationClient(PawsPlugin):
         super(CitrinationClient,self).__init__(inputs)
         self.input_doc['address'] = 'web address of citrination instance'
         self.input_doc['api_key_file'] = 'path to a file in the local filesystem containing a valid citrination api key'
-        self.ctn_client = None
+        self.content = OrderedDict(client=None,inputs=self.inputs)
 
     def start(self):
         self.address = self.inputs['address'] 
         f = open(self.inputs['api_key_file'],'r')
         self.api_key = str(f.readline()).strip()
         f.close()
-        self.ctn_client = CitrinationClient(site=self.address,api_key=self.api_key)
+        self.content['client'] = CitrinationClient(site=self.address,api_key=self.api_key)
 
     def stop(self):
-        self.ctn_client = None
-
-    def content(self): 
-        return {'client':self.ctn_client,'inputs':self.inputs}
+        self.content['client'] = None
 
     def description(self):
         desc = str('Citrination Client Plugin for Paws: '

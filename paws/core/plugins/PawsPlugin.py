@@ -8,29 +8,23 @@ class PawsPlugin(object):
     def __init__(self,inputs):
         super(PawsPlugin,self).__init__()
         self.inputs = OrderedDict(copy.deepcopy(inputs))
+        self.content = OrderedDict()
         self.input_doc = OrderedDict.fromkeys(self.inputs.keys()) 
         self.message_callback = print
         self.data_callback = None 
         self.running = False
+        self.plugin_clone = None
 
     def __getitem__(self,key):
         if key == 'inputs':
             return self.inputs
         elif key == 'content':
-            return self.content()
+            return self.content
         else:
             raise KeyError('[{}] PawsPlugins only recognize keys {}'
             .format(__name__,self.keys()))
     def keys(self):
         return ['inputs','content'] 
-
-    def content(self):
-        """Return a dict containing meaningful plugin content.
-
-        This method is used to fetch Plugin content.
-        It should be reimplemented for most practical PawsPlugin subclasses.
-        """
-        return {}
 
     def description(self):
         """Describe the plugin.
@@ -70,8 +64,8 @@ class PawsPlugin(object):
         new_pgn = self.clone()
         for inp_nm,val in self.inputs.items():
             new_pgn.inputs[inp_nm] = copy.deepcopy(self.inputs[inp_nm]) 
-        new_pgn.data_callback = self.data_callback
-        new_pgn.message_callback = self.message_callback
+        #new_pgn.data_callback = self.data_callback
+        #new_pgn.message_callback = self.message_callback
         #if self.running:
         #    new_pgn.start()
         return new_pgn
