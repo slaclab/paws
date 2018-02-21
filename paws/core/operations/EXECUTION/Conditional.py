@@ -46,15 +46,14 @@ class Conditional(Operation):
         inpks = self.inputs['input_keys']
         inpvals = self.inputs['inputs']
 
-        wrkitm = wrk.build_clone()
-        out_dict = wrkitm.get_outputs()
+        out_dict = wrk.get_outputs()
 
         if cond == rcond: 
             if any(inpks): 
                 for inpk,inpval in zip(inpks,inpvals):
-                    wrkitm.set_input(inpk,inpval)
-            wrkitm.run()
-            out_dict = wrkitm.get_outputs()
+                    wrk.set_input(inpk,inpval)
+            wrk.run()
+            out_dict = wrk.get_outputs()
 
         self.outputs['outputs'] = out_dict
 

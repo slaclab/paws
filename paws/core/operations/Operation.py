@@ -105,6 +105,10 @@ class Operation(object):
 
     def stop(self):
         self.stop_flag = True
+        for inp_name,il in self.input_locator.items():
+            if il.tp == entire_workflow:
+                if self.inputs[inp_name]:
+                    self.inputs[inp_name].stop()
 
     def get_outputs(self):
         return self.outputs
@@ -114,28 +118,27 @@ class Operation(object):
         return cls()
 
     def build_clone(self):
-        """Clone the Operation.
-
-        If this is used to provide a copy of the Operation
-        for distributed execution, then it should be called 
-        after all inputs have been loaded,
-        with the exception of workflow items,
-        e.g. after calling WfManager.prepare_wf().
-        """
+        """Clone the Operation"""
         new_op = self.clone()
-        #new_op.load_defaults()
         for nm,il in self.input_locator.items():
             new_il = InputLocator()
             new_il.tp = copy.copy(il.tp)
             new_il.val = copy.copy(il.val)
-            if il.tp == entire_workflow:
-                if self.inputs[nm]:
-                    new_wf = self.inputs[nm].build_clone()
-                    new_op.inputs[nm] = new_wf 
-            else: 
-                # NOTE: have to implement __deepcopy__
-                # for whatever the input is.
-                new_op.inputs[nm] = copy.deepcopy(self.inputs[nm]) 
+            #if il.tp == entire_workflow:
+            #    if self.inputs[nm]:
+            #        wf = self.inputs[nm]
+            #        new_wf = wf.build_clone()
+            #        new_wf.data_callback = wf.data_callback
+            #        new_wf.message_callback = wf.message_callback
+            #        new_op.inputs[nm] = new_wf
+            #elif il.tp == plugin_item:
+            #    # plugin items should not be copied:
+            #    # they are expected to operate safely in the main thread
+            #    new_op.inputs[nm] = self.inputs[nm]
+            #else: 
+            #    # NOTE: have to implement __deepcopy__
+            #    # for whatever the input is.
+            #    new_op.inputs[nm] = copy.deepcopy(self.inputs[nm]) 
             new_op.input_locator[nm] = new_il
         #new_op.message_callback = self.message_callback
         #new_op.data_callback = self.data_callback

@@ -6,9 +6,7 @@ import traceback
 import os
 
 from ..models.TreeModel import TreeModel
-from ..operations import Operation as opmod
-from ..operations.Operation import Operation
-from ..operations import optools
+from ..operations import Operation
 
 class Workflow(TreeModel):
     """Workflow built from paws Operations, with TreeModel interface.
@@ -21,9 +19,7 @@ class Workflow(TreeModel):
     """
 
     def __init__(self):
-        flag_dict = OrderedDict()
-        flag_dict['select'] = False
-        flag_dict['enable'] = True
+        flag_dict = OrderedDict(select=False,enable=True)
         super(Workflow,self).__init__(flag_dict)
         self.inputs = OrderedDict()
         self.outputs = OrderedDict()
@@ -36,7 +32,7 @@ class Workflow(TreeModel):
         """Name and add an Operation to the Workflow.
 
         If `op_name` is not unique, 
-        this existing Operation is overwritten.
+        the existing Operation is overwritten.
 
         Parameters
         ----------
@@ -116,24 +112,24 @@ class Workflow(TreeModel):
             msg = str('Input name {} not valid for Operation {} ({}).'
             .format(input_name,op_name,type(self.operations[op_name]).__name__))
             raise KeyError(msg)
-        if tp is not None and not tp in opmod.valid_types and not tp in opmod.input_types:
+        if tp is not None and not tp in Operation.valid_types and not tp in Operation.input_types:
             # tp is neither a string or an enum
             msg = '[{}] failed to parse input type: {}'.format(
             __name__,tp)
             raise ValueError(msg)
         il = self.operations[op_name].input_locator[input_name]
         if tp is not None:
-            if tp in opmod.input_types:
-                tp = opmod.input_types.index(tp)
-            il.tp = opmod.valid_types[tp]
-        if not il.tp == opmod.runtime_type:
+            if tp in Operation.input_types:
+                tp = Operation.input_types.index(tp)
+            il.tp = Operation.valid_types[tp]
+        if not il.tp == Operation.runtime_type:
             il.val = val
         else:
             # set inputlocator.val to None, 
             # so that this object will NOT attempt
-            # to be serialized when save_to_wfl() is called.
+            # to be serialized
             il.val = None
-        if il.tp in [opmod.basic_type,opmod.runtime_type]:
+        if il.tp in [Operation.basic_type,Operation.runtime_type]:
             # these types should be loaded for immediate use
             self.set_item(op_name+'.inputs.'+input_name,val)
 
@@ -254,7 +250,7 @@ class Workflow(TreeModel):
         diagnostics = {} 
         for name,il in op.input_locator.items():
             msg = ''
-            if il.tp == opmod.workflow_item:
+            if il.tp == Operation.workflow_item:
                 inp_rdy = False
                 if isinstance(il.val,list):
                     if all([v in valid_wf_inputs for v in il.val]):
@@ -295,8 +291,9 @@ class Workflow(TreeModel):
             for op_name in lst: 
                 op = self.get_data_from_uri(op_name) 
                 for inpnm,il in op.input_locator.items():
-                    if il.tp == opmod.workflow_item:
-                        self.set_op_item(op_name,'inputs.'+inpnm,self.locate_input(il))
+                    if il.tp == Operation.workflow_item:
+                        self.set_op_item(op_name,'inputs.'+inpnm,
+                        self.get_wf_data(il))
                 op.stop_flag = False
                 op.run() 
                 for outnm,outdata in op.outputs.items():
@@ -306,7 +303,7 @@ class Workflow(TreeModel):
         """Stop the Workflow.
 
         If any long-running Operations in the Workflow
-        are written to examine their _stop_flag periodically,
+        are written to examine their stop_flag periodically,
         all execution should exit relatively soon.
         """
         self.stop_flag = True
@@ -352,16 +349,20 @@ class Workflow(TreeModel):
         new_wf.inputs = copy.deepcopy(self.inputs)
         new_wf.outputs = copy.deepcopy(self.outputs)
         # NOTE 1: cloned workflows will dump messages to self.message_callback 
-        new_wf.message_callback = self.message_callback
+        #new_wf.message_callback = self.message_callback
         # NOTE 2: they will also dump their data to self.data_callback.
         # In cases where this is undesirable,
         # e.g. when running multiple clones in parallel, 
         # this data_callback should be disconnected after cloning.
         # This default setting is mostly intended for the use case
         # of cloning the workflow to run it in a separate thread.
-        new_wf.data_callback = self.data_callback
+        #new_wf.data_callback = self.data_callback
+        #new_wf.plugins = OrderedDict()
+        #for pgn_name,pgn in self.plugins.items():
+        #    new_wf.plugins[pgn_name] = pgn
         for op_name,op in self.operations.items():
-            new_wf.add_operation(op_name,op.build_clone())
+            new_op = op.build_clone()
+            new_wf.add_operation(op_name,new_op)
             if not self.is_op_enabled(op_name):
                 new_wf.disable_op(op_name)
         return new_wf
@@ -379,7 +380,7 @@ class Workflow(TreeModel):
         where the operation dict contains the results of calling
         self.build_tree(op.inputs) and self.build_tree(op.outputs). 
         """
-        if isinstance(x,Operation):
+        if isinstance(x,Operation.Operation):
             d = OrderedDict()
             d['inputs'] = self.build_tree(x.inputs)
             d['outputs'] = self.build_tree(x.outputs)
@@ -387,13 +388,12 @@ class Workflow(TreeModel):
         else:
             return super(Workflow,self).build_tree(x) 
 
-
     def set_op_item(self,op_name,item_uri,item_data):
         """Subroutine for use with functools.partial for callbacks"""
         full_uri = op_name+'.'+item_uri
         self.set_item(full_uri,item_data)
 
-    def locate_input(self,il):
+    def get_wf_data(self,il):
         if isinstance(il.val,list):
             return [self.get_data_from_uri(v) for v in il.val]
         else:
