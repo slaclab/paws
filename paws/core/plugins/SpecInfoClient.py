@@ -1,6 +1,5 @@
 from __future__ import print_function
 from collections import OrderedDict
-import Queue as queue
 import copy
 import time
 import socket 
