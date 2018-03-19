@@ -127,12 +127,13 @@ class PluginManager(TreeModel):
         to define this object's child tree structure.
         For a PluginManager, a dict is provided for each PawsPlugin,
         where the dict contains the results of calling
-        self.build_tree(plugin.inputs) and self.build_tree(plugin.content). 
+        self.build_tree(plugin.inputs)
         """
+        # TODO: let plugins build their own trees.
         if isinstance(x,PawsPlugin):
             d = OrderedDict()
             d['inputs'] = self.build_tree(x.inputs)
-            d['content'] = self.build_tree(x.content)
+        #    d['content'] = self.build_tree(x.content)
         else:
             return super(PluginManager,self).build_tree(x) 
         return d

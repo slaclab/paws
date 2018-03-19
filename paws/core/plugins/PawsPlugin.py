@@ -8,7 +8,6 @@ class PawsPlugin(object):
     def __init__(self,inputs):
         super(PawsPlugin,self).__init__()
         self.inputs = OrderedDict(copy.deepcopy(inputs))
-        self.content = OrderedDict()
         self.input_doc = OrderedDict.fromkeys(self.inputs.keys()) 
         self.message_callback = print
         self.data_callback = None 
@@ -18,13 +17,11 @@ class PawsPlugin(object):
     def __getitem__(self,key):
         if key == 'inputs':
             return self.inputs
-        elif key == 'content':
-            return self.content
         else:
-            raise KeyError('[{}] PawsPlugins only recognize keys {}'
-            .format(__name__,self.keys()))
+            raise KeyError('[{}] {} not in valid plugin keys: {}'
+            .format(__name__,key,self.keys()))
     def keys(self):
-        return ['inputs','content'] 
+        return ['inputs'] 
 
     def description(self):
         """Describe the plugin.
