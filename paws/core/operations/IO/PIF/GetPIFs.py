@@ -3,6 +3,7 @@ import os
 
 from pypif import pif
 import pypif.obj as pifobj 
+from citrination_client import PifSystemReturningQuery, PifSystemQuery, DataQuery, DatasetQuery, IdQuery, FieldQuery, Filter
 
 from ... import Operation as opmod 
 from ...Operation import Operation
@@ -18,7 +19,7 @@ class GetPIFs(Operation):
 
     def __init__(self):
         super(GetPIFs,self).__init__(inputs,outputs)
-        self.input_doc['client'] = 'A running Citrination client' 
+        self.input_doc['client'] = 'A running CitrinationClient(PawsPlugin)' 
         self.input_doc['dsid'] = 'Citrination data set ID'
         self.input_doc['experiment_id'] = 'EXPERIMENT_ID tag (optional)'
         self.output_doc['pif_list'] = 'List of PIF objects'
@@ -36,14 +37,18 @@ class GetPIFs(Operation):
         all_hits = []
         n_hits = 0
         self.message_callback('Querying Citrination for records.')
-        current_result = c.search(query)
+        #import pdb; pdb.set_trace()
+        #
+        current_result = cl.plugin_clone.client.search(query)
+        # TODO: is it wise to use the clone in this way?
+        #
         while current_result.hits is not None:
             all_hits.extend(current_result.hits)
             n_current_hits = len(current_result.hits)
             n_hits += n_current_hits
             query.from_index += n_current_hits 
             #self.message_callback('{} found ... '.format(n_hits))
-            current_result = c.search(query)
+            current_result = cl.plugin_clone.client.search(query)
         self.message_callback('Found {} records.'.format(n_hits))
 
         pifs = [x.system for x in all_hits]

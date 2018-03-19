@@ -45,12 +45,16 @@ class ShipToDataSet(Operation):
 
         json_flag = self.inputs['keep_json']
         ship_flag = self.inputs['ship_flag']
+        self.message_callback('dumping PIF data to {}'.format(json_file))
         pif.dump(p, open(json_file,'w'))
         if ship_flag:
-            r = cl.upload_file(json_file,dataset_id = dsid)
+            self.message_callback('Uploading {} to dataset {}'.format(json_file,dsid))
+            r = cl.plugin_clone.client.upload_file(json_file,dataset_id = dsid)
+            # TODO: is it wise to use the clone in this way?
         else:
             r = 'dry run: no shipment occurred.'
         if not json_flag:
+            self.message_callback('Removing {}'.format(json_file))
             os.remove(json_file) 
         self.outputs['response'] = r
 
