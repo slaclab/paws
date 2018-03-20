@@ -14,12 +14,12 @@ inputs=OrderedDict(
     params=None)
 outputs=OrderedDict(pif=None)
 
-class PifSAXS(Operation):
+class PackXRSDPIF(Operation):
     """Build a PIF record for a SAXS spectrum"""
     # TODO: include the scattering equation in this record somehow
 
     def __init__(self):
-        super(PifSAXS,self).__init__(inputs,outputs)
+        super(PackXRSDPIF,self).__init__(inputs,outputs)
         self.input_doc['experiment_id'] = 'string experiment id '\
             '(pif uid = experiment_id+"_"+t_utc)'
         self.input_doc['t_utc'] = 'time in seconds utc'

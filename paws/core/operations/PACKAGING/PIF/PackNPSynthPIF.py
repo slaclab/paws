@@ -16,14 +16,14 @@ inputs=OrderedDict(
     t_reports=None)
 outputs=OrderedDict(pif=None)
 
-class PifNPSynthExperiment(Operation):
+class PackNPSynthPIF(Operation):
     """
     Analyze a series of PIFs generated in a nanoparticle synthesis experiment
     and produce a PIF that describes the overall experiment. 
     """
 
     def __init__(self):
-        super(PifNPSynthExperiment,self).__init__(inputs,outputs)
+        super(PackNPSynthPIF,self).__init__(inputs,outputs)
         self.input_doc['recipe'] = 'dict describing the synthesis recipe'
         self.input_doc['experiment_id'] = 'experiment id'
         self.input_doc['t_T'] = 'n-by-2 array, Temperature vs. time'
