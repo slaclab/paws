@@ -2,17 +2,21 @@ from __future__ import print_function
 from collections import OrderedDict
 import copy
 
+from .. import pawstools
+
 class PawsPlugin(object):
     """Base class for building PAWS Plugins."""
 
     def __init__(self,inputs):
         super(PawsPlugin,self).__init__()
         self.inputs = OrderedDict(copy.deepcopy(inputs))
+        self.input_locator = OrderedDict.fromkeys(self.inputs.keys())
         self.input_doc = OrderedDict.fromkeys(self.inputs.keys()) 
         self.message_callback = print
         self.data_callback = None 
         self.running = False
-        #self.plugin_clone = None
+        for name in self.inputs.keys(): 
+            self.input_locator[name] = pawstools.InputLocator(pawstools.basic_type,self.inputs[name])
 
     def __getitem__(self,key):
         if key == 'inputs':

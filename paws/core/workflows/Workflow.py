@@ -6,7 +6,8 @@ import traceback
 import os
 
 from ..models.TreeModel import TreeModel
-from ..operations import Operation
+from ..operations.Operation import Operation
+from .. import pawstools
 
 class Workflow(TreeModel):
     """Workflow built from paws Operations, with TreeModel interface.
@@ -100,8 +101,8 @@ class Workflow(TreeModel):
             to be found at 'process.outputs.out1',
             or simply be set to the string 'process.outputs.out1',
             depending on the specified type.
-            Valid types are any string in paws.core.operations.Operation.input_types,
-            or any integer in paws.core.operations.Operation.valid_types.
+            Valid types are any string in pawstools.input_types,
+            or any integer in pawstools.valid_types.
             If not provided, the type is left at its previous setting.
         """
         if not op_name in self.operations.keys():
@@ -112,24 +113,24 @@ class Workflow(TreeModel):
             msg = str('Input name {} not valid for Operation {} ({}).'
             .format(input_name,op_name,type(self.operations[op_name]).__name__))
             raise KeyError(msg)
-        if tp is not None and not tp in Operation.valid_types and not tp in Operation.input_types:
+        if tp is not None and not tp in pawstools.valid_types and not tp in pawstools.input_types:
             # tp is neither a string or an enum
             msg = '[{}] failed to parse input type: {}'.format(
             __name__,tp)
             raise ValueError(msg)
         il = self.operations[op_name].input_locator[input_name]
         if tp is not None:
-            if tp in Operation.input_types:
-                tp = Operation.input_types.index(tp)
-            il.tp = Operation.valid_types[tp]
-        if not il.tp == Operation.runtime_type:
+            if tp in pawstools.input_types:
+                tp = pawstools.input_types.index(tp)
+            il.tp = pawstools.valid_types[tp]
+        if not il.tp == pawstools.runtime_type:
             il.val = val
         else:
             # set inputlocator.val to None, 
             # so that this object will NOT attempt
             # to be serialized
             il.val = None
-        if il.tp in [Operation.basic_type,Operation.runtime_type]:
+        if il.tp in [pawstools.basic_type,pawstools.runtime_type]:
             # these types should be loaded for immediate use
             self.set_item(op_name+'.inputs.'+input_name,val)
 
@@ -250,7 +251,7 @@ class Workflow(TreeModel):
         diagnostics = {} 
         for name,il in op.input_locator.items():
             msg = ''
-            if il.tp == Operation.workflow_item:
+            if il.tp == pawstools.workflow_item:
                 inp_rdy = False
                 if isinstance(il.val,list):
                     if all([v in valid_wf_inputs for v in il.val]):
@@ -291,7 +292,7 @@ class Workflow(TreeModel):
             for op_name in lst: 
                 op = self.get_data_from_uri(op_name) 
                 for inpnm,il in op.input_locator.items():
-                    if il.tp == Operation.workflow_item:
+                    if il.tp == pawstools.workflow_item:
                         self.set_op_item(op_name,'inputs.'+inpnm,
                         self.get_wf_data(il))
                 op.stop_flag = False
@@ -380,7 +381,7 @@ class Workflow(TreeModel):
         where the operation dict contains the results of calling
         self.build_tree(op.inputs) and self.build_tree(op.outputs). 
         """
-        if isinstance(x,Operation.Operation):
+        if isinstance(x,Operation):
             d = OrderedDict()
             d['inputs'] = self.build_tree(x.inputs)
             d['outputs'] = self.build_tree(x.outputs)
