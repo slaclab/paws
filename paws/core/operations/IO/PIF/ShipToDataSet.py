@@ -9,7 +9,7 @@ from ...Operation import Operation
 
 inputs=OrderedDict(
     pif=None,
-    client=None,
+    client_plugin=None,
     dsid=None,
     json_dirpath=None,
     json_filename=None,
@@ -25,7 +25,7 @@ class ShipToDataSet(Operation):
     def __init__(self):
         super(ShipToDataSet,self).__init__(inputs,outputs)
         self.input_doc['pif'] = 'A pypif.obj.System object or an array/list thereof'
-        self.input_doc['client'] = 'A running Citrination client' 
+        self.input_doc['client_plugin'] = 'A running CitrinationClient(PawsPlugin)' 
         self.input_doc['dsid'] = 'Data set ID where the pif record(s) will be stored on Citrination' 
         self.input_doc['json_dirpath'] = 'Filesystem path where a json file of the pif(s) will be saved' 
         self.input_doc['json_filename'] = 'Name of the .json file where the pif(s) will be saved' 
@@ -34,7 +34,7 @@ class ShipToDataSet(Operation):
         self.output_doc['response'] = 'The Citrination server response to the shipment'
 
     def run(self):
-        cl = self.inputs['client'] 
+        cl_pgn = self.inputs['client_plugin'] 
         dsid = self.inputs['dsid'] 
         p = self.inputs['pif']        
         json_dir = self.inputs['json_dirpath']
@@ -49,8 +49,7 @@ class ShipToDataSet(Operation):
         pif.dump(p, open(json_file,'w'))
         if ship_flag:
             self.message_callback('Uploading {} to dataset {}'.format(json_file,dsid))
-            r = cl.plugin_clone.client.upload_file(json_file,dataset_id = dsid)
-            # TODO: is it wise to use the clone in this way?
+            r = cl_pgn.client.upload_file(json_file,dataset_id = dsid)
         else:
             r = 'dry run: no shipment occurred.'
         if not json_flag:

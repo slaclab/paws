@@ -29,6 +29,7 @@ class Timer(PawsPlugin):
         self.time_points = []
         self.content = OrderedDict(
             time_points=self.time_points)
+        self.py_version = int(sys.version[0])
 
     def start(self):
         self.dt = self.inputs['dt'] 
@@ -39,10 +40,7 @@ class Timer(PawsPlugin):
         # acquire lock, set initial time point, notify, release
         with self.dt_lock:
             self.dt_now = self.dt_utc()
-            if int(sys.version[0]) == 2:
-                self.dt_lock.notifyAll()
-            else:
-                self.dt_lock.notify_all()
+            self.notify()
             self.time_points.append(self.dt_now)
         self.running = True
         while self.running:
@@ -51,13 +49,16 @@ class Timer(PawsPlugin):
             time.sleep(t_rem)
             with self.dt_lock:
                 self.dt_now = self.dt_utc()
-                if int(sys.version[0]) == 2:
-                    self.dt_lock.notifyAll()
-                else:
-                    self.dt_lock.notify_all()
+                self.notify()
                 self.time_points.append(self.dt_now)
             if self.dt_now > self.t_max:
                 self.running = False
+
+    def notify(self):
+        if int(self.py_version) == 2:
+            self.dt_lock.notifyAll()
+        else:
+            self.dt_lock.notify_all()
 
     def dt_utc(self):
         t = datetime.datetime.now(self.tz)

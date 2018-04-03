@@ -12,7 +12,7 @@ class PawsPlugin(object):
         self.message_callback = print
         self.data_callback = None 
         self.running = False
-        self.plugin_clone = None
+        #self.plugin_clone = None
 
     def __getitem__(self,key):
         if key == 'inputs':
