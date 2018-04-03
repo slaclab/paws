@@ -22,44 +22,56 @@ class PIFRefactor(Operation):
             p = self.inputs['pif']
             expt_id, t_utc, q_I, T_C, feats, pops, params, rpt = unpack_old_pif(p)
 
-            new_pops = [] 
+            new_pops = {} 
             if bool(pops['unidentified']):
-                new_pops.append(dict(structure='unidentified'))
+                new_pops['anonymous']=dict(structure='unidentified')
             else:
                 if bool(pops['diffraction_peaks']): 
-                    new_pops.append(dict(
-                        name='superlattice',
-                        structure='fcc'))
-                        #basis={(0,0,0):dict(
-                        #    spherical={'r':params['r0_sphere']}
-                        #    )}
-                        #))
-                else:
-                    new_pops.append(dict(
-                        name='noise',
+                    new_pops['superlattice']=dict(
+                        structure='fcc',
+                        settings={},
+                        parameters={},
+                        basis={})
+                    new_pops['noise']=dict(
                         structure='diffuse',
-                        basis={(0,0,0):dict(
-                            flat={'amplitude':params['I0_floor']}
-                            )}
-                        ))
+                        parameters={},
+                        basis={})
                     if bool(pops['guinier_porod']):
-                        new_pops.append(dict(
-                            name='precursor',
+                        new_pops['precursor']=dict(
                             structure='diffuse',
-                            parameters={'N':1},
-                            basis={(0,0,0):dict(
-                                guinier_porod={'G':params['G_gp'],'rg':params['rg_gp'],'D':params['D_gp']}
-                                )}
-                            ))
+                            parameters={},  
+                            basis={'guinier_porod_precursor':{'guinier_porod':{}}}
+                            )
                     if bool(pops['spherical_normal']):
-                        new_pops.append(dict(
-                            name='nanoparticle',
+                        new_pops['nanoparticles']=dict(
                             structure='diffuse',
-                            parameters={'N':params['I0_sphere']},
-                            basis={(0,0,0):dict(
+                            parameters={},  
+                            basis={'spherical_normal_nanoparticles':{'spherical_normal':{}}} 
+                            )
+                else:
+                    new_pops['noise']=dict(
+                        structure='diffuse',
+                        parameters={'I0':params['I0_floor']},
+                        basis={'flat_noise':dict(
+                            flat={'amplitude':1}
+                            )}
+                        )
+                    if bool(pops['guinier_porod']):
+                        new_pops['precursor']=dict(
+                            structure='diffuse',
+                            parameters={'I0':1},
+                            basis={'guinier_porod_precursor':dict(
+                                guinier_porod={'G':params['G_gp'],'r_g':params['rg_gp'],'D':params['D_gp']}
+                                )}
+                            )
+                    if bool(pops['spherical_normal']):
+                        new_pops['nanoparticles']=dict(
+                            structure='diffuse',
+                            parameters={'I0':params['I0_sphere']},
+                            basis={'spherical_nanoparticles':dict(
                                 spherical_normal={'r0':params['r0_sphere'],'sigma':params['sigma_sphere']}
                                 )}
-                            ))
+                            )
     
             csys = make_pif(str(expt_id)+'_'+str(int(t_utc)),expt_id,t_utc,q_I,T_C,new_pops)
             self.outputs['pif'] = csys

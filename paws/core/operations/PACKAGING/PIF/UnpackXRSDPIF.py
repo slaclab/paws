@@ -1,8 +1,9 @@
 from collections import OrderedDict
 
+from xrsdkit.tools import piftools
+
 from ... import Operation as opmod 
 from ...Operation import Operation
-from saxskit import saxs_piftools
 
 inputs=OrderedDict(pif=None)
 outputs=OrderedDict(
@@ -26,13 +27,12 @@ class UnpackXRSDPIF(Operation):
         self.output_doc['temperature'] = 'temperature in degrees C'
         self.output_doc['features'] = 'dict of numerical features of `q_I`'
         self.output_doc['populations'] = 'dict enumerating scatterer populations'
-        self.output_doc['params'] = 'dict of scattering equation parameters for each of the `populations`'
         self.output_doc['report'] = 'dict reporting fit objectives and related quantities'
 
     def run(self):
         pp = self.inputs['pif']
 
-        expt_id, t_utc, q_I, T_C, feats, pops = saxs_piftools.unpack_pif(pp)
+        expt_id, t_utc, q_I, T_C, feats, pops = piftools.unpack_pif(pp)
 
         self.outputs['experiment_id'] = expt_id 
         self.outputs['t_utc'] = t_utc 
