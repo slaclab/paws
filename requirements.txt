@@ -16,3 +16,4 @@ pytz
 tzlocal
 saxskit
 tifffile
+serial
