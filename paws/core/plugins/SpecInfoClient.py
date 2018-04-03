@@ -50,13 +50,13 @@ class SpecInfoClient(PawsPlugin):
         hst = self.inputs['host'] 
         prt = self.inputs['port'] 
         tmr = self.inputs['timer'] 
-        self.clone.tz = tzlocal.get_localzone()
-        self.clone.t_0 = datetime.datetime.now(self.tz)
-        t_utc = time.mktime(self.t_0.timetuple())
-        cmd='clock started'
-        resp='t_0 = {}'.format(t_utc)
-        self.add_to_history(cmd,resp)
-        self.sock = socket.create_connection((hst,prt)) 
+        self.clone.sock = socket.create_connection((hst,prt)) 
+        #self.clone.tz = tzlocal.get_localzone()
+        #self.clone.t_0 = datetime.datetime.now(self.tz)
+        #t_utc = time.mktime(self.clone.t_0.timetuple())
+        #cmd='clock started'
+        #resp='t_0 = {}'.format(t_utc)
+        #self.clone.add_to_history(cmd,resp)
         #if self.data_callback:
         #    self.data_callback('content.socket',self.sock)
         #cmd='socket opened'
@@ -65,37 +65,37 @@ class SpecInfoClient(PawsPlugin):
         #self.send_line(cmd)
         #resp = self.receive_line()
         #trial = 0
-        while not str(resp) == 'client in control.':
-            time.sleep(self.inputs['dt'])
-            cmd = '!rqc'
-            self.send_line(cmd)
-            resp = self.receive_line()
-            trial += 1
-            if trial > 100:
-                self.add_to_history('CONTROL DENIED',resp)
-                raise RuntimeError('SpecInfoServer control denied')
-        self.add_to_history(cmd,resp)
-        self.running = True
-        self.message_callback('SpecInfoClient started!')
-        while self.running:
-            while self.commands.qsize() > 0:
-                cmd = copy.deepcopy(self.commands.get())
-                # release self.commands with a task_done()
-                self.commands.task_done()
-                self.send_line(cmd)
-                resp = str(self.receive_line())
-                while resp in ['','spec is busy!']:
-                    time.sleep(self.inputs['dt_busy'])
-                    self.send_line(cmd)
-                    resp = str(self.receive_line())
-                self.add_to_history(cmd,resp)
-                self.message_callback('\n[SpecInfoClient] \ncmd: {} \nresp: {}'.format(cmd,resp))
-            time.sleep(self.inputs['dt']) 
-        self.sock.close()
-        cmd='socket closed'
-        self.add_to_history(cmd,'')
-        self.message_callback('SpecInfoClient finished.')
-        self.dump_history()
+        #while not str(resp) == 'client in control.':
+        #    time.sleep(self.inputs['dt'])
+        #    cmd = '!rqc'
+        #    self.send_line(cmd)
+        #    resp = self.receive_line()
+        #    trial += 1
+        #    if trial > 100:
+        #        self.add_to_history('CONTROL DENIED',resp)
+        #        raise RuntimeError('SpecInfoServer control denied')
+        #self.add_to_history(cmd,resp)
+        #self.running = True
+        #self.message_callback('SpecInfoClient started!')
+        #while self.running:
+        #    while self.commands.qsize() > 0:
+        #        cmd = copy.deepcopy(self.commands.get())
+        #        # release self.commands with a task_done()
+        #        self.commands.task_done()
+        #        self.send_line(cmd)
+        #        resp = str(self.receive_line())
+        #        while resp in ['','spec is busy!']:
+        #            time.sleep(self.inputs['dt_busy'])
+        #            self.send_line(cmd)
+        #            resp = str(self.receive_line())
+        #        self.add_to_history(cmd,resp)
+        #        self.message_callback('\n[SpecInfoClient] \ncmd: {} \nresp: {}'.format(cmd,resp))
+        #    time.sleep(self.inputs['dt']) 
+        #self.sock.close()
+        #cmd='socket closed'
+        #self.add_to_history(cmd,'')
+        #self.message_callback('SpecInfoClient finished.')
+        #self.dump_history()
 
     def add_to_history(self,cmd,resp):
         self.history.append(self.event(cmd,resp))
