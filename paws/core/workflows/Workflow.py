@@ -26,7 +26,7 @@ class Workflow(TreeModel):
         self.outputs = OrderedDict()
         self.operations = self._root_dict
         self.message_callback = print
-        self.data_callback = None
+        self.data_callback = self.set_item 
         self.stop_flag = False
 
     def add_operation(self,op_name,op):
@@ -293,12 +293,13 @@ class Workflow(TreeModel):
                 op = self.get_data_from_uri(op_name) 
                 for inpnm,il in op.input_locator.items():
                     if il.tp == pawstools.workflow_item:
-                        self.set_op_item(op_name,'inputs.'+inpnm,
-                        self.get_wf_data(il))
+                        self.set_op_item(op_name,'inputs.'+inpnm,self.get_wf_data(il))
                 op.stop_flag = False
                 op.run() 
                 for outnm,outdata in op.outputs.items():
-                    self.set_op_item(op_name,'outputs.'+outnm,outdata)
+                    #self.set_op_item(op_name,'outputs.'+outnm,outdata)
+                    full_uri = op_name+'.outputs.'+outnm
+                    self.data_callback(full_uri,outdata)
 
     def stop(self):
         """Stop the Workflow.
