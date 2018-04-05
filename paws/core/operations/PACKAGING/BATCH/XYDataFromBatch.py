@@ -40,6 +40,7 @@ class XYDataFromBatch(Operation):
         ky = self.inputs['y_key']
         sortflag = self.inputs['x_shift_flag']
         shiftflag = self.inputs['x_shift_flag']
+
         x_list = []
         y_list = []
         for d in b_out:
@@ -57,6 +58,7 @@ class XYDataFromBatch(Operation):
             i_xsort = np.argsort(x_all)
             x_list = list(x_all[i_xsort])
             y_list = list(y_all[i_xsort])
+
         self.outputs['x'] = x_list
         self.outputs['y'] = y_list
         self.outputs['x_y'] = zip(x_list,y_list)

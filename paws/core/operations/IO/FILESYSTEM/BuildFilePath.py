@@ -11,7 +11,9 @@ inputs=OrderedDict(
     filename=None,
     suffix='',
     ext='')
-outputs=OrderedDict(filename=None,file_path=None)
+outputs=OrderedDict(
+    filename=None,
+    file_path=None)
 
 class BuildFilePath(Operation):
     """
