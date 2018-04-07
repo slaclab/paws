@@ -71,7 +71,7 @@ wf.set_op_input('t_T','x_shift_flag',True)
 wf.set_op_input('saxs_batch','work_item','saxs_fit','entire workflow')
 wf.set_op_input('saxs_batch','input_arrays',['t_filenames.outputs.x','t_filenames.outputs.y'],'workflow item')
 wf.set_op_input('saxs_batch','input_keys',['time','saxs_filepath'])
-#wf.set_op_input('saxs_batch','pass_thru_params',{'populations':'fit_populations'})
+wf.set_op_input('saxs_batch','pass_thru_params',{'populations':'fit_populations'})
 
 wf.set_op_input('t_params','batch_outputs','saxs_batch.outputs.batch_outputs','workflow item')
 wf.set_op_input('t_params','x_key','time')
@@ -110,16 +110,12 @@ wf.set_op_input('saxs_filepath','ext','csv')
 
 wf = wfmgr.workflows['saxs_fit']
 
-# input 0: time 
 wf.connect_input('time','time.inputs.data')
-
-# input 1: saxs pattern csv file path 
 wf.connect_input('saxs_filepath','read_saxs.inputs.file_path')
-
-# input 2: populations dict
 wf.connect_input('populations','fit_saxs.inputs.populations')
-
-# input 3: source wavelength 
+wf.connect_input('fixed_params','fit_saxs.inputs.fixed_params')
+wf.connect_input('bounds','fit_saxs.inputs.param_bounds')
+wf.connect_input('constraints','fit_saxs.inputs.param_constraints')
 wf.connect_input('source_wavelength','fit_saxs.inputs.source_wavelength')
 
 wf.connect_output('q_I','read_saxs.outputs.q_I')
