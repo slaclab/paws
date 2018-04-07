@@ -3,69 +3,72 @@ from functools import partial
 
 import numpy as np
 from matplotlib import pyplot as plt
-from matplotlib.widgets import Slider, Button, RadioButtons 
-import saxskit
-from saxskit import saxs_math, saxs_fit
-from saxskit.saxs_classify import SaxsClassifier
-from saxskit.saxs_regression import SaxsRegressor 
-from ... import Operation as opmod
+from matplotlib.widgets import Slider, Button, RadioButtons, TextBox
+import xrsdkit
+from xrsdkit.fitting.xrsd_fitter import XRSDFitter
+#from saxskit import saxs_math, saxs_fit
+#from saxskit.saxs_classify import SaxsClassifier
+#from saxskit.saxs_regression import SaxsRegressor 
 from ...Operation import Operation
 
 inputs = OrderedDict(
     q_I=None,
     populations=None,
-    params=None)
+    fixed_params=None,
+    param_bounds=None,
+    param_constraints=None,
+    source_wavelength=None)
 outputs = OrderedDict(
     populations=None,
-    params=None,
+    report=None,
+    q_I_opt=None,
     success_flag=False)
         
 slider_color = 'blue'
 
-class SpectrumFitGUI(Operation):
-    """Interactively fit a SAXS spectrum."""
+class XRSDFitGUI(Operation):
+    """Interactively fit a XRSD spectrum."""
 
     def __init__(self):
-        super(SpectrumFitGUI, self).__init__(inputs, outputs)
+        super(XRSDFitGUI, self).__init__(inputs, outputs)
         self.input_doc['q_I'] = 'n-by-2 array of q(1/Angstrom) versus I(arb).'
-        self.input_doc['populations'] = 'Dict indicating the number of '\
-            'each of a variety of potential scatterer populations (optional). '\
-            'If not provided, the populations are estimated by saxskit.'
-        self.input_doc['params'] = 'Dict of parameters '\
-            'describing scattering characteristics of each population (optional). '\
-            'If not provided, the parameters are estimated by saxskit.'
-        self.output_doc['populations'] = 'The output `populations`, '\
-            'as represented in the GUI when the Operation is finished.' 
-        self.output_doc['params'] = 'The output `params`, '\
-            'as represented in the GUI when the Operation is finished.' 
+        self.input_doc['populations'] = 'dict defining populations, xrsdkit format'
+        self.output_doc['populations'] = 'populations with parameters optimized'
         self.output_doc['success_flag'] = 'Boolean indicating whether '\
             'or not the user was satisfied with the fit.'
 
     def run(self):
         self.q_I = self.inputs['q_I']
-        self.feats = saxs_math.profile_spectrum(self.q_I)
         self.populations = self.inputs['populations']
-        self.saxs_cls = SaxsClassifier()
-        if self.populations is None:
-            self.populations, certs = self.saxs_cls.classify(self.feats)
-        self.params = self.inputs['params']
-        self.saxs_reg = SaxsRegressor()
-        self.saxs_fitter = saxs_fit.SaxsFitter(self.q_I,self.populations)
-        if self.params is None:
-            self.params = self.predict_params()
+        self.src_wl = self.inputs['source_wavelength']
+        self.pf = self.inputs['fixed_params']
+        self.pb = self.inputs['param_bounds']
+        self.pc = self.inputs['param_constraints']
+        self.xrsd_fitter = XRSDFitter(self.q_I,self.populations,self.src_wl)
+        #self.feats = saxs_math.profile_spectrum(self.q_I)
+        #self.saxs_cls = SaxsClassifier()
+        #if self.populations is None:
+        #    self.populations, certs = self.saxs_cls.classify(self.feats)
+        #self.params = self.inputs['params']
+        #self.saxs_reg = SaxsRegressor()
+        #if self.params is None:
+        #    self.params = self.predict_params()
         self.setup_plots()
-        self.pop_axes = OrderedDict()
-        self.pop_sliders = OrderedDict()
-        self.param_axes = OrderedDict()
-        self.param_sliders = OrderedDict()
-        self.ax_fit_btn = None
-        self.ax_success_btn = None
-        self.ax_finish_btn = None
-        self.fit_btn = None
-        self.finish_btn = None
-        self.success_btn = None
+        #self.pop_name_axes = OrderedDict()
+        #self.pop_name_boxes = OrderedDict()
+        #self.rm_pop_axes = OrderedDict()
+        #self.rm_pop_buttons = OrderedDict()
+        #self.pop_sliders = OrderedDict()
+        #self.param_axes = OrderedDict()
+        #self.param_sliders = OrderedDict()
+        #self.ax_fit_btn = None
+        #self.ax_success_btn = None
+        #self.ax_finish_btn = None
+        #self.fit_btn = None
+        #self.finish_btn = None
+        #self.success_btn = None
         self.setup_populations()
-        self.reset_params()
+        #self.reset_params()
         plt.show()
 
     def finish(self,event):
@@ -77,34 +80,80 @@ class SpectrumFitGUI(Operation):
     def setup_plots(self):
         n_pops = len(self.populations)
         self.fig = plt.figure(figsize=(15,8))
-        self.ax_plot = plt.axes([0.15,0.05*(n_pops+2),0.45,0.9-0.05*(n_pops+2)])
+        self.ax_plot = plt.axes([0.08,0.05*(n_pops+2),0.45,0.9-0.05*(n_pops+2)])
         self.ax_plot.semilogy(self.q_I[:,0],self.q_I[:,1],lw=2,color='black')
-        I_est = saxs_math.compute_saxs(self.q_I[:,0],self.populations,self.params)
+        I_est = xrsdkit.compute_intensity(self.q_I[:,0],self.populations,self.src_wl)
         self.ax_plot.semilogy(self.q_I[:,0],I_est,lw=2,color='red')
         self.ax_plot.set_xlabel('q (1/Angstrom)')
         self.ax_plot.set_ylabel('Intensity (counts)')
         self.ax_plot.legend(['measured','estimated'])
 
     def setup_populations(self):
-        self.ax_btn = plt.axes([0.15,0.07,0.1,0.16],facecolor = 'white')
-        self.ax_btn.axis('off')
-        self.btns = RadioButtons(self.ax_btn, 
-            ['identified','unidentified'], active=0, activecolor='red')
-        self.btns.on_clicked(self._set_unidentified)
-        if bool(self.populations['unidentified']):
-            self.set_active(1)
-            self._set_unidentified()
-        self.pop_sliders = OrderedDict() 
-        self.pop_axes = OrderedDict()
-        max_pop = 5
-        for ip, pop_name in enumerate(saxskit.population_keys):
-            if not pop_name == 'unidentified':
-                ax_pop = plt.axes([0.35,0.04*(1.5+ip),0.2,0.02],facecolor=slider_color)
-                ax_pop.set_xticks(range(max_pop),True)
-                sldr = Slider(ax_pop,pop_name,0.,max_pop,valinit=self.populations[pop_name],valfmt="%i")
-                sldr.on_changed(partial(self._set_pop,pop_name))
-                self.pop_axes[pop_name] = ax_pop
-                self.pop_sliders[pop_name] = sldr
+        vcoord = 0.9
+        self.pop_name_axes = OrderedDict()
+        self.pop_name_boxes = OrderedDict()
+        self.rm_pop_axes = OrderedDict()
+        self.rm_pop_buttons = OrderedDict()
+        for i_pop, pop_name in enumerate(self.populations.keys()):
+            popd = self.populations[pop_name]
+            # widgets for editing population name
+            nm_ax = plt.axes([0.65,vcoord,0.1,0.03],facecolor = 'white') 
+            nm_box = TextBox(nm_ax, 'population {} name:'.format(i_pop), initial=pop_name)
+            nm_box.on_submit(partial(self._rename_population,pop_name))
+            # widgets for removing the population
+            rm_pop_ax = plt.axes([0.77,vcoord,0.1,0.03],facecolor = 'white')   
+            rm_pop_btn = Button(rm_pop_ax,'remove')   
+            rm_pop_btn.on_clicked(partial(self._remove_population,pop_name))
+
+            self.pop_name_axes[pop_name] = nm_ax 
+            self.pop_name_boxes[pop_name] = nm_box
+            self.rm_pop_axes[pop_name] = rm_pop_ax 
+            self.rm_pop_buttons[pop_name] = rm_pop_btn 
+            vcoord -= 0.04
+        # additional widgets for adding a new population
+        self.ax_pop_entry = plt.axes([0.65,vcoord,0.1,0.03],facecolor = 'white')
+        self.pop_entry = TextBox(self.ax_pop_entry,'new population:')
+        self.pop_entry.on_submit(self._new_population)
+        self.ax_add_pop_btn = plt.axes([0.77,vcoord,0.1,0.03],facecolor = 'white')
+        self.add_pop_btn = Button(self.ax_add_pop_btn,'add')
+        #self.btns = RadioButtons(self.ax_btn, 
+        #    ['identified','unidentified'], active=0, activecolor='red')
+        #self.btns.on_clicked(self._set_unidentified)
+        #if bool(self.populations['unidentified']):
+        #    self.set_active(1)
+        #    self._set_unidentified()
+        #self.pop_sliders = OrderedDict() 
+        #self.pop_axes = OrderedDict()
+        #max_pop = 5
+        #for ip, pop_name in enumerate(saxskit.population_keys):
+        #    if not pop_name == 'unidentified':
+        #        ax_pop = plt.axes([0.35,0.04*(1.5+ip),0.2,0.02],facecolor=slider_color)
+        #        ax_pop.set_xticks(range(max_pop),True)
+        #        sldr = Slider(ax_pop,pop_name,0.,max_pop,valinit=self.populations[pop_name],valfmt="%i")
+        #        sldr.on_changed(partial(self._set_pop,pop_name))
+        #        self.pop_axes[pop_name] = ax_pop
+        #        self.pop_sliders[pop_name] = sldr
+
+    def _remove_population(self,pop_name,label):
+        self.populations.pop(pop_name)
+        plt.clf()
+        self.setup_plots()
+        self.setup_populations()
+
+    def _rename_population(self,old_name,new_name):
+        popd = self.populations.pop(old_name)
+        self.populations[new_name] = popd
+        plt.clf()
+        self.setup_plots()
+        self.setup_populations()
+
+    def _new_population(self,new_pop_name):
+        self.populations[new_pop_name] = OrderedDict()
+        self.populations[new_pop_name]['parameters'] = OrderedDict()
+        self.populations[new_pop_name]['basis'] = OrderedDict()
+        plt.clf()
+        self.setup_plots()
+        self.setup_populations()
 
     def reset_params(self):
         for param_name,axs in self.param_axes.items():

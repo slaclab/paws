@@ -69,8 +69,8 @@ class XRSDFit(Operation):
         xrf = XRSDFitter(q_I,pops,src_wl)
         fit_pops,rpt = xrf.fit(p_fix,p_b,p_c)
 
-        # TODO: embed this printout in a message callback
-        xrf.print_report(pops,fit_pops,rpt)
+        if self.message_callback:
+            self.message_callback(xrf.print_report(pops,fit_pops,rpt))
  
         I_opt = compute_intensity(q_I[:,0],fit_pops,src_wl)
 
