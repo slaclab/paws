@@ -13,6 +13,9 @@ inputs = OrderedDict(
     fixed_params=None,
     param_bounds=None,
     param_constraints=None,
+    error_weighted=True,
+    logI_weighted=True,
+    logq_weighted=False,
     source_wavelength=None)
 
 outputs = OrderedDict(
@@ -64,10 +67,13 @@ class XRSDFit(Operation):
         p_fix = self.inputs['fixed_params']
         p_b = self.inputs['param_bounds']
         p_c = self.inputs['param_constraints']
+        errwtd = self.inputs['error_weighted']
+        logIwtd = self.inputs['logI_weighted']
+        logqwtd = self.inputs['logq_weighted']
         src_wl = self.inputs['source_wavelength']        
 
         xrf = XRSDFitter(q_I,pops,src_wl)
-        fit_pops,rpt = xrf.fit(p_fix,p_b,p_c)
+        fit_pops,rpt = xrf.fit(p_fix,p_b,p_c,errwtd,logIwtd,logqwtd)
 
         if self.message_callback:
             self.message_callback(xrf.print_report(pops,fit_pops,rpt))
