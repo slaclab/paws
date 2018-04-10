@@ -76,7 +76,7 @@ class EasyZingers1d(Operation):
         I_z = []
         stop_idx = len(q)-w-1
         test_range = iter(range(w,stop_idx))
-        idx = test_range.next()
+        idx = next(test_range)
         while idx < stop_idx-1:
             idx_l = np.array([i for i in np.arange(idx-w,idx+1,1) if not i in idx_z])
             idx_r = np.array([i for i in np.arange(idx,idx+w+1,1) if not i in idx_z])
@@ -105,7 +105,7 @@ class EasyZingers1d(Operation):
                     idx_z.append(idx)
                     zmask[idx] = True
                     I_dz[idx] = np.nan
-            idx = test_range.next() 
+            idx = next(test_range) 
         q_z = [q[i] for i in idx_z]
         I_z = [I[i] for i in idx_z]
         newIvals = np.zeros(len(q_z)) 
@@ -115,7 +115,7 @@ class EasyZingers1d(Operation):
             newIvals[zi] = np.mean(Idzi)
         for i,iq in zip(range(len(idx_z)),idx_z):
             I_dz[iq] = newIvals[i]
-        self.outputs['q_I_dz'] = np.array(zip(q,I_dz))
+        self.outputs['q_I_dz'] = np.array([q,I_dz]).T
         self.outputs['zmask'] = zmask
 
         if show_zingers:
