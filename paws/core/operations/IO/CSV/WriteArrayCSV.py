@@ -41,6 +41,8 @@ class WriteArrayCSV(Operation):
         fnm = self.inputs['filename']
         tag = self.inputs['filetag']
         csv_path = os.path.join(p,self.inputs['filename']+tag)
+        if not os.path.splitext(csv_path)[1] == '.csv':
+            csv_path += '.csv'
         self.outputs['file_path'] = csv_path
         self.outputs['filename'] = fnm+tag 
 
