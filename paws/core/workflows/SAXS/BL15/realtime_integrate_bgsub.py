@@ -37,8 +37,6 @@ op_maps['sample_process']['q_window'] = 'PACKAGING.Window'
 op_maps['sample_process']['dezinger'] = 'PROCESSING.ZINGERS.EasyZingers1d'
 op_maps['sample_process']['bg_subtract'] = 'PROCESSING.BACKGROUND.BgSubtractByTemperature'
 op_maps['sample_process']['log_I'] = 'PROCESSING.BASIC.LogY'
-#op_maps['sample_process']['fit_spectrum'] = 'PROCESSING.SAXS.SpectrumFit'
-#op_maps['sample_process']['log_Ifit'] = 'PROCESSING.BASIC.LogY'
 op_maps['sample_process']['output_CSV'] = 'IO.CSV.WriteArrayCSV'
 
 wfmgr = WfManager()

@@ -3,7 +3,7 @@ from collections import OrderedDict
 
 import numpy as np
 from xrsdkit.fitting.xrsd_fitter import XRSDFitter
-from xrsdkit import compute_intensity
+from xrsdkit.scattering import compute_intensity
 
 from ...Operation import Operation
 
