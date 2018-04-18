@@ -1,7 +1,6 @@
 import numpy as np
 from collections import OrderedDict
 
-from ... import Operation as opmod 
 from ...Operation import Operation
 
 inputs=OrderedDict(image_data=None,rotation_deg=90)

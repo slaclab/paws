@@ -3,7 +3,6 @@ from collections import OrderedDict
 import os.path
 
 from ...Operation import Operation
-from ... import Operation as opmod 
 
 inputs=OrderedDict(
     dir_path=None,

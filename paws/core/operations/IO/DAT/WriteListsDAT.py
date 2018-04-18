@@ -3,7 +3,6 @@ from collections import OrderedDict
 
 import numpy as np
 
-from ... import Operation as opmod 
 from ...Operation import Operation
 
 inputs=OrderedDict(
@@ -13,7 +12,9 @@ inputs=OrderedDict(
     dir_path=None,
     filename=None,
     filetag='')
-outputs=OrderedDict(file_path=None,filename=None)
+outputs=OrderedDict(
+    file_path=None,
+    filename=None)
 
 class WriteListsDAT(Operation):
     """Write a 2d array to a .dat file"""

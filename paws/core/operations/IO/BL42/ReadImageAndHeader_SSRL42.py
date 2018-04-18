@@ -5,7 +5,6 @@ import re
 import tifffile
 import numpy as np
 
-from ... import Operation as opmod 
 from ...Operation import Operation
 
 inputs=OrderedDict(file_path=None)

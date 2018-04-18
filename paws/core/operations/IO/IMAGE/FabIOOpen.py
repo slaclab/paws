@@ -3,7 +3,6 @@ import os
 
 import fabio
 
-from ... import Operation as opmod 
 from ...Operation import Operation
 
 inputs=OrderedDict(file_path=None)

@@ -2,7 +2,6 @@ from collections import OrderedDict
 
 from xrsdkit.tools import piftools
 
-from ... import Operation as opmod 
 from ...Operation import Operation
 
 inputs=OrderedDict(pif=None)

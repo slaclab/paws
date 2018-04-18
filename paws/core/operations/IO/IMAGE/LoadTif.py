@@ -4,11 +4,13 @@ import os.path
 import tifffile
 import numpy as np
 
-from ... import Operation as opmod 
 from ...Operation import Operation
 
 inputs=OrderedDict(file_path=None)
-outputs=OrderedDict(image_data=None,dir_path=None,filename=None)
+outputs=OrderedDict(
+    image_data=None,
+    dir_path=None,
+    filename=None)
 
 class LoadTif(Operation):
     """

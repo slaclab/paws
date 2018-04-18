@@ -4,7 +4,6 @@ import os
 from pypif import pif
 import pypif.obj as pifobj 
 
-from ... import Operation as opmod 
 from ...Operation import Operation
 
 inputs=OrderedDict(

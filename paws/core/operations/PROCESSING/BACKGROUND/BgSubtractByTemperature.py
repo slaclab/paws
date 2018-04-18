@@ -1,9 +1,7 @@
 import numpy as np
 from collections import OrderedDict
 
-from ... import Operation as opmod 
 from ...Operation import Operation
-from ... import optools
 
 inputs = OrderedDict(
     q_I_meas=None,

@@ -1,7 +1,6 @@
 import numpy as np
 from collections import OrderedDict
 
-from ... import Operation as opmod 
 from ...Operation import Operation
 
 inputs = OrderedDict(x_y=None)
