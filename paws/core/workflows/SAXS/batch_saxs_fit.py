@@ -17,7 +17,7 @@ op_maps['main']['batch'] = 'EXECUTION.Batch'
 op_maps['main']['fit_params'] = 'PACKAGING.BATCH.XYDataFromBatch'
 
 op_maps['saxs_fit']['read_spectrum'] = 'IO.NUMPY.Loadtxt_q_I_dI'
-op_maps['saxs_fit']['fit_spectrum'] = 'PROCESSING.SAXS.SpectrumFit'
+op_maps['saxs_fit']['fit_spectrum'] = 'PROCESSING.FITTING.XRSDFit'
 op_maps['saxs_fit']['log_I'] = 'PROCESSING.BASIC.LogY'
 op_maps['saxs_fit']['log_Ifit'] = 'PROCESSING.BASIC.LogY'
 op_maps['saxs_fit']['output_CSV'] = 'IO.CSV.WriteArrayCSV'
@@ -30,6 +30,18 @@ for wf_name,op_map in op_maps.items():
         op = wfmgr.op_manager.get_operation(op_uri)
         wfmgr.workflows[wf_name].add_operation(op_name,op)
 
+# define guinier-porod and noise populations
+pops = {} 
+pops['noise'] = dict(
+    structure = 'diffuse',
+    parameters = {'I0':0.1},
+    basis = {'flat_noise':{'flat':{}}}
+    )
+pops['scatterers'] = dict(
+    structure = 'diffuse',
+    parameters = {},
+    basis = {'gp_scatterers':{'guinier_porod':{'G':100.,'rg':10.,'D':4.}}}
+    )
 
 wf = wfmgr.workflows['saxs_fit']
 
@@ -38,7 +50,7 @@ wf.set_op_input('read_spectrum','file_path',None)
 wf.connect_input('file_path','read_spectrum.inputs.file_path') 
 
 # input 1: populations dict
-wf.set_op_input('fit_spectrum','populations',{'guinier_porod':1})
+wf.set_op_input('fit_spectrum','populations',pops)
 wf.connect_input('populations','fit_spectrum.inputs.populations')
 
 wf.connect_output('filename','read_spectrum.outputs.filename')
@@ -46,7 +58,7 @@ wf.connect_output('q_I','read_spectrum.outputs.q_I')
 wf.connect_output('q_logI','log_I.outputs.x_logy')
 wf.connect_output('q_I_opt','fit_spectrum.outputs.q_I_opt')
 wf.connect_output('q_logI_opt','log_Ifit.outputs.x_logy')
-wf.connect_output('fit_params','fit_spectrum.outputs.params')
+wf.connect_output('fit_pops','fit_spectrum.outputs.populations')
 
 wf.set_op_input('read_spectrum','delimiter',',')
 wf.set_op_input('log_I','x_y','read_spectrum.outputs.q_I','workflow item')
