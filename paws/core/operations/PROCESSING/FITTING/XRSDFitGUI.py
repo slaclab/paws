@@ -90,7 +90,7 @@ class XRSDFitGUI(Operation):
     def build_entry_widgets(self):
         self.scroll_frame = Frame(self.fit_gui)
         self.scroll_frame.pack(side=tkinter.RIGHT,fill='y')
-        self.pops_canvas = Canvas(self.scroll_frame)
+        self.pops_canvas = Canvas(self.scroll_frame, width=450)
         scr = Scrollbar(self.scroll_frame,orient='vertical',command=self.pops_canvas.yview)
         scr.pack(side=tkinter.RIGHT,fill='y')
         self.pops_frame = Frame(self.pops_canvas)
