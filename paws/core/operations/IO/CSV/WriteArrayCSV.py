@@ -4,7 +4,6 @@ import copy
 import os
 import numpy as np
 
-from ... import Operation as opmod 
 from ...Operation import Operation
 
 inputs=OrderedDict(

@@ -3,7 +3,6 @@ from collections import OrderedDict
 
 import pyFAI
 
-from ... import Operation as opmod 
 from ...Operation import Operation
 
 inputs = OrderedDict(

@@ -1,6 +1,5 @@
 from collections import OrderedDict
 
-from ... import Operation as opmod 
 from ...Operation import Operation
 
 from xrsdkit.tools import piftools

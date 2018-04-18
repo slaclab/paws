@@ -1,9 +1,8 @@
 import numpy as np
 from collections import OrderedDict
 
-from ... import Operation as opmod 
 from ...Operation import Operation
-from saxskit import saxs_math 
+from xrsdkit.tools import g_of_r
 
 inputs = OrderedDict(q_I=None)
 outputs = OrderedDict(

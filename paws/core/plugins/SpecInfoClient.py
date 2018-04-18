@@ -37,7 +37,9 @@ class SpecInfoClient(PawsPlugin):
         self.commands = queue.Queue() 
         self.sock = None
         self.content = OrderedDict(history = self.history)
-        self.clone = self.build_clone()
+        # NOTE: creating a clone during __init__ leads to infinite recursion
+        #self.clone = self.build_clone()
+        self.clone = None
 
     def description(self):
         desc = 'SpecInfoClient Plugin: '\

@@ -6,7 +6,6 @@ from citrination_client import CitrinationClient as CitClient
 
 from .. import pawstools
 from .PawsPlugin import PawsPlugin
-from ..operations import Operation as opmod
 
 inputs = OrderedDict(
     address=None,

@@ -4,10 +4,12 @@ import os
 from pypif import pif
 import pypif.obj as pifobj 
 
-from ... import Operation as opmod 
 from ...Operation import Operation
 
-inputs=OrderedDict(pif=None,dir_path=None,filename=None)
+inputs=OrderedDict(
+    pif=None,
+    dir_path=None,
+    filename=None)
 outputs=OrderedDict(file_path=None)
         
 class SavePIFAsJSON(Operation):

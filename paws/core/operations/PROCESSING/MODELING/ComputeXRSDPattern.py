@@ -2,9 +2,7 @@ from collections import OrderedDict
 
 import numpy as np
 
-from ... import Operation as opmod 
 from ...Operation import Operation
-from saxskit import saxs_math
 
 inputs = OrderedDict(
     q=None,
@@ -14,16 +12,13 @@ outputs = OrderedDict(
     I=None,
     q_I=None)
 
-class ComputeSAXS(Operation):
-    """Compute a SAXS spectrum, given parameters."""
+class ComputeXRSDPattern(Operation):
+    """Compute an x-ray scattering and/or diffraction pattern"""
 
     def __init__(self):
-        super(ComputeSAXS, self).__init__(inputs, outputs)
+        super(ComputeXRSDPattern, self).__init__(inputs, outputs)
         self.input_doc['q'] = 'array of wave vectors (1/Angstrom)'
-        self.input_doc['populations'] = 'dict that counts scatterer populations'
-        self.input_doc['params'] = '(optional) dict of parameters '\
-            'used as initial condition for fit optimization. '\
-            'defaults are chosen if not provided.'
+        self.input_doc['populations'] = 'dict defining sample populations, in xrsdkit format'
         self.output_doc['I'] = 'array of computed intensities'
         self.output_doc['q_I'] = 'n-by-2 array of q and I'
 

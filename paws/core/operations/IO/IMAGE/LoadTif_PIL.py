@@ -3,11 +3,12 @@ from collections import OrderedDict
 import numpy as np
 from PIL import Image
 
-from ... import Operation as opmod 
 from ...Operation import Operation
 
 inputs=OrderedDict(file_path=None)
-outputs=OrderedDict(image_data=None,metadata=None)
+outputs=OrderedDict(
+    image_data=None,
+    metadata=None)
 
 class LoadTif_PIL(Operation):
     """

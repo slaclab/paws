@@ -5,7 +5,6 @@ from pypif import pif
 import pypif.obj as pifobj 
 from citrination_client import PifSystemReturningQuery, PifSystemQuery, DataQuery, DatasetQuery, IdQuery, FieldQuery, Filter
 
-from ... import Operation as opmod 
 from ...Operation import Operation
 
 inputs=OrderedDict(

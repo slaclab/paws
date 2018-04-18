@@ -5,7 +5,6 @@ import os
 import numpy as np
 import pyFAI
 
-from ... import Operation as opmod 
 from ...Operation import Operation
 
 inputs=OrderedDict(file_path=None)

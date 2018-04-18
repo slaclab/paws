@@ -2,10 +2,8 @@ from collections import OrderedDict
 
 import numpy as np
 
-from ... import Operation as opmod 
 from ...Operation import Operation
-from ... import optools
-       
+
 inputs = OrderedDict(
     batch_outputs=None,
     x_key=None,
