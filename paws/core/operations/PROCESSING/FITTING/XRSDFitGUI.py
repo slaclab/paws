@@ -6,15 +6,13 @@ matplotlib.use("TkAgg")
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
 from matplotlib.figure import Figure
 import tkinter
-from tkinter import Tk, Frame, Canvas, Button, Label, Entry 
+from tkinter import Tk, \
+Frame, Canvas, Button, Label, Entry, StringVar, OptionMenu, Scrollbar, Checkbutton
 import numpy as np
 #from matplotlib import pyplot as plt
 #from matplotlib.widgets import Slider, Button, RadioButtons, TextBox
 import xrsdkit
 from xrsdkit.fitting.xrsd_fitter import XRSDFitter
-#from saxskit import saxs_math, saxs_fit
-#from saxskit.saxs_classify import SaxsClassifier
-#from saxskit.saxs_regression import SaxsRegressor 
 from ...Operation import Operation
 
 inputs = OrderedDict(
@@ -30,8 +28,6 @@ outputs = OrderedDict(
     q_I_opt=None,
     success_flag=False)
         
-slider_color = 'blue'
-
 class XRSDFitGUI(Operation):
     """Interactively fit a XRSD spectrum."""
 
@@ -57,63 +53,72 @@ class XRSDFitGUI(Operation):
 
         self.fit_gui = Tk()
         self.fit_gui.title('xrsd profile fitter')
- 
-        # create the plot figure and plot the first few things
-        self.plot_frame = Frame(self.fit_gui)
-        self.plot_frame.pack(side=tkinter.LEFT)
-        self.fig = Figure(figsize=(8,7))
-        self.setup_plots()
-        self.plot_canvas = FigureCanvasTkAgg(self.fig,self.plot_frame)
-        self.plot_canvas.show()
-        self.plot_canvas.get_tk_widget().pack()
-            #side=tk.TOP, fill=tk.BOTH, expand=True)
+       
+        # data structures for maintaining refs to widgets and variables 
+        self.pop_frames = OrderedDict()
+        self.structure_vars = OrderedDict()
+        self.param_frames = OrderedDict()
+        self.basis_frames = OrderedDict()
+        self.basis_item_frames = OrderedDict()
+        self.basis_param_frames = OrderedDict()
+        self.fit_report = None
+        self.q_I_opt = None
 
+        # create the plots
+        self.build_plot_widgets()
+        
         # create the widgets for population control
-        self.pops_frame = Frame(self.fit_gui)
-        self.pops_frame.pack(side=tkinter.RIGHT)
-        self.setup_populations()
+        self.build_entry_widgets()
+
+        # TODO: make these widgets resize when the main window is resized
 
         # start the tk loop
         self.fit_gui.mainloop()
 
-        #self.feats = saxs_math.profile_spectrum(self.q_I)
-        #self.saxs_cls = SaxsClassifier()
-        #if self.populations is None:
-        #    self.populations, certs = self.saxs_cls.classify(self.feats)
-        #self.params = self.inputs['params']
-        #self.saxs_reg = SaxsRegressor()
-        #if self.params is None:
-        #    self.params = self.predict_params()
-        #self.fig = plt.figure(figsize=(15,8))
-        #self.pop_name_axes = OrderedDict()
-        #self.pop_name_boxes = OrderedDict()
-        #self.rm_pop_axes = OrderedDict()
-        #self.rm_pop_buttons = OrderedDict()
-        #self.pop_sliders = OrderedDict()
-        #self.param_axes = OrderedDict()
-        #self.param_sliders = OrderedDict()
-        #self.ax_fit_btn = None
-        #self.ax_success_btn = None
-        #self.ax_finish_btn = None
-        #self.fit_btn = None
-        #self.finish_btn = None
-        #self.success_btn = None
-        #self.setup_populations()
-        #self.reset_params()
-        #plt.show()
-        self.finish(None) 
+        # after tk loop exits, finish Operation
+        self.finish() 
 
-    def finish(self,event):
+    def build_plot_widgets(self):
+        self.plot_frame = Frame(self.fit_gui,bd=4,relief=tkinter.SUNKEN)
+        self.plot_frame.pack(side=tkinter.LEFT,padx=2,pady=2)
+        self.fig = Figure(figsize=(8,7))
+        self.ax_plot = self.fig.add_subplot(111)
+        self.plot_canvas = FigureCanvasTkAgg(self.fig,self.plot_frame)
+        self.plot_canvas.get_tk_widget().pack()
+        self.draw_plots()
+
+    def build_entry_widgets(self):
+        self.scroll_frame = Frame(self.fit_gui)
+        self.scroll_frame.pack(side=tkinter.RIGHT,fill='y')
+        self.pops_canvas = Canvas(self.scroll_frame)
+        scr = Scrollbar(self.scroll_frame,orient='vertical',command=self.pops_canvas.yview)
+        scr.pack(side=tkinter.RIGHT,fill='y')
+        self.pops_frame = Frame(self.pops_canvas)
+        scroll_canvas_config = lambda ev: self.pops_canvas.configure(scrollregion=self.pops_canvas.bbox("all"))
+        self.pops_frame.bind("<Configure>",scroll_canvas_config)
+        self.pops_frame.pack(side=tkinter.LEFT,fill='y')
+        self.pops_canvas.create_window((0,0),window=self.pops_frame,anchor='nw')
+        self.pops_canvas.configure(yscrollcommand=scr.set)
+        # TODO: figure out how to get the scroll bar to not overlap the canvas
+        # TODO: enable mouse wheel and track pad scrolling 
+        #self.pops_canvas.configure(scrollregion=self.pops_canvas.bbox("all"),width=200,height=200)
+        #self.pops_canvas.bind("<Button-4>",lambda event: print(event))
+        #self.pops_canvas.bind("<Button-5>",lambda event: print(event))
+        #self.pops_canvas.bind("<Button-4>", lambda event: event.widget.yview_scroll(-1, UNITS))
+        #self.pops_canvas.bind("<Button-5>", lambda event: event.widget.yview_scroll(1, UNITS))
+        self.pops_canvas.pack(side=tkinter.LEFT,fill='y')
+        self.rebuild_entry_widgets()
+
+    def finish(self):
+        # TODO: check whether the user is satisfied with the result, 
+        # and include this as an output or as a part of the report
         self.outputs['populations'] = self.populations
         self.outputs['report'] = self.fit_report
         self.outputs['q_I_opt'] = self.q_I_opt
         self.outputs['success_flag'] = self.success_flag
-        #plt.close()
 
-    def setup_plots(self):
-        #import pdb; pdb.set_trace()
-        self.fig.clf()
-        self.ax_plot = self.fig.add_subplot(111)
+    def draw_plots(self):
+        self.ax_plot.clear()
         #n_pops = len(self.populations)
         #if self.ax_plot is not None:
         #    self.fig.delaxes(self.ax_plot)
@@ -122,198 +127,275 @@ class XRSDFitGUI(Operation):
         #self.ax_plot = plt.axes([0.08,0.05*(n_pops+2),0.45,0.9-0.05*(n_pops+2)])
         #self.ax_plot.semilogy(self.q_I[:,0],self.q_I[:,1],lw=2,color='black')
         self.ax_plot.loglog(self.q_I[:,0],self.q_I[:,1],lw=2,color='black')
-        I_est = xrsdkit.compute_intensity(self.q_I[:,0],self.populations,self.src_wl)
+        I_est = xrsdkit.scattering.compute_intensity(self.q_I[:,0],self.populations,self.src_wl)
         #self.ax_plot.semilogy(self.q_I[:,0],I_est,lw=2,color='red')
         self.ax_plot.loglog(self.q_I[:,0],I_est,lw=2,color='red')
         self.ax_plot.set_xlabel('q (1/Angstrom)')
         self.ax_plot.set_ylabel('Intensity (counts)')
-        self.ax_plot.legend(['measured','estimated'])
+        self.ax_plot.legend(['measured','computed'])
+        self.plot_canvas.show()
 
-    def setup_populations(self):
-        self.pop_entries = OrderedDict()
-        rr = 0
+    def destroy_entry_widgets(self):
+        pop_nm_list = list(self.pop_frames.keys())
+        for pop_nm in pop_nm_list: 
+            popfrm = self.pop_frames.pop(pop_nm)
+            popfrm.pack_forget()
+            popfrm.destroy()
+            self.structure_vars.pop(pop_nm)
+            param_nm_list = list(self.param_frames[pop_nm].keys())
+            for param_nm in param_nm_list:
+                param_frm = self.param_frames[pop_nm].pop(param_nm)
+                param_frm.pack_forget()
+                param_frm.destroy()
+            site_nm_list = list(self.basis_frames[pop_nm].keys())
+            for site_nm in site_nm_list: 
+                site_frm = self.basis_frames[pop_nm].pop(site_nm)
+                site_frm.pack_forget()
+                site_frm.destroy()
+                specie_nm_list = list(self.basis_item_frames[pop_nm][site_nm].keys())
+                for specie_nm in specie_nm_list: 
+                    specie_frms = self.basis_item_frames[pop_nm][site_nm][specie_nm]
+                    for ispec in range(len(specie_frms))[::-1]:
+                        specie_frm = self.basis_item_frames[pop_nm][site_nm][specie_nm].pop(ispec)
+                        specie_frm.pack_forget()
+                        specie_frm.destroy()
+                        bparam_frms = self.basis_param_frames[pop_nm][site_nm][specie_nm][ispec]
+                        bparam_nm_list = list(self.basis_param_frames[pop_nm][site_nm][specie_nm][ispec].keys())
+                        for bparam_nm in bparam_nm_list:
+                            bparam_frm = bparam_frms.pop(bparam_nm)
+                            bparam_frm.pack_forget()
+                            bparam_frm.destroy()
+
+    def rebuild_entry_widgets(self):
+        self.destroy_entry_widgets()
         for ipop,pop_name in enumerate(self.populations.keys()):
             popd = self.populations[pop_name]
-            l = Label(self.pops_frame,text='population {}:'.format(ipop),width=12,anchor='w')
-            l.grid(row=rr,column=0)
-            e = Entry(self.pops_frame,width=20)
-            e.insert(0,pop_name)
-            # connect the entry to renaming the population
-            e.grid(row=rr,column=1)
-            rmb = Button(self.pops_frame,text='Remove')
-            # connect rmb to deleting the population
-            rmb.grid(row=rr,column=3)
-            rr += 1
-            stl = Label(self.pops_frame,text='- structure:',width=12,anchor='w')
-            stl.grid(row=rr,column=0)
-            ste = Entry(self.pops_frame,width=20)
-            ste.insert(0,popd['structure'])
-            # connect ste to structure entry func 
-            ste.grid(row=rr,column=1)
-            rr += 1
-            paramsl = Label(self.pops_frame,text='- parameters:',width=12,anchor='w')
-            paramsl.grid(row=rr,column=0)
-            rr += 1
-            for param_name,param_val in popd['parameters'].items():
-                pl = Label(self.pops_frame,text='- - {}:'.format(param_name),width=12,anchor='w')
-                pl.grid(row=rr,column=0)
-                pe = Entry(self.pops_frame,width=20)
+            pf = Frame(self.pops_frame,bd=4,pady=10,padx=10,relief=tkinter.RAISED) 
+            self.pop_frames[pop_name] = pf
+            self.param_frames[pop_name] = OrderedDict()
+            self.basis_frames[pop_name] = OrderedDict()
+            self.basis_item_frames[pop_name] = OrderedDict()
+            self.basis_param_frames[pop_name] = OrderedDict()
+            pf.pack(side=tkinter.TOP,pady=2,padx=2)
+
+            popl = Label(pf,text='population name:',anchor='e')
+            popl.grid(row=0,column=0,sticky=tkinter.E)
+            popl2 = Label(pf,text=pop_name)
+            popl2.grid(row=0,column=1,sticky=tkinter.W)
+            #pope = Entry(pf,width=20)
+            #pope.insert(0,pop_name)
+            #pope.grid(row=0,column=1,sticky=tkinter.W)
+            rmb = Button(pf,text='Remove',command=partial(self.remove_population,pop_name))
+            rmb.grid(row=0,column=2)
+
+            strl = Label(pf,text='structure:',width=12,anchor='e')
+            strl.grid(row=1,column=0,sticky=tkinter.E)
+            strvar = StringVar(pf)
+            str_option_dict = OrderedDict.fromkeys(xrsdkit.structure_names)
+            strcb = OptionMenu(pf,strvar,*str_option_dict)
+            strvar.set(popd['structure'])
+            strvar.trace('w',partial(self.update_structure,pop_name))
+            strcb.grid(row=1,column=1,sticky=tkinter.W)
+            self.structure_vars[pop_name] = strvar
+            # TODO: connect stcb to structure selection
+
+            paramsl = Label(pf,text='------ PARAMETERS ------')
+            paramsl.grid(row=2,column=0,columnspan=3)
+            npars = len(popd['parameters'])
+            for ip,param_name in enumerate(xrsdkit.structure_params[popd['structure']]):
+                paramf = Frame(pf,bd=2,pady=4,padx=10,relief=tkinter.GROOVE) 
+                self.param_frames[pop_name][param_name] = paramf
+                paramf.grid(row=3+ip,column=0,columnspan=4,sticky=tkinter.E+tkinter.W)
+                
+                pl = Label(paramf,text='{}:'.format(param_name),width=12,anchor='e')
+                pl.grid(row=0,column=0,sticky=tkinter.E)
+                pe = Entry(paramf,width=20)
+
+                param_val = xrsdkit.param_defaults[param_name]
+                if param_name in popd['parameters']:
+                    param_val = popd['parameters'][param_name]
                 pe.insert(0,str(param_val))
-                pe.grid(row=rr,column=1)
-                rmpb = Button(self.pops_frame,text='Remove')
-                rmpb.grid(row=rr,column=3)
-                rr += 1
-            basisl = Label(self.pops_frame,text='- basis:',width=12,anchor='w')
-            basisl.grid(row=rr,column=0)
-            rr += 1
+                pe.grid(row=0,column=1,columnspan=2,sticky=tkinter.W)
+
+                psw = Checkbutton(paramf,text="variable")
+                varparam = not xrsdkit.fixed_param_defaults[param_name]
+                # TODO: check for param in fixed_params 
+                if varparam: psw.select()
+                psw.grid(row=0,column=3,sticky=tkinter.W)
+                pbndl = Label(paramf,text='bounds:',width=10,anchor='e')
+                pbndl.grid(row=1,column=0,sticky=tkinter.E)
+                pbnde1 = Entry(paramf,width=8) 
+                pbnde2 = Entry(paramf,width=8)
+                pbnde1.grid(row=1,column=1,sticky=tkinter.W) 
+                pbnde2.grid(row=1,column=2,sticky=tkinter.W) 
+                lbnd = xrsdkit.param_bound_defaults[param_name][0]
+                ubnd = xrsdkit.param_bound_defaults[param_name][1] 
+                # TODO: check for param in param_bounds 
+                pbnde1.insert(0,str(lbnd))  
+                pbnde2.insert(0,str(ubnd))
+                pexpl = Label(paramf,text='expression:',width=10,anchor='e')
+                pexpl.grid(row=2,column=0,sticky=tkinter.E)
+                pexpe = Entry(paramf,width=16)
+                # TODO: check for param in param_constraints 
+                pexpe.grid(row=2,column=1,columnspan=3,sticky=tkinter.E+tkinter.W) 
+                # TODO: connect pe to param entry
+                # TODO: connect psw to changing fixed_params
+                # TODO: connect pbnde to changing param_bounds
+                # TODO: connect pexpe to setting param_constraints
+
+            basisl = Label(pf,text='--------- BASIS ---------')
+            basisl.grid(row=3+npars,column=0,columnspan=3)
             for ist,site_name in enumerate(popd['basis'].keys()):
+                basisf = Frame(pf,bd=2,pady=4,padx=10,relief=tkinter.GROOVE) 
+                self.basis_frames[pop_name][site_name] = basisf
+                self.basis_item_frames[pop_name][site_name] = OrderedDict()
+                self.basis_param_frames[pop_name][site_name] = OrderedDict()
+                basisf.grid(row=4+npars+ist,column=0,columnspan=4,sticky=tkinter.E+tkinter.W)
                 site_def = popd['basis'][site_name]
-                sitel = Label(self.pops_frame,text='- - occupant {}:'.format(ist),width=12,anchor='w')
-                sitel.grid(row=rr,column=0)
-                sitee = Entry(self.pops_frame,width=20)
-                sitee.insert(0,site_name)
-                # connect the entry to renaming the occupant 
-                sitee.grid(row=rr,column=1)
-                rmb = Button(self.pops_frame,text='Remove')
-                # connect rmb to deleting the occupant 
-                rmb.grid(row=rr,column=3)
-                rr += 1
- 
-            rr += 2
+                stl = Label(basisf,text='occupant name:',width=14,anchor='e')
+                stl.grid(row=0,column=0,sticky=tkinter.E)
+                ste = Entry(basisf,width=20)
+                ste.insert(0,site_name)
+                ste.grid(row=0,column=1,columnspan=3,sticky=tkinter.W)
+                rmb = Button(basisf,text='Remove')
+                rmb.grid(row=0,column=4)
+                # TODO: connect the entry to renaming the occupant 
+                # TODO: connect rmb to deleting the occupant 
+
+                if popd['structure'] in xrsdkit.crystalline_structure_names:
+                    coordl = Label(basisf,text='coordinates:',width=12,anchor='e')
+                    coorde1 = Entry(basisf,width=6)
+                    coorde2 = Entry(basisf,width=6)
+                    coorde3 = Entry(basisf,width=6)
+                    coordl.grid(row=1,column=0,sticky=tkinter.E)
+                    coorde1.grid(row=1,column=1)
+                    coorde2.grid(row=1,column=2)
+                    coorde3.grid(row=1,column=3)
+                    if 'coordinates' in popd['basis'][site_name]:
+                        c = popd['basis'][site_name]['coordinates']
+                    else:
+                        c = [0,0,0]
+                    coorde1.insert(0,str(c[0]))
+                    coorde2.insert(0,str(c[1]))
+                    coorde3.insert(0,str(c[2]))
+                    # TODO: connect the entries to setting the coordinates
+                    # TODO: controls for varying or constraining coords
+
+                for ispec, specie_name in enumerate(popd['basis'][site_name].keys()):
+                    if not specie_name == 'coordinates':
+                        specie_def = popd['basis'][site_name][specie_name] 
+                        if not isinstance(specie_def,list):
+                            specie_def = [specie_def]
+                        self.basis_item_frames[pop_name][site_name][specie_name] = []
+                        self.basis_param_frames[pop_name][site_name][specie_name] = []
+                        for specd in specie_def:
+                            bitmf = Frame(basisf,bd=2,padx=10,pady=4,relief=tkinter.GROOVE) 
+                            self.basis_item_frames[pop_name][site_name][specie_name].append(bitmf)
+                            self.basis_param_frames[pop_name][site_name][specie_name].append(OrderedDict())
+                            bitmf.grid(row=2+ispec,column=0,columnspan=5,pady=4,sticky=tkinter.E+tkinter.W)
+
+                            specl = Label(bitmf,text='specie:'.format(ispec),width=12,anchor='e')
+                            specl.grid(row=0,column=0,sticky=tkinter.E)
+
+                            specvar = StringVar(basisf)
+                            spec_option_dict = OrderedDict.fromkeys(xrsdkit.form_factor_names)
+                            speccb = OptionMenu(bitmf,specvar,*spec_option_dict)
+                            specvar.set(specie_name)
+                            speccb.grid(row=0,column=1,sticky=tkinter.W+tkinter.E)
+
+                            rmspecb = Button(bitmf,text='Remove')
+                            rmspecb.grid(row=0,column=2)
+                            # TODO: connect speccb to changing the specie
+                            # TODO: connect rmspecb to removing the specie
+
+                            for ibp,bparam_name in enumerate(xrsdkit.form_factor_params[specie_name]):
+                                bparf = Frame(bitmf,bd=2,padx=4,pady=4,relief=tkinter.GROOVE) 
+                                self.basis_param_frames[pop_name][site_name][specie_name][ispec][bparam_name] = bparf
+                                bparf.grid(row=1+ibp,column=0,columnspan=3,sticky=tkinter.E+tkinter.W)
+                                bparaml = Label(bparf,text='{}:'.format(bparam_name),width=10,anchor='e')
+                                bparaml.grid(row=0,column=0,sticky=tkinter.E)
+                                bparame = Entry(bparf,width=16)
+                                bparam_val = xrsdkit.param_defaults[bparam_name] 
+                                if bparam_name in specd: bparam_val = specd[bparam_name] 
+                                bparame.insert(0,str(bparam_val))
+                                bparame.grid(row=0,column=1,columnspan=2,sticky=tkinter.E+tkinter.W)
+                                bparsw = Checkbutton(bparf,text="variable")
+                                bparsw.grid(row=0,column=3,sticky=tkinter.W)
+                                bparvar = not xrsdkit.fixed_param_defaults[bparam_name]
+                                # TODO: check for bparam in fixed_params 
+                                if bparvar: bparsw.select()
+                                bparbndl = Label(bparf,text='bounds:',width=10,anchor='e')
+                                bparbndl.grid(row=1,column=0,sticky=tkinter.E)
+                                bparbnde1 = Entry(bparf,width=8) 
+                                bparbnde2 = Entry(bparf,width=8)
+                                lbnd = xrsdkit.param_bound_defaults[bparam_name][0]
+                                ubnd = xrsdkit.param_bound_defaults[bparam_name][1] 
+                                # TODO: check for bparam in param_bounds 
+                                bparbnde1.insert(0,str(lbnd))  
+                                bparbnde2.insert(0,str(ubnd))
+                                bparbnde1.grid(row=1,column=1,sticky=tkinter.W) 
+                                bparbnde2.grid(row=1,column=2,sticky=tkinter.W) 
+                                bparexpl = Label(bparf,text='expression:',width=10,anchor='e')
+                                bparexpl.grid(row=2,column=0,sticky=tkinter.E)
+                                bparexpe = Entry(bparf,width=16) 
+                                # TODO: check for bparam in param_constraints 
+                                bparexpe.grid(row=2,column=1,columnspan=3,sticky=tkinter.E+tkinter.W) 
+                                # TODO: connect bparame to setting the param
+                                # TODO: connect bparsw to changing fixed_params
+                                # TODO: connect bparbnde to changing param_bounds
+                                # TODO: connect bparexpe to setting param_constraints
+
+                # TODO: frame for adding a new specie
+
+            # TODO: frame for adding a new site
+
+        # TODO: frame for adding a new population
+        # TODO: frame for fitting controls: 
+        #   # fit button, objective readout
+        #   # toggles for logI-weighted and error-weighted
+        #   # toggle for user satisfaction, button for finishing
 
 
-
-        #vcoord = 0.9
-        #self.pop_name_axes = OrderedDict()
-        #self.pop_name_boxes = OrderedDict()
-        #self.rm_pop_axes = OrderedDict()
-        #self.rm_pop_buttons = OrderedDict()
-        #for i_pop, pop_name in enumerate(self.populations.keys()):
-        #    popd = self.populations[pop_name]
-        #    # widgets for editing population name
-        #    nm_ax = plt.axes([0.65,vcoord,0.1,0.03],facecolor = 'white') 
-        #    nm_box = TextBox(nm_ax, 'population {} name:'.format(i_pop), initial=pop_name)
-        #    nm_box.on_submit(partial(self._rename_population,pop_name))
-        #    # widgets for removing the population
-        #    rm_pop_ax = plt.axes([0.77,vcoord,0.1,0.03],facecolor = 'white')   
-        #    rm_pop_btn = Button(rm_pop_ax,'remove')   
-        #    rm_pop_btn.on_clicked(partial(self._remove_population,pop_name))
-
-        #    self.pop_name_axes[pop_name] = nm_ax 
-        #    self.pop_name_boxes[pop_name] = nm_box
-        #    self.rm_pop_axes[pop_name] = rm_pop_ax 
-        #    self.rm_pop_buttons[pop_name] = rm_pop_btn 
-        #    vcoord -= 0.04
-        # additional widgets for adding a new population
-        #self.ax_pop_entry = plt.axes([0.65,vcoord,0.1,0.03],facecolor = 'white')
-        #self.pop_entry = TextBox(self.ax_pop_entry,'new population:')
-        #self.pop_entry.on_submit(self._new_population)
-        #self.ax_add_pop_btn = plt.axes([0.77,vcoord,0.1,0.03],facecolor = 'white')
-        #self.add_pop_btn = Button(self.ax_add_pop_btn,'add')
-        #self.btns = RadioButtons(self.ax_btn, 
-        #    ['identified','unidentified'], active=0, activecolor='red')
-        #self.btns.on_clicked(self._set_unidentified)
-        #if bool(self.populations['unidentified']):
-        #    self.set_active(1)
-        #    self._set_unidentified()
-        #self.pop_sliders = OrderedDict() 
-        #self.pop_axes = OrderedDict()
-        #max_pop = 5
-        #for ip, pop_name in enumerate(saxskit.population_keys):
-        #    if not pop_name == 'unidentified':
-        #        ax_pop = plt.axes([0.35,0.04*(1.5+ip),0.2,0.02],facecolor=slider_color)
-        #        ax_pop.set_xticks(range(max_pop),True)
-        #        sldr = Slider(ax_pop,pop_name,0.,max_pop,valinit=self.populations[pop_name],valfmt="%i")
-        #        sldr.on_changed(partial(self._set_pop,pop_name))
-        #        self.pop_axes[pop_name] = ax_pop
-        #        self.pop_sliders[pop_name] = sldr
-
-    def _remove_population(self,pop_name,label):
+    def remove_population(self,pop_name):
         self.populations.pop(pop_name)
-        self.setup_plots()
-        self.setup_populations()
+        self.draw_plots()
+        self.rebuild_entry_widgets()
 
-    def _rename_population(self,old_name,new_name):
-        popd = self.populations.pop(old_name)
-        self.populations[new_name] = popd
-        self.setup_plots()
-        self.setup_populations()
+    def update_structure(self,pop_name,var_name,dummy,mode):
+        s = self.structure_vars[pop_name].get() 
+        self.populations[pop_name]['structure'] = s
+        new_params = OrderedDict.fromkeys(xrsdkit.structure_params[s])
+        for pnm in new_params: new_params[pnm] = xrsdkit.param_defaults[pnm]
+        self.populations[pop_name]['parameters'] = new_params
+        new_settings = OrderedDict.fromkeys(xrsdkit.structure_settings[s])
+        for snm in new_settings: new_settings[snm] = xrsdkit.setting_defaults[snm]
+        self.populations[pop_name]['settings'] = new_settings
+        # if the new structure is crystalline, ensure coordinates are set
+        new_basis = self.populations[pop_name]['basis']
+        if s in xrsdkit.crystalline_structure_names:
+            for site_item_name, site_def in new_basis.items():
+                site_def_keys = list(site_def.keys())
+                for nm in site_def_keys:
+                    if nm in xrsdkit.noncrystalline_ff_names:
+                        site_def.pop(nm) 
+                if not 'coordinates' in site_def:
+                    site_def['coordinates'] = [0.,0.,0.]
+        self.draw_plots()
+        self.rebuild_entry_widgets()
 
-    def _new_population(self,new_pop_name):
-        self.populations[new_pop_name] = OrderedDict()
-        self.populations[new_pop_name]['structure'] = 'diffuse' 
-        self.populations[new_pop_name]['parameters'] = OrderedDict()
-        self.populations[new_pop_name]['basis'] = OrderedDict()
-        self.setup_plots()
-        self.setup_populations()
+    #def _rename_population(self,old_name,new_name):
+    #    popd = self.populations.pop(old_name)
+    #    self.populations[new_name] = popd
+    #    self.setup_plots()
+    #    self.setup_populations()
 
-
-
-
-
-
-
-
-    def reset_params(self):
-        for param_name,axs in self.param_axes.items():
-            for ax in axs:
-                self.fig.delaxes(ax)
-        if self.ax_fit_btn is not None:
-            self.fig.delaxes(self.ax_fit_btn)
-        if self.ax_finish_btn is not None:
-            self.fig.delaxes(self.ax_finish_btn)
-        if self.ax_success_btn is not None:
-            self.fig.delaxes(self.ax_success_btn)
-        n_params = len(self.params)
-        self.param_sliders = OrderedDict()
-        self.param_axes = OrderedDict()
-        ipar = 0
-        for param_name,vals in self.params.items():
-            self.param_axes[param_name] = []
-            self.param_sliders[param_name] = []
-            for ival,val in enumerate(vals):
-                ax_param = plt.axes([0.7,0.9-0.04*(1+ipar),0.2,0.02],facecolor=slider_color) 
-                sldr_name = param_name+str(ival)
-                llim = saxs_fit.param_limits[param_name][0]
-                ulim = saxs_fit.param_limits[param_name][1]
-                vinit = val
-                vfmt = "%.3f" 
-                param_change_func = partial(self._set_param,param_name,ival)
-                log_slider = param_name in ['r0_sphere','rg_gp','I0_floor',\
-                    'G_gp','I0_sphere','I_pkcenter']\
-                    and not vinit < llim\
-                    and not vinit < 1.E-6
-                if log_slider:
-                    sldr_name = sldr_name + ' (log)' 
-                    if llim <= 0.:
-                        llim = 1.E-6
-                    if ulim is None:
-                        ulim = 1.E7
-                    llim = np.log10(llim)
-                    ulim = np.log10(ulim)
-                    vinit = np.log10(vinit)
-                    vfmt = "%.2e"
-                    param_change_func = partial(self._set_param_logarithmic,param_name,ival)
-                sldr = Slider(ax_param,sldr_name,
-                    llim,ulim,valinit=vinit,valfmt=vfmt)
-                if log_slider: 
-                    sldr.valtext.set_text(sldr.valfmt % 10.**vinit)
-                sldr.on_changed(param_change_func)
-                self.param_axes[param_name].append(ax_param)
-                self.param_sliders[param_name].append(sldr)
-                ipar += 1
-        self.ax_fit_btn = plt.axes([0.7,0.88-0.04*(1+ipar),0.2,0.03],facecolor='white')
-        self.fit_btn = Button(self.ax_fit_btn,'Fit')
-        self.fit_btn.on_clicked(self.fit)
-        self.ax_success_btn = plt.axes([0.7,0.7-0.04*(1+ipar),0.12,0.18],facecolor='white')
-        self.ax_success_btn.axis('off')
-        self.success_btn = RadioButtons(self.ax_success_btn, 
-            ['good fit','bad fit'], active=0, activecolor='red')
-        self.success_flag = True
-        self.success_btn.on_clicked(self._set_success_flag)
-        self.ax_finish_btn = plt.axes([0.8,0.74-0.04*(1+ipar),0.1,0.1],facecolor='white')
-        self.finish_btn = Button(self.ax_finish_btn,'Finish')
-        self.finish_btn.on_clicked(self.finish)
+    #def _new_population(self,new_pop_name):
+    #    self.populations[new_pop_name] = OrderedDict()
+    #    self.populations[new_pop_name]['structure'] = 'diffuse' 
+    #    self.populations[new_pop_name]['parameters'] = OrderedDict()
+    #    self.populations[new_pop_name]['basis'] = OrderedDict()
+    #    self.setup_plots()
+    #    self.setup_populations()
 
     def fit(self,event):
         self.message_callback('fitting...')
@@ -332,63 +414,4 @@ class XRSDFitGUI(Operation):
         #    for ax,par in zip(axs,pars):
         #        ax.plot(par,0.,'r*')
         #        ax.redraw_in_frame()
-
-    def _set_unidentified(self,label):
-        if label == 'unidentified':
-            if not bool(self.populations['unidentified']):
-                self.populations['unidentified'] = 1
-                for pop,sldr in self.pop_sliders.items():
-                    sldr.set_val(0.)
-        elif label == 'identified':
-            if bool(self.populations['unidentified']):
-                self.populations['unidentified'] = 0
-
-    def _set_success_flag(self,label):
-        if label == 'yes':
-            self._success_flag = True
-        elif label == 'no':
-            self._success_flag = False
-
-    def _set_pop(self,pop_name,val):
-        s = self.pop_sliders[pop_name]
-        s.val = int(round(val))
-        s.poly.xy[2] = s.val,1
-        s.poly.xy[3] = s.val,0
-        s.valtext.set_text(s.valfmt % s.val)
-        self.set_population(pop_name,s.val)
-        #dp = self.predict_params()
-        #self.params = saxs_fit.update_params(dp,self.params)
-
-    def set_population(self,pop_name,val):
-        self.populations[pop_name] = int(val)
-        self.saxs_fitter = saxs_fit.SaxsFitter(self.q_I,self.populations)
-        self.params = self.predict_params()
-        self.reset_params()
-        self.update_plots()
-
-    def _set_param(self,param_name,val_idx,val):
-        self.params[param_name][val_idx] = val
-        self.update_plots()
-
-    def _set_param_logarithmic(self,param_name,val_idx,val):
-        self.params[param_name][val_idx] = 10.**val
-        self.update_plots()
-        s = self.param_sliders[param_name][val_idx]
-        s.valtext.set_text(s.valfmt % 10.**val)
-
-    def predict_params(self):
-        p = self.saxs_reg.predict_params(self.populations,self.feats,self.q_I)
-        if bool(self.populations['diffraction_peaks']):
-            p = self.saxs_fitter.estimate_peak_params(p)
-        p,r = self.saxs_fitter.fit_intensity_params(p)
-        return p
-
-    def update_plots(self):
-        self.ax_plot.clear()
-        self.ax_plot.semilogy(self.q_I[:,0],self.q_I[:,1],lw=2,color='black')
-        I_est = saxs_math.compute_saxs(self.q_I[:,0],self.populations,self.params)
-        self.ax_plot.semilogy(self.q_I[:,0],I_est,lw=2,color='red')
-        self.ax_plot.legend(['measured','computed'])
-        self.ax_plot.redraw_in_frame()
-
 
