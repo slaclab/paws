@@ -17,4 +17,3 @@ tzlocal
 xrsdkit
 tifffile
 serial
-pymatgen
