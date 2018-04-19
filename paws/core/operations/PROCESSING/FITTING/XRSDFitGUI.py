@@ -91,6 +91,7 @@ class XRSDFitGUI(Operation):
         self.scroll_frame = Frame(self.fit_gui)
         self.scroll_frame.pack(side=tkinter.RIGHT,fill='y')
         self.pops_canvas = Canvas(self.scroll_frame, width=450)
+        self.scroll_frame.bind_all("<MouseWheel>",  self.on_mousewheel)
         scr = Scrollbar(self.scroll_frame,orient='vertical',command=self.pops_canvas.yview)
         scr.pack(side=tkinter.RIGHT,fill='y')
         self.pops_frame = Frame(self.pops_canvas)
@@ -108,6 +109,11 @@ class XRSDFitGUI(Operation):
         #self.pops_canvas.bind("<Button-5>", lambda event: event.widget.yview_scroll(1, UNITS))
         self.pops_canvas.pack(side=tkinter.LEFT,fill='y')
         self.rebuild_entry_widgets()
+
+    def on_mousewheel(self, event):
+        if event.delta == 0:
+            event.delta += 100
+        self.pops_canvas.yview_scroll(-1 * event.delta, 'units')
 
     def finish(self):
         # TODO: check whether the user is satisfied with the result, 
