@@ -362,39 +362,44 @@ class XRSDFitGUI(Operation):
         new_pop.pack(side=tkinter.TOP,pady=2,padx=2, fill="both", expand=True)
         add_pop = Label(new_pop,text='add population:',anchor='e')
         add_pop.grid(row=0,column=0,sticky=tkinter.E)
-
-        pops = list(self.populations.keys())
-        strvar2 = StringVar(new_pop)
-        str_option_dict2 = OrderedDict.fromkeys(self.populations.keys())# TODO we need all possible populations
-        strcb2 = OptionMenu(new_pop,strvar2,*str_option_dict2)
-        strvar2.set(pops[0])
-        strvar2.trace('w',partial(self.hi))
-        strcb2.grid(row=0,column=1,sticky=tkinter.W, padx=20)
-        #self.structure_vars[pop_name] = strvar
-
+        name = Entry(new_pop,width=20)
+        name.insert(0,'unique name')
+        name.grid(row=0,column=1,sticky=tkinter.W)
         add_button = Button(new_pop, text='Add', width = 10, command=self.hi)
-        add_button.grid(row=0,column=2, padx=20)
+        add_button.grid(row=0,column=2, sticky=tkinter.E)
 
         # TODO: frame for fitting controls: 
         #   # fit button, objective readout
         #   # toggles for logI-weighted and error-weighted
         #   # toggle for user satisfaction, button for finishing
+
         fitting_control = Frame(self.pops_frame,bd=4,pady=10,padx=10,relief=tkinter.RAISED)
-        fitting_control.pack(side=tkinter.TOP,pady=2,padx=2, fill="both", expand=True)
+        fitting_control.pack(side=tkinter.TOP, pady=2,padx=2, fill="both", expand=True)
+        error_weighted_box = Checkbutton(fitting_control,text="error weighted")
+        error_weighted = True
+        if error_weighted: error_weighted_box.select()
+        error_weighted_box.grid(row=0,column=0)
+        logI_weighted_box = Checkbutton(fitting_control, text="logI weighted")
+        logI_weighted = True
+        if logI_weighted: logI_weighted_box.select()
+        logI_weighted_box.grid(row=0,column=1)
+        #finish_button = Button(finish,text='Finish',command=partial(self.remove_population,pop_name))
+        fit_button = Button(fitting_control,text='Fit',width = 10,  command=self.hi)
+        fit_button.grid(row=0,column=2)
+        obj = Label(fitting_control,text='obj:',anchor='e')
+        obj.grid(row=1,column=0,sticky=tkinter.E)
+        result = Entry(fitting_control,width=20)
+        result.insert(0,'some number')
+        result.grid(row=1,column=1,sticky=tkinter.W)
 
-
-
-
-
-        finish = Frame(fitting_control,bd=2,pady=4,padx=10,relief=tkinter.GROOVE)
-        finish.pack(side=tkinter.RIGHT, pady=2,padx=2)
+        finish = Frame(self.pops_frame,bd=4,pady=10,padx=10,relief=tkinter.RAISED)
+        finish.pack(side=tkinter.TOP, pady=2,padx=2, fill="both", expand=True)
         fit = Checkbutton(finish,text="Good fit")
-        varfit = False
-        if varfit: fit.select()
-        fit.grid(row=0,column=0,sticky=tkinter.W)
+        if self.success_flag: fit.select()
+        fit.grid(row=0,column=0)
         #finish_button = Button(finish,text='Finish',command=partial(self.remove_population,pop_name))
         finish_button = Button(finish,text='Finish',width = 10, command=self.hi)
-        finish_button.grid(row=1,column=0)
+        finish_button.grid(row=0,column=1)
 
     def hi(self):
         print('test-test')
