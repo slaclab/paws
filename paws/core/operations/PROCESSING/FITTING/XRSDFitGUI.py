@@ -79,8 +79,9 @@ class XRSDFitGUI(Operation):
         self.finish() 
 
     def build_plot_widgets(self):
-        self.plot_frame = Frame(self.fit_gui,bd=4,relief=tkinter.SUNKEN)
-        self.plot_frame.pack(side=tkinter.LEFT,padx=2,pady=2)
+        self.plot_frame = Frame(self.fit_gui,bd=4,relief=tkinter.SUNKEN, background="green")
+        self.plot_frame.pack(side=tkinter.LEFT, expand=tkinter.YES,padx=2,pady=2)
+
         self.fig = Figure(figsize=(8,7))
         self.ax_plot = self.fig.add_subplot(111)
         self.plot_canvas = FigureCanvasTkAgg(self.fig,self.plot_frame)
@@ -174,6 +175,7 @@ class XRSDFitGUI(Operation):
 
     def rebuild_entry_widgets(self):
         self.destroy_entry_widgets()
+        # create a frame for every population
         for ipop,pop_name in enumerate(self.populations.keys()):
             popd = self.populations[pop_name]
             pf = Frame(self.pops_frame,bd=4,pady=10,padx=10,relief=tkinter.RAISED) 
@@ -203,7 +205,7 @@ class XRSDFitGUI(Operation):
             strvar.trace('w',partial(self.update_structure,pop_name))
             strcb.grid(row=1,column=1,sticky=tkinter.W)
             self.structure_vars[pop_name] = strvar
-            # TODO: connect stcb to structure selection
+            # TODO: connect stcb to structure selection    ????? is it done?
 
             paramsl = Label(pf,text='------ PARAMETERS ------')
             paramsl.grid(row=2,column=0,columnspan=3)
@@ -356,10 +358,51 @@ class XRSDFitGUI(Operation):
             # TODO: frame for adding a new site
 
         # TODO: frame for adding a new population
+        new_pop = Frame(self.pops_frame,bd=4,pady=10,padx=10,relief=tkinter.RAISED)
+        new_pop.pack(side=tkinter.TOP,pady=2,padx=2, fill="both", expand=True)
+        add_pop = Label(new_pop,text='add population:',anchor='e')
+        add_pop.grid(row=0,column=0,sticky=tkinter.E)
+        name = Entry(new_pop,width=20)
+        name.insert(0,'unique name')
+        name.grid(row=0,column=1,sticky=tkinter.W)
+        add_button = Button(new_pop, text='Add', width = 10, command=self.hi)
+        add_button.grid(row=0,column=2, sticky=tkinter.E)
+
         # TODO: frame for fitting controls: 
         #   # fit button, objective readout
         #   # toggles for logI-weighted and error-weighted
         #   # toggle for user satisfaction, button for finishing
+
+        fitting_control = Frame(self.pops_frame,bd=4,pady=10,padx=10,relief=tkinter.RAISED)
+        fitting_control.pack(side=tkinter.TOP, pady=2,padx=2, fill="both", expand=True)
+        error_weighted_box = Checkbutton(fitting_control,text="error weighted")
+        error_weighted = True
+        if error_weighted: error_weighted_box.select()
+        error_weighted_box.grid(row=0,column=0)
+        logI_weighted_box = Checkbutton(fitting_control, text="logI weighted")
+        logI_weighted = True
+        if logI_weighted: logI_weighted_box.select()
+        logI_weighted_box.grid(row=0,column=1)
+        #finish_button = Button(finish,text='Finish',command=partial(self.remove_population,pop_name))
+        fit_button = Button(fitting_control,text='Fit',width = 10,  command=self.hi)
+        fit_button.grid(row=0,column=2)
+        obj = Label(fitting_control,text='obj:',anchor='e')
+        obj.grid(row=1,column=0,sticky=tkinter.E)
+        result = Entry(fitting_control,width=20)
+        result.insert(0,'some number')
+        result.grid(row=1,column=1,sticky=tkinter.W)
+
+        finish = Frame(self.pops_frame,bd=4,pady=10,padx=10,relief=tkinter.RAISED)
+        finish.pack(side=tkinter.TOP, pady=2,padx=2, fill="both", expand=True)
+        fit = Checkbutton(finish,text="Good fit")
+        if self.success_flag: fit.select()
+        fit.grid(row=0,column=0)
+        #finish_button = Button(finish,text='Finish',command=partial(self.remove_population,pop_name))
+        finish_button = Button(finish,text='Finish',width = 10, command=self.hi)
+        finish_button.grid(row=0,column=1)
+
+    def hi(self):
+        print('test-test')
 
 
     def remove_population(self,pop_name):
