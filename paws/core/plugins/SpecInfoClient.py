@@ -1,11 +1,10 @@
 from __future__ import print_function
 from collections import OrderedDict
 import copy
-import time
 import socket 
-import datetime
 import os
 import sys
+from threading import Thread, Condition
 if int(sys.version[0]) == 2:
     import Queue as queue
 else:
@@ -17,11 +16,10 @@ from .PawsPlugin import PawsPlugin
 from .. import pawstools
 
 inputs = OrderedDict(
-    host = None,
-    port = None,
-    timer = None)
-    #dt = 1.,
-    #dt_busy = 0.01)
+    host=None,
+    port=None,
+    timer=None,
+    verbose=False)
 
 class SpecInfoClient(PawsPlugin):
 
@@ -29,17 +27,17 @@ class SpecInfoClient(PawsPlugin):
         super(SpecInfoClient,self).__init__(inputs)
         self.input_doc['host'] = 'string representing host name or IP address'
         self.input_doc['port'] = 'integer port number where SpecInfoServer listens' 
-        self.input_doc['timer'] = 'Timer plugin for triggering concurrent events' 
-        #self.input_doc['dt'] = 'seconds to wait between checking the queue for new commands' 
-        #self.input_doc['dt_busy'] = 'seconds to wait between querying SpecInfoServer when it is busy' 
+        self.input_doc['timer'] = 'Timer plugin for triggering client activities' 
+        self.input_doc['verbose'] = 'If True, plugin uses its message_callback' 
         self.n_events = 0
+        self.history_lock = Condition()
         self.history = []
         self.commands = queue.Queue() 
+        self.running_lock = Condition()
         self.sock = None
         self.content = OrderedDict(history = self.history)
-        # NOTE: creating a clone during __init__ leads to infinite recursion
-        #self.clone = self.build_clone()
-        self.clone = None
+        self.thread_clone = None
+        self.proxy = None
 
     def description(self):
         desc = 'SpecInfoClient Plugin: '\
@@ -49,72 +47,98 @@ class SpecInfoClient(PawsPlugin):
         return desc
 
     def start(self):
+        with self.running_lock:
+            self.running = True
         hst = self.inputs['host'] 
         prt = self.inputs['port'] 
         tmr = self.inputs['timer'] 
-        self.clone.sock = socket.create_connection((hst,prt)) 
-        #self.clone.tz = tzlocal.get_localzone()
-        #self.clone.t_0 = datetime.datetime.now(self.tz)
-        #t_utc = time.mktime(self.clone.t_0.timetuple())
-        #cmd='clock started'
-        #resp='t_0 = {}'.format(t_utc)
-        #self.clone.add_to_history(cmd,resp)
-        #if self.data_callback:
-        #    self.data_callback('content.socket',self.sock)
-        #cmd='socket opened'
-        #self.add_to_history(cmd,'')
-        #cmd = '!rqc'
-        #self.send_line(cmd)
-        #resp = self.receive_line()
-        #trial = 0
-        #while not str(resp) == 'client in control.':
-        #    time.sleep(self.inputs['dt'])
-        #    cmd = '!rqc'
-        #    self.send_line(cmd)
-        #    resp = self.receive_line()
+        self.thread_clone = self.build_clone()
+        self.thread_clone.proxy = self
+        self.thread_clone.sock = socket.create_connection((hst,prt)) 
+        th = Thread(target=self.thread_clone.run)
+        th.start()
+
+    def run(self):
+        vb = self.inputs['verbose']
+        # executed by self.thread_clone in its own thread
+        cmd = '!rqc'
+        with self.proxy.inputs['timer'].dt_lock:
+            t_now = float(self.proxy.inputs['timer'].time_points[-1])
+        self.send_line(cmd)
+        resp = self.receive_line()
+        if vb: self.message_callback('{} :: {} :: {}'.format(t_now,cmd,resp.decode()))
+        with self.proxy.history_lock:
+            self.proxy.add_to_history(t_now,cmd,resp.decode())
+        while not resp.decode() == 'client in control.':
+            with self.proxy.inputs['timer'].dt_lock:
+                self.proxy.inputs['timer'].dt_lock.wait()
+            with self.proxy.inputs['timer'].dt_lock:
+                t_now = float(self.proxy.inputs['timer'].time_points[-1])
+            self.send_line(cmd)
+            resp = self.receive_line()
+            if vb: self.message_callback('{} :: {} :: {}'.format(t_now,cmd,resp.decode()))
+            with self.proxy.history_lock:
+                self.proxy.add_to_history(t_now,cmd,resp.decode())
         #    trial += 1
         #    if trial > 100:
-        #        self.add_to_history('CONTROL DENIED',resp)
+        #        self.proxy.add_to_history('CONTROL DENIED',resp)
         #        raise RuntimeError('SpecInfoServer control denied')
-        #self.add_to_history(cmd,resp)
-        #self.running = True
-        #self.message_callback('SpecInfoClient started!')
-        #while self.running:
-        #    while self.commands.qsize() > 0:
-        #        cmd = copy.deepcopy(self.commands.get())
-        #        # release self.commands with a task_done()
-        #        self.commands.task_done()
-        #        self.send_line(cmd)
-        #        resp = str(self.receive_line())
-        #        while resp in ['','spec is busy!']:
-        #            time.sleep(self.inputs['dt_busy'])
-        #            self.send_line(cmd)
-        #            resp = str(self.receive_line())
-        #        self.add_to_history(cmd,resp)
-        #        self.message_callback('\n[SpecInfoClient] \ncmd: {} \nresp: {}'.format(cmd,resp))
-        #    time.sleep(self.inputs['dt']) 
-        #self.sock.close()
-        #cmd='socket closed'
-        #self.add_to_history(cmd,'')
-        #self.message_callback('SpecInfoClient finished.')
-        #self.dump_history()
-
-    def add_to_history(self,cmd,resp):
-        self.history.append(self.event(cmd,resp))
-        if self.data_callback:
-            self.data_callback('content.history.{}'.format(self.n_events),
-                copy.deepcopy(self.history[self.n_events]))
-        self.n_events += 1
+        #if vb: self.message_callback('{} :: {} :: {}'.format(t_now,cmd,resp))
+        keep_going = True
+        while keep_going: 
+            while self.commands.qsize() > 0:
+                cmd = self.commands.get()
+                # release self.commands with a task_done()
+                self.commands.task_done()
+                with self.proxy.inputs['timer'].dt_lock:
+                    t_now = float(self.proxy.inputs['timer'].time_points[-1])
+                self.send_line(cmd)
+                resp = self.receive_line()
+                if vb: self.message_callback('{} :: {} :: {}'.format(t_now,cmd,resp.decode()))
+                while resp.decode() in ['','spec is busy!']:
+                    with self.proxy.inputs['timer'].dt_lock:
+                        self.proxy.inputs['timer'].dt_lock.wait()
+                    with self.proxy.inputs['timer'].dt_lock:
+                        t_now = float(self.proxy.inputs['timer'].time_points[-1])
+                    self.send_line(cmd)
+                    resp = self.receive_line()
+                    if vb: self.message_callback('{} :: {} :: {}'.format(t_now,cmd,resp.decode()))
+                with self.proxy.history_lock:
+                    self.proxy.add_to_history(t_now,cmd,resp.decode())
+                #with self.proxy.inputs['timer'].dt_lock:
+                #    self.proxy.inputs['timer'].dt_lock.wait()
+            with self.proxy.inputs['timer'].dt_lock:
+                self.proxy.inputs['timer'].dt_lock.wait()
+            with self.proxy.inputs['timer'].running_lock:
+                if not self.proxy.inputs['timer'].running:
+                    with self.proxy.running_lock:
+                        self.proxy.stop()
+            with self.proxy.running_lock:
+                keep_going = bool(self.proxy.running)
+        with self.proxy.inputs['timer'].dt_lock:
+            t_now = float(self.proxy.inputs['timer'].time_points[-1])
+        with self.proxy.history_lock:
+            self.proxy.add_to_history(t_now,cmd,resp.decode())
+            self.proxy.dump_history()
+        self.sock.close()
 
     def dump_history(self):
-        dump_path = os.path.join(pawstools.paws_scratch_dir,'spec_infoclient_{}.log'.format(self))
+        dump_path = os.path.join(pawstools.paws_scratch_dir,'ppump_controller_{}.log'.format(self))
         dump_file = open(dump_path,'w')
-        dump_file.write('t \tcommand \tresponse\n')
+        dump_file.write('t :: command :: response\n')
         for ev in self.history:
-            dump_file.write('{} \t{} \t{}\n'.format(ev['t'],ev['command'],ev['response']))
+            dump_file.write('{} :: {} :: {}\n'.format(ev['t'],ev['command'],ev['response']))
+        dump_file.close()
 
-    def event(self,cmd,resp):
-        t = (datetime.datetime.now(self.tz) - self.t_0).total_seconds()
+    def get_plugin_content(self):
+        with self.history_lock:
+            h = copy.deepcopy(self.history)
+        return {'history':h}
+
+    def add_to_history(self,t,cmd,resp):
+        self.history.append(self.event(t,cmd,resp))
+
+    def event(self,t,cmd,resp):
         event = OrderedDict(t=t,command=cmd,response=resp)
         return event
 
@@ -125,39 +149,39 @@ class SpecInfoClient(PawsPlugin):
         return bfr
     
     def send_line(self, line):
-        self.sock.sendall(bytearray(line))
+        self.sock.sendall(bytearray(line.encode('utf-8')))
 
     def enable_cryocon(self):
-        self.plugin_clone.commands.put('!cmd ctemp_enable')
-        self.plugin_clone.commands.put('!cmd ctemp_ctrl_on')
-        self.plugin_clone.commands.put('!cmd csettemp 20')
+        self.thread_clone.commands.put('!cmd ctemp_enable')
+        self.thread_clone.commands.put('!cmd ctemp_ctrl_on')
+        self.thread_clone.commands.put('!cmd csettemp 20')
 
     def set_cryocon(self,temperature,ramp=None):
         if ramp is not None:
-            self.plugin_clone.commands.put('!cmd ctemp_ramp_on')
-            self.plugin_clone.commands.put('!cmd csetramp {}'.format(ramp))
-        self.plugin_clone.commands.put('!cmd csettemp {}'.format(temperature))
+            self.thread_clone.commands.put('!cmd ctemp_ramp_on')
+            self.thread_clone.commands.put('!cmd csetramp {}'.format(ramp))
+        self.thread_clone.commands.put('!cmd csettemp {}'.format(temperature))
 
     def stop_cryocon(self):
-        self.plugin_clone.commands.put('!cmd ctemp_ctrl_off')
-        self.plugin_clone.commands.put('!cmd ctemp_disable')
+        self.thread_clone.commands.put('!cmd ctemp_ctrl_off')
+        self.thread_clone.commands.put('!cmd ctemp_disable')
 
     def read_cryocon(self):
         # !cmd cmeasuretemp     -> reads temperature, saves as CYRO_DEGC
         # !cmd CRYO_DEGC        -> query the CRYO_DEGC variable
         # ?res                  -> gets result of CRYO_DEGC query
-        self.plugin_clone.commands.put('!cmd cmeasuretemp')
+        self.thread_clone.commands.put('!cmd cmeasuretemp')
 
     def mar_enable(self):
-        self.plugin_clone.commands.put('!cmd mar_enable')
+        self.thread_clone.commands.put('!cmd mar_enable')
  
     def mar_disable(self):
-        self.plugin_clone.commands.put('!cmd mar_disable')
+        self.thread_clone.commands.put('!cmd mar_disable')
  
     def run_loopscan(self,mroot,n_points,exp_time):
         # !cmd loopscan n_points exposure_time sleep_time
-        self.plugin_clone.commands.put('!cmd mar netroot {}'.format(mroot))
-        self.plugin_clone.commands.put('!cmd loopscan {} {}'.format(n_points,exp_time))
+        self.thread_clone.commands.put('!cmd mar netroot {}'.format(mroot))
+        self.thread_clone.commands.put('!cmd loopscan {} {}'.format(n_points,exp_time))
 
 #------------------------------------------------------------------------------
 
