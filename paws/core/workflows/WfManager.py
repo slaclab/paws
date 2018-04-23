@@ -43,8 +43,11 @@ class WfManager(object):
         # dict of bools to keep track of who is at work:
         self.wf_running = OrderedDict() 
         self.plugin_names = OrderedDict()
-        self.message_callback = print
+        self.message_callback = self.tagged_print
         self.pool=None
+
+    def tagged_print(self,msg):
+        print('[{}] {}'.format(type(self).__name__,msg))
 
     def set_pool(self,pool):
         self.pool = pool
@@ -69,7 +72,7 @@ class WfManager(object):
         wf = Workflow()
         if not wf.is_tag_valid(wf_name): 
             raise pawstools.WfNameError(wf.tag_error_message(wf_name))
-        wf.message_callback = self.message_callback
+        #wf.message_callback = self.message_callback
         self.workflows[wf_name] = wf
         self.wf_running[wf_name] = False
         return wf
@@ -85,7 +88,7 @@ class WfManager(object):
         stk,diag = wf.execution_stack()
         wf_clone = self.prepare_wf(wf_name,stk)
         wf_clone.data_callback = wf.data_callback
-        wf_clone.message_callback = wf.message_callback
+        #wf_clone.message_callback = wf.message_callback
         self.wf_clones[wf_name] = wf_clone
         #if pool is None:
         self.wf_running[wf_name] = True
@@ -124,7 +127,7 @@ class WfManager(object):
         """ 
         wf = self.workflows[wf_name]
         wf_clone = wf.build_clone()
-        plugin_names = []
+        plugin_names = wf.plugin_names 
         #for op_name,op in wf_clone.operations.items():
         #    op.message_callback = wf.message_callback
         #    op.data_callback = partial( wf.set_op_item,op_name )
@@ -133,7 +136,7 @@ class WfManager(object):
                 op = wf_clone.get_data_from_uri(op_tag)
                 for inpname,il in op.input_locator.items():
                     if il.tp == pawstools.plugin_item:
-                        # Plugins are expected to be safe to use from any thread,
+                        # Plugins are expected to be safe to communicate from any thread,
                         # so they need not be cloned or copied
                         wf_clone.set_op_item(op_tag,'inputs.'+inpname,
                         self.get_plugin_data(il))
@@ -148,12 +151,12 @@ class WfManager(object):
                             # TODO: figure out why the segfaults,
                             # and think of a good way to relay data back to the original workflow
                             #new_wf.data_callback = self.workflows[wf_name].data_callback
-                            new_wf.message_callback = self.workflows[wf_name].message_callback
+                            #new_wf.message_callback = self.workflows[wf_name].message_callback
                             wf_clone.set_op_item(op_tag,'inputs.'+inpname,new_wf)
                     elif il.tp not in [pawstools.runtime_type,pawstools.workflow_item]:
-                        # NOTE 1: runtime inputs are set at runtime, 
-                        # so that the input does not get serialized
-                        # when and if this workflow gets serialized
+                        # NOTE 1: runtime inputs should be set at runtime, 
+                        # so that the input does not get serialized,
+                        # when and if the workflow gets serialized
                         # NOTE 2: workflow_item inputs are retrieved during execution
                         wf_clone.set_op_item(op_tag,'inputs.'+inpname,
                         copy.deepcopy(il.val))
@@ -167,9 +170,9 @@ class WfManager(object):
                             if not pgin_name in plugin_names:
                                 plugin_names.append(pgin_name)
         self.plugin_names[wf_name] = plugin_names
-        for pgn_name in plugin_names:
-            if not self.plugin_manager.plugin_running[pgn_name]:
-                self.plugin_manager.start_plugin(pgn_name) 
+        #for pgn_name in plugin_names:
+        #    if not self.plugin_manager.plugin_running[pgn_name]:
+        #        self.plugin_manager.start_plugin(pgn_name) 
         return wf_clone
 
     def get_plugin_data(self,il):
