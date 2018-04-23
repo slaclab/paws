@@ -33,7 +33,7 @@ class Operation(object):
         for name in self.inputs.keys(): 
         #    self.input_type[name] = basic_type 
             self.input_locator[name] = pawstools.InputLocator(pawstools.basic_type,self.inputs[name])
-        self.message_callback = print
+        self.message_callback = self.tagged_print 
         self.data_callback = None 
         self.stop_flag = False
 
@@ -55,6 +55,9 @@ class Operation(object):
             .format(__name__,self.keys()))
     def keys(self):
         return ['inputs','outputs']
+
+    def tagged_print(self,msg):
+        print('[{}] {}'.format(type(self).__name__,msg))
 
     #def load_defaults(self):
     #    """
