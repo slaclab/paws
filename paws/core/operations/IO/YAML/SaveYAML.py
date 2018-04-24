@@ -23,7 +23,7 @@ class SaveYAML(Operation):
         p = self.inputs['file_path']
         d = self.inputs['data']
 
-        stream = file(p,'w')
+        stream = open(p,'w')
         yaml.dump(d, stream)
 
         #datastring = yaml.dump(data)

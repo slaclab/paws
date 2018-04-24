@@ -5,14 +5,14 @@ import os.path
 from ...Operation import Operation
 
 inputs=OrderedDict(
-    dir_path=None,
+    dir_path='',
     prefix='',
-    filename=None,
+    filename='',
     suffix='',
     ext='')
 outputs=OrderedDict(
-    filename=None,
-    file_path=None)
+    filename='',
+    file_path='')
 
 class BuildFilePath(Operation):
     """
@@ -33,15 +33,15 @@ class BuildFilePath(Operation):
         self.output_doc['file_path'] = 'file_path will be <path><prefix><filename><suffix>.<ext>' 
 
     def run(self):
-        p = str(self.inputs['dir_path'])
-        fn = str(self.inputs['filename'])
-        ext = str(self.inputs['ext'])
+        p = self.inputs['dir_path']
+        fn = self.inputs['filename']
+        ext = self.inputs['ext']
         if bool(ext):
             if not ext[0] == '.':
                 ext = '.'+ext
-        pf = str(self.inputs['prefix'])
-        sf = str(self.inputs['suffix'])
-        self.outputs['filename'] = str(pf+fn+sf) 
+        pf = self.inputs['prefix']
+        sf = self.inputs['suffix']
+        self.outputs['filename'] = pf+fn+sf
         full_filename = self.outputs['filename']+ext
         self.outputs['file_path'] = os.path.join(p,full_filename)
 

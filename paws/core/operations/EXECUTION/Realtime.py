@@ -7,11 +7,11 @@ from .. import optools
 
 inputs=OrderedDict(
     work_item=None,
-    input_generators=None,
-    input_keys=None,
-    static_inputs=None,
-    static_input_keys=None,
-    delay=1000,
+    input_generators=[],
+    input_keys=[],
+    static_inputs=[],
+    static_input_keys=[],
+    delay=1.,
     max_delay=float('inf'),
     max_exec=float('inf'))
 
@@ -44,10 +44,10 @@ class Realtime(Operation):
             'either Operation.inputs or Workflow.inputs, '\
             'depending on whether `work_item` is an Operation or a Workflow'
             
-        self.input_doc['delay'] = 'delay in milliseconds '\
+        self.input_doc['delay'] = 'delay in seconds '\
             'between attempts to generate new inputs'
         self.input_doc['max_delay'] = '(optional) maximum delay'\
-            'in milliseconds, before giving up and stopping execution'
+            'in seconds, before giving up and stopping execution'
         self.input_doc['max_exec'] = '(optional) maximum number '\
             'of executions of `work_item`'
             
@@ -82,7 +82,7 @@ class Realtime(Operation):
             inp_dict = OrderedDict.fromkeys(inpks)
             inps_ready = False
             nd = 0 # number of consecutive delays
-            if nx > maxexec:
+            if nx >= maxexec:
                 msg = 'Reached maximum executions ({}): Realtime stopping.'.format(maxexec) 
                 self.message_callback(msg)
                 keep_going = False
@@ -101,11 +101,11 @@ class Realtime(Operation):
                         self.data_callback('outputs.realtime_inputs.'+str(nx),copy.deepcopy(inp_dict))
                 else:
                     # delay
-                    time.sleep(float(dly)/1000.) 
+                    time.sleep(float(dly)) 
                     nd+=1
                     currentdly = nd*dly
-                    self.message_callback('... WAITING FOR INPUTS ({}/{} ms)'
-                        .format(currentdly,maxdly))
+                    #self.message_callback('... WAITING FOR INPUTS ({}/{} ms)'
+                    #    .format(currentdly,maxdly))
                     if currentdly >= maxdly:
                         keep_going = False 
             if keep_going:

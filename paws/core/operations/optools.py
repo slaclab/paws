@@ -25,6 +25,9 @@ class FileSystemIterator(Iterator):
                 return path
         return None
 
+    def __next__(self):
+        return self.next()
+
 class ExecutionError(Exception):
     def __init__(self,msg):
         super(ExecutionError,self).__init__(self,msg)

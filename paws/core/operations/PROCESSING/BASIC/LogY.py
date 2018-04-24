@@ -1,5 +1,6 @@
-import numpy as np
 from collections import OrderedDict
+
+import numpy as np
 
 from ...Operation import Operation
 
@@ -8,8 +9,7 @@ outputs = OrderedDict(x_logy=None)
 
 class LogY(Operation):
     """
-    Take the base-10 logarithm of the second column
-    of a n-by-2 array.
+    Base-10 logarithm of second column of n-by-2 array.
     """
 
     def __init__(self):

@@ -25,9 +25,14 @@ class Workflow(TreeModel):
         self.inputs = OrderedDict()
         self.outputs = OrderedDict()
         self.operations = self._root_dict
-        self.message_callback = print
+        self.dependencies = {} 
+        self.plugin_names = []
+        self.message_callback = self.tagged_print
         self.data_callback = self.set_item 
         self.stop_flag = False
+
+    def tagged_print(self,msg):
+        print('[{}] {}'.format(type(self).__name__,msg))
 
     def add_operation(self,op_name,op):
         """Name and add an Operation to the Workflow.
@@ -40,9 +45,13 @@ class Workflow(TreeModel):
         op_name : str
             name to give to the new Operation 
         """
-        op.message_callback = self.message_callback
+        #op.message_callback = self.message_callback
         op.data_callback = partial(self.set_op_item,op_name)
         self.set_item(op_name,op)
+
+    def add_plugin(self,plugin_name):
+        """Add the `plugin_name` to self.plugin_names"""
+        self.plugin_names.append(plugin_name)
 
     def load_operation(self,op_name,op_setup_dict,op_manager):
         """Load an Operation from a dict that specifies its parameters.
@@ -106,18 +115,13 @@ class Workflow(TreeModel):
             If not provided, the type is left at its previous setting.
         """
         if not op_name in self.operations.keys():
-            msg = 'Operation {} not found in workflow'\
-            .format(op_name)
-            raise KeyError(msg)
+            raise KeyError('Operation {} not found in workflow'.format(op_name))
         if not input_name in self.operations[op_name].inputs.keys():
-            msg = str('Input name {} not valid for Operation {} ({}).'
+            raise KeyError('Input name {} not valid for Operation {} ({}).'
             .format(input_name,op_name,type(self.operations[op_name]).__name__))
-            raise KeyError(msg)
         if tp is not None and not tp in pawstools.valid_types and not tp in pawstools.input_types:
             # tp is neither a string or an enum
-            msg = '[{}] failed to parse input type: {}'.format(
-            __name__,tp)
-            raise ValueError(msg)
+            raise ValueError('[{}] failed to parse input type: {}'.format(__name__,tp))
         il = self.operations[op_name].input_locator[input_name]
         if tp is not None:
             if tp in pawstools.input_types:
@@ -201,6 +205,15 @@ class Workflow(TreeModel):
             else:
                 return None
 
+    def set_dependency(self,op_name,dependency_ops):
+        """Set `op_name` to depend on one or more other `dependency_ops`"""
+        if not isinstance(dependency_ops,list):
+            dependency_ops = [dependency_ops]
+        if op_name in self.dependencies.keys():
+            self.dependencies[op_name].extend(dependency_ops)
+        else:
+            self.dependencies[op_name] = dependency_ops
+
     def execution_stack(self):
         """Determine order of execution and diagnostics for the Workflow.
 
@@ -226,20 +239,28 @@ class Workflow(TreeModel):
             ops_rdy = []
             ops_not_rdy = []
             for op_name in self.operations.keys():
+                op_rdy = False
+                op_diag = {}
                 if not self.is_op_enabled(op_name):
                     op_rdy = False
                     op_diag = {op_name:'Operation is disabled'}
                 elif not self.stack_contains(op_name,stk):
-                    op = self.get_data_from_uri(op_name)
-                    op_rdy,op_diag = self.is_op_ready(op_name,valid_wf_inputs)
-                    diagnostics.update(op_diag)
-                    if op_rdy:
-                        ops_rdy.append(op_name)
+                    if op_name in self.dependencies.keys():
+                        dep_ops = self.dependencies[op_name]
+                        if all([nm in valid_wf_inputs for nm in dep_ops]):
+                            op_rdy,op_diag = self.is_op_ready(op_name,valid_wf_inputs)
+                        else:
+                            op_rdy = False
+                            op_diag = {op_name:'One or more unsatisfied dependencies ({}) '.format(dep_ops)}
+                    else:
+                        op_rdy,op_diag = self.is_op_ready(op_name,valid_wf_inputs)
+                diagnostics.update(op_diag)
+                if op_rdy:
+                    ops_rdy.append(op_name)
             if any(ops_rdy):
                 stk.append(ops_rdy)
                 for op_name in ops_rdy:
-                    op = self.get_data_from_uri(op_name)
-                    valid_wf_inputs += self.get_valid_wf_inputs(op_name,op)
+                    valid_wf_inputs += self.get_valid_wf_inputs(op_name)
             else:
                 continue_flag = False
         return stk,diagnostics
@@ -248,7 +269,7 @@ class Workflow(TreeModel):
         """self.execution_stack() uses this to check if an Operation is ready"""
         op = self.get_data_from_uri(op_name)
         inputs_rdy = []
-        diagnostics = {} 
+        diagnostics = {op_name:''} 
         for name,il in op.input_locator.items():
             msg = ''
             if il.tp == pawstools.workflow_item:
@@ -260,8 +281,8 @@ class Workflow(TreeModel):
                     if il.val in valid_wf_inputs: 
                         inp_rdy = True 
                 if not inp_rdy:
-                    msg = str('Operation input {} (={}) '.format(name,il.val)
-                    + 'not satisfied by valid inputs list: {}'.format(valid_wf_inputs))
+                    msg = 'Operation input {} (={}) '.format(name,il.val)\
+                    + 'not satisfied by valid inputs list: {}'.format(valid_wf_inputs)
             else:
                 inp_rdy = True
             inputs_rdy.append(inp_rdy)
@@ -271,6 +292,21 @@ class Workflow(TreeModel):
         else:
             op_rdy = False
         return op_rdy,diagnostics 
+
+    def get_valid_wf_inputs(self,op_name):
+        """Get all valid uris referring to Operation data.
+
+        Returns the TreeModel uris of the Operation,
+        its inputs and outputs dicts,
+        and each of the data items in the inputs and outputs dicts.
+        """
+        op = self.get_data_from_uri(op_name)
+        # valid_wf_inputs should be the operation, its input and output dicts, and their respective entries
+        valid_wf_inputs = [op_name,op_name+'.inputs',op_name+'.outputs']
+        valid_wf_inputs += [op_name+'.outputs.'+k for k in op.outputs.keys()]
+        valid_wf_inputs += [op_name+'.inputs.'+k for k in op.inputs.keys()]
+        return valid_wf_inputs
+
 
     def run(self):
         """Execute the Workflow.
@@ -288,8 +324,8 @@ class Workflow(TreeModel):
             if self.stop_flag:
                 self.message_callback('Workflow stopped.')
                 return
-            self.message_callback('running: {}'.format(lst))
             for op_name in lst: 
+                self.message_callback('running: {}'.format(op_name))
                 op = self.get_data_from_uri(op_name) 
                 for inpnm,il in op.input_locator.items():
                     if il.tp == pawstools.workflow_item:
@@ -302,12 +338,7 @@ class Workflow(TreeModel):
                     self.data_callback(full_uri,outdata)
 
     def stop(self):
-        """Stop the Workflow.
-
-        If any long-running Operations in the Workflow
-        are written to examine their stop_flag periodically,
-        all execution should exit relatively soon.
-        """
+        """Stop the Workflow and all of its Operations."""
         self.stop_flag = True
         stk,diag = self.execution_stack()
         for lst in stk:
@@ -350,6 +381,8 @@ class Workflow(TreeModel):
         new_wf = self.clone() 
         new_wf.inputs = copy.deepcopy(self.inputs)
         new_wf.outputs = copy.deepcopy(self.outputs)
+        new_wf.dependencies = copy.deepcopy(self.dependencies)
+        new_wf.plugin_names = copy.deepcopy(self.plugin_names)
         # NOTE 1: cloned workflows will dump messages to self.message_callback 
         #new_wf.message_callback = self.message_callback
         # NOTE 2: they will also dump their data to self.data_callback.
@@ -406,50 +439,38 @@ class Workflow(TreeModel):
         for lst in stk:
             if itm in lst:
                 return True
-            for lst_itm in lst:
-                if isinstance(lst_itm,list):
-                    if stack_contains(itm,lst_itm):
-                        return True
+            #for lst_itm in lst:
+            #    if isinstance(lst_itm,list):
+            #        if stack_contains(itm,lst_itm):
+            #            return True
         return False
 
     @staticmethod
     def stack_size(stk):
         sz = 0
         for lst in stk:
-            for lst_itm in lst:
-                if isinstance(lst_itm,list):
-                    sz += stack_size(lst_itm)
-                else:
-                    sz += 1
+            sz += len(lst)
+            #for lst_itm in lst:
+            #    if isinstance(lst_itm,list):
+            #        sz += stack_size(lst_itm)
+            #    else:
+            #        sz += 1
         return sz
-
-    @staticmethod
-    def get_valid_wf_inputs(op_name,op):
-        """Get all valid uris referring to Operation data.
-
-        Returns the TreeModel uris of the Operation,
-        its inputs and outputs dicts,
-        and each of the data items in the inputs and outputs dicts.
-        """
-        # valid_wf_inputs should be the operation, its input and output dicts, and their respective entries
-        valid_wf_inputs = [op_name,op_name+'.inputs',op_name+'.outputs']
-        valid_wf_inputs += [op_name+'.outputs.'+k for k in op.outputs.keys()]
-        valid_wf_inputs += [op_name+'.inputs.'+k for k in op.inputs.keys()]
-        return valid_wf_inputs
 
     @staticmethod
     def print_stack(stk):
         stktxt = ''
-        opt_newline = '\n'
-        for i,lst in zip(range(len(stk)),stk):
-            if i == len(stk)-1:
+        opt_newline = os.linesep
+        n_layers = len(stk)
+        for i,lst in enumerate(stk):
+            if i == n_layers-1:
                 opt_newline = ''
             if len(lst) > 1:
-                if isinstance(lst[1],list):
-                    substk = lst[1]
-                    stktxt += ('[\'{}\':\n{}\n]'+opt_newline).format(lst[0],print_stack(lst[1]))
-                else:
-                    stktxt += ('{}'+opt_newline).format(lst)
+                #if isinstance(lst[1],list):
+                #    substk = lst[1]
+                #    stktxt += ('[\'{}\':\n{}\n]'+opt_newline).format(lst[0],print_stack(lst[1]))
+                #else:
+                stktxt += ('{}'+opt_newline).format(lst)
             else:
                 stktxt += ('{}'+opt_newline).format(lst)
         return stktxt

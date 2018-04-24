@@ -49,7 +49,10 @@ class BgSubtract(Operation):
         dI_out = None
         if dI_bg is not None and dI is not None:
             dI_out = (dI**2+(bg_factor*dI_bg)**2)**0.5
-        self.outputs['q_I_bgsub'] = np.array(zip(q_I[:,0],I_out))
+        q_I_bgsub = np.zeros(q_I.shape)
+        q_I_bgsub[:,0] = q_I[:,0]
+        q_I_bgsub[:,1] = I_out
+        self.outputs['q_I_bgsub'] = q_I_bgsub 
         self.outputs['dI'] = dI_out
         self.outputs['bg_factor'] = bg_factor
  
