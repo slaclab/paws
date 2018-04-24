@@ -1,10 +1,13 @@
 from collections import OrderedDict
 
-from ... import Operation as opmod 
 from ...Operation import Operation
 
-inputs=OrderedDict(client=None,dsid=None)
-outputs=OrderedDict(ok_flag=None,status=None)
+inputs=OrderedDict(
+    client=None,
+    dsid=None)
+outputs=OrderedDict(
+    ok_flag=None,
+    status=None)
         
 class CheckDataSet(Operation):
     """
@@ -18,7 +21,6 @@ class CheckDataSet(Operation):
         self.input_doc['dsid'] = 'The data set to be queried.'
         self.output_doc['ok_flag'] = 'Indicator of whether or not the data set passes the test.'
         self.output_doc['status'] = 'Message describing the state of the data set.'
-        self.input_type['client'] = opmod.plugin_item
 
     def run(self):
         c = self.inputs['client']

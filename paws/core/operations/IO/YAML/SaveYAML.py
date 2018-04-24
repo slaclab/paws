@@ -3,7 +3,6 @@ from collections import OrderedDict
 import numpy as np
 
 import yaml
-from ... import Operation as opmod 
 from ...Operation import Operation
 
 inputs=OrderedDict(

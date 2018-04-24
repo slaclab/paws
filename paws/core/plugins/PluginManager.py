@@ -18,7 +18,7 @@ class PluginManager(TreeModel):
         self.plugins = self._root_dict
         self.message_callback = print 
         # dict of clones for plugins across threads:
-        self.plugin_clones = OrderedDict()
+        #self.plugin_clones = OrderedDict()
         # dict of bools to keep track of who is at work:
         self.plugin_running = OrderedDict() 
         self.pool = None
@@ -86,16 +86,17 @@ class PluginManager(TreeModel):
 
     def start_plugin(self,plugin_name):
         """Start the plugin referred to by `plugin_name`."""
-        pgn = self.plugins[plugin_name]
-        pgn.plugin_clone = pgn.build_clone() 
-        self.plugin_clones[plugin_name] = pgn.plugin_clone
+        #pgn.plugin_clone = pgn.build_clone() 
+        #self.plugin_clones[plugin_name] = pgn.plugin_clone
         self.plugin_running[plugin_name] = True
-        self.plugin_clones[plugin_name].start()
+        #self.plugin_clones[plugin_name].start()
+        self.plugins[plugin_name].start()
 
     def stop_plugin(self,plugin_name):
         self.message_callback('stopping plugin {}'.format(plugin_name))
-        if plugin_name in self.plugin_clones.keys():
-            self.plugin_clones[plugin_name].stop()
+        #if plugin_name in self.plugin_clones.keys():
+        #    self.plugin_clones[plugin_name].stop()
+        self.plugins[plugin_name].stop()
         self.plugin_running[plugin_name] = False
 
     def load_plugin(self,plugin_name,plugin_setup_dict):
@@ -127,12 +128,13 @@ class PluginManager(TreeModel):
         to define this object's child tree structure.
         For a PluginManager, a dict is provided for each PawsPlugin,
         where the dict contains the results of calling
-        self.build_tree(plugin.inputs) and self.build_tree(plugin.content). 
+        self.build_tree(plugin.inputs)
         """
+        # TODO: let plugins build their own trees.
         if isinstance(x,PawsPlugin):
             d = OrderedDict()
             d['inputs'] = self.build_tree(x.inputs)
-            d['content'] = self.build_tree(x.content)
+        #    d['content'] = self.build_tree(x.content)
         else:
             return super(PluginManager,self).build_tree(x) 
         return d

@@ -2,7 +2,6 @@ from __future__ import print_function
 from collections import OrderedDict
 import os
 
-from ... import Operation as opmod 
 from ...Operation import Operation
 
 inputs=OrderedDict(file_path=None)

@@ -1,9 +1,9 @@
 import numpy as np
 from collections import OrderedDict
 
-from ... import Operation as opmod 
+from xrsdkit.tools.profiler import profile_spectrum
+
 from ...Operation import Operation
-from saxskit import saxs_math 
 
 inputs = OrderedDict(
     q_I=None,
@@ -29,6 +29,6 @@ class SpectrumProfiler(Operation):
 
     def run(self):
         q_I = self.inputs['q_I']
-        d_prof = saxs_math.profile_spectrum(q_I)
+        d_prof = profile_spectrum(q_I)
         self.outputs['features'] = d_prof
 

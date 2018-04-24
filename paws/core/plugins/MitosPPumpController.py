@@ -62,9 +62,6 @@ class MitosPPumpController(PawsPlugin):
             target_flow_rate = None)
         self.history = []
         self.n_events = 0
-        self.content = OrderedDict(
-            history=self.history,
-            state=self.state)
         self.commands = queue.Queue() 
 
     def start(self):
@@ -139,9 +136,10 @@ class MitosPPumpController(PawsPlugin):
 
     def add_to_history(self,cmd,resp):
         self.history.append(self.event(cmd,resp))
-        if self.data_callback:
-            self.data_callback('content.history.{}'.format(self.n_events),
-                copy.deepcopy(self.history[self.n_events]))
+        # TODO: perform this update using the queue
+        #if self.data_callback:
+        #    self.data_callback('content.history.{}'.format(self.n_events),
+        #        copy.deepcopy(self.history[self.n_events]))
         self.n_events += 1
 
     def event(self,cmd,resp):
@@ -221,8 +219,9 @@ class MitosPPumpController(PawsPlugin):
         self.state['target_pressure'] = float(s[5])
         self.state['flow_rate'] = float(s[6])
         self.state['target_flow_rate'] = float(s[7])
-        if self.data_callback:
-            self.data_callback('content.state',copy.deepcopy(self.state))
+        # TODO: perform this update using the queue
+        #if self.data_callback:
+        #    self.data_callback('content.state',copy.deepcopy(self.state))
 
     #def print_status(self):
     #    msg = '----------- PUMP STATUS -----------'+os.linesep

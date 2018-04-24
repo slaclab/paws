@@ -2,11 +2,10 @@ from __future__ import print_function
 from collections import OrderedDict
 
 from pypif import pif
-from citrination_client import CitrinationClient 
+from citrination_client import CitrinationClient as CitClient
 
 from .. import pawstools
 from .PawsPlugin import PawsPlugin
-from ..operations import Operation as opmod
 
 inputs = OrderedDict(
     address=None,
@@ -19,17 +18,17 @@ class CitrinationClient(PawsPlugin):
         super(CitrinationClient,self).__init__(inputs)
         self.input_doc['address'] = 'web address of citrination instance'
         self.input_doc['api_key_file'] = 'path to a file in the local filesystem containing a valid citrination api key'
-        self.content = OrderedDict(client=None,inputs=self.inputs)
+        self.client=None
 
     def start(self):
         self.address = self.inputs['address'] 
         f = open(self.inputs['api_key_file'],'r')
         self.api_key = str(f.readline()).strip()
         f.close()
-        self.content['client'] = CitrinationClient(site=self.address,api_key=self.api_key)
+        self.client = CitClient(self.api_key,self.address)
 
     def stop(self):
-        self.content['client'] = None
+        self.client = None
 
     def description(self):
         desc = str('Citrination Client Plugin for Paws: '

@@ -2,10 +2,13 @@ from collections import OrderedDict
 
 import numpy as np
 
-from ... import Operation as opmod 
 from ...Operation import Operation
 
-inputs = OrderedDict(data=None,window=3,shape='square',error=None)
+inputs = OrderedDict(
+    data=None,
+    window=3,
+    shape='square',
+    error=None)
 outputs = OrderedDict(smoothdata=None)
 
 class MovingAverage(Operation):

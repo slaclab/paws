@@ -1,7 +1,6 @@
 import numpy as np
 from collections import OrderedDict
 
-from ... import Operation as opmod 
 from ...Operation import Operation
 
 inputs = OrderedDict(x_y=None)
@@ -19,7 +18,7 @@ class LogY(Operation):
         self.output_doc['x_logy'] = 'n-by-2 array of x and log_10(y) values'
 
     def run(self):
-        x_y = self.inputs['x_y']
+        x_y = np.array(self.inputs['x_y'])
         # good_vals = elements for which y has defined logarithm
         idx_ok = ((x_y[:,1] > 0) & (~np.isnan(x_y[:,1])))
         x_logy = np.zeros(x_y.shape)

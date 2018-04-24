@@ -3,10 +3,12 @@ from collections import OrderedDict
 import numpy as np
 import pyFAI
 
-from ... import Operation as opmod 
 from ...Operation import Operation
 
-inputs=OrderedDict(wxd_file=None,pixel_size_um=None,fpolz=None)
+inputs=OrderedDict(
+    wxd_file=None,
+    pixel_size_um=None,
+    fpolz=None)
 outputs=OrderedDict(poni_dict=None)
 
 class WXDToPONI(Operation):

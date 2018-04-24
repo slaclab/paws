@@ -4,7 +4,6 @@ import warnings
 from fabio import edfimage
 from fabio import tifimage
 
-from ... import Operation as opmod 
 from ...Operation import Operation
 import os
 

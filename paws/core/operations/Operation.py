@@ -4,38 +4,7 @@ import re
 from collections import OrderedDict
 import copy
 
-# TODO: move to Workflow api
-# Enumeration of valid types
-basic_type = 0          # input is specified directly, 
-                        # and is of a basic type
-                        # that is easy to copy or serialize 
-
-workflow_item = 1       # the address (TreeModel uri)
-                        # of an item in the workflow 
-
-entire_workflow = 2     # the name of a Workflow
-                        # in the current WfManager
-
-plugin_item = 3         # the address (TreeModel uri)
-                        # of an item in the PluginManager
-
-runtime_type = 4        # input is generated and set during execution,
-                        # and serialization should not be attempted
-
-
-valid_types = [basic_type,workflow_item,entire_workflow,plugin_item,runtime_type]
-input_types = ['basic','workflow item','entire workflow','plugin item','runtime']
-input_datatypes = ['int','float','str','bool','list','dict']
-
-class InputLocator(object):
-    """
-    Objects of this class are used as containers for inputs to an Operation.
-    They contain the information needed to find the relevant input data.
-    """
-    def __init__(self,tp=basic_type,val=None):
-        self.tp = tp
-        self.val = val 
-        #self.data = None 
+from .. import pawstools
 
 class Operation(object):
     """Class template for implementing paws operations"""
@@ -49,7 +18,7 @@ class Operation(object):
 
         # input types determine how inputs are handled 
         # when workflows using the operation are executed or serialized
-        self.input_type = OrderedDict.fromkeys(self.inputs.keys()) 
+        #self.input_type = OrderedDict.fromkeys(self.inputs.keys()) 
 
         # input datatypes are used for typecasting,
         # for when values are set indirectly,
@@ -62,8 +31,8 @@ class Operation(object):
 
         self.output_doc = OrderedDict.fromkeys(self.outputs.keys()) 
         for name in self.inputs.keys(): 
-            self.input_type[name] = basic_type 
-            self.input_locator[name] = InputLocator(basic_type,self.inputs[name])
+        #    self.input_type[name] = basic_type 
+            self.input_locator[name] = pawstools.InputLocator(pawstools.basic_type,self.inputs[name])
         self.message_callback = print
         self.data_callback = None 
         self.stop_flag = False
@@ -121,7 +90,7 @@ class Operation(object):
         """Clone the Operation"""
         new_op = self.clone()
         for nm,il in self.input_locator.items():
-            new_il = InputLocator()
+            new_il = pawstools.InputLocator()
             new_il.tp = copy.copy(il.tp)
             new_il.val = copy.copy(il.val)
             #if il.tp == entire_workflow:
@@ -204,8 +173,8 @@ class Operation(object):
     
     @staticmethod
     def parameter_doc(name,value,doc):
-        if isinstance(value, InputLocator):
-            tp_str = input_types[value.tp]
+        if isinstance(value, pawstools.InputLocator):
+            tp_str = pawstools.input_types[value.tp]
             v_str = str(value.val)
             return "- name: {} \n- value: {} ({}) \n- doc: {}".format(name,v_str,tp_str,doc) 
         else:

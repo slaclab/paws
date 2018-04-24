@@ -3,7 +3,6 @@ from collections import OrderedDict
 import os.path
 
 from ...Operation import Operation
-from ... import Operation as opmod 
 
 inputs=OrderedDict(
     dir_path=None,
@@ -11,7 +10,9 @@ inputs=OrderedDict(
     filename=None,
     suffix='',
     ext='')
-outputs=OrderedDict(filename=None,file_path=None)
+outputs=OrderedDict(
+    filename=None,
+    file_path=None)
 
 class BuildFilePath(Operation):
     """

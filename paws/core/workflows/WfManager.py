@@ -7,7 +7,6 @@ import copy
 from ..operations.OpManager import OpManager
 from ..plugins.PluginManager import PluginManager
 from .Workflow import Workflow
-from ..operations import Operation
 from .. import pawstools
 
 class WfManager(object):
@@ -133,12 +132,12 @@ class WfManager(object):
             for op_tag in lst:
                 op = wf_clone.get_data_from_uri(op_tag)
                 for inpname,il in op.input_locator.items():
-                    if il.tp == Operation.plugin_item:
+                    if il.tp == pawstools.plugin_item:
                         # Plugins are expected to be safe to use from any thread,
                         # so they need not be cloned or copied
                         wf_clone.set_op_item(op_tag,'inputs.'+inpname,
                         self.get_plugin_data(il))
-                    elif il.tp == Operation.entire_workflow:
+                    elif il.tp == pawstools.entire_workflow:
                         if il.val in self.workflows.keys():
                             wf_name = il.val
                             input_wf = self.workflows[il.val]
@@ -151,7 +150,7 @@ class WfManager(object):
                             #new_wf.data_callback = self.workflows[wf_name].data_callback
                             new_wf.message_callback = self.workflows[wf_name].message_callback
                             wf_clone.set_op_item(op_tag,'inputs.'+inpname,new_wf)
-                    elif il.tp not in [Operation.runtime_type,Operation.workflow_item]:
+                    elif il.tp not in [pawstools.runtime_type,pawstools.workflow_item]:
                         # NOTE 1: runtime inputs are set at runtime, 
                         # so that the input does not get serialized
                         # when and if this workflow gets serialized
@@ -159,7 +158,7 @@ class WfManager(object):
                         wf_clone.set_op_item(op_tag,'inputs.'+inpname,
                         copy.deepcopy(il.val))
                 for inpname,il in op.input_locator.items():
-                    if il.tp == Operation.plugin_item and il.val is not None:
+                    if il.tp == pawstools.plugin_item and il.val is not None:
                         vals = il.val
                         if not isinstance(vals,list):
                             vals = [vals]

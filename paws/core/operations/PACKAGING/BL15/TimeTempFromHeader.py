@@ -4,7 +4,6 @@ import time
 
 import tzlocal
 
-from ... import Operation as opmod 
 from ...Operation import Operation
 
 inputs=OrderedDict(

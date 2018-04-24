@@ -7,8 +7,6 @@ import copy
 from collections import Iterator
 from collections import OrderedDict
 
-from . import Operation as opmod 
-
 class FileSystemIterator(Iterator):
 
     def __init__(self,dirpath,regex,include_existing_files=True):

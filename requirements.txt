@@ -14,5 +14,6 @@ citrination_client
 pyserial
 pytz
 tzlocal
-saxskit
+xrsdkit
 tifffile
+serial

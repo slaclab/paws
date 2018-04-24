@@ -3,7 +3,6 @@ from collections import OrderedDict
 import pyFAI
 
 from ...Operation import Operation
-from ... import Operation as opmod 
 
 inputs=OrderedDict(
     dark_img=None,

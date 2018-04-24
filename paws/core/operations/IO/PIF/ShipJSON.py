@@ -1,9 +1,12 @@
 from collections import OrderedDict
 
-from ... import Operation as opmod 
 from ...Operation import Operation
 
-inputs=OrderedDict(json_path=None,client=None,dsid=None,ship_flag=False)
+inputs=OrderedDict(
+    json_path=None,
+    client=None,
+    dsid=None,
+    ship_flag=False)
 outputs=OrderedDict(response=None)
 
 class ShipJSON(Operation):
