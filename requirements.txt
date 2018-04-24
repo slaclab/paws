@@ -17,3 +17,4 @@ tzlocal
 xrsdkit
 tifffile
 serial
+paramiko
