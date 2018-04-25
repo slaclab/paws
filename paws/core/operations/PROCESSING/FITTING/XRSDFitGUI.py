@@ -61,6 +61,7 @@ class XRSDFitGUI(Operation):
         self.pop_frame_rows = OrderedDict()
         self.structure_vars = OrderedDict()
         self.pop_name_vars = OrderedDict()
+        self.new_pop_var = None
         self.param_frames = OrderedDict()
         self.setting_frames = OrderedDict()
         self.site_frames = OrderedDict()
@@ -69,7 +70,7 @@ class XRSDFitGUI(Operation):
         self.new_site_frames = OrderedDict() 
         self.new_specie_frames = OrderedDict()
         self.new_pop_frame = None
-        self.fitting_frame = None
+        self.control_frame = None
 
         # create the plots
         self.build_plot_widgets()
@@ -109,6 +110,8 @@ class XRSDFitGUI(Operation):
         self.pops_canvas.configure(yscrollcommand=scr.set)
         self.pops_canvas.pack(side=tkinter.LEFT,fill='y')
         self.create_entry_widgets()
+        self.create_new_pop_frame()
+        self.create_control_frame()
 
     def on_mousewheel(self, event):
         if event.delta == 0:
@@ -124,12 +127,15 @@ class XRSDFitGUI(Operation):
         self.pops_canvas.yview_scroll(d, 'units')
 
     def finish(self):
-        # TODO: check whether the user is satisfied with the result, 
+        # TODO: if a fit was performed,
+        # check if the user is/isnt satisfied with the result, 
         # and include this as an output or as a part of the report
         self.outputs['populations'] = self.populations
         self.outputs['report'] = self.fit_report
         self.outputs['q_I_opt'] = self.q_I_opt
         self.outputs['success_flag'] = self.success_flag
+        print('finish')
+        # TODO: close the gui
 
     def draw_plots(self):
         self.ax_plot.clear()
@@ -154,6 +160,10 @@ class XRSDFitGUI(Operation):
             self.destroy_pop_frame(pop_nm)
             self.create_pop_frame(new_nm)
             self.repack_entry_widgets()
+
+    def new_population(self,event=None):
+        new_nm = self.new_pop_var.get()
+        self.populations[new_nm] = xrsdkit.flat_noise()
 
     def remove_population(self,pop_nm):
         self.destroy_pop_frame(pop_nm)
@@ -198,11 +208,16 @@ class XRSDFitGUI(Operation):
     def fit(self,event):
         print('fit')
 
+    def compute_objective(self):
+        return 1234.
+
     def destroy_entry_widgets(self):
         pop_nm_list = list(self.pop_frames.keys())
         for pop_nm in pop_nm_list:
             self.destroy_pop_frame(pop_nm)
             self.structure_vars.pop(pop_nm)
+        self.repack_new_pop_frame()
+        self.repack_control_frame()
 
     def destroy_pop_frame(self,pop_nm):
         self.destroy_setting_frames(pop_nm)
@@ -263,8 +278,10 @@ class XRSDFitGUI(Operation):
         # create a frame for every population
         for pop_nm in self.populations.keys():
             self.create_pop_frame(pop_nm)
-        #self.create_new_pop_frame()
-        #self.create_control_frame()
+        if self.new_pop_frame is not None:
+            self.repack_new_pop_frame()
+        if self.control_frame is not None:
+            self.repack_control_frame()
 
     def create_pop_frame(self,pop_nm):
         popd = self.populations[pop_nm]
@@ -506,49 +523,60 @@ class XRSDFitGUI(Operation):
             # TODO: connect sparbnde to changing param_bounds
             # TODO: connect sparexpe to setting param_constraints
 
+    def repack_new_pop_frame(self):
+        self.new_pop_frame.pack_forget()
+        self.new_pop_frame.pack(side=tkinter.TOP,pady=2,padx=2, fill="both", expand=True)
+
+    def repack_control_frame(self):
+        self.control_frame.pack_forget()
+        self.control_frame.pack(side=tkinter.TOP, pady=2,padx=2, fill="both", expand=True)
+
     def create_new_pop_frame(self):
-        new_pop = Frame(self.pops_frame,bd=4,pady=10,padx=10,relief=tkinter.RAISED)
-        new_pop.pack(side=tkinter.TOP,pady=2,padx=2, fill="both", expand=True)
-        add_pop = Label(new_pop,text='add population:',anchor='e')
-        add_pop.grid(row=0,column=0,sticky=tkinter.E)
-        name = Entry(new_pop,width=20)
-        name.insert(0,'unique name')
-        name.grid(row=0,column=1,sticky=tkinter.W)
-        add_button = Button(new_pop, text='Add', width = 10, command=self.hi)
-        add_button.grid(row=0,column=2)
+        npf = Frame(self.pops_frame,bd=4,pady=10,padx=10,relief=tkinter.RAISED)
+        self.new_pop_frame = npf
+        npf.pack(side=tkinter.TOP,pady=2,padx=2, fill="both", expand=True)
+        addl = Label(npf,text='add population:',anchor='e')
+        addl.grid(row=0,column=0,sticky=tkinter.E)
+        self.new_pop_var = StringVar(self.pops_frame)
+        nme = Entry(npf,width=20,textvariable=self.new_pop_var,validate="focusout",
+            validatecommand=self.new_population)
+        nme.bind('<Return>', self.new_population)
+        nme.insert(0,self.default_new_pop_name())
+        nme.grid(row=0,column=1,sticky=tkinter.W)
+        addb = Button(npf, text='Add', width = 10, command=self.new_population())
+        addb.grid(row=0,column=2)
+
+    def default_new_pop_name(self):
+        ipop = 0
+        nm = 'pop_'+str(ipop)
+        while nm in self.populations:
+            ipop += 1
+            nm = 'pop_'+str(ipop)
+        return nm
 
     def create_control_frame(self):
-        fitting_control = Frame(self.pops_frame,bd=4,pady=10,padx=10,relief=tkinter.RAISED)
-        fitting_control.pack(side=tkinter.TOP, pady=2,padx=2, fill="both", expand=True)
-        error_weighted_box = Checkbutton(fitting_control,text="error weighted")
-        error_weighted = True
-        if error_weighted: error_weighted_box.select()
-        error_weighted_box.grid(row=0,column=0)
-        logI_weighted_box = Checkbutton(fitting_control, text="logI weighted")
-        logI_weighted = True
-        if logI_weighted: logI_weighted_box.select()
-        logI_weighted_box.grid(row=0,column=1)
-        #finish_button = Button(finish,text='Finish',command=partial(self.remove_population,pop_name))
-        fit_button = Button(fitting_control,text='Fit',width = 10,  command=self.hi)
-        fit_button.grid(row=0,column=2)
-        obj = Label(fitting_control,text='obj:',anchor='e')
-        obj.grid(row=1,column=0,sticky=tkinter.E)
-        result = Entry(fitting_control,width=20)
-        result.insert(0,'some number')
-        result.grid(row=1,column=1,sticky=tkinter.W)
-
-        finish = Frame(self.pops_frame,bd=4,pady=10,padx=10,relief=tkinter.RAISED)
-        finish.pack(side=tkinter.TOP, pady=2,padx=2, fill="both", expand=True)
-        fit = Checkbutton(finish,text="Good fit")
-        if self.success_flag: fit.select()
-        fit.grid(row=0,column=0)
-        #finish_button = Button(finish,text='Finish',command=partial(self.remove_population,pop_name))
-        finish_button = Button(finish,text='Finish',width = 10, command=self.hi)
-        finish_button.grid(row=0,column=1)
-        # TODO: frame for fitting controls: 
-        #   # fit button, objective readout
-        #   # toggles for logI-weighted and error-weighted
-        #   # toggle for user satisfaction, button for finishing
+        cf = Frame(self.pops_frame,bd=4,pady=10,padx=10,relief=tkinter.RAISED)
+        self.control_frame = cf
+        objl = Label(cf,text='objective:',anchor='e')
+        objl.grid(row=0,column=0,rowspan=2,sticky=tkinter.E)
+        fitobjstr = StringVar(cf)
+        rese = Entry(cf,width=20,state='readonly',textvariable=fitobjstr)
+        rese.grid(row=0,column=1,rowspan=2,sticky=tkinter.W)
+        fitobjstr.set(str(self.compute_objective()))
+        ewtcb = Checkbutton(cf,text="error weighted")
+        ewtcb.select()
+        ewtcb.grid(row=0,column=2,sticky=tkinter.W)
+        logwtbox = Checkbutton(cf,text="log(I) weighted")
+        logwtbox.select()
+        logwtbox.grid(row=1,column=2,sticky=tkinter.W)
+        # TODO: connect these check boxes to variables 
+        fitbtn = Button(cf,text='Fit',width=10,command=self.fit)
+        fitbtn.grid(row=2,column=0)
+        finbtn = Button(cf,text='Finish',width=10,command=self.finish)
+        finbtn.grid(row=2,column=1)
+        fitcb = Checkbutton(cf,text="Good fit")
+        fitcb.grid(row=2,column=2,sticky=tkinter.W)
+        cf.pack(side=tkinter.TOP,pady=2,padx=2,fill="both",expand=True)
 
     def repack_entry_widgets(self):
         for ipop,pop_nm in enumerate(self.populations.keys()):
