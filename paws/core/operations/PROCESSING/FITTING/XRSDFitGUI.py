@@ -60,6 +60,7 @@ class XRSDFitGUI(Operation):
         self.pop_frames = OrderedDict()
         self.pop_frame_rows = OrderedDict()
         self.structure_vars = OrderedDict()
+        self.pop_name_vars = OrderedDict()
         self.param_frames = OrderedDict()
         self.setting_frames = OrderedDict()
         self.site_frames = OrderedDict()
@@ -69,9 +70,6 @@ class XRSDFitGUI(Operation):
         self.new_specie_frames = OrderedDict()
         self.new_pop_frame = None
         self.fitting_frame = None
-
-        self.fit_report = None
-        self.q_I_opt = None
 
         # create the plots
         self.build_plot_widgets()
@@ -88,7 +86,6 @@ class XRSDFitGUI(Operation):
     def build_plot_widgets(self):
         self.plot_frame = Frame(self.fit_gui,bd=4,relief=tkinter.SUNKEN)#, background="green")
         self.plot_frame.pack(side=tkinter.LEFT, expand=tkinter.YES,padx=2,pady=2)
-
         self.fig = Figure(figsize=(8,7))
         self.ax_plot = self.fig.add_subplot(111)
         self.plot_canvas = FigureCanvasTkAgg(self.fig,self.plot_frame)
@@ -136,17 +133,11 @@ class XRSDFitGUI(Operation):
 
     def draw_plots(self):
         self.ax_plot.clear()
-        #n_pops = len(self.populations)
-        #if self.ax_plot is not None:
-        #    self.fig.delaxes(self.ax_plot)
-        #    #self.ax_plot.remove()
-        #    self.ax_plot = None
-        #self.ax_plot = plt.axes([0.08,0.05*(n_pops+2),0.45,0.9-0.05*(n_pops+2)])
-        #self.ax_plot.semilogy(self.q_I[:,0],self.q_I[:,1],lw=2,color='black')
-        self.ax_plot.loglog(self.q_I[:,0],self.q_I[:,1],lw=2,color='black')
+        self.ax_plot.semilogy(self.q_I[:,0],self.q_I[:,1],lw=2,color='black')
+        #self.ax_plot.loglog(self.q_I[:,0],self.q_I[:,1],lw=2,color='black')
         I_est = xrsdkit.scattering.compute_intensity(self.q_I[:,0],self.populations,self.src_wl)
-        #self.ax_plot.semilogy(self.q_I[:,0],I_est,lw=2,color='red')
-        self.ax_plot.loglog(self.q_I[:,0],I_est,lw=2,color='red')
+        self.ax_plot.semilogy(self.q_I[:,0],I_est,lw=2,color='red')
+        #self.ax_plot.loglog(self.q_I[:,0],I_est,lw=2,color='red')
         self.ax_plot.set_xlabel('q (1/Angstrom)')
         self.ax_plot.set_ylabel('Intensity (counts)')
         self.ax_plot.legend(['measured','computed'])
@@ -154,6 +145,15 @@ class XRSDFitGUI(Operation):
 
     def hi(self):
         print('test-test')
+
+    def rename_population(self,pop_nm,event=None):
+        new_nm = self.pop_name_vars[pop_nm].get()
+        if not new_nm == pop_nm:
+            pop_def = self.populations.pop(pop_nm)
+            self.populations[new_nm] = pop_def
+            self.destroy_pop_frame(pop_nm)
+            self.create_pop_frame(new_nm)
+            self.repack_entry_widgets()
 
     def remove_population(self,pop_nm):
         self.destroy_pop_frame(pop_nm)
@@ -180,52 +180,23 @@ class XRSDFitGUI(Operation):
         # if the new structure is crystalline, ensure coordinates are set
         # and ensure that noncrystalline form factors are not present
         new_basis = self.populations[pop_nm]['basis']
-        if s in xrsdkit.crystalline_structure_names:
-            for site_item_nm, site_def in new_basis.items():
-                site_def_keys = list(site_def.keys())
-                for nm in site_def_keys:
-                    if nm in xrsdkit.noncrystalline_ff_names:
-                        site_def.pop(nm) 
+        for site_nm, site_def in new_basis.items():
+            if s in xrsdkit.crystalline_structure_names:
+                for specnm in xrsdkit.noncrystalline_ff_names:
+                    if specnm in site_def:
+                        site_def.pop(specnm)
                 if not 'coordinates' in site_def:
                     site_def['coordinates'] = [0.,0.,0.]
+            else:
+                if 'coordinates' in site_def:
+                    site_def.pop('coordinates')
+
         self.draw_plots()
         self.destroy_site_frames(pop_nm)
         self.create_site_frames(pop_nm)
 
-    #def _rename_population(self,old_name,new_name):
-    #    popd = self.populations.pop(old_name)
-    #    self.populations[new_name] = popd
-    #    self.setup_plots()
-    #    self.setup_populations()
-
-    #def _new_population(self,new_pop_name):
-    #    self.populations[new_pop_name] = OrderedDict()
-    #    self.populations[new_pop_name]['structure'] = 'diffuse' 
-    #    self.populations[new_pop_name]['parameters'] = OrderedDict()
-    #    self.populations[new_pop_name]['basis'] = OrderedDict()
-    #    self.setup_plots()
-    #    self.setup_populations()
-
     def fit(self,event):
-        self.message_callback('fitting...')
-        self.params,rpt = self.saxs_fitter.fit(self.params)
-        self.reset_params()
-        self.update_plots()
-        self.message_callback('fit complete (obj:{})'.format(rpt['final_objective']))
-        #I_opt = saxs_math.compute_saxs(self.q_I[:,0],self.populations,self.opt_params)
-        #self.ax_plot.semilogy(self.q_I[:,0],I_opt,lw=2,color='green')
-        #self.ax_plot.legend(['measured',
-        #    'estimated (obj: {:.2f})'.format(rpt['initial_objective']),
-        #    'fit (obj: {:.2f})'.format(rpt['final_objective'])])
-        #self.ax_plot.redraw_in_frame()
-        #for param_name,axs in self.param_axes.items():
-        #    pars = self.opt_params[param_name]
-        #    for ax,par in zip(axs,pars):
-        #        ax.plot(par,0.,'r*')
-        #        ax.redraw_in_frame()
-
-
-
+        print('fit')
 
     def destroy_entry_widgets(self):
         pop_nm_list = list(self.pop_frames.keys())
@@ -290,22 +261,28 @@ class XRSDFitGUI(Operation):
     def create_entry_widgets(self):
         self.pop_frames = OrderedDict() 
         # create a frame for every population
-        for ipop,pop_nm in enumerate(self.populations.keys()):
-            self.create_pop_frame(ipop,pop_nm)
+        for pop_nm in self.populations.keys():
+            self.create_pop_frame(pop_nm)
         #self.create_new_pop_frame()
         #self.create_control_frame()
 
-    def create_pop_frame(self,ipop,pop_nm):
+    def create_pop_frame(self,pop_nm):
         popd = self.populations[pop_nm]
         pf = Frame(self.pops_frame,bd=4,pady=10,padx=10,relief=tkinter.RAISED) 
         self.pop_frames[pop_nm] = pf
 
         popl = Label(pf,text='population name:',anchor='e')
         popl.grid(row=0,column=0,sticky=tkinter.E)
-        pope = Entry(pf,width=20)
+        popvar = StringVar(pf)
+        self.pop_name_vars[pop_nm] = popvar
+        # piggyback on entry validation to rename the population
+        pope = Entry(pf,width=20,textvariable=popvar,validate="focusout",
+            validatecommand=partial(self.rename_population,pop_nm))
+        # also respond to the return key
+        pope.bind('<Return>', partial(self.rename_population,pop_nm))
         pope.insert(0,pop_nm)
+        #popvar.trace('w',partial(self.rename_population,pop_nm))
         pope.grid(row=0,column=1,sticky=tkinter.W)
-        # TODO: connect entry to renaming population
         rmb = Button(pf,text='Remove',command=partial(self.remove_population,pop_nm))
         rmb.grid(row=0,column=2)
 
