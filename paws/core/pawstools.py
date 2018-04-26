@@ -9,6 +9,37 @@ import yaml
 from . import operations
 from . import workflows
 
+# Enumeration of valid types
+basic_type = 0          # input is specified directly, 
+                        # and is of a basic type
+                        # that is easy to copy or serialize 
+
+workflow_item = 1       # the address (TreeModel uri)
+                        # of an item in the workflow 
+
+entire_workflow = 2     # the name of a Workflow
+                        # in the current WfManager
+
+plugin_item = 3         # the address (TreeModel uri)
+                        # of an item in the PluginManager
+
+runtime_type = 4        # input is generated and set during execution,
+                        # and serialization should not be attempted
+
+valid_types = [basic_type,workflow_item,entire_workflow,plugin_item,runtime_type]
+input_types = ['basic','workflow item','entire workflow','plugin item','runtime']
+input_datatypes = ['int','float','str','bool','list','dict']
+
+class InputLocator(object):
+    """
+    Objects of this class are used as containers for inputs to an Operation.
+    They contain the information needed to find the relevant input data.
+    """
+    def __init__(self,tp=basic_type,val=None):
+        self.tp = tp
+        self.val = val 
+        #self.data = None 
+
 p = os.path.abspath(__file__)
 # p = (pawsroot)/paws/core/pawstools.py
 

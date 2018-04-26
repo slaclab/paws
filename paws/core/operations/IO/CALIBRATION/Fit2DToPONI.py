@@ -4,11 +4,14 @@ import os
 import numpy as np
 import pyFAI
 
-from ... import Operation as opmod 
 from ...Operation import Operation
 
-inputs=OrderedDict(fit2d_file=None,wavelength_A=None)
-outputs=OrderedDict(poni_dict=None,fit2d_dict=None)
+inputs=OrderedDict(
+    fit2d_file=None,
+    wavelength_A=None)
+outputs=OrderedDict(
+    poni_dict=None,
+    fit2d_dict=None)
 
 class Fit2DToPONI(Operation):
     """Produce PONI calibration parameters from a Fit2D calibration result. 

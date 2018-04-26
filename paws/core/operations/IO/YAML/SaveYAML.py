@@ -3,7 +3,6 @@ from collections import OrderedDict
 import numpy as np
 
 import yaml
-from ... import Operation as opmod 
 from ...Operation import Operation
 
 inputs=OrderedDict(
@@ -24,7 +23,7 @@ class SaveYAML(Operation):
         p = self.inputs['file_path']
         d = self.inputs['data']
 
-        stream = file(p,'w')
+        stream = open(p,'w')
         yaml.dump(d, stream)
 
         #datastring = yaml.dump(data)

@@ -4,7 +4,6 @@ import warnings
 from fabio import edfimage
 from fabio import tifimage
 
-from ... import Operation as opmod 
 from ...Operation import Operation
 import os
 
@@ -59,7 +58,6 @@ class FabIOWrite(Operation):
         filepath = os.path.join(self.inputs['dir_path'],outfile)
         self.outputs['file_path'] = filepath
         if os.path.isfile(filepath) and not self.inputs['overwrite']:
-            import pdb; pdb.set_trace()
             warnings.warn('Skipping output for {}: '\
             'File exists and overwrite is disabled'.format(filepath))
         cls = None

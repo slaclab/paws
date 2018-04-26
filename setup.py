@@ -82,7 +82,7 @@ setup(
         '': ['contributors.txt'],
         #'': ['contributors.txt','all_requirements.txt'],
         #'': ['all_requirements.txt'],
-        'paws': ['qt/graphics/*.png','qt/qtui/*.ui'],
+        #'paws': ['qt/graphics/*.png','qt/qtui/*.ui'],
     },
 
     # Although 'package_data' is the preferred approach, in some case you may

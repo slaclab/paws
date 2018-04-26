@@ -162,8 +162,9 @@ class TreeModel(object):
                 return itm 
         except Exception as ex:
             msg = '\n[{}] Encountered an error while fetching uri {}\n'.format(__name__,uri)
-            ex.message = msg + ex.message
-            raise ex
+            raise KeyError(msg)
+            #ex.message = msg + ex.message
+            #raise ex
 
     def get_data_from_uri(self,uri):
         return self._tree.get_from_uri(uri)

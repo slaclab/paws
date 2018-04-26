@@ -39,8 +39,6 @@ op_maps['sample_process']['bg_subtract'] = 'PROCESSING.BACKGROUND.BgSubtractByTe
 op_maps['sample_process']['log_I'] = 'PROCESSING.BASIC.LogY'
 op_maps['sample_process']['output_CSV'] = 'IO.CSV.WriteArrayCSV'
 op_maps['sample_process']['output_CSV_bgsub'] = 'IO.CSV.WriteArrayCSV'
-#op_maps['sample_process']['fit_spectrum'] = 'PROCESSING.SAXS.SpectrumFit'
-#op_maps['sample_process']['log_Ifit'] = 'PROCESSING.BASIC.LogY'
 
 wfmgr = WfManager()
 # add the workflows and activate/add the operations:

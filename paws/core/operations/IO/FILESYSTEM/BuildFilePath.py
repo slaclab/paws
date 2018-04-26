@@ -3,15 +3,16 @@ from collections import OrderedDict
 import os.path
 
 from ...Operation import Operation
-from ... import Operation as opmod 
 
 inputs=OrderedDict(
-    dir_path=None,
+    dir_path='',
     prefix='',
-    filename=None,
+    filename='',
     suffix='',
     ext='')
-outputs=OrderedDict(filename=None,file_path=None)
+outputs=OrderedDict(
+    filename='',
+    file_path='')
 
 class BuildFilePath(Operation):
     """
@@ -35,11 +36,12 @@ class BuildFilePath(Operation):
         p = self.inputs['dir_path']
         fn = self.inputs['filename']
         ext = self.inputs['ext']
-        if not ext[0] == '.' and not ext == '':
-            ext = '.'+ext
+        if bool(ext):
+            if not ext[0] == '.':
+                ext = '.'+ext
         pf = self.inputs['prefix']
         sf = self.inputs['suffix']
-        self.outputs['filename'] = str(pf+fn+sf) 
+        self.outputs['filename'] = pf+fn+sf
         full_filename = self.outputs['filename']+ext
         self.outputs['file_path'] = os.path.join(p,full_filename)
 

@@ -14,9 +14,12 @@ class OpManager(TreeModel):
         default_flags = OrderedDict()
         default_flags['active'] = False
         super(OpManager,self).__init__(default_flags)
-        self.message_callback = print 
+        self.message_callback = self.tagged_print 
         self.cat_op_list = []
         self.load_operations()
+
+    def tagged_print(self,msg):
+        print('[{}] {}'.format(type(self).__name__,msg))
 
     def get_operation(self,operation_uri):
         """Get an Operation, activate it if needed, instantiate, return.
