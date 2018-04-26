@@ -1,42 +1,36 @@
 # 1)
-# this conda build was started by:
+# start the build using the lates PyPI version: 
 # > conda skeleton pypi pypaws
 
 # 2)
-# the resulting meta.yaml, build.sh, build.bat files
-# were then moved into this directory
+# move the resulting pypaws/meta.yaml 
+# to this directory (conda-build/meta.yaml) 
 
 # 3)
-# pyside and qdarkstyle were then added to meta.yaml,
-# under requirements.run,
-# so that the build would pass import tests
-
-# 4)
 # if this is the first build on the machine, 
 # make a fresh conda environment
-# > <conda2_bin_path>/conda create -n paws_py2 python 
+# > conda create -n paws python 
+# ... then activate the environment
+# > source activate paws 
+
+# 4)
+# invoke conda-build 
+# > conda-build conda-build/
+# NOTE: the path to the new conda package is at the end of the build,
+# on the line marked "TEST END: <path-to-package>"
 
 # 5)
-# the paws_py2 conda virtual environment must be activated
-# > source <conda2_bin_path>/activate paws_py2 
-
-# 6)
-# invoke conda-build 
-# > <conda2_bin_path>/conda-build conda-build/
-# NOTE: the path to the new conda package
-# is found at the end of the conda-build output
-
-# 7)
 # make a free account on anaconda.org.
 # install the anaconda client if it isn't already installed.
-# > <conda2_bin_path>/conda install anaconda-client
+# > conda install anaconda-client
 
-# 8) 
+# 6) 
 # log in using the anaconda client:
-# note that the anaconda binary is part of anaconda3
-# > <anaconda3_bin_path>/anaconda login
+# > anaconda login
 
-# 9)
-# use the client to upload the package.
+# 7)
+# use the client to upload the package
+# (see step 4 above for package path):
+# > anaconda upload <path-to-package> 
 
 
