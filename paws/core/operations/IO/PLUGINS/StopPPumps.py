@@ -18,4 +18,5 @@ class StopPPumps(Operation):
         ppcs = self.inputs['ppump_controllers'] 
         for ipp,ppc in enumerate(ppcs):
             ppc.set_idle()
+            #ppc.set_flowrate(0)
 

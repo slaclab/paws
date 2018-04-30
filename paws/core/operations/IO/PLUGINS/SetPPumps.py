@@ -18,7 +18,8 @@ class SetPPumps(Operation):
         super(SetPPumps,self).__init__(inputs,outputs)
         self.input_doc['ppump_controllers'] = 'list of MitosPPumpController plugins'
         self.input_doc['targets'] = 'list of control modes (strings) for each pump- '\
-            'each entry should be either "flowrate" or "pressure"' 
+            'each entry should be either "flowrate" or "pressure", '\
+            'defaults to "flowrate" if values are not provided' 
         self.input_doc['set_points'] = 'list of set points for each pump' 
         #self.input_doc['delay_time'] = 'seconds to wait after setting `set_points`' 
         #self.input_doc['flag'] = 'boolean flag for whether or not to proceed' 
@@ -33,14 +34,17 @@ class SetPPumps(Operation):
         #stat = self.inputs['flag']
         #vals = [None for ppc in ppcs] 
         #if bool(stat):
+        if tgts is None:
+            tgts = ['flowrate' for ppc in ppcs]
         self.message_callback('setting pumps to: {}'.format(setpts))
         for ipp,ppc in enumerate(ppcs):
             tgt = tgts[ipp]
             setpt = setpts[ipp]
-            if tgt == 'flowrate':
-                ppc.set_flowrate(setpt)
-            elif tgt == 'pressure':
+            if tgt == 'pressure':
                 ppc.set_pressure(setpt)
+            #if tgt == 'flowrate':
+            else: 
+                ppc.set_flowrate(setpt)
         #self.message_callback('SetPPumps waiting {} seconds...'.format(delay))
         #time.sleep(delay)
             #done = False
