@@ -14,5 +14,6 @@ class Sleep(Operation):
         self.input_doc['duration'] = 'sleep duration in seconds'
         
     def run(self):
+        self.message_callback('sleeping for {} seconds'.format(self.inputs['duration']))
         time.sleep(self.inputs['duration']) 
 

@@ -1,14 +1,10 @@
 from __future__ import print_function
 from collections import OrderedDict
-import serial
 import copy
 import os
-import sys
-from threading import Thread, Condition
-if int(sys.version[0]) == 2:
-    import Queue as queue
-else:
-    import queue 
+from threading import Condition
+
+import serial
 
 from .PawsPlugin import PawsPlugin
 from .. import pawstools
@@ -57,6 +53,7 @@ class MitosPPumpController(PawsPlugin):
                             3:'ERROR', \
                             4:'LEAK TEST'}
         self.ser = None
+        self.state_lock = Condition()
         self.state = OrderedDict(
             error_code = None,
             state_code = None, 
@@ -65,53 +62,41 @@ class MitosPPumpController(PawsPlugin):
             target_pressure = None, 
             flow_rate = None, 
             target_flow_rate = None)
-        # a lock for pump history 
-        self.history_lock = Condition()
-        self.history = []
-        # a lock for pump controls
-        #self.control_lock = Condition()
-        # a lock for signalling run/stop
-        self.running_lock = Condition()
-        #self.n_events = 0
-        self.commands = queue.Queue() 
-        self.thread_clone = None
-        self.proxy = None
 
     def start(self):
-        with self.running_lock:
-            self.running = True
-        self.thread_clone = self.build_clone()
-        self.thread_clone.proxy = self
-        self.thread_clone.ser = serial.Serial(
+        self.run_clone()
+       
+    def run(self):
+        vb = self.inputs['verbose']
+        # this method is run by self.thread_clone 
+        self.ser = serial.Serial(
             self.inputs['serial_device'], 
             57600, timeout=1, 
             parity = serial.PARITY_NONE, 
             bytesize = serial.EIGHTBITS, 
             xonxoff = 0, rtscts = 0)
-        th = Thread(target=self.thread_clone.run)
-        th.start()
-       
-    def run(self):
-        vb = self.inputs['verbose']
-        # this method is run by self.thread_clone 
+        tmr = self.inputs['timer']
         keep_going = True
         # check for control...
-        self.read_status()
+        with self.state_lock:
+            self.read_status()
+        with self.proxy.state_lock:
+            self.proxy.state = copy.deepcopy(self.state)
         if not self.state['state_code'] == 1:
             # attempt to enter remote control mode 
             cmd = "A1"
             self.send_line(cmd)  
             resp = self.receive_line()
             with self.proxy.history_lock:
-                with self.proxy.inputs['timer'].dt_lock:
-                    t_now = float(self.proxy.inputs['timer'].time_points[-1])
-                self.proxy.add_to_history(t_now,str(cmd),str(resp))
+                with tmr.dt_lock:
+                    t_now = float(tmr.dt_utc())
+                self.proxy.add_to_history(t_now,cmd,resp.decode())
             if not resp.decode() == "#A0":
                 msg = "Pump failed to enter REMOTE control mode"
                 with self.proxy.history_lock:
-                    with self.proxy.inputs['timer'].dt_lock:
-                        t_now = float(self.proxy.inputs['timer'].time_points[-1])
-                    self.proxy.add_to_history(t_now,'ERROR',str(msg))
+                    with tmr.dt_lock:
+                        t_now = float(tmr.dt_utc())
+                    self.proxy.add_to_history(t_now,'ERROR',msg)
                 keep_going = False
                 with self.proxy.running_lock:
                     self.proxy.stop()
@@ -122,37 +107,41 @@ class MitosPPumpController(PawsPlugin):
         self.send_line(cmd)
         resp = self.receive_line()
         with self.proxy.history_lock:
-            with self.proxy.inputs['timer'].dt_lock:
-                t_now = float(self.proxy.inputs['timer'].time_points[-1])
-            self.proxy.add_to_history(t_now,str(cmd),str(resp))
+            with tmr.dt_lock:
+                t_now = float(tmr.dt_utc())
+            self.proxy.add_to_history(t_now,cmd,resp.decode())
 
         while keep_going:
-            with self.proxy.inputs['timer'].dt_lock:
-                self.proxy.inputs['timer'].dt_lock.wait()
-            self.read_status()
+            with tmr.dt_lock:
+                tmr.dt_lock.wait()
+            with self.state_lock:
+                self.read_status()
+            with self.proxy.state_lock:
+                self.proxy.state = copy.deepcopy(self.state)
             if vb: self.message_callback(self.print_status())
             while self.commands.qsize() > 0: 
-                cmd = str(self.commands.get())
-                self.commands.task_done()
+                with self.command_lock:
+                    cmd = self.commands.get()
+                    self.commands.task_done()
                 self.send_line(cmd)
                 resp = self.receive_line()
                 with self.proxy.history_lock:
-                    with self.proxy.inputs['timer'].dt_lock:
-                        t_now = float(self.proxy.inputs['timer'].time_points[-1])
-                    self.proxy.add_to_history(t_now,str(cmd),str(resp))
-            with self.proxy.inputs['timer'].running_lock:
-                if not self.proxy.inputs['timer'].running:
+                    with tmr.dt_lock:
+                        t_now = float(tmr.dt_utc())
+                    self.proxy.add_to_history(t_now,cmd,resp.decode())
+            with tmr.running_lock:
+                if not tmr.running:
                     with self.proxy.running_lock:
                         self.proxy.stop()
             with self.proxy.running_lock:
                 keep_going = bool(self.proxy.running)
         cmd = "A0"
-        with self.proxy.inputs['timer'].dt_lock:
-            t_now = float(self.proxy.inputs['timer'].time_points[-1])
+        with tmr.dt_lock:
+            t_now = float(tmr.dt_utc())
         self.send_line(cmd)
         resp = self.receive_line()
         with self.proxy.history_lock:
-            self.proxy.add_to_history(t_now,str(cmd),str(resp))
+            self.proxy.add_to_history(t_now,cmd,resp.decode())
             self.proxy.dump_history()
         self.ser.close()
 
@@ -162,24 +151,6 @@ class MitosPPumpController(PawsPlugin):
     def receive_line(self):
         r = self.ser.readline()
         return r.strip()
-
-    def add_to_history(self,t,cmd,resp):
-        self.history.append(self.event(t,cmd,resp))
-        #print('\nMitosPPumpController command: {}'.format(cmd))
-        #print('response: {}'.format(resp))
-
-    def event(self,t,cmd,resp):
-        event = OrderedDict(t=t,command=cmd,response=resp)
-        return event
-
-    def dump_history(self):
-        dump_path = os.path.join(pawstools.paws_scratch_dir,'ppump_controller_{}.log'.format(self))
-        dump_file = open(dump_path,'w')
-        dump_file.write('t :: command :: response\n')
-        for ev in self.history:
-            dump_file.write('{} :: {} :: {}\n'.format(ev['t'],ev['command'],ev['response']))
-        dump_file.close()
-
 
     def read_status(self):
         """ Read pump status.
@@ -229,8 +200,8 @@ class MitosPPumpController(PawsPlugin):
             s = resp.split(b',')
         with self.proxy.history_lock:
             with self.proxy.inputs['timer'].dt_lock:
-                t_now = float(self.proxy.inputs['timer'].time_points[-1])
-            self.proxy.add_to_history(t_now,str(cmd),str(resp))
+                t_now = float(self.proxy.inputs['timer'].dt_utc())
+            self.proxy.add_to_history(t_now,cmd,resp.decode())
         self.state['error_code'] = int(s[0][2:])
         self.state['state_code'] = int(s[1])
         self.state['chamber_pressure'] = float(s[3])
@@ -243,17 +214,18 @@ class MitosPPumpController(PawsPlugin):
         #    self.data_callback('content.state',copy.deepcopy(self.state))
 
     def print_status(self):
-        msg = '----------- PUMP STATUS -----------'+os.linesep
-        msg += 'Error code: {} ({})'.format(self.state['error_code'],
-            self.ErrorsDict[self.state['error_code']])+os.linesep
-        msg += 'State code: {} ({})'.format(self.state['state_code'],
-            self.StateDict[self.state['state_code']])+os.linesep
-        msg += 'Chamber pressure: \t{}'.format(self.state['chamber_pressure'])+os.linesep 
-        msg += 'Supply pressure: \t{}'.format(self.state['supply_pressure'])+os.linesep 
-        msg += 'Target pressure: \t{}'.format(self.state['target_pressure'])+os.linesep 
-        msg += 'Current flow rate: \t{}'.format(self.state['flow_rate'])+os.linesep 
-        msg += 'Target flow rate: \t{}'.format(self.state['target_flow_rate'])+os.linesep 
-        msg += '-----------------------------------'
+        with self.state_lock:
+            msg = os.linesep+'----------- PUMP STATUS -----------'+os.linesep
+            msg += 'Error code: {} ({})'.format(self.state['error_code'],
+                self.ErrorsDict[self.state['error_code']])+os.linesep
+            msg += 'State code: {} ({})'.format(self.state['state_code'],
+                self.StateDict[self.state['state_code']])+os.linesep
+            msg += 'Chamber pressure: \t{}'.format(self.state['chamber_pressure'])+os.linesep 
+            msg += 'Supply pressure: \t{}'.format(self.state['supply_pressure'])+os.linesep 
+            msg += 'Target pressure: \t{}'.format(self.state['target_pressure'])+os.linesep 
+            msg += 'Current flow rate: \t{}'.format(self.state['flow_rate'])+os.linesep 
+            msg += 'Target flow rate: \t{}'.format(self.state['target_flow_rate'])+os.linesep 
+            msg += '-----------------------------------'
         return msg
 
     def set_flowrate(self,rate):
@@ -269,7 +241,8 @@ class MitosPPumpController(PawsPlugin):
             after converting it to picolitres per second.
         """
         pl_s_rate = int(round(float(rate)*1.E6/60.))
-        self.thread_clone.commands.put("F{}".format(pl_s_rate)) 
+        with self.thread_clone.command_lock:
+            self.thread_clone.commands.put("F{}".format(pl_s_rate)) 
 
     def set_pressure(self,pressure):
         """Set the pump pressure to the provided value.
@@ -281,17 +254,20 @@ class MitosPPumpController(PawsPlugin):
             A value of 1000 sends the 'P1000' command,
             which sets target pressure to 1000 mbar. 
         """
-        self.thread_clone.commands.put("P{}".format(pressure)) 
+        with self.thread_clone.command_lock:
+            self.thread_clone.commands.put("P{}".format(pressure)) 
 
     def tare(self):
         """Tare the P-pump."""
         if self.inputs['verbose']: self.message_callback('taring pump')
-        self.thread_clone.commands.put("R0")
+        with self.thread_clone.command_lock:
+            self.thread_clone.commands.put("R0")
 
     def set_idle(self):
         """Set the P-pump to idle."""
         if self.inputs['verbose']: self.message_callback('setting pump to idle')
-        self.thread_clone.commands.put("P0")
+        with self.thread_clone.command_lock:
+            self.thread_clone.commands.put("P0")
 
     def dispense_volume(self, vol):
         """Control the pump to dispense a specified volume.
@@ -304,8 +280,8 @@ class MitosPPumpController(PawsPlugin):
         pass
 
     def get_plugin_content(self):
-        with self.history_lock:
-            h = copy.deepcopy(self.history)
-        return {'history':h}
-
+        d = super(MitosPPumpController,self).get_plugin_content()
+        with self.state_lock:
+            d['state'] = copy.deepcopy(self.state)
+        return d
 
