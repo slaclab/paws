@@ -2,10 +2,9 @@ from __future__ import print_function
 from collections import OrderedDict
 from .PawsPlugin import PawsPlugin
 import datetime
+import copy
 import time
-import sys
-import os
-from threading import Thread, Condition
+from threading import Condition
 
 import tzlocal
 import numpy as np
@@ -22,27 +21,17 @@ class Timer(PawsPlugin):
         super(Timer,self).__init__(inputs)
         self.input_doc['dt'] = 'Wait time between signals, in seconds'
         self.input_doc['t_max'] = 'Time in seconds after which the timer stops'
-        #self.clock = Event()
-        # A lock for thread-safe run/stop:
-        self.running_lock = Condition()
         # A lock for the "tick" trigger 
         self.dt_lock = Condition()
-        self.time_points = []
-        self.py_version = int(sys.version[0])
-        self.thread_clone = None
-        self.proxy = None
         self.t0 = None 
         self.tz = tzlocal.get_localzone()
         self.ep = datetime.datetime.fromtimestamp(0,self.tz)
         self.t0_utc = None 
 
     def start(self):
-        with self.running_lock:
-            self.running = True
-        self.thread_clone = self.build_clone()
-        self.thread_clone.proxy = self
-        th = Thread(target=self.thread_clone.run)
-        th.start()
+        self.t0 = datetime.datetime.now(self.tz)
+        self.t0_utc = (self.t0-self.ep).total_seconds()
+        self.run_clone() 
 
     def run(self):
         # self.thread_clone runs this method in its own thread.
@@ -53,24 +42,21 @@ class Timer(PawsPlugin):
             t_max = self.inputs['t_max']
             keep_going = True
             # set zero-time point 
-            self.t0 = datetime.datetime.now(self.tz)
-            self.t0_utc = (self.t0-self.ep).total_seconds()
+            self.t0 = copy.deepcopy(self.proxy.t0)
+            self.t0_utc = copy.deepcopy(self.proxy.t0_utc)
             dt_now = self.dt_utc()
-            self.proxy.time_points.append(dt_now)
-            self.proxy.notify()
+            self.proxy.dt_notify()
             #dt_err = np.mod(dt_now,dt)
-            # TODO: implement feedback to hone the timer
         while dt_now < t_max and keep_going:
             if vb: self.message_callback('tick: {}/{}'.format(dt_now,t_max))
             # attempt to nail the next dt point:
             t_rem = dt-np.mod(self.dt_utc(),dt)
             #time.sleep(t_rem-dt_err)
             time.sleep(t_rem)
-            # acquire proxy dt lock, take time point, notify, release
+            # acquire proxy dt lock, take time point, dt_notify, release
             with self.proxy.dt_lock:
                 dt_now = self.dt_utc()
-                self.proxy.time_points.append(float(dt_now))
-                self.proxy.notify()
+                self.proxy.dt_notify()
             #dt_err = np.mod(dt_now,dt)
             # TODO: implement feedback to hone the timer
             # acquire proxy running_lock, check if we are still running
@@ -81,7 +67,7 @@ class Timer(PawsPlugin):
             if vb: self.message_callback('timer FINISHED')
             self.proxy.stop()
 
-    def notify(self):
+    def dt_notify(self):
         if int(self.py_version) == 2:
             self.dt_lock.notifyAll()
         else:
@@ -98,6 +84,4 @@ class Timer(PawsPlugin):
             'who depend on a clock to trigger their actions')
         return desc
 
-    def get_plugin_content(self):
-        return {'time_points':self.time_points}
 
