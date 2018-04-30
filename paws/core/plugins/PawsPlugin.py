@@ -1,6 +1,15 @@
 from __future__ import print_function
 from collections import OrderedDict
+import sys
+import os
 import copy
+from threading import Thread, Condition
+if int(sys.version[0]) == 2:
+    import Queue as queue
+else:
+    import queue 
+
+import numpy as np
 
 from .. import pawstools
 
@@ -12,11 +21,20 @@ class PawsPlugin(object):
         self.inputs = OrderedDict(copy.deepcopy(inputs))
         self.input_locator = OrderedDict.fromkeys(self.inputs.keys())
         self.input_doc = OrderedDict.fromkeys(self.inputs.keys()) 
-        self.message_callback = self.tagged_print
-        self.data_callback = None 
-        self.running = False
         for name in self.inputs.keys(): 
             self.input_locator[name] = pawstools.InputLocator(pawstools.basic_type,self.inputs[name])
+        self.message_callback = self.tagged_print
+        self.data_callback = None 
+        self.running_lock = Condition()
+        self.running = False
+        self.n_events = 0
+        self.command_lock = Condition()
+        self.commands = queue.Queue() 
+        self.history_lock = Condition()
+        self.history = []
+        self.thread_clone = None
+        self.proxy = None
+        self.py_version = int(sys.version[0])
 
     def __getitem__(self,key):
         if key == 'inputs':
@@ -31,7 +49,9 @@ class PawsPlugin(object):
         print('[{}] {}'.format(type(self).__name__,msg))
 
     def get_plugin_content(self):
-        return {}
+        with self.history_lock:
+            h = copy.deepcopy(self.history)
+        return {'history':h}
 
     def description(self):
         """Describe the plugin.
@@ -52,6 +72,21 @@ class PawsPlugin(object):
         Reimplement this in PawsPlugin subclasses as needed.
         """
         self.running = True 
+
+    def run_clone(self):
+        with self.running_lock:
+            self.running = True
+        self.thread_clone = self.build_clone()
+        self.thread_clone.proxy = self
+        th = Thread(target=self.thread_clone.run)
+        th.start()
+
+    def run_notify(self):
+        with self.running_lock:
+            if int(self.py_version) == 2:
+                self.running_lock.notifyAll()
+            else:
+                self.running_lock.notify_all()
 
     def stop(self):
         """Stop the plugin.
@@ -93,4 +128,30 @@ class PawsPlugin(object):
         dct['inputs'] = inp_dct 
         return dct
 
+    def add_to_history(self,t,cmd,resp):
+        self.history.append(OrderedDict(t=t,command=cmd,response=resp))
+        self.n_events += 1
+        if np.mod(self.n_events,1000) == 0:
+            self.dump_history(900)
+            # always keep the past 100 points?
+            self.history = self.history[-100:]
+
+    def dump_history(self,n_events=None):
+        dump_path = os.path.join(pawstools.paws_scratch_dir,'{}.log'.format(self))
+        dump_file = open(dump_path,'a')
+        h = self.history
+        if n_events is not None: h = self.history[:n_events]
+        for ev in h:
+            dump_file.write('{} :: {} :: {}\n'.format(ev['t'],ev['command'],ev['response']))
+        dump_file.close()
+
+    def notify_locks(self,locks):
+        if not isinstance(locks,list):
+            locks = [locks]
+        for l in locks:
+            with l:
+                if int(self.py_version) == 2:
+                    l.notifyAll()
+                else:
+                    l.notify_all()
 
