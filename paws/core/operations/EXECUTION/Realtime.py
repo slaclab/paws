@@ -107,6 +107,8 @@ class Realtime(Operation):
                     #self.message_callback('... WAITING FOR INPUTS ({}/{} ms)'
                     #    .format(currentdly,maxdly))
                     if currentdly >= maxdly:
+                        msg = 'Reached maximum delay ({}): Realtime stopping.'.format(maxdly) 
+                        self.message_callback(msg)
                         keep_going = False 
             if keep_going:
                 for inpnm,inpval in inp_dict.items():

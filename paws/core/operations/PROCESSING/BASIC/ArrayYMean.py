@@ -20,6 +20,7 @@ class ArrayYMean(Operation):
     def run(self):
         x_logy = None
         x_y_arrays = self.inputs['x_y_arrays']
+        x_ymean = None
         if len(x_y_arrays) > 0:
             x_ymean = np.zeros(x_y_arrays[0].shape)
             x_ymean[:,0] = x_y_arrays[0][:,0]

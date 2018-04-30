@@ -75,18 +75,9 @@ class XRSDFit(Operation):
         xrf = XRSDFitter(q_I,pops,src_wl)
         fit_pops,rpt = xrf.fit(p_fix,p_b,p_c,errwtd,logIwtd,logqwtd)
 
-        if self.message_callback:
-            self.message_callback(xrf.print_report(pops,fit_pops,rpt))
+        self.message_callback(xrf.print_report(pops,fit_pops,rpt))
  
         I_opt = compute_intensity(q_I[:,0],fit_pops,src_wl)
-
-        from matplotlib import pyplot as plt
-        I_guess = compute_intensity(q_I[:,0],pops,src_wl)
-        plt.figure(2)
-        plt.semilogy(q_I[:,0],q_I[:,1],'k')
-        plt.semilogy(q_I[:,0],I_guess,'r')
-        plt.semilogy(q_I[:,0],I_opt,'g')
-        plt.show()
 
         q_I_opt = np.array([q_I[:,0],I_opt]).T
         self.outputs['populations'] = fit_pops 
