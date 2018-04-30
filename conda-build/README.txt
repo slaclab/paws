@@ -1,10 +1,17 @@
 # 1)
-# start the build using the lates PyPI version: 
+# start the build using the latest PyPI version: 
 # > conda skeleton pypi pypaws
 
 # 2)
 # move the resulting pypaws/meta.yaml 
 # to this directory (conda-build/meta.yaml) 
+
+# 2b)
+# open meta.yaml and look for the build: tag.
+# add noarch: python to the tag.
+# the result should look like:
+# build:
+#   noarch: python
 
 # 3)
 # if this is the first build on the machine, 
@@ -15,9 +22,7 @@
 
 # 4)
 # invoke conda-build 
-# > conda-build conda-build/
-# NOTE: the path to the new conda package is at the end of the build,
-# on the line marked "TEST END: <path-to-package>"
+# > conda-build --user ssrl-paws conda-build/
 
 # 5)
 # make a free account on anaconda.org.
@@ -29,8 +34,10 @@
 # > anaconda login
 
 # 7)
-# use the client to upload the package
-# (see step 4 above for package path):
+# use the client to upload the package,
+# using the output of step 4 above for package path
+# (see the line marked "TEST END: <path-to-package>")
+# NOTE: this may have happened automatically during conda-build,
+# if you were already logged in
 # > anaconda upload <path-to-package> 
-
 
