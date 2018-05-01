@@ -63,7 +63,6 @@ class XRSDFitGUI(Operation):
        
         # data structures for maintaining refs to widgets
         self.pop_frames = OrderedDict()
-        self.pop_frame_rows = OrderedDict()
         self.param_frames = OrderedDict()
         self.setting_frames = OrderedDict()
         self.site_frames = OrderedDict()
@@ -466,11 +465,20 @@ class XRSDFitGUI(Operation):
         # TODO: check that pop_nm is valid
         if is_valid:
             if not new_nm == pop_nm:
-                pop_def = self.populations.pop(pop_nm)
-                self.populations[new_nm] = pop_def
-                self.destroy_pop_frame(pop_nm)
-                self.create_pop_frame(new_nm)
-                self.repack_entry_widgets()
+                # TODO: make sure all of the frames and vars end up being renamed
+                self.populations[new_nm] = self.populations.pop(pop_nm)
+                self.pop_frames[new_nm] = self.pop_frames.pop(pop_nm)
+                self.param_frames[new_nm] = self.param_frames.pop(pop_nm) 
+                self.setting_frames[new_nm] = self.setting_frames.pop(pop_nm)
+                self.site_frames[new_nm] = self.site_frames.pop(pop_nm)
+                self.specie_frames[new_nm] = self.specie_frames.pop(pop_nm) 
+                self.specie_setting_frames[new_nm] = self.specie_setting_frames.pop(pop_nm)
+                self.specie_param_frames[new_nm] = self.specie_param_frames.pop(pop_nm)
+                #self.destroy_pop_frame(pop_nm)
+                #self.create_pop_frame(new_nm)
+                #self.repack_entry_widgets()
+        # else:
+        # TODO: return the entry to its previous value
         return is_valid
 
     def new_population(self,event=None):
