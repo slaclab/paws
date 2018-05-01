@@ -38,9 +38,13 @@ class XRSDFitGUI(Operation):
         super(XRSDFitGUI, self).__init__(inputs, outputs)
         self.input_doc['q_I'] = 'n-by-2 array of q(1/Angstrom) versus I(arb).'
         self.input_doc['populations'] = 'dict defining populations, xrsdkit format'
+        self.input_doc['fixed_params'] = 'dict defining fixed params, xrsdkit format'
+        self.input_doc['param_bounds'] = 'dict defining param bounds, xrsdkit format'
+        self.input_doc['param_constraints'] = 'dict defining param constraints, xrsdkit format'
         self.output_doc['populations'] = 'populations with parameters optimized'
-        self.output_doc['success_flag'] = 'Boolean indicating whether '\
-            'or not the user was satisfied with the fit.'
+        self.output_doc['report'] = 'dict reporting optimization results'
+        self.output_doc['q_I_opt'] = 'computed intensity for the optimized populations'
+        self.output_doc['success_flag'] = 'flag indicating user satisfaction with the fit'
 
     def run(self):
         self.q_I = self.inputs['q_I']
@@ -141,14 +145,13 @@ class XRSDFitGUI(Operation):
         self.pops_canvas.yview_scroll(d, 'units')
 
     def finish(self):
-        # TODO: if a fit was performed,
-        # check if the user is/isnt satisfied with the result, 
-        # and include this as an output or as a part of the report
         self.outputs['populations'] = self.populations
         self.outputs['report'] = self.fit_report
         self.outputs['q_I_opt'] = self.q_I_opt
-        self.outputs['success_flag'] = self.success_flag
-        print('finish')
+        # TODO: if a fit was performed,
+        # check if the user is/isnt satisfied with the result, 
+        # and include this as the output success_flag 
+        self.outputs['success_flag'] = None 
         # TODO: close the gui
 
     def draw_plots(self):
@@ -184,7 +187,6 @@ class XRSDFitGUI(Operation):
         self.pop_name_vars[pop_nm] = popvar
         pope = self.connected_entry(pf,popvar,partial(self.rename_population,pop_nm))
         popvar.set(pop_nm)
-        #popvar.trace('w',partial(self.rename_population,pop_nm))
         pope.grid(row=0,column=1,sticky=tkinter.W)
         rmb = Button(pf,text='Remove',command=partial(self.remove_population,pop_nm))
         rmb.grid(row=0,column=2)
@@ -206,9 +208,12 @@ class XRSDFitGUI(Operation):
     
     def connected_entry(self,parent,tkvar,cbfun):
         if cbfun:
-            # piggyback on entry validation to rename the population
-            #e = Entry(parent,width=20,textvariable=tkvar,validate="focusout",validatecommand=cbfun)
-            e = Entry(parent,width=20,textvariable=tkvar)
+            # piggyback on entry validation
+            # to update internal data
+            # associated with the entry widget
+            # NOTE: validatecommand must return a boolean 
+            e = Entry(parent,width=20,textvariable=tkvar,validate="focusout",validatecommand=cbfun)
+            #e = Entry(parent,width=20,textvariable=tkvar)
             # also respond to the return key
             e.bind('<Return>',cbfun)
         else:
@@ -262,9 +267,10 @@ class XRSDFitGUI(Operation):
             pe.grid(row=0,column=1,columnspan=2,sticky=tkinter.W)
 
             psw = Checkbutton(paramf,text="variable")
-            #varparam = not xrsdkit.fixed_param_defaults[param_nm]
-            # TODO: check for param in fixed_params
-            varparam = not self.inputs['fixed_params'].get(param_nm, False)
+            varparam = not xrsdkit.fixed_param_defaults[param_nm]
+            if xrsdkit.contains_param(self.inputs['fixed_params'],pop_nm,param_nm):
+                varparam = self.inputs['fixed_params'][pop_nm]['parameters'][param_nm]
+            # TODO: these CheckButtons need to be connected to BooleanVars.
 
             if varparam: psw.select()
             psw.grid(row=0,column=3,sticky=tkinter.W)
@@ -276,13 +282,18 @@ class XRSDFitGUI(Operation):
             pbnde2.grid(row=1,column=2,sticky=tkinter.W) 
             lbnd = xrsdkit.param_bound_defaults[param_nm][0]
             ubnd = xrsdkit.param_bound_defaults[param_nm][1] 
-            # TODO: check for param in param_bounds 
+            if xrsdkit.contains_param(self.inputs['param_bounds'],pop_nm,param_nm):
+                lbnd = self.inputs['param_bounds'][pop_nm]['parameters'][param_nm][0]
+                lbnd = self.inputs['param_bounds'][pop_nm]['parameters'][param_nm][1]
+            # TODO: the bounds entries need to be connected to DoubleVars.
             pbnde1.insert(0,str(lbnd))  
             pbnde2.insert(0,str(ubnd))
             pexpl = Label(paramf,text='expression:',width=10,anchor='e')
             pexpl.grid(row=2,column=0,sticky=tkinter.E)
             pexpe = Entry(paramf,width=16)
-            # TODO: check for param in param_constraints 
+            if xrsdkit.contains_param(self.inputs['param_constraints'],pop_nm,param_nm):
+                pexpe.insert(0,self.inputs['param_constraints'],pop_nm,param_nm)
+            # TODO: the constraint Entry needs to be connected to a StringVar 
             pexpe.grid(row=2,column=1,columnspan=3,sticky=tkinter.E+tkinter.W) 
             # TODO: connect psw to changing fixed_params
             # TODO: connect pbnde to changing param_bounds
@@ -304,7 +315,6 @@ class XRSDFitGUI(Operation):
             self.create_site_frame(pop_nm,site_nm,ist)
         # TODO: frame for adding a new site
         self.create_new_site_frame(pop_nm)
-
 
     def create_site_frame(self,pop_nm,site_nm,ist):
         popd = self.populations[pop_nm] 
@@ -452,12 +462,16 @@ class XRSDFitGUI(Operation):
 
     def rename_population(self,pop_nm,event=None):
         new_nm = self.pop_name_vars[pop_nm].get()
-        if not new_nm == pop_nm:
-            pop_def = self.populations.pop(pop_nm)
-            self.populations[new_nm] = pop_def
-            self.destroy_pop_frame(pop_nm)
-            self.create_pop_frame(new_nm)
-            self.repack_entry_widgets()
+        is_valid = True
+        # TODO: check that pop_nm is valid
+        if is_valid:
+            if not new_nm == pop_nm:
+                pop_def = self.populations.pop(pop_nm)
+                self.populations[new_nm] = pop_def
+                self.destroy_pop_frame(pop_nm)
+                self.create_pop_frame(new_nm)
+                self.repack_entry_widgets()
+        return is_valid
 
     def new_population(self,event=None):
         new_nm = self.new_pop_var.get()
@@ -514,14 +528,24 @@ class XRSDFitGUI(Operation):
     def update_param(self,pop_nm,param_nm,event=None):
         p = self.param_vars[pop_nm][param_nm].get()
         # TODO: cast p depending on param_nm
-        self.populations[pop_nm]['parameters'][param_nm] = p
-        self.draw_plots()
+        # TODO: check if the entry is valid
+        is_valid = True
+        if is_valid:
+            self.populations[pop_nm]['parameters'][param_nm] = p
+            self.draw_plots()
+        #else:
+        # TODO: restore the entry widget to the previous value
 
     def update_setting(self,pop_nm,stg_nm):
         stg_val = self.setting_vars[pop_nm][stg_nm].get()
         # TODO: cast stg_val depending on stg_nm
-        self.populations[pop_nm]['settings'][stg_nm] = stg_val
-        self.draw_plots()
+        # TODO: check if the entry is valid
+        is_valid = True
+        if is_valid:
+            self.populations[pop_nm]['settings'][stg_nm] = stg_val
+            self.draw_plots()
+        #else:
+        # TODO: restore the entry widget to the previous value
 
     def fit(self,event):
         print('fit')
