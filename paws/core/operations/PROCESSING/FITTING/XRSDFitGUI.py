@@ -103,7 +103,8 @@ class XRSDFitGUI(Operation):
     def build_plot_widgets(self):
         self.plot_frame = Frame(self.fit_gui,bd=4,relief=tkinter.SUNKEN)#, background="green")
         self.plot_frame.pack(side=tkinter.LEFT, expand=tkinter.YES,padx=2,pady=2)
-        self.fig = Figure(figsize=(8,7))
+        self.fig = Figure(figsize=(8,7)) # forward=True
+        self.fig.set_size_inches(8, 7, forward=True)
         self.ax_plot = self.fig.add_subplot(111)
         self.plot_canvas = FigureCanvasTkAgg(self.fig,self.plot_frame)
         self.plot_canvas.get_tk_widget().pack()
@@ -130,9 +131,6 @@ class XRSDFitGUI(Operation):
         self.create_control_frame()
 
     def on_mousewheel(self, event):
-        if event.delta == 0:
-            # TODO: explain this
-            event.delta += 100
         self.pops_canvas.yview_scroll(-1 * event.delta, 'units')
 
     def on_trackpad(self, event):
@@ -264,8 +262,10 @@ class XRSDFitGUI(Operation):
             pe.grid(row=0,column=1,columnspan=2,sticky=tkinter.W)
 
             psw = Checkbutton(paramf,text="variable")
-            varparam = not xrsdkit.fixed_param_defaults[param_nm]
-            # TODO: check for param in fixed_params 
+            #varparam = not xrsdkit.fixed_param_defaults[param_nm]
+            # TODO: check for param in fixed_params
+            varparam = not self.inputs['fixed_params'].get(param_nm, False)
+
             if varparam: psw.select()
             psw.grid(row=0,column=3,sticky=tkinter.W)
             pbndl = Label(paramf,text='bounds:',width=10,anchor='e')
