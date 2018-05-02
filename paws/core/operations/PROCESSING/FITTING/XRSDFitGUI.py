@@ -101,7 +101,8 @@ class XRSDFitGUI(Operation):
         self.fit_gui.mainloop()
 
         # after tk loop exits, finish Operation
-        self.finish() 
+        #self.finish()
+
 
     def build_plot_widgets(self):
         self.plot_frame = Frame(self.fit_gui,bd=4,relief=tkinter.SUNKEN)#, background="green")
@@ -150,8 +151,8 @@ class XRSDFitGUI(Operation):
         # TODO: if a fit was performed,
         # check if the user is/isnt satisfied with the result, 
         # and include this as the output success_flag 
-        self.outputs['success_flag'] = None 
-        # TODO: close the gui
+        self.outputs['success_flag'] = None
+        self.fit_gui.destroy()
 
     def draw_plots(self):
         self.ax_plot.clear()
