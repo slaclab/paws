@@ -434,7 +434,7 @@ class XRSDFitGUI(Operation):
             self.create_specie_setting_frames(pop_nm,site_nm,specie_nm,iispec)
             self.create_specie_param_frames(pop_nm,site_nm,specie_nm,iispec)
             specf.grid(row=2+ispec+iispec,column=0,columnspan=5,pady=4,sticky=tkinter.E+tkinter.W)
-
+            
     def create_specie_setting_frames(self,pop_nm,site_nm,specie_nm,iispec):
         popd = self.populations[pop_nm]
         site_def = popd['basis'][site_nm]
@@ -445,14 +445,17 @@ class XRSDFitGUI(Operation):
         specief = self.specie_frames[pop_nm][site_nm][specie_nm][iispec]
         for istg,stg_nm in enumerate(xrsdkit.form_factor_settings[specie_nm]):
             stgf = Frame(specief,bd=2,padx=4,pady=4,relief=tkinter.GROOVE) 
+            stgvar = StringVar(stgf)
             self.specie_setting_frames[pop_nm][site_nm][specie_nm][iispec][stg_nm] = stgf
+            self.specie_setting_vars[pop_nm][site_nm][specie_nm][iispec][stg_nm] = stgvar 
             stgf.grid(row=1+istg,column=0,columnspan=3,sticky=tkinter.E+tkinter.W)
             stgl = Label(sparf,text='{}:'.format(stg_nm),width=10,anchor='e')
             stgl.grid(row=0,column=0,sticky=tkinter.E)
-            stge = Entry(stgf,width=16)
+            #stge = Entry(stgf,width=16,textvariable=stgvar)
+            stge = self.connected_entry(stgf,stgvar,None)
             stg_val = xrsdkit.setting_defaults[stg_nm] 
             if stg_nm in specd: stg_val = specd[stg_nm] 
-            stge.insert(0,str(stg_val))
+            stgvar.set(stg_val)
             stge.grid(row=0,column=1,sticky=tkinter.E+tkinter.W)
 
     def create_specie_param_frames(self,pop_nm,site_nm,specie_nm,iispec):
@@ -465,14 +468,18 @@ class XRSDFitGUI(Operation):
         specief = self.specie_frames[pop_nm][site_nm][specie_nm][iispec]
         for isp,sparam_nm in enumerate(xrsdkit.form_factor_params[specie_nm]):
             sparf = Frame(specief,bd=2,padx=4,pady=4,relief=tkinter.GROOVE) 
+            spvar = DoubleVar(sparf)
             self.specie_param_frames[pop_nm][site_nm][specie_nm][iispec][sparam_nm] = sparf
+            self.specie_param_vars[pop_nm][site_nm][specie_nm][iispec][sparam_nm] = spvar 
             sparf.grid(row=1+isp,column=0,columnspan=3,sticky=tkinter.E+tkinter.W)
             sparl = Label(sparf,text='{}:'.format(sparam_nm),width=10,anchor='e')
             sparl.grid(row=0,column=0,sticky=tkinter.E)
-            spare = Entry(sparf,width=16)
+            #spare = Entry(sparf,width=16)
+            spare = self.connected_entry(sparf,spvar,None)
             sparam_val = xrsdkit.param_defaults[sparam_nm] 
             if sparam_nm in specd: sparam_val = specd[sparam_nm] 
-            spare.insert(0,str(sparam_val))
+            #spare.insert(0,str(sparam_val))
+            spvar.set(sparam_val)
             spare.grid(row=0,column=1,columnspan=2,sticky=tkinter.E+tkinter.W)
             sparsw = Checkbutton(sparf,text="variable")
             sparsw.grid(row=0,column=3,sticky=tkinter.W)
@@ -552,13 +559,13 @@ class XRSDFitGUI(Operation):
             
     def update_population_values(self,pop_nm,pop_dict):
         for param_nm, param_val in pop_dict['parameters'].items():
-            self.update_param_values(pop_nm,param_nm) 
+            self.update_param_value(pop_nm,param_nm,param_val) 
         for site_nm, site_def in pop_dict['basis'].items():
             self.update_site_values(pop_nm,site_nm,site_def)
 
-    def update_param_values(self,pop_nm,param_nm,param_val):
+    def update_param_value(self,pop_nm,param_nm,param_val):
         self.populations[pop_nm]['parameters'][param_nm] = param_val
-        self.param_vars[pop_nm]['parameters'][param_nm].set(param_val)
+        self.param_vars[pop_nm][param_nm].set(param_val)
 
     def update_site_values(self,pop_nm,site_nm,site_def):
         for specie_nm, specie_def in site_def.items():
@@ -569,16 +576,16 @@ class XRSDFitGUI(Operation):
         if not isinstance(specie_def,list):
             specie_def = [specie_def]
         for ispec,specd in enumerate(specie_def):
-            for specie_param_nm,specie_param_val in sd.items():
-                self.update_specie_param_values(pop_nm,site_nm,specie_nm,ispec,specie_param_nm,specie_param_val)
+            for specie_param_nm,specie_param_val in specd.items():
+                self.update_specie_param_value(pop_nm,site_nm,specie_nm,ispec,specie_param_nm,specie_param_val)
 
-    def update_specie_param_values(self,pop_nm,site_nm,specie_nm,ispec,specie_param_nm,specie_param_val):
+    def update_specie_param_value(self,pop_nm,site_nm,specie_nm,ispec,specie_param_nm,specie_param_val):
         spec_def = self.populations[pop_nm]['basis'][site_nm][specie_nm]
         if isinstance(spec_def,list):
             spec_def[ispec][specie_param_nm] = param_val
         else:
-            spec_def[specie_param_nm] = param_val
-        self.specie_param_vars[pop_nm][site_nm][specie_nm][ispec][specie_param_nm].set(param_val)
+            spec_def[specie_param_nm] = specie_param_val
+        self.specie_param_vars[pop_nm][site_nm][specie_nm][ispec][specie_param_nm].set(specie_param_val)
 
     def update_structure(self,pop_nm,var_nm,dummy,mode):
         s = self.structure_vars[pop_nm].get() 
@@ -640,8 +647,7 @@ class XRSDFitGUI(Operation):
         new_specie_nm = self.specie_vars[pop_nm][site_nm][specie_nm][iispec].get()
         specvar.trace('w',partial(self.update_specie,pop_nm,site_nm,specie_nm,iispec))
 
-
-    def fit(self,event):
+    def fit(self):
         ftr = xrsdkit.fitting.xrsd_fitter.XRSDFitter(self.q_I,self.populations,self.src_wl)
         fp = self.inputs['fixed_params']
         pb = self.inputs['param_bounds']
@@ -650,8 +656,8 @@ class XRSDFitGUI(Operation):
         erwtd = bool(self.error_weighted_var.get())
         p_opt,rpt = ftr.fit(fp,pb,pc,erwtd,logIwtd)
         self.fit_obj_var.set(rpt['final_objective'])
-        # TODO: don't change any widgets, but write a function that updates all the vars.
-        self.update_populations(p_opt)
+        self.update_all_population_values(p_opt)
+        self.draw_plots()
 
     def compute_objective(self):
         ftr = xrsdkit.fitting.xrsd_fitter.XRSDFitter(self.q_I,self.populations,self.src_wl)
