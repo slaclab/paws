@@ -58,6 +58,8 @@ class XRSDFitGUI(Operation):
         self.success_flag = False
         self.xrsd_fitter = XRSDFitter(self.q_I,self.populations,self.src_wl)
 
+        self.vars = {}
+
         self.fit_gui = Tk()
         self.fit_gui.title('xrsd profile fitter')
        
@@ -148,10 +150,8 @@ class XRSDFitGUI(Operation):
         self.outputs['populations'] = self.populations
         self.outputs['report'] = self.fit_report
         self.outputs['q_I_opt'] = self.q_I_opt
-        # TODO: if a fit was performed,
-        # check if the user is/isnt satisfied with the result, 
-        # and include this as the output success_flag 
-        self.outputs['success_flag'] = None
+        self.outputs['success_flag'] = self.vars['var_good_fit'].get()
+        #print('success flag at finish: ', self.outputs['success_flag'])
         self.fit_gui.destroy()
 
     def draw_plots(self):
@@ -624,7 +624,9 @@ class XRSDFitGUI(Operation):
         fitbtn.grid(row=2,column=0)
         finbtn = Button(cf,text='Finish',width=10,command=self.finish)
         finbtn.grid(row=2,column=1)
-        fitcb = Checkbutton(cf,text="Good fit")
+        var_good_fit = tkinter.BooleanVar()
+        self.vars['var_good_fit'] = var_good_fit
+        fitcb = Checkbutton(cf,text="Good fit", variable=var_good_fit)
         fitcb.grid(row=2,column=2,sticky=tkinter.W)
         cf.pack(side=tkinter.TOP,pady=2,padx=2,fill="both",expand=True)
 
