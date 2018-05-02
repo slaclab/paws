@@ -266,10 +266,13 @@ class XRSDFitGUI(Operation):
             pe = self.connected_entry(paramf,paramv,partial(self.update_param,pop_nm,param_nm))
             pe.grid(row=0,column=1,columnspan=2,sticky=tkinter.W)
 
-            psw = Checkbutton(paramf,text="variable")
+            fixed_par = tkinter.BooleanVar(paramf)
+
             varparam = not xrsdkit.fixed_param_defaults[param_nm]
             if xrsdkit.contains_param(self.inputs['fixed_params'],pop_nm,param_nm):
                 varparam = self.inputs['fixed_params'][pop_nm]['parameters'][param_nm]
+            fixed_par.set(varparam)
+            psw = Checkbutton(paramf,text="variable", variable= fixed_par)
             # TODO: these CheckButtons need to be connected to BooleanVars.
 
             if varparam: psw.select()
