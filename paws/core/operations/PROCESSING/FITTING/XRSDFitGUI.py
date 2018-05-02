@@ -8,7 +8,7 @@ from matplotlib.figure import Figure
 import tkinter
 from tkinter import Tk, Frame, Canvas, Button, Label, Entry, \
 OptionMenu, Scrollbar, Checkbutton, \
-StringVar, DoubleVar 
+StringVar, DoubleVar, BooleanVar 
 import numpy as np
 #from matplotlib import pyplot as plt
 #from matplotlib.widgets import Slider, Button, RadioButtons, TextBox
@@ -87,8 +87,8 @@ class XRSDFitGUI(Operation):
         self.new_site_vars = OrderedDict()
         self.new_specie_vars = OrderedDict()
         self.new_pop_var = None
-        self.log_wt_var = None 
-        self.error_wt_var = None 
+        self.logI_weighted_var = None 
+        self.error_weighted_var = None 
         self.fit_obj_var = None 
 
         # create the plots
@@ -304,6 +304,12 @@ class XRSDFitGUI(Operation):
         self.new_site_frames[pop_nm] = OrderedDict()
         self.specie_frames[pop_nm] = OrderedDict()
         self.specie_param_frames[pop_nm] = OrderedDict()
+        self.specie_setting_frames[pop_nm] = OrderedDict()
+        self.site_name_vars[pop_nm] = OrderedDict()
+        self.coordinate_vars[pop_nm] = OrderedDict()
+        self.specie_vars[pop_nm] = OrderedDict()
+        self.specie_param_vars[pop_nm] = OrderedDict()
+        self.specie_setting_vars[pop_nm] = OrderedDict()
         pf = self.pop_frames[pop_nm]
         popd = self.populations[pop_nm]
         npars = len(xrsdkit.structure_params[popd['structure']])
@@ -312,7 +318,6 @@ class XRSDFitGUI(Operation):
         basisl.grid(row=4+nstgs+npars,column=0,columnspan=3)
         for ist,site_nm in enumerate(popd['basis'].keys()):
             self.create_site_frame(pop_nm,site_nm,ist)
-        # TODO: frame for adding a new site
         self.create_new_site_frame(pop_nm)
 
     def create_site_frame(self,pop_nm,site_nm,ist):
@@ -335,10 +340,14 @@ class XRSDFitGUI(Operation):
 
         site_def = popd['basis'][site_nm]
         if popd['structure'] in xrsdkit.crystalline_structure_names:
+            cvarx = DoubleVar(sitef)
+            cvary = DoubleVar(sitef)
+            cvarz = DoubleVar(sitef)
+            self.coordinate_vars[pop_nm][site_nm] = (cvarx,cvary,cvarz)
             coordl = Label(sitef,text='coordinates:',width=12,anchor='e')
-            coorde1 = Entry(sitef,width=6)
-            coorde2 = Entry(sitef,width=6)
-            coorde3 = Entry(sitef,width=6)
+            coorde1 = Entry(sitef,width=6,variable=cvarx)
+            coorde2 = Entry(sitef,width=6,variable=cvary)
+            coorde3 = Entry(sitef,width=6,variable=cvarz)
             coordl.grid(row=1,column=0,sticky=tkinter.E)
             coorde1.grid(row=1,column=1)
             coorde2.grid(row=1,column=2)
@@ -347,9 +356,12 @@ class XRSDFitGUI(Operation):
                 c = site_def['coordinates']
             else:
                 c = [0,0,0]
-            coorde1.insert(0,str(c[0]))
-            coorde2.insert(0,str(c[1]))
-            coorde3.insert(0,str(c[2]))
+            cvarx.set(c[0])
+            cvary.set(c[1])
+            cvarz.set(c[2])
+            #coorde1.insert(0,str(c[0]))
+            #coorde2.insert(0,str(c[1]))
+            #coorde3.insert(0,str(c[2]))
             # TODO: connect the entries to setting the coordinates
             # TODO: controls for varying or constraining coords
 
@@ -378,12 +390,17 @@ class XRSDFitGUI(Operation):
     def create_specie_frames(self,pop_nm,site_nm):
         self.specie_frames[pop_nm][site_nm] = OrderedDict()
         self.specie_param_frames[pop_nm][site_nm] = OrderedDict()
+        self.specie_setting_frames[pop_nm][site_nm] = OrderedDict()
+        self.specie_vars[pop_nm][site_nm] = OrderedDict()
+        self.specie_param_vars[pop_nm][site_nm] = OrderedDict()
+        self.specie_setting_vars[pop_nm][site_nm] = OrderedDict()
         popd = self.populations[pop_nm]
         site_def = popd['basis'][site_nm]
         for ispec, specie_nm in enumerate(site_def.keys()):
             if not specie_nm == 'coordinates':
                 self.create_specie_frame(pop_nm,site_nm,specie_nm,ispec)
         # TODO: frame for adding a new specie
+        #self.create_new_specie_frame(pop_nm,site_nm)
 
     def create_specie_frame(self,pop_nm,site_nm,specie_nm,ispec):
         self.specie_frames[pop_nm][site_nm][specie_nm] = []
@@ -392,7 +409,11 @@ class XRSDFitGUI(Operation):
         specie_def = site_def[specie_nm]
         if not isinstance(specie_def,list):
             specie_def = [specie_def]
+        self.specie_vars[pop_nm][site_nm][specie_nm] = []
         self.specie_param_frames[pop_nm][site_nm][specie_nm] = [OrderedDict() for specd in specie_def]
+        self.specie_setting_frames[pop_nm][site_nm][specie_nm] = [OrderedDict() for specd in specie_def]
+        self.specie_param_vars[pop_nm][site_nm][specie_nm] = [OrderedDict() for specd in specie_def]
+        self.specie_setting_vars[pop_nm][site_nm] = [OrderedDict() for specd in specie_def]
         sitef = self.site_frames[pop_nm][site_nm]
         for iispec,specd in enumerate(specie_def):
             specf = Frame(sitef,bd=2,padx=10,pady=4,relief=tkinter.GROOVE) 
@@ -403,13 +424,36 @@ class XRSDFitGUI(Operation):
             spec_option_dict = OrderedDict.fromkeys(xrsdkit.form_factor_names)
             speccb = OptionMenu(specf,specvar,*spec_option_dict)
             specvar.set(specie_nm)
+            specvar.trace('w',partial(self.update_specie,pop_nm,site_nm,specie_nm,iispec))
+            self.specie_vars[pop_nm][site_nm][specie_nm].append(specvar)
             speccb.grid(row=0,column=1,sticky=tkinter.W+tkinter.E)
             rmspecb = Button(specf,text='Remove')
             rmspecb.grid(row=0,column=2)
             # TODO: connect speccb to changing the specie
             # TODO: connect rmspecb to removing the specie
+            self.create_specie_setting_frames(pop_nm,site_nm,specie_nm,iispec)
             self.create_specie_param_frames(pop_nm,site_nm,specie_nm,iispec)
             specf.grid(row=2+ispec+iispec,column=0,columnspan=5,pady=4,sticky=tkinter.E+tkinter.W)
+
+    def create_specie_setting_frames(self,pop_nm,site_nm,specie_nm,iispec):
+        popd = self.populations[pop_nm]
+        site_def = popd['basis'][site_nm]
+        specie_def = site_def[specie_nm]
+        if not isinstance(specie_def,list):
+            specie_def = [specie_def]
+        specd = specie_def[iispec]
+        specief = self.specie_frames[pop_nm][site_nm][specie_nm][iispec]
+        for istg,stg_nm in enumerate(xrsdkit.form_factor_settings[specie_nm]):
+            stgf = Frame(specief,bd=2,padx=4,pady=4,relief=tkinter.GROOVE) 
+            self.specie_setting_frames[pop_nm][site_nm][specie_nm][iispec][stg_nm] = stgf
+            stgf.grid(row=1+istg,column=0,columnspan=3,sticky=tkinter.E+tkinter.W)
+            stgl = Label(sparf,text='{}:'.format(stg_nm),width=10,anchor='e')
+            stgl.grid(row=0,column=0,sticky=tkinter.E)
+            stge = Entry(stgf,width=16)
+            stg_val = xrsdkit.setting_defaults[stg_nm] 
+            if stg_nm in specd: stg_val = specd[stg_nm] 
+            stge.insert(0,str(stg_val))
+            stge.grid(row=0,column=1,sticky=tkinter.E+tkinter.W)
 
     def create_specie_param_frames(self,pop_nm,site_nm,specie_nm,iispec):
         popd = self.populations[pop_nm]
@@ -499,16 +543,42 @@ class XRSDFitGUI(Operation):
         self.draw_plots()
         self.repack_entry_widgets()
 
-    def update_populations(self,new_pops):
+    def update_all_population_values(self,new_pops):
         # assume the structure and settings of new_pops
         # will be the same as self.populations.
-        for pop_name,popd in new_pops.items():
-            self.update_population(pop_name,popd)
+        for pop_nm,popd in new_pops.items():
+            self.update_population_values(pop_nm,popd)
+        #self.populations = new_pops
             
-    def update_population(self,pop_name,pop_dict):
+    def update_population_values(self,pop_nm,pop_dict):
         for param_nm, param_val in pop_dict['parameters'].items():
-            self.update_param(pop_name,param_nm,param_val) 
-        # TODO: finish.
+            self.update_param_values(pop_nm,param_nm) 
+        for site_nm, site_def in pop_dict['basis'].items():
+            self.update_site_values(pop_nm,site_nm,site_def)
+
+    def update_param_values(self,pop_nm,param_nm,param_val):
+        self.populations[pop_nm]['parameters'][param_nm] = param_val
+        self.param_vars[pop_nm]['parameters'][param_nm].set(param_val)
+
+    def update_site_values(self,pop_nm,site_nm,site_def):
+        for specie_nm, specie_def in site_def.items():
+            self.update_specie_values(pop_nm,site_nm,specie_nm,specie_def)
+        # TODO: if crystalline, update coordinate vars
+
+    def update_specie_values(self,pop_nm,site_nm,specie_nm,specie_def):
+        if not isinstance(specie_def,list):
+            specie_def = [specie_def]
+        for ispec,specd in enumerate(specie_def):
+            for specie_param_nm,specie_param_val in sd.items():
+                self.update_specie_param_values(pop_nm,site_nm,specie_nm,ispec,specie_param_nm,specie_param_val)
+
+    def update_specie_param_values(self,pop_nm,site_nm,specie_nm,ispec,specie_param_nm,specie_param_val):
+        spec_def = self.populations[pop_nm]['basis'][site_nm][specie_nm]
+        if isinstance(spec_def,list):
+            spec_def[ispec][specie_param_nm] = param_val
+        else:
+            spec_def[specie_param_nm] = param_val
+        self.specie_param_vars[pop_nm][site_nm][specie_nm][ispec][specie_param_nm].set(param_val)
 
     def update_structure(self,pop_nm,var_nm,dummy,mode):
         s = self.structure_vars[pop_nm].get() 
@@ -555,7 +625,7 @@ class XRSDFitGUI(Operation):
         #else:
         # TODO: restore the entry widget to the previous value
 
-    def update_setting(self,pop_nm,stg_nm):
+    def update_setting(self,pop_nm,stg_nm,event=None):
         stg_val = self.setting_vars[pop_nm][stg_nm].get()
         # TODO: cast stg_val depending on stg_nm
         # TODO: check if the entry is valid
@@ -566,19 +636,28 @@ class XRSDFitGUI(Operation):
         #else:
         # TODO: restore the entry widget to the previous value
 
+    def update_specie(self,pop_nm,site_nm,specie_nm,iispec):
+        new_specie_nm = self.specie_vars[pop_nm][site_nm][specie_nm][iispec].get()
+        specvar.trace('w',partial(self.update_specie,pop_nm,site_nm,specie_nm,iispec))
+
+
     def fit(self,event):
         ftr = xrsdkit.fitting.xrsd_fitter.XRSDFitter(self.q_I,self.populations,self.src_wl)
         fp = self.inputs['fixed_params']
         pb = self.inputs['param_bounds']
         pc = self.inputs['param_constraints']
-        p_opt,rpt = ftr.fit(fp,pb,pc)
-        # TODO: update the objective readout.
+        logIwtd = bool(self.logI_weighted_var.get())
+        erwtd = bool(self.error_weighted_var.get())
+        p_opt,rpt = ftr.fit(fp,pb,pc,erwtd,logIwtd)
         self.fit_obj_var.set(rpt['final_objective'])
         # TODO: don't change any widgets, but write a function that updates all the vars.
         self.update_populations(p_opt)
 
     def compute_objective(self):
-        return 1234.
+        ftr = xrsdkit.fitting.xrsd_fitter.XRSDFitter(self.q_I,self.populations,self.src_wl)
+        erwtd = bool(self.error_weighted_var.get())
+        logIwtd = bool(self.logI_weighted_var.get())
+        return ftr.evaluate_residual(self.populations,erwtd,logIwtd)
 
     def repack_new_pop_frame(self):
         self.new_pop_frame.pack_forget()
@@ -619,16 +698,20 @@ class XRSDFitGUI(Operation):
     def create_control_frame(self):
         cf = Frame(self.pops_frame,bd=4,pady=10,padx=10,relief=tkinter.RAISED)
         self.control_frame = cf
+        self.fit_obj_var = StringVar(cf)
+        self.error_weighted_var = BooleanVar(cf)
+        self.logI_weighted_var = BooleanVar(cf)
         objl = Label(cf,text='objective:',anchor='e')
         objl.grid(row=0,column=0,rowspan=2,sticky=tkinter.E)
-        self.fit_obj_var = StringVar(cf)
         rese = Entry(cf,width=20,state='readonly',textvariable=self.fit_obj_var)
         rese.grid(row=0,column=1,rowspan=2,sticky=tkinter.W)
         self.fit_obj_var.set(str(self.compute_objective()))
-        ewtcb = Checkbutton(cf,text="error weighted")
+        self.error_weighted_var = BooleanVar(cf)
+        ewtcb = Checkbutton(cf,text="error weighted",variable=self.error_weighted_var)
         ewtcb.select()
         ewtcb.grid(row=0,column=2,sticky=tkinter.W)
-        logwtbox = Checkbutton(cf,text="log(I) weighted")
+        self.logI_weighted_var = BooleanVar(cf)
+        logwtbox = Checkbutton(cf,text="log(I) weighted",variable=self.logI_weighted_var)
         logwtbox.select()
         logwtbox.grid(row=1,column=2,sticky=tkinter.W)
         # TODO: connect these check boxes to variables 
