@@ -499,6 +499,17 @@ class XRSDFitGUI(Operation):
         self.draw_plots()
         self.repack_entry_widgets()
 
+    def update_populations(self,new_pops):
+        # assume the structure and settings of new_pops
+        # will be the same as self.populations.
+        for pop_name,popd in new_pops.items():
+            self.update_population(pop_name,popd)
+            
+    def update_population(self,pop_name,pop_dict):
+        for param_nm, param_val in pop_dict['parameters'].items():
+            self.update_param(pop_name,param_nm,param_val) 
+        # TODO: finish.
+
     def update_structure(self,pop_nm,var_nm,dummy,mode):
         s = self.structure_vars[pop_nm].get() 
         self.populations[pop_nm]['structure'] = s
@@ -556,13 +567,15 @@ class XRSDFitGUI(Operation):
         # TODO: restore the entry widget to the previous value
 
     def fit(self,event):
-        print('fit')
-        # TODO: fit.
         ftr = xrsdkit.fitting.xrsd_fitter.XRSDFitter(self.q_I,self.populations,self.src_wl)
-
+        fp = self.inputs['fixed_params']
+        pb = self.inputs['param_bounds']
+        pc = self.inputs['param_constraints']
+        p_opt,rpt = ftr.fit(fp,pb,pc)
         # TODO: update the objective readout.
+        self.fit_obj_var.set(rpt['final_objective'])
         # TODO: don't change any widgets, but write a function that updates all the vars.
-        self.update_population_vars()
+        self.update_populations(p_opt)
 
     def compute_objective(self):
         return 1234.
