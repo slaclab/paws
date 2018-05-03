@@ -49,6 +49,7 @@ class XRSDFitGUI(Operation):
     def run(self):
         self.q_I = self.inputs['q_I']
         self.populations = self.inputs['populations']
+        print(self.populations)
         self.src_wl = self.inputs['source_wavelength']
         self.pf = self.inputs['fixed_params']
         self.pb = self.inputs['param_bounds']
@@ -223,6 +224,20 @@ class XRSDFitGUI(Operation):
             e = Entry(parent,width=20,textvariable=tkvar)
         return e
 
+    def connected_entry_small(self,parent,tkvar,cbfun):
+        if cbfun:
+            # piggyback on entry validation
+            # to update internal data
+            # associated with the entry widget
+            # NOTE: validatecommand must return a boolean
+            e = Entry(parent,width=8,textvariable=tkvar,validate="focusout",validatecommand=cbfun)
+            #e = Entry(parent,width=20,textvariable=tkvar)
+            # also respond to the return key
+            e.bind('<Return>',cbfun)
+        else:
+            e = Entry(parent,width=8,textvariable=tkvar)
+        return e
+
     def create_setting_frames(self,pop_nm):
         self.setting_frames[pop_nm] = OrderedDict()
         self.setting_vars[pop_nm] = OrderedDict()
@@ -285,21 +300,30 @@ class XRSDFitGUI(Operation):
             psw.grid(row=0,column=3,sticky=tkinter.W)
             pbndl = Label(paramf,text='bounds:',width=10,anchor='e')
             pbndl.grid(row=1,column=0,sticky=tkinter.E)
-            pbnde1 = Entry(paramf,width=8) 
-            pbnde2 = Entry(paramf,width=8)
-            pbnde1.grid(row=1,column=1,sticky=tkinter.W) 
-            pbnde2.grid(row=1,column=2,sticky=tkinter.W) 
+            lbndv = DoubleVar(pf)
+            ubndv = DoubleVar(pf)
             lbnd = xrsdkit.param_bound_defaults[param_nm][0]
-            ubnd = xrsdkit.param_bound_defaults[param_nm][1] 
+            ubnd = xrsdkit.param_bound_defaults[param_nm][1]
             if xrsdkit.contains_param(self.inputs['param_bounds'],pop_nm,param_nm):
                 lbnd = self.inputs['param_bounds'][pop_nm]['parameters'][param_nm][0]
                 ubnd = self.inputs['param_bounds'][pop_nm]['parameters'][param_nm][1]
-            # TODO: the bounds entries need to be connected to DoubleVars.
-            pbnde1.insert(0,str(lbnd))  
-            pbnde2.insert(0,str(ubnd))
+            lbndv.set(lbnd)
+            ubndv.set(ubnd)
+            self.param_lbnd_vars[pop_nm][param_nm]=lbndv
+            self.param_ubnd_vars[pop_nm][param_nm]=ubndv
+            pbnde1 = self.connected_entry_small(paramf,lbndv,partial(self.update_param_l_bound,pop_nm,param_nm))
+            pbnde2 = self.connected_entry_small(paramf,ubndv, partial(self.update_param_u_bound,pop_nm,param_nm))
+            pbnde1.grid(row=1,column=1,sticky=tkinter.W) 
+            pbnde2.grid(row=1,column=2,sticky=tkinter.W) 
+
             pexpl = Label(paramf,text='expression:',width=10,anchor='e')
             pexpl.grid(row=2,column=0,sticky=tkinter.E)
-            pexpe = Entry(paramf,width=16)
+            expr = StringVar(pf)
+            expr.set("")
+            if xrsdkit.contains_param(self.inputs['param_constraints'],pop_nm,param_nm):
+                expr.set(self.inputs['param_constraints'])
+            #pexpe = Entry(paramf,width=16)
+            pexpe = self.connected_entry(paramf,expr,None)
             if xrsdkit.contains_param(self.inputs['param_constraints'],pop_nm,param_nm):
                 pexpe.insert(0,self.inputs['param_constraints'],pop_nm,param_nm)
             # TODO: the constraint Entry needs to be connected to a StringVar 
@@ -638,6 +662,28 @@ class XRSDFitGUI(Operation):
         is_valid = True
         if is_valid:
             self.populations[pop_nm]['parameters'][param_nm] = p
+            self.draw_plots()
+        #else:
+        # TODO: restore the entry widget to the previous value
+
+    def update_param_l_bound(self,pop_nm,param_nm,event=None):
+        p = self.param_lbnd_vars[pop_nm][param_nm].get()
+        # TODO: cast p depending on param_nm
+        # TODO: check if the entry is valid
+        is_valid = True
+        if is_valid:
+            self.inputs['param_bounds'][pop_nm]['parameters'][param_nm][0] = p
+            self.draw_plots()
+        #else:
+        # TODO: restore the entry widget to the previous value
+
+    def update_param_u_bound(self,pop_nm,param_nm,event=None):
+        p = self.param_ubnd_vars[pop_nm][param_nm].get()
+        # TODO: cast p depending on param_nm
+        # TODO: check if the entry is valid
+        is_valid = True
+        if is_valid:
+            self.inputs['param_bounds'][pop_nm]['parameters'][param_nm][1] = p
             self.draw_plots()
         #else:
         # TODO: restore the entry widget to the previous value
