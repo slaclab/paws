@@ -81,8 +81,7 @@ class XRSDFitGUI(Operation):
         self.structure_vars = OrderedDict()
         self.param_vars = OrderedDict()
         self.param_var_vars = OrderedDict()
-        self.param_lbnd_vars = OrderedDict()
-        self.param_ubnd_vars = OrderedDict()
+        self.param_bound_vars = OrderedDict()
         self.setting_vars = OrderedDict()
         self.site_name_vars = OrderedDict()
         self.coordinate_vars = OrderedDict()
@@ -264,8 +263,7 @@ class XRSDFitGUI(Operation):
         self.param_frames[pop_nm] = OrderedDict()
         self.param_vars[pop_nm] = OrderedDict()
         self.param_var_vars[pop_nm] = OrderedDict()
-        self.param_lbnd_vars[pop_nm] = OrderedDict()
-        self.param_ubnd_vars[pop_nm] = OrderedDict()
+        self.param_bound_vars[pop_nm] = OrderedDict()
         pf = self.pop_frames[pop_nm]
         popd = self.populations[pop_nm]
         paramsl = Label(pf,text='------ PARAMETERS ------')
@@ -310,8 +308,7 @@ class XRSDFitGUI(Operation):
             if ubnd is None: ubnd = float('inf')
             lbndv.set(lbnd)
             ubndv.set(ubnd)
-            self.param_lbnd_vars[pop_nm][param_nm]=lbndv
-            self.param_ubnd_vars[pop_nm][param_nm]=ubndv
+            self.param_bound_vars[pop_nm][param_nm]=[lbndv,ubndv]
             pbnde1 = self.connected_entry_small(paramf,lbndv,partial(self.update_param_bound,pop_nm,param_nm,0))
             pbnde2 = self.connected_entry_small(paramf,ubndv, partial(self.update_param_bound,pop_nm,param_nm,1))
             pbnde1.grid(row=1,column=1,sticky=tkinter.W) 
@@ -378,7 +375,7 @@ class XRSDFitGUI(Operation):
             cvarx = DoubleVar(sitef)
             cvary = DoubleVar(sitef)
             cvarz = DoubleVar(sitef)
-            self.coordinate_vars[pop_nm][site_nm] = (cvarx,cvary,cvarz)
+            self.coordinate_vars[pop_nm][site_nm] = [cvarx,cvary,cvarz]
             coordl = Label(sitef,text='coordinates:',width=12,anchor='e')
             coorde1 = Entry(sitef,width=6,variable=cvarx)
             coorde2 = Entry(sitef,width=6,variable=cvary)
@@ -667,20 +664,18 @@ class XRSDFitGUI(Operation):
         #else:
         # TODO: restore the entry widget to the previous value
 
-
     def update_param_bound(self,pop_nm,param_nm,i,event=None):
-        p = self.param_lbnd_vars[pop_nm][param_nm].get()
-        # TODO: cast p depending on param_nm
+        p = self.param_bound_vars[pop_nm][param_nm][i].get()
         # TODO: check if the entry is valid
         is_valid = True
         if is_valid:
-            if not pop_nm in self.inputs['param_bounds']:
-                self.inputs['param_bounds'][pop_nm] = {}
-            if not 'parameters' in self.inputs['param_bounds'][pop_nm]:
-                self.inputs['param_bounds'][pop_nm]['parameters'] = {}
-            if not param_nm in  self.inputs['param_bounds'][pop_nm]['parameters']:
-                self.inputs['param_bounds'][pop_nm]['parameters'][param_nm] = [float('inf'), float('inf')]
-            self.inputs['param_bounds'][pop_nm]['parameters'][param_nm][i] = p
+            new_bounds = xrsdkit.param_bound_defaults[param_nm]
+            if xrsdkit.contains_param(self.inputs['param_bounds'],pop_nm,param_nm):
+                new_bounds = self.inputs['param_bounds'][pop_nm]['parameters'][param_nm]
+            new_bounds[i] = p
+            xrsdkit.update_param(self.inputs['param_bounds'],pop_nm,param_nm,new_bounds)
+            # TODO: check if the new bounds have excluded the parameter value,
+            # and update the parameter value if necessary.
 
     def update_setting(self,pop_nm,stg_nm,event=None):
         stg_val = self.setting_vars[pop_nm][stg_nm].get()
