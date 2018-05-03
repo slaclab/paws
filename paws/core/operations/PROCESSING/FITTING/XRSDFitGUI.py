@@ -80,6 +80,9 @@ class XRSDFitGUI(Operation):
         self.pop_name_vars = OrderedDict()
         self.structure_vars = OrderedDict()
         self.param_vars = OrderedDict()
+        self.param_var_vars = OrderedDict()
+        self.param_lbnd_vars = OrderedDict()
+        self.param_ubnd_vars = OrderedDict()
         self.setting_vars = OrderedDict()
         self.site_name_vars = OrderedDict()
         self.coordinate_vars = OrderedDict()
@@ -246,6 +249,9 @@ class XRSDFitGUI(Operation):
     def create_param_frames(self,pop_nm):
         self.param_frames[pop_nm] = OrderedDict()
         self.param_vars[pop_nm] = OrderedDict()
+        self.param_var_vars[pop_nm] = OrderedDict()
+        self.param_lbnd_vars[pop_nm] = OrderedDict()
+        self.param_ubnd_vars[pop_nm] = OrderedDict()
         pf = self.pop_frames[pop_nm]
         popd = self.populations[pop_nm]
         paramsl = Label(pf,text='------ PARAMETERS ------')
@@ -266,16 +272,16 @@ class XRSDFitGUI(Operation):
             pe = self.connected_entry(paramf,paramv,partial(self.update_param,pop_nm,param_nm))
             pe.grid(row=0,column=1,columnspan=2,sticky=tkinter.W)
 
-            fixed_par = tkinter.BooleanVar(paramf)
-
+            varparamvar = BooleanVar(pf) 
+            psw = Checkbutton(paramf,text="variable",variable=varparamvar)
             varparam = not xrsdkit.fixed_param_defaults[param_nm]
             if xrsdkit.contains_param(self.inputs['fixed_params'],pop_nm,param_nm):
-                varparam = self.inputs['fixed_params'][pop_nm]['parameters'][param_nm]
-            fixed_par.set(varparam)
-            psw = Checkbutton(paramf,text="variable", variable= fixed_par)
+                varparam = not self.inputs['fixed_params'][pop_nm]['parameters'][param_nm]
             # TODO: these CheckButtons need to be connected to BooleanVars.
+            #print('{}: {}'.format(param_nm,varparam))
+            varparamvar.set(varparam) 
+            self.param_var_vars[pop_nm][param_nm] = varparamvar
 
-            if varparam: psw.select()
             psw.grid(row=0,column=3,sticky=tkinter.W)
             pbndl = Label(paramf,text='bounds:',width=10,anchor='e')
             pbndl.grid(row=1,column=0,sticky=tkinter.E)
