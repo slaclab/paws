@@ -49,7 +49,6 @@ class XRSDFitGUI(Operation):
     def run(self):
         self.q_I = self.inputs['q_I']
         self.populations = self.inputs['populations']
-        print(self.populations)
         self.src_wl = self.inputs['source_wavelength']
         self.pf = self.inputs['fixed_params']
         self.pb = self.inputs['param_bounds']
@@ -307,12 +306,14 @@ class XRSDFitGUI(Operation):
             if xrsdkit.contains_param(self.inputs['param_bounds'],pop_nm,param_nm):
                 lbnd = self.inputs['param_bounds'][pop_nm]['parameters'][param_nm][0]
                 ubnd = self.inputs['param_bounds'][pop_nm]['parameters'][param_nm][1]
+            if lbnd is None: lbnd = float('inf')
+            if ubnd is None: ubnd = float('inf')
             lbndv.set(lbnd)
             ubndv.set(ubnd)
             self.param_lbnd_vars[pop_nm][param_nm]=lbndv
             self.param_ubnd_vars[pop_nm][param_nm]=ubndv
-            pbnde1 = self.connected_entry_small(paramf,lbndv,partial(self.update_param_l_bound,pop_nm,param_nm))
-            pbnde2 = self.connected_entry_small(paramf,ubndv, partial(self.update_param_u_bound,pop_nm,param_nm))
+            pbnde1 = self.connected_entry_small(paramf,lbndv,partial(self.update_param_bound,pop_nm,param_nm,0))
+            pbnde2 = self.connected_entry_small(paramf,ubndv, partial(self.update_param_bound,pop_nm,param_nm,1))
             pbnde1.grid(row=1,column=1,sticky=tkinter.W) 
             pbnde2.grid(row=1,column=2,sticky=tkinter.W) 
 
@@ -666,27 +667,20 @@ class XRSDFitGUI(Operation):
         #else:
         # TODO: restore the entry widget to the previous value
 
-    def update_param_l_bound(self,pop_nm,param_nm,event=None):
+
+    def update_param_bound(self,pop_nm,param_nm,i,event=None):
         p = self.param_lbnd_vars[pop_nm][param_nm].get()
         # TODO: cast p depending on param_nm
         # TODO: check if the entry is valid
         is_valid = True
         if is_valid:
-            self.inputs['param_bounds'][pop_nm]['parameters'][param_nm][0] = p
-            self.draw_plots()
-        #else:
-        # TODO: restore the entry widget to the previous value
-
-    def update_param_u_bound(self,pop_nm,param_nm,event=None):
-        p = self.param_ubnd_vars[pop_nm][param_nm].get()
-        # TODO: cast p depending on param_nm
-        # TODO: check if the entry is valid
-        is_valid = True
-        if is_valid:
-            self.inputs['param_bounds'][pop_nm]['parameters'][param_nm][1] = p
-            self.draw_plots()
-        #else:
-        # TODO: restore the entry widget to the previous value
+            if not pop_nm in self.inputs['param_bounds']:
+                self.inputs['param_bounds'][pop_nm] = {}
+            if not 'parameters' in self.inputs['param_bounds'][pop_nm]:
+                self.inputs['param_bounds'][pop_nm]['parameters'] = {}
+            if not param_nm in  self.inputs['param_bounds'][pop_nm]['parameters']:
+                self.inputs['param_bounds'][pop_nm]['parameters'][param_nm] = [float('inf'), float('inf')]
+            self.inputs['param_bounds'][pop_nm]['parameters'][param_nm][i] = p
 
     def update_setting(self,pop_nm,stg_nm,event=None):
         stg_val = self.setting_vars[pop_nm][stg_nm].get()
