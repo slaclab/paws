@@ -293,7 +293,7 @@ class XRSDFitGUI(Operation):
             ubnd = xrsdkit.param_bound_defaults[param_nm][1] 
             if xrsdkit.contains_param(self.inputs['param_bounds'],pop_nm,param_nm):
                 lbnd = self.inputs['param_bounds'][pop_nm]['parameters'][param_nm][0]
-                lbnd = self.inputs['param_bounds'][pop_nm]['parameters'][param_nm][1]
+                ubnd = self.inputs['param_bounds'][pop_nm]['parameters'][param_nm][1]
             # TODO: the bounds entries need to be connected to DoubleVars.
             pbnde1.insert(0,str(lbnd))  
             pbnde2.insert(0,str(ubnd))
