@@ -81,8 +81,7 @@ class XRSDFitGUI(Operation):
         self.structure_vars = OrderedDict()
         self.param_vars = OrderedDict()
         self.param_var_vars = OrderedDict()
-        self.param_lbnd_vars = OrderedDict()
-        self.param_ubnd_vars = OrderedDict()
+        self.param_bound_vars = OrderedDict()
         self.setting_vars = OrderedDict()
         self.site_name_vars = OrderedDict()
         self.coordinate_vars = OrderedDict()
@@ -223,6 +222,20 @@ class XRSDFitGUI(Operation):
             e = Entry(parent,width=20,textvariable=tkvar)
         return e
 
+    def connected_entry_small(self,parent,tkvar,cbfun):
+        if cbfun:
+            # piggyback on entry validation
+            # to update internal data
+            # associated with the entry widget
+            # NOTE: validatecommand must return a boolean
+            e = Entry(parent,width=8,textvariable=tkvar,validate="focusout",validatecommand=cbfun)
+            #e = Entry(parent,width=20,textvariable=tkvar)
+            # also respond to the return key
+            e.bind('<Return>',cbfun)
+        else:
+            e = Entry(parent,width=8,textvariable=tkvar)
+        return e
+
     def create_setting_frames(self,pop_nm):
         self.setting_frames[pop_nm] = OrderedDict()
         self.setting_vars[pop_nm] = OrderedDict()
@@ -256,8 +269,7 @@ class XRSDFitGUI(Operation):
         self.param_frames[pop_nm] = OrderedDict()
         self.param_vars[pop_nm] = OrderedDict()
         self.param_var_vars[pop_nm] = OrderedDict()
-        self.param_lbnd_vars[pop_nm] = OrderedDict()
-        self.param_ubnd_vars[pop_nm] = OrderedDict()
+        self.param_bound_vars[pop_nm] = OrderedDict()
         pf = self.pop_frames[pop_nm]
         popd = self.populations[pop_nm]
         paramsl = Label(pf,text='------ PARAMETERS ------')
@@ -292,21 +304,31 @@ class XRSDFitGUI(Operation):
             psw.grid(row=0,column=3,sticky=tkinter.W)
             pbndl = Label(paramf,text='bounds:',width=10,anchor='e')
             pbndl.grid(row=1,column=0,sticky=tkinter.E)
-            pbnde1 = Entry(paramf,width=8) 
-            pbnde2 = Entry(paramf,width=8)
-            pbnde1.grid(row=1,column=1,sticky=tkinter.W) 
-            pbnde2.grid(row=1,column=2,sticky=tkinter.W) 
+            lbndv = DoubleVar(pf)
+            ubndv = DoubleVar(pf)
             lbnd = xrsdkit.param_bound_defaults[param_nm][0]
-            ubnd = xrsdkit.param_bound_defaults[param_nm][1] 
+            ubnd = xrsdkit.param_bound_defaults[param_nm][1]
             if xrsdkit.contains_param(self.inputs['param_bounds'],pop_nm,param_nm):
                 lbnd = self.inputs['param_bounds'][pop_nm]['parameters'][param_nm][0]
                 ubnd = self.inputs['param_bounds'][pop_nm]['parameters'][param_nm][1]
-            # TODO: the bounds entries need to be connected to DoubleVars.
-            pbnde1.insert(0,str(lbnd))  
-            pbnde2.insert(0,str(ubnd))
+            if lbnd is None: lbnd = float('inf')
+            if ubnd is None: ubnd = float('inf')
+            lbndv.set(lbnd)
+            ubndv.set(ubnd)
+            self.param_bound_vars[pop_nm][param_nm]=[lbndv,ubndv]
+            pbnde1 = self.connected_entry_small(paramf,lbndv,partial(self.update_param_bound,pop_nm,param_nm,0))
+            pbnde2 = self.connected_entry_small(paramf,ubndv, partial(self.update_param_bound,pop_nm,param_nm,1))
+            pbnde1.grid(row=1,column=1,sticky=tkinter.W) 
+            pbnde2.grid(row=1,column=2,sticky=tkinter.W) 
+
             pexpl = Label(paramf,text='expression:',width=10,anchor='e')
             pexpl.grid(row=2,column=0,sticky=tkinter.E)
-            pexpe = Entry(paramf,width=16)
+            expr = StringVar(pf)
+            expr.set("")
+            if xrsdkit.contains_param(self.inputs['param_constraints'],pop_nm,param_nm):
+                expr.set(self.inputs['param_constraints'])
+            #pexpe = Entry(paramf,width=16)
+            pexpe = self.connected_entry(paramf,expr,None)
             if xrsdkit.contains_param(self.inputs['param_constraints'],pop_nm,param_nm):
                 pexpe.insert(0,self.inputs['param_constraints'],pop_nm,param_nm)
             # TODO: the constraint Entry needs to be connected to a StringVar 
@@ -360,7 +382,7 @@ class XRSDFitGUI(Operation):
             cvarx = DoubleVar(sitef)
             cvary = DoubleVar(sitef)
             cvarz = DoubleVar(sitef)
-            self.coordinate_vars[pop_nm][site_nm] = (cvarx,cvary,cvarz)
+            self.coordinate_vars[pop_nm][site_nm] = [cvarx,cvary,cvarz]
             coordl = Label(sitef,text='coordinates:',width=12,anchor='e')
             coorde1 = self.connected_entry(sitef,cvarx,partial(self.update_coord,pop_nm,site_nm,0),6)
             coorde2 = self.connected_entry(sitef,cvary,partial(self.update_coord,pop_nm,site_nm,0),6)
@@ -672,6 +694,19 @@ class XRSDFitGUI(Operation):
                 self.draw_plots()
         #else:
         # TODO: restore the entry widget to the previous value
+
+    def update_param_bound(self,pop_nm,param_nm,i,event=None):
+        p = self.param_bound_vars[pop_nm][param_nm][i].get()
+        # TODO: check if the entry is valid
+        is_valid = True
+        if is_valid:
+            new_bounds = xrsdkit.param_bound_defaults[param_nm]
+            if xrsdkit.contains_param(self.inputs['param_bounds'],pop_nm,param_nm):
+                new_bounds = self.inputs['param_bounds'][pop_nm]['parameters'][param_nm]
+            new_bounds[i] = p
+            xrsdkit.update_param(self.inputs['param_bounds'],pop_nm,param_nm,new_bounds)
+            # TODO: check if the new bounds have excluded the parameter value,
+            # and update the parameter value if necessary.
 
     def update_coord(self,pop_nm,site_nm,coord_idx,draw_plots=False,event=None):
         new_coord_val = self.coordinate_vars[pop_nm][site_nm][coord_idx].get()
