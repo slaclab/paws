@@ -82,6 +82,7 @@ class XRSDFitGUI(Operation):
         self.param_vars = OrderedDict()
         self.param_var_vars = OrderedDict()
         self.param_bound_vars = OrderedDict()
+        self.param_constraints_vars = OrderedDict()
         self.setting_vars = OrderedDict()
         self.site_name_vars = OrderedDict()
         self.coordinate_vars = OrderedDict()
@@ -279,6 +280,7 @@ class XRSDFitGUI(Operation):
         self.param_vars[pop_nm] = OrderedDict()
         self.param_var_vars[pop_nm] = OrderedDict()
         self.param_bound_vars[pop_nm] = OrderedDict()
+        self.param_constraints_vars[pop_nm] = OrderedDict()
         pf = self.pop_frames[pop_nm]
         popd = self.populations[pop_nm]
         paramsl = Label(pf,text='------ PARAMETERS ------')
@@ -304,7 +306,6 @@ class XRSDFitGUI(Operation):
             varparam = not xrsdkit.fixed_param_defaults[param_nm]
             if xrsdkit.contains_param(self.inputs['fixed_params'],pop_nm,param_nm):
                 varparam = not self.inputs['fixed_params'][pop_nm]['parameters'][param_nm]
-            # TODO: these CheckButtons need to be connected to BooleanVars.
             #print('{}: {}'.format(param_nm,varparam))
             varparamvar.set(varparam)
             self.param_var_vars[pop_nm][param_nm] = varparamvar
@@ -337,14 +338,10 @@ class XRSDFitGUI(Operation):
             expr = StringVar(pf)
             expr.set("")
             if xrsdkit.contains_param(self.inputs['param_constraints'],pop_nm,param_nm):
-                expr.set(self.inputs['param_constraints'])
-            #pexpe = Entry(paramf,width=16)
-            pexpe = self.connected_entry(paramf,expr,None)
-            if xrsdkit.contains_param(self.inputs['param_constraints'],pop_nm,param_nm):
-                pexpe.insert(0,self.inputs['param_constraints'],pop_nm,param_nm)
-            # TODO: the constraint Entry needs to be connected to a StringVar 
-            pexpe.grid(row=2,column=1,columnspan=3,sticky=tkinter.E+tkinter.W) 
-            # TODO: connect pexpe to setting param_constraints
+                expr.set(self.inputs['param_constraints'][pop_nm]['parameters'][param_nm])
+            self.param_constraints_vars[pop_nm][param_nm] = expr
+            pexpe = self.connected_entry(paramf,expr,partial(self.update_param_constraints,pop_nm,param_nm))
+            pexpe.grid(row=2,column=1,columnspan=3,sticky=tkinter.E+tkinter.W)
             paramf.grid(row=4+nstgs+ip,column=0,columnspan=4,sticky=tkinter.E+tkinter.W)
 
     def create_site_frames(self,pop_nm):
@@ -757,6 +754,13 @@ class XRSDFitGUI(Operation):
         p=not p
         xrsdkit.update_param(self.inputs['fixed_params'],pop_nm,param_nm,p)
         #print('after: ', self.inputs['fixed_params'][pop_nm]['parameters'][param_nm])
+
+    def update_param_constraints(self,pop_nm,param_nm,event=None):# it works only when "Enter" is pressed
+        p = self.param_constraints_vars[pop_nm][param_nm].get()
+        # TODO: check if the entry is valid
+        is_valid = True
+        if is_valid:
+            xrsdkit.update_param(self.inputs['param_constraints'],pop_nm,param_nm,p)
 
     def update_coord(self,pop_nm,site_nm,coord_idx,draw_plots=False,event=None):
         new_coord_val = self.coordinate_vars[pop_nm][site_nm][coord_idx].get()
