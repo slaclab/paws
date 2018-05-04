@@ -309,9 +309,7 @@ class XRSDFitGUI(Operation):
             #print('{}: {}'.format(param_nm,varparam))
             varparamvar.set(varparam)
             self.param_var_vars[pop_nm][param_nm] = varparamvar
-            #psw = Checkbutton(paramf,text="variable",variable=varparamvar)
             psw = self.connected_checkbutton(paramf,varparamvar,partial(self.update_fixed_param,pop_nm,param_nm))
-            #self.param_var_vars[pop_nm][param_nm] = varparamvar
 
             psw.grid(row=0,column=3,sticky=tkinter.W)
             pbndl = Label(paramf,text='bounds:',width=10,anchor='e')
