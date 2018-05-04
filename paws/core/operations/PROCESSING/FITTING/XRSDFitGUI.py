@@ -236,6 +236,15 @@ class XRSDFitGUI(Operation):
             e = Entry(parent,width=8,textvariable=tkvar)
         return e
 
+    def connected_checkbutton(self,parent,varparamvar,cbfun):
+        if cbfun:
+            # to update internal data
+            # associated with the widget
+            e = Checkbutton(parent,text="variable",variable=varparamvar,command=cbfun)
+        else:
+            e = Checkbutton(parent,text="variable",variable=varparamvar)
+        return e
+
     def create_setting_frames(self,pop_nm):
         self.setting_frames[pop_nm] = OrderedDict()
         self.setting_vars[pop_nm] = OrderedDict()
@@ -291,15 +300,17 @@ class XRSDFitGUI(Operation):
             pe = self.connected_entry(paramf,paramv,partial(self.update_param,pop_nm,param_nm,True))
             pe.grid(row=0,column=1,columnspan=2,sticky=tkinter.W)
 
-            varparamvar = BooleanVar(pf) 
+            varparamvar = BooleanVar(pf)
             varparam = not xrsdkit.fixed_param_defaults[param_nm]
             if xrsdkit.contains_param(self.inputs['fixed_params'],pop_nm,param_nm):
                 varparam = not self.inputs['fixed_params'][pop_nm]['parameters'][param_nm]
             # TODO: these CheckButtons need to be connected to BooleanVars.
             #print('{}: {}'.format(param_nm,varparam))
-            varparamvar.set(varparam) 
-            psw = Checkbutton(paramf,text="variable",variable=varparamvar)
+            varparamvar.set(varparam)
             self.param_var_vars[pop_nm][param_nm] = varparamvar
+            #psw = Checkbutton(paramf,text="variable",variable=varparamvar)
+            psw = self.connected_checkbutton(paramf,varparamvar,partial(self.update_fixed_param,pop_nm,param_nm))
+            #self.param_var_vars[pop_nm][param_nm] = varparamvar
 
             psw.grid(row=0,column=3,sticky=tkinter.W)
             pbndl = Label(paramf,text='bounds:',width=10,anchor='e')
@@ -333,8 +344,6 @@ class XRSDFitGUI(Operation):
                 pexpe.insert(0,self.inputs['param_constraints'],pop_nm,param_nm)
             # TODO: the constraint Entry needs to be connected to a StringVar 
             pexpe.grid(row=2,column=1,columnspan=3,sticky=tkinter.E+tkinter.W) 
-            # TODO: connect psw to changing fixed_params
-            # TODO: connect pbnde to changing param_bounds
             # TODO: connect pexpe to setting param_constraints
             paramf.grid(row=4+nstgs+ip,column=0,columnspan=4,sticky=tkinter.E+tkinter.W)
 
@@ -729,7 +738,7 @@ class XRSDFitGUI(Operation):
         #else:
         # TODO: restore the entry widget to the previous value
 
-    def update_param_bound(self,pop_nm,param_nm,i,event=None):
+    def update_param_bound(self,pop_nm,param_nm,i,event=None):# it works only when "Enter" is pressed
         p = self.param_bound_vars[pop_nm][param_nm][i].get()
         # TODO: check if the entry is valid
         is_valid = True
@@ -742,6 +751,12 @@ class XRSDFitGUI(Operation):
             xrsdkit.update_param(self.inputs['param_bounds'],pop_nm,param_nm,new_bounds)
             # TODO: check if the new bounds have excluded the parameter value,
             # and update the parameter value if necessary.
+
+    def update_fixed_param(self,pop_nm,param_nm,event=None):
+        p=self.param_var_vars[pop_nm][param_nm].get()
+        p=not p
+        xrsdkit.update_param(self.inputs['fixed_params'],pop_nm,param_nm,p)
+        #print('after: ', self.inputs['fixed_params'][pop_nm]['parameters'][param_nm])
 
     def update_coord(self,pop_nm,site_nm,coord_idx,draw_plots=False,event=None):
         new_coord_val = self.coordinate_vars[pop_nm][site_nm][coord_idx].get()
