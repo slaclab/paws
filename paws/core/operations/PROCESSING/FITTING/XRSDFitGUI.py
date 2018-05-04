@@ -737,7 +737,8 @@ class XRSDFitGUI(Operation):
             new_bounds = xrsdkit.param_bound_defaults[param_nm]
             if xrsdkit.contains_param(self.inputs['param_bounds'],pop_nm,param_nm):
                 new_bounds = self.inputs['param_bounds'][pop_nm]['parameters'][param_nm]
-            new_bounds[i] = p
+            if i==0: new_bounds=(p, new_bounds[1]) # new_bounds is a tuple and it is immutable
+            else: new_bounds=(new_bounds[0], p)
             xrsdkit.update_param(self.inputs['param_bounds'],pop_nm,param_nm,new_bounds)
             # TODO: check if the new bounds have excluded the parameter value,
             # and update the parameter value if necessary.
