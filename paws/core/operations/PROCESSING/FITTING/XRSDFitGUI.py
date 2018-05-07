@@ -209,7 +209,7 @@ class XRSDFitGUI(Operation):
         self.create_site_frames(pop_nm)
         pf.pack(side=tkinter.TOP,pady=2,padx=2)
     
-    def connected_entry(self,parent,tkvar,cbfun,entry_width=20):
+    def connected_entry(self,parent,tkvar,cbfun=None,entry_width=20):
         if cbfun:
             # piggyback on entry validation
             # to update internal data
@@ -221,20 +221,6 @@ class XRSDFitGUI(Operation):
             e.bind('<Return>',cbfun)
         else:
             e = Entry(parent,width=20,textvariable=tkvar)
-        return e
-
-    def connected_entry_small(self,parent,tkvar,cbfun):
-        if cbfun:
-            # piggyback on entry validation
-            # to update internal data
-            # associated with the entry widget
-            # NOTE: validatecommand must return a boolean
-            e = Entry(parent,width=8,textvariable=tkvar,validate="focusout",validatecommand=cbfun)
-            #e = Entry(parent,width=20,textvariable=tkvar)
-            # also respond to the return key
-            e.bind('<Return>',cbfun)
-        else:
-            e = Entry(parent,width=8,textvariable=tkvar)
         return e
 
     def connected_checkbutton(self,parent,varparamvar,cbfun):
@@ -326,8 +312,8 @@ class XRSDFitGUI(Operation):
             lbndv.set(lbnd)
             ubndv.set(ubnd)
             self.param_bound_vars[pop_nm][param_nm]=[lbndv,ubndv]
-            pbnde1 = self.connected_entry_small(paramf,lbndv,partial(self.update_param_bound,pop_nm,param_nm,0))
-            pbnde2 = self.connected_entry_small(paramf,ubndv, partial(self.update_param_bound,pop_nm,param_nm,1))
+            pbnde1 = self.connected_entry(paramf,lbndv,partial(self.update_param_bound,pop_nm,param_nm,0),8)
+            pbnde2 = self.connected_entry(paramf,ubndv,partial(self.update_param_bound,pop_nm,param_nm,1),8)
             pbnde1.grid(row=1,column=1,sticky=tkinter.W) 
             pbnde2.grid(row=1,column=2,sticky=tkinter.W) 
 
