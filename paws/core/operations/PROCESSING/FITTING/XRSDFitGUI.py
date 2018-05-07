@@ -77,14 +77,12 @@ class XRSDFitGUI(Operation):
         self.control_frame = None
 
         # tkinter vars for entry and display
-        self.pop_name_vars = OrderedDict()
         self.structure_vars = OrderedDict()
         self.param_vars = OrderedDict()
         self.param_var_vars = OrderedDict()
         self.param_bound_vars = OrderedDict()
-        self.param_constraints_vars = OrderedDict()
+        self.param_constraint_vars = OrderedDict()
         self.setting_vars = OrderedDict()
-        self.site_name_vars = OrderedDict()
         self.coordinate_vars = OrderedDict()
         self.specie_vars = OrderedDict()
         self.specie_param_vars = OrderedDict()
@@ -108,6 +106,19 @@ class XRSDFitGUI(Operation):
         # after tk loop exits, finish Operation
         #self.finish()
 
+    def get_tk_object_dicts(self):
+        all_dicts = [self.pop_frames, \
+            self.structure_vars, self.coordinate_vars, \
+            self.param_frames, self.param_vars, \
+            self.param_var_vars, self.param_bound_vars, self.param_constraint_vars, \
+            self.setting_frames, self.setting_vars, \
+            self.site_frames, \
+            self.specie_frames, self.specie_vars, \
+            self.specie_param_frames, self.specie_param_vars, \
+            self.specie_setting_frames, self.specie_setting_vars, \
+            self.new_site_frames, self.new_site_vars, \
+            self.new_specie_frames, self.new_specie_vars]
+        return all_dicts
 
     def build_plot_widgets(self):
         self.plot_frame = Frame(self.fit_gui,bd=4,relief=tkinter.SUNKEN)#, background="green")
@@ -154,7 +165,6 @@ class XRSDFitGUI(Operation):
         self.outputs['report'] = self.fit_report
         self.outputs['q_I_opt'] = self.q_I_opt
         self.outputs['success_flag'] = self.vars['var_good_fit'].get()
-        #print('success flag at finish: ', self.outputs['success_flag'])
         self.fit_gui.destroy()
 
     def draw_plots(self):
@@ -186,11 +196,8 @@ class XRSDFitGUI(Operation):
 
         popl = Label(pf,text='population name:',anchor='e')
         popl.grid(row=0,column=0,sticky=tkinter.E)
-        popvar = StringVar(pf)
-        self.pop_name_vars[pop_nm] = popvar
-        pope = self.connected_entry(pf,popvar,partial(self.rename_population,pop_nm))
-        popvar.set(pop_nm)
-        pope.grid(row=0,column=1,sticky=tkinter.W)
+        popnml = Label(pf,text=pop_nm,anchor='w')
+        popnml.grid(row=0,column=1,sticky=tkinter.W)
         rmb = Button(pf,text='Remove',command=partial(self.remove_population,pop_nm))
         rmb.grid(row=0,column=2)
 
@@ -266,14 +273,13 @@ class XRSDFitGUI(Operation):
         self.param_vars[pop_nm] = OrderedDict()
         self.param_var_vars[pop_nm] = OrderedDict()
         self.param_bound_vars[pop_nm] = OrderedDict()
-        self.param_constraints_vars[pop_nm] = OrderedDict()
+        self.param_constraint_vars[pop_nm] = OrderedDict()
         pf = self.pop_frames[pop_nm]
         popd = self.populations[pop_nm]
         paramsl = Label(pf,text='------ PARAMETERS ------')
         nstgs = len(xrsdkit.structure_settings[popd['structure']])
         paramsl.grid(row=3+nstgs,column=0,columnspan=3)
         for ip,param_nm in enumerate(xrsdkit.structure_params[popd['structure']]):
-            print('create param frame for {}, {}'.format(pop_nm,param_nm))
             paramf = Frame(pf,bd=2,pady=4,padx=10,relief=tkinter.GROOVE) 
             paramv = DoubleVar(pf) 
             p = xrsdkit.param_defaults[param_nm]
@@ -292,7 +298,6 @@ class XRSDFitGUI(Operation):
             varparam = not xrsdkit.fixed_param_defaults[param_nm]
             if xrsdkit.contains_param(self.inputs['fixed_params'],pop_nm,param_nm):
                 varparam = not self.inputs['fixed_params'][pop_nm]['parameters'][param_nm]
-            #print('{}: {}'.format(param_nm,varparam))
             varparamvar.set(varparam)
             self.param_var_vars[pop_nm][param_nm] = varparamvar
             psw = self.connected_checkbutton(paramf,varparamvar,partial(self.update_fixed_param,pop_nm,param_nm))
@@ -323,14 +328,13 @@ class XRSDFitGUI(Operation):
             expr.set("")
             if xrsdkit.contains_param(self.inputs['param_constraints'],pop_nm,param_nm):
                 expr.set(self.inputs['param_constraints'][pop_nm]['parameters'][param_nm])
-            self.param_constraints_vars[pop_nm][param_nm] = expr
+            self.param_constraint_vars[pop_nm][param_nm] = expr
             pexpe = self.connected_entry(paramf,expr,partial(self.update_param_constraints,pop_nm,param_nm))
             pexpe.grid(row=2,column=1,columnspan=3,sticky=tkinter.E+tkinter.W)
             paramf.grid(row=4+nstgs+ip,column=0,columnspan=4,sticky=tkinter.E+tkinter.W)
 
     def create_site_frames(self,pop_nm):
         self.site_frames[pop_nm] = OrderedDict()
-        self.site_name_vars[pop_nm] = OrderedDict()
         self.coordinate_vars[pop_nm] = OrderedDict()
         self.specie_frames[pop_nm] = OrderedDict()
         self.specie_vars[pop_nm] = OrderedDict()
@@ -357,11 +361,10 @@ class XRSDFitGUI(Operation):
         sitef = Frame(pf,bd=2,pady=4,padx=10,relief=tkinter.GROOVE) 
         self.site_frames[pop_nm][site_nm] = sitef
 
-        stl = Label(sitef,text='site name:',width=14,anchor='e')
+        stl = Label(sitef,text='site name:',anchor='e')
         stl.grid(row=0,column=0,sticky=tkinter.E)
-        ste = Entry(sitef,width=20)
-        ste.insert(0,site_nm)
-        ste.grid(row=0,column=1,columnspan=3,sticky=tkinter.W+tkinter.E)
+        stnml = Label(sitef,text=site_nm,anchor='w')
+        stnml.grid(row=0,column=1,columnspan=3,sticky=tkinter.W+tkinter.E)
         rmb = Button(sitef,text='Remove')
         rmb.grid(row=0,column=4)
         # TODO: connect the entry to renaming the site 
@@ -391,8 +394,9 @@ class XRSDFitGUI(Operation):
             #coorde1.insert(0,str(c[0]))
             #coorde2.insert(0,str(c[1]))
             #coorde3.insert(0,str(c[2]))
-            # TODO: connect the entries to setting the coordinates
-            # TODO: controls for varying or constraining coords
+            # TODO: controls for varying,bounding,constraining coords
+        else:
+            self.coordinate_vars[pop_nm][site_nm] = [None,None,None]
 
         self.create_specie_frames(pop_nm,site_nm)
         sitef.grid(row=5+npars+nstgs+ist,column=0,columnspan=4,sticky=tkinter.E+tkinter.W)
@@ -493,12 +497,6 @@ class XRSDFitGUI(Operation):
             elif xrsdkit.setting_datatypes[stg_nm] is float:
                 stgv = DoubleVar(stgf)
 
-            #print(pop_nm)
-            #print(site_nm)
-            #print(specie_nm)
-            #print(iispec)
-            #print(stg_nm)
-            #import pdb; pdb.set_trace()
             self.specie_setting_frames[pop_nm][site_nm][specie_nm][iispec][stg_nm] = stgf
             self.specie_setting_vars[pop_nm][site_nm][specie_nm][iispec][stg_nm] = stgv 
             stgf.grid(row=1+istg,column=0,columnspan=3,sticky=tkinter.E+tkinter.W)
@@ -560,31 +558,6 @@ class XRSDFitGUI(Operation):
             # TODO: connect sparsw to changing fixed_params
             # TODO: connect sparbnde to changing param_bounds
             # TODO: connect sparexpe to setting param_constraints
-
-    def hi(self):
-        print('test-test')
-
-    def rename_population(self,pop_nm,event=None):
-        new_nm = self.pop_name_vars[pop_nm].get()
-        is_valid = True
-        # TODO: check that pop_nm is valid
-        if is_valid:
-            if not new_nm == pop_nm:
-                # TODO: make sure all of the frames and vars end up being renamed
-                self.populations[new_nm] = self.populations.pop(pop_nm)
-                self.pop_frames[new_nm] = self.pop_frames.pop(pop_nm)
-                self.param_frames[new_nm] = self.param_frames.pop(pop_nm) 
-                self.setting_frames[new_nm] = self.setting_frames.pop(pop_nm)
-                self.site_frames[new_nm] = self.site_frames.pop(pop_nm)
-                self.specie_frames[new_nm] = self.specie_frames.pop(pop_nm) 
-                self.specie_setting_frames[new_nm] = self.specie_setting_frames.pop(pop_nm)
-                self.specie_param_frames[new_nm] = self.specie_param_frames.pop(pop_nm)
-                #self.destroy_pop_frame(pop_nm)
-                #self.create_pop_frame(new_nm)
-                #self.repack_entry_widgets()
-        # else:
-        # TODO: return the entry to its previous value
-        return is_valid
 
     def new_population(self,event=None):
         new_nm = self.new_pop_var.get()
@@ -660,11 +633,11 @@ class XRSDFitGUI(Operation):
             new_basis = self.populations[pop_nm]['basis']
             for site_nm, site_def in new_basis.items():
                 if s in xrsdkit.crystalline_structure_names:
+                    if not 'coordinates' in site_def:
+                        site_def['coordinates'] = [0.,0.,0.]
                     for specnm in xrsdkit.noncrystalline_ff_names:
                         if specnm in site_def:
                             site_def.pop(specnm)
-                    if not 'coordinates' in site_def:
-                        site_def['coordinates'] = [0.,0.,0.]
                 else:
                     if 'coordinates' in site_def:
                         site_def.pop('coordinates')
@@ -712,7 +685,6 @@ class XRSDFitGUI(Operation):
             #self.create_specie_param_frames(pop_nm,site_nm,snm,specie_idx)
 
     def update_param(self,pop_nm,param_nm,draw_plots=False,event=None):
-        print('update_param on {}, {}'.format(pop_nm,param_nm))
         p = self.param_vars[pop_nm][param_nm].get()
         if not p == self.populations[pop_nm]['parameters'][param_nm]:
             # TODO: check if the entry is valid
@@ -753,10 +725,9 @@ class XRSDFitGUI(Operation):
         p=self.param_var_vars[pop_nm][param_nm].get()
         p=not p
         xrsdkit.update_param(self.inputs['fixed_params'],pop_nm,param_nm,p)
-        #print('after: ', self.inputs['fixed_params'][pop_nm]['parameters'][param_nm])
 
     def update_param_constraints(self,pop_nm,param_nm,event=None):# it works only when "Enter" is pressed
-        p = self.param_constraints_vars[pop_nm][param_nm].get()
+        p = self.param_constraint_vars[pop_nm][param_nm].get()
         # TODO: check if the entry is valid
         is_valid = True
         if is_valid:
