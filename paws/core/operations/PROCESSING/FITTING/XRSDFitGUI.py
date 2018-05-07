@@ -8,7 +8,7 @@ from matplotlib.figure import Figure
 import tkinter
 from tkinter import Tk, Frame, Canvas, Button, Label, Entry, \
 OptionMenu, Scrollbar, Checkbutton, \
-StringVar, DoubleVar, BooleanVar 
+StringVar, DoubleVar, BooleanVar, IntVar
 import numpy as np
 #from matplotlib import pyplot as plt
 #from matplotlib.widgets import Slider, Button, RadioButtons, TextBox
@@ -330,15 +330,15 @@ class XRSDFitGUI(Operation):
 
     def create_site_frames(self,pop_nm):
         self.site_frames[pop_nm] = OrderedDict()
-        self.new_site_frames[pop_nm] = OrderedDict()
-        self.specie_frames[pop_nm] = OrderedDict()
-        self.specie_param_frames[pop_nm] = OrderedDict()
-        self.specie_setting_frames[pop_nm] = OrderedDict()
         self.site_name_vars[pop_nm] = OrderedDict()
         self.coordinate_vars[pop_nm] = OrderedDict()
+        self.specie_frames[pop_nm] = OrderedDict()
         self.specie_vars[pop_nm] = OrderedDict()
+        self.specie_param_frames[pop_nm] = OrderedDict()
         self.specie_param_vars[pop_nm] = OrderedDict()
+        self.specie_setting_frames[pop_nm] = OrderedDict()
         self.specie_setting_vars[pop_nm] = OrderedDict()
+        self.new_site_frames[pop_nm] = OrderedDict()
         pf = self.pop_frames[pop_nm]
         popd = self.populations[pop_nm]
         npars = len(xrsdkit.structure_params[popd['structure']])
@@ -418,11 +418,11 @@ class XRSDFitGUI(Operation):
 
     def create_specie_frames(self,pop_nm,site_nm):
         self.specie_frames[pop_nm][site_nm] = OrderedDict()
-        self.specie_param_frames[pop_nm][site_nm] = OrderedDict()
-        self.specie_setting_frames[pop_nm][site_nm] = OrderedDict()
         self.specie_vars[pop_nm][site_nm] = OrderedDict()
-        self.specie_param_vars[pop_nm][site_nm] = OrderedDict()
+        self.specie_setting_frames[pop_nm][site_nm] = OrderedDict()
         self.specie_setting_vars[pop_nm][site_nm] = OrderedDict()
+        self.specie_param_frames[pop_nm][site_nm] = OrderedDict()
+        self.specie_param_vars[pop_nm][site_nm] = OrderedDict()
         popd = self.populations[pop_nm]
         site_def = popd['basis'][site_nm]
         for ispec, specie_nm in enumerate(site_def.keys()):
@@ -430,22 +430,28 @@ class XRSDFitGUI(Operation):
                 specie_def = site_def[specie_nm]
                 if not isinstance(specie_def,list):
                     specie_def = [specie_def]
-                self.specie_frames[pop_nm][site_nm][specie_nm] = []
-                self.specie_vars[pop_nm][site_nm][specie_nm] = []
-                self.specie_param_frames[pop_nm][site_nm][specie_nm] = [OrderedDict() for specd in specie_def]
-                self.specie_setting_frames[pop_nm][site_nm][specie_nm] = [OrderedDict() for specd in specie_def]
-                self.specie_param_vars[pop_nm][site_nm][specie_nm] = [OrderedDict() for specd in specie_def]
-                self.specie_setting_vars[pop_nm][site_nm] = [OrderedDict() for specd in specie_def]
                 for iispec in range(len(specie_def)):
                     self.create_specie_frame(pop_nm,site_nm,specie_nm,ispec,iispec)
         # TODO: frame for adding a new specie
         #self.create_new_specie_frame(pop_nm,site_nm)
 
     def create_specie_frame(self,pop_nm,site_nm,specie_nm,ispec,iispec):
+        if iispec == 0: 
+            self.specie_frames[pop_nm][site_nm][specie_nm] = []
+            self.specie_vars[pop_nm][site_nm][specie_nm] = []
+            self.specie_param_frames[pop_nm][site_nm][specie_nm] = [OrderedDict()]
+            self.specie_param_vars[pop_nm][site_nm][specie_nm] = [OrderedDict()]
+            self.specie_setting_frames[pop_nm][site_nm][specie_nm] = [OrderedDict()]
+            self.specie_setting_vars[pop_nm][site_nm][specie_nm] = [OrderedDict()]
+        else:
+            self.specie_param_frames[pop_nm][site_nm][specie_nm].append(OrderedDict())
+            self.specie_param_vars[pop_nm][site_nm][specie_nm].append(OrderedDict())
+            self.specie_setting_frames[pop_nm][site_nm][specie_nm].append(OrderedDict())
+            self.specie_setting_vars[pop_nm][site_nm][specie_nm].append(OrderedDict())
         popd = self.populations[pop_nm]
         site_def = popd['basis'][site_nm]
-        sitef = self.site_frames[pop_nm][site_nm]
         specie_def = site_def[specie_nm]
+        sitef = self.site_frames[pop_nm][site_nm]
         if not isinstance(specie_def,list):
             specie_def = [specie_def]
         specd = specie_def[iispec]
@@ -481,16 +487,22 @@ class XRSDFitGUI(Operation):
             stgf = Frame(specief,bd=2,padx=4,pady=4,relief=tkinter.GROOVE) 
 
             if xrsdkit.setting_datatypes[stg_nm] is str:
-                stgv = StringVar(pf)
+                stgv = StringVar(stgf)
             elif xrsdkit.setting_datatypes[stg_nm] is int:
-                stgv = IntVar(pf)
+                stgv = IntVar(stgf)
             elif xrsdkit.setting_datatypes[stg_nm] is float:
-                stgv = DoubleVar(pf)
+                stgv = DoubleVar(stgf)
 
+            #print(pop_nm)
+            #print(site_nm)
+            #print(specie_nm)
+            #print(iispec)
+            #print(stg_nm)
+            #import pdb; pdb.set_trace()
             self.specie_setting_frames[pop_nm][site_nm][specie_nm][iispec][stg_nm] = stgf
-            self.specie_setting_vars[pop_nm][site_nm][specie_nm][iispec][stg_nm] = stgvar 
+            self.specie_setting_vars[pop_nm][site_nm][specie_nm][iispec][stg_nm] = stgv 
             stgf.grid(row=1+istg,column=0,columnspan=3,sticky=tkinter.E+tkinter.W)
-            stgl = Label(sparf,text='{}:'.format(stg_nm),width=10,anchor='e')
+            stgl = Label(stgf,text='{}:'.format(stg_nm),width=10,anchor='e')
             stgl.grid(row=0,column=0,sticky=tkinter.E)
             #stge = Entry(stgf,width=16,textvariable=stgvar)
             stge = self.connected_entry(stgf,stgv,None)
@@ -678,22 +690,26 @@ class XRSDFitGUI(Operation):
             # create new specie with default settings and parameters
             specie_def = {}
             new_settings = OrderedDict.fromkeys(xrsdkit.form_factor_settings[snm])
-            for snm in new_settings: new_settings[snm] = xrsdkit.setting_defaults[snm]
+            for stg_nm in new_settings: new_settings[stg_nm] = xrsdkit.setting_defaults[stg_nm]
             specie_def.update(new_settings)
             new_params = OrderedDict.fromkeys(xrsdkit.form_factor_params[snm])
             for pnm in new_params: new_params[pnm] = xrsdkit.param_defaults[pnm]
             specie_def.update(new_params)
             # add the new specie 
             if snm in site_def:
+                ispec = site_def.keys().index(snm)
                 if not isinstance(site_def[snm],list):
                     site_def[snm] = [site_def[snm]]
-                specie_idx = len(site_def[snm]) 
+                iispec = len(site_def[snm]) 
                 site_def[snm].append(specie_def)
             else:
+                ispec = len(site_def)
                 site_def[snm] = specie_def 
-                specie_idx = 0
-            self.destroy_specie_param_frames(pop_nm,site_nm,specie_nm,iispec)
-            self.create_specie_param_frames(pop_nm,site_nm,snm,specie_idx)
+                iispec = 0
+            self.destroy_specie_frame(pop_nm,site_nm,specie_nm,iispec)
+            self.create_specie_frame(pop_nm,site_nm,snm,ispec,iispec)
+            #self.destroy_specie_param_frames(pop_nm,site_nm,specie_nm,iispec)
+            #self.create_specie_param_frames(pop_nm,site_nm,snm,specie_idx)
 
     def update_param(self,pop_nm,param_nm,draw_plots=False,event=None):
         print('update_param on {}, {}'.format(pop_nm,param_nm))
@@ -928,19 +944,27 @@ class XRSDFitGUI(Operation):
         specie_nm_list = list(self.specie_frames[pop_nm][site_nm].keys())
         for specie_nm in specie_nm_list: 
             specie_frms = self.specie_frames[pop_nm][site_nm][specie_nm]
-            for ispec in range(len(specie_frms))[::-1]:
-                self.destroy_specie_frame(pop_nm,site_nm,specie_nm,ispec)
+            for iispec in range(len(specie_frms))[::-1]:
+                self.destroy_specie_frame(pop_nm,site_nm,specie_nm,iispec)
 
-    def destroy_specie_frame(self,pop_nm,site_nm,specie_nm):
-        self.destroy_specie_setting_frames(pop_nm,site_nm,specie_nm,ispec)
-        self.destroy_specie_param_frames(pop_nm,site_nm,specie_nm,ispec)
-        specie_frm = self.specie_frames[pop_nm][site_nm][specie_nm].pop(ispec)
+    def destroy_specie_frame(self,pop_nm,site_nm,specie_nm,iispec):
+        self.destroy_specie_setting_frames(pop_nm,site_nm,specie_nm,iispec)
+        self.destroy_specie_param_frames(pop_nm,site_nm,specie_nm,iispec)
+        specie_frm = self.specie_frames[pop_nm][site_nm][specie_nm].pop(iispec)
         specie_frm.pack_forget()
         specie_frm.destroy()
 
-    def destroy_specie_param_frames(self,pop_nm,site_nm,specie_nm,ispec):
-        sparam_frms = self.specie_param_frames[pop_nm][site_nm][specie_nm][ispec]
-        sparam_nm_list = list(self.specie_param_frames[pop_nm][site_nm][specie_nm][ispec].keys())
+    def destroy_specie_setting_frames(self,pop_nm,site_nm,specie_nm,iispec):
+        stg_frms = self.specie_setting_frames[pop_nm][site_nm][specie_nm][iispec]
+        stg_nm_list = list(self.specie_setting_frames[pop_nm][site_nm][specie_nm][iispec].keys())
+        for stg_nm in stg_nm_list:
+            stg_frm = stg_frms.pop(stg_nm)
+            stg_frm.pack_forget()
+            stg_frm.destroy()
+
+    def destroy_specie_param_frames(self,pop_nm,site_nm,specie_nm,iispec):
+        sparam_frms = self.specie_param_frames[pop_nm][site_nm][specie_nm][iispec]
+        sparam_nm_list = list(self.specie_param_frames[pop_nm][site_nm][specie_nm][iispec].keys())
         for sparam_nm in sparam_nm_list:
             sparam_frm = sparam_frms.pop(sparam_nm)
             sparam_frm.pack_forget()
