@@ -31,8 +31,6 @@ outputs = OrderedDict(
         
 class XRSDFitGUI(Operation):
     """Interactively fit a XRSD spectrum."""
-    
-    # TODO: make widgets resize when the main window is resized
 
     def __init__(self):
         super(XRSDFitGUI, self).__init__(inputs, outputs)
@@ -120,12 +118,12 @@ class XRSDFitGUI(Operation):
 
     def build_plot_widgets(self):
         self.plot_frame = Frame(self.fit_gui,bd=4,relief=tkinter.SUNKEN)#, background="green")
-        self.plot_frame.pack(side=tkinter.LEFT, expand=tkinter.YES,padx=2,pady=2)
-        self.fig = Figure(figsize=(8,7)) # forward=True
-        self.fig.set_size_inches(8, 7, forward=True)
+        self.plot_frame.pack(side=tkinter.LEFT, fill=tkinter.BOTH, expand=tkinter.YES,padx=2,pady=2)
+        self.fig = Figure()
+        self.fig.set_size_inches(8,7, forward=True)
         self.ax_plot = self.fig.add_subplot(111)
         self.plot_canvas = FigureCanvasTkAgg(self.fig,self.plot_frame)
-        self.plot_canvas.get_tk_widget().pack()
+        self.plot_canvas.get_tk_widget().pack(fill='both',expand=True)
         self.draw_plots()
 
     def build_entry_widgets(self):
