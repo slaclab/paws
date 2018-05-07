@@ -8,7 +8,7 @@ from matplotlib.figure import Figure
 import tkinter
 from tkinter import Tk, Frame, Canvas, Button, Label, Entry, \
 OptionMenu, Scrollbar, Checkbutton, \
-StringVar, DoubleVar, BooleanVar 
+StringVar, DoubleVar, BooleanVar, IntVar
 import numpy as np
 #from matplotlib import pyplot as plt
 #from matplotlib.widgets import Slider, Button, RadioButtons, TextBox
@@ -82,6 +82,7 @@ class XRSDFitGUI(Operation):
         self.param_vars = OrderedDict()
         self.param_var_vars = OrderedDict()
         self.param_bound_vars = OrderedDict()
+        self.param_constraints_vars = OrderedDict()
         self.setting_vars = OrderedDict()
         self.site_name_vars = OrderedDict()
         self.coordinate_vars = OrderedDict()
@@ -208,7 +209,7 @@ class XRSDFitGUI(Operation):
         self.create_site_frames(pop_nm)
         pf.pack(side=tkinter.TOP,pady=2,padx=2)
     
-    def connected_entry(self,parent,tkvar,cbfun,entry_width=20):
+    def connected_entry(self,parent,tkvar,cbfun=None,entry_width=20):
         if cbfun:
             # piggyback on entry validation
             # to update internal data
@@ -222,18 +223,13 @@ class XRSDFitGUI(Operation):
             e = Entry(parent,width=20,textvariable=tkvar)
         return e
 
-    def connected_entry_small(self,parent,tkvar,cbfun):
+    def connected_checkbutton(self,parent,varparamvar,cbfun):
         if cbfun:
-            # piggyback on entry validation
             # to update internal data
-            # associated with the entry widget
-            # NOTE: validatecommand must return a boolean
-            e = Entry(parent,width=8,textvariable=tkvar,validate="focusout",validatecommand=cbfun)
-            #e = Entry(parent,width=20,textvariable=tkvar)
-            # also respond to the return key
-            e.bind('<Return>',cbfun)
+            # associated with the widget
+            e = Checkbutton(parent,text="variable",variable=varparamvar,command=cbfun)
         else:
-            e = Entry(parent,width=8,textvariable=tkvar)
+            e = Checkbutton(parent,text="variable",variable=varparamvar)
         return e
 
     def create_setting_frames(self,pop_nm):
@@ -270,6 +266,7 @@ class XRSDFitGUI(Operation):
         self.param_vars[pop_nm] = OrderedDict()
         self.param_var_vars[pop_nm] = OrderedDict()
         self.param_bound_vars[pop_nm] = OrderedDict()
+        self.param_constraints_vars[pop_nm] = OrderedDict()
         pf = self.pop_frames[pop_nm]
         popd = self.populations[pop_nm]
         paramsl = Label(pf,text='------ PARAMETERS ------')
@@ -291,15 +288,14 @@ class XRSDFitGUI(Operation):
             pe = self.connected_entry(paramf,paramv,partial(self.update_param,pop_nm,param_nm,True))
             pe.grid(row=0,column=1,columnspan=2,sticky=tkinter.W)
 
-            varparamvar = BooleanVar(pf) 
+            varparamvar = BooleanVar(pf)
             varparam = not xrsdkit.fixed_param_defaults[param_nm]
             if xrsdkit.contains_param(self.inputs['fixed_params'],pop_nm,param_nm):
                 varparam = not self.inputs['fixed_params'][pop_nm]['parameters'][param_nm]
-            # TODO: these CheckButtons need to be connected to BooleanVars.
             #print('{}: {}'.format(param_nm,varparam))
-            varparamvar.set(varparam) 
-            psw = Checkbutton(paramf,text="variable",variable=varparamvar)
+            varparamvar.set(varparam)
             self.param_var_vars[pop_nm][param_nm] = varparamvar
+            psw = self.connected_checkbutton(paramf,varparamvar,partial(self.update_fixed_param,pop_nm,param_nm))
 
             psw.grid(row=0,column=3,sticky=tkinter.W)
             pbndl = Label(paramf,text='bounds:',width=10,anchor='e')
@@ -316,8 +312,8 @@ class XRSDFitGUI(Operation):
             lbndv.set(lbnd)
             ubndv.set(ubnd)
             self.param_bound_vars[pop_nm][param_nm]=[lbndv,ubndv]
-            pbnde1 = self.connected_entry_small(paramf,lbndv,partial(self.update_param_bound,pop_nm,param_nm,0))
-            pbnde2 = self.connected_entry_small(paramf,ubndv, partial(self.update_param_bound,pop_nm,param_nm,1))
+            pbnde1 = self.connected_entry(paramf,lbndv,partial(self.update_param_bound,pop_nm,param_nm,0),8)
+            pbnde2 = self.connected_entry(paramf,ubndv,partial(self.update_param_bound,pop_nm,param_nm,1),8)
             pbnde1.grid(row=1,column=1,sticky=tkinter.W) 
             pbnde2.grid(row=1,column=2,sticky=tkinter.W) 
 
@@ -326,29 +322,23 @@ class XRSDFitGUI(Operation):
             expr = StringVar(pf)
             expr.set("")
             if xrsdkit.contains_param(self.inputs['param_constraints'],pop_nm,param_nm):
-                expr.set(self.inputs['param_constraints'])
-            #pexpe = Entry(paramf,width=16)
-            pexpe = self.connected_entry(paramf,expr,None)
-            if xrsdkit.contains_param(self.inputs['param_constraints'],pop_nm,param_nm):
-                pexpe.insert(0,self.inputs['param_constraints'],pop_nm,param_nm)
-            # TODO: the constraint Entry needs to be connected to a StringVar 
-            pexpe.grid(row=2,column=1,columnspan=3,sticky=tkinter.E+tkinter.W) 
-            # TODO: connect psw to changing fixed_params
-            # TODO: connect pbnde to changing param_bounds
-            # TODO: connect pexpe to setting param_constraints
+                expr.set(self.inputs['param_constraints'][pop_nm]['parameters'][param_nm])
+            self.param_constraints_vars[pop_nm][param_nm] = expr
+            pexpe = self.connected_entry(paramf,expr,partial(self.update_param_constraints,pop_nm,param_nm))
+            pexpe.grid(row=2,column=1,columnspan=3,sticky=tkinter.E+tkinter.W)
             paramf.grid(row=4+nstgs+ip,column=0,columnspan=4,sticky=tkinter.E+tkinter.W)
 
     def create_site_frames(self,pop_nm):
         self.site_frames[pop_nm] = OrderedDict()
-        self.new_site_frames[pop_nm] = OrderedDict()
-        self.specie_frames[pop_nm] = OrderedDict()
-        self.specie_param_frames[pop_nm] = OrderedDict()
-        self.specie_setting_frames[pop_nm] = OrderedDict()
         self.site_name_vars[pop_nm] = OrderedDict()
         self.coordinate_vars[pop_nm] = OrderedDict()
+        self.specie_frames[pop_nm] = OrderedDict()
         self.specie_vars[pop_nm] = OrderedDict()
+        self.specie_param_frames[pop_nm] = OrderedDict()
         self.specie_param_vars[pop_nm] = OrderedDict()
+        self.specie_setting_frames[pop_nm] = OrderedDict()
         self.specie_setting_vars[pop_nm] = OrderedDict()
+        self.new_site_frames[pop_nm] = OrderedDict()
         pf = self.pop_frames[pop_nm]
         popd = self.populations[pop_nm]
         npars = len(xrsdkit.structure_params[popd['structure']])
@@ -428,51 +418,62 @@ class XRSDFitGUI(Operation):
 
     def create_specie_frames(self,pop_nm,site_nm):
         self.specie_frames[pop_nm][site_nm] = OrderedDict()
-        self.specie_param_frames[pop_nm][site_nm] = OrderedDict()
-        self.specie_setting_frames[pop_nm][site_nm] = OrderedDict()
         self.specie_vars[pop_nm][site_nm] = OrderedDict()
-        self.specie_param_vars[pop_nm][site_nm] = OrderedDict()
+        self.specie_setting_frames[pop_nm][site_nm] = OrderedDict()
         self.specie_setting_vars[pop_nm][site_nm] = OrderedDict()
+        self.specie_param_frames[pop_nm][site_nm] = OrderedDict()
+        self.specie_param_vars[pop_nm][site_nm] = OrderedDict()
         popd = self.populations[pop_nm]
         site_def = popd['basis'][site_nm]
         for ispec, specie_nm in enumerate(site_def.keys()):
             if not specie_nm == 'coordinates':
-                self.create_specie_frame(pop_nm,site_nm,specie_nm,ispec)
+                specie_def = site_def[specie_nm]
+                if not isinstance(specie_def,list):
+                    specie_def = [specie_def]
+                for iispec in range(len(specie_def)):
+                    self.create_specie_frame(pop_nm,site_nm,specie_nm,ispec,iispec)
         # TODO: frame for adding a new specie
         #self.create_new_specie_frame(pop_nm,site_nm)
 
-    def create_specie_frame(self,pop_nm,site_nm,specie_nm,ispec):
-        self.specie_frames[pop_nm][site_nm][specie_nm] = []
+    def create_specie_frame(self,pop_nm,site_nm,specie_nm,ispec,iispec):
+        if iispec == 0: 
+            self.specie_frames[pop_nm][site_nm][specie_nm] = []
+            self.specie_vars[pop_nm][site_nm][specie_nm] = []
+            self.specie_param_frames[pop_nm][site_nm][specie_nm] = [OrderedDict()]
+            self.specie_param_vars[pop_nm][site_nm][specie_nm] = [OrderedDict()]
+            self.specie_setting_frames[pop_nm][site_nm][specie_nm] = [OrderedDict()]
+            self.specie_setting_vars[pop_nm][site_nm][specie_nm] = [OrderedDict()]
+        else:
+            self.specie_param_frames[pop_nm][site_nm][specie_nm].append(OrderedDict())
+            self.specie_param_vars[pop_nm][site_nm][specie_nm].append(OrderedDict())
+            self.specie_setting_frames[pop_nm][site_nm][specie_nm].append(OrderedDict())
+            self.specie_setting_vars[pop_nm][site_nm][specie_nm].append(OrderedDict())
         popd = self.populations[pop_nm]
         site_def = popd['basis'][site_nm]
         specie_def = site_def[specie_nm]
+        sitef = self.site_frames[pop_nm][site_nm]
         if not isinstance(specie_def,list):
             specie_def = [specie_def]
-        self.specie_vars[pop_nm][site_nm][specie_nm] = []
-        self.specie_param_frames[pop_nm][site_nm][specie_nm] = [OrderedDict() for specd in specie_def]
-        self.specie_setting_frames[pop_nm][site_nm][specie_nm] = [OrderedDict() for specd in specie_def]
-        self.specie_param_vars[pop_nm][site_nm][specie_nm] = [OrderedDict() for specd in specie_def]
-        self.specie_setting_vars[pop_nm][site_nm] = [OrderedDict() for specd in specie_def]
-        sitef = self.site_frames[pop_nm][site_nm]
-        for iispec,specd in enumerate(specie_def):
-            specf = Frame(sitef,bd=2,padx=10,pady=4,relief=tkinter.GROOVE) 
-            self.specie_frames[pop_nm][site_nm][specie_nm].append(specf)
-            specl = Label(specf,text='specie:',width=12,anchor='e')
-            specl.grid(row=0,column=0,sticky=tkinter.E)
-            specvar = StringVar(sitef)
-            spec_option_dict = OrderedDict.fromkeys(xrsdkit.form_factor_names)
-            speccb = OptionMenu(specf,specvar,*spec_option_dict)
-            specvar.set(specie_nm)
-            specvar.trace('w',partial(self.update_specie,pop_nm,site_nm,specie_nm,iispec))
-            self.specie_vars[pop_nm][site_nm][specie_nm].append(specvar)
-            speccb.grid(row=0,column=1,sticky=tkinter.W+tkinter.E)
-            rmspecb = Button(specf,text='Remove')
-            rmspecb.grid(row=0,column=2)
-            # TODO: connect speccb to changing the specie
-            # TODO: connect rmspecb to removing the specie
-            self.create_specie_setting_frames(pop_nm,site_nm,specie_nm,iispec)
-            self.create_specie_param_frames(pop_nm,site_nm,specie_nm,iispec)
-            specf.grid(row=2+ispec+iispec,column=0,columnspan=5,pady=4,sticky=tkinter.E+tkinter.W)
+        specd = specie_def[iispec]
+        #for iispec,specd in enumerate(specie_def):
+        specf = Frame(sitef,bd=2,padx=10,pady=4,relief=tkinter.GROOVE) 
+        self.specie_frames[pop_nm][site_nm][specie_nm].append(specf)
+        specl = Label(specf,text='specie:',width=12,anchor='e')
+        specl.grid(row=0,column=0,sticky=tkinter.E)
+        specvar = StringVar(sitef)
+        spec_option_dict = OrderedDict.fromkeys(xrsdkit.form_factor_names)
+        speccb = OptionMenu(specf,specvar,*spec_option_dict)
+        specvar.set(specie_nm)
+        specvar.trace('w',partial(self.update_specie,pop_nm,site_nm,specie_nm,iispec))
+        self.specie_vars[pop_nm][site_nm][specie_nm].append(specvar)
+        speccb.grid(row=0,column=1,sticky=tkinter.W+tkinter.E)
+        rmspecb = Button(specf,text='Remove')
+        rmspecb.grid(row=0,column=2)
+        # TODO: connect speccb to changing the specie
+        # TODO: connect rmspecb to removing the specie
+        self.create_specie_setting_frames(pop_nm,site_nm,specie_nm,iispec)
+        self.create_specie_param_frames(pop_nm,site_nm,specie_nm,iispec)
+        specf.grid(row=2+ispec+iispec,column=0,columnspan=5,pady=4,sticky=tkinter.E+tkinter.W)
             
     def create_specie_setting_frames(self,pop_nm,site_nm,specie_nm,iispec):
         popd = self.populations[pop_nm]
@@ -486,16 +487,22 @@ class XRSDFitGUI(Operation):
             stgf = Frame(specief,bd=2,padx=4,pady=4,relief=tkinter.GROOVE) 
 
             if xrsdkit.setting_datatypes[stg_nm] is str:
-                stgv = StringVar(pf)
+                stgv = StringVar(stgf)
             elif xrsdkit.setting_datatypes[stg_nm] is int:
-                stgv = IntVar(pf)
+                stgv = IntVar(stgf)
             elif xrsdkit.setting_datatypes[stg_nm] is float:
-                stgv = DoubleVar(pf)
+                stgv = DoubleVar(stgf)
 
+            #print(pop_nm)
+            #print(site_nm)
+            #print(specie_nm)
+            #print(iispec)
+            #print(stg_nm)
+            #import pdb; pdb.set_trace()
             self.specie_setting_frames[pop_nm][site_nm][specie_nm][iispec][stg_nm] = stgf
-            self.specie_setting_vars[pop_nm][site_nm][specie_nm][iispec][stg_nm] = stgvar 
+            self.specie_setting_vars[pop_nm][site_nm][specie_nm][iispec][stg_nm] = stgv 
             stgf.grid(row=1+istg,column=0,columnspan=3,sticky=tkinter.E+tkinter.W)
-            stgl = Label(sparf,text='{}:'.format(stg_nm),width=10,anchor='e')
+            stgl = Label(stgf,text='{}:'.format(stg_nm),width=10,anchor='e')
             stgl.grid(row=0,column=0,sticky=tkinter.E)
             #stge = Entry(stgf,width=16,textvariable=stgvar)
             stge = self.connected_entry(stgf,stgv,None)
@@ -671,6 +678,39 @@ class XRSDFitGUI(Operation):
             self.create_site_frames(pop_nm)
             self.draw_plots()
 
+    def update_specie(self,pop_nm,site_nm,specie_nm,iispec,var_nm,dummy,mode):
+        snm = self.specie_vars[pop_nm][site_nm][specie_nm][iispec].get()
+        if not snm == specie_nm:
+            site_def = self.populations[pop_nm]['basis'][site_nm]
+            # first, remove the old specie from self.populations
+            if isinstance(site_def[specie_nm],list):
+                site_def[specie_nm].pop(iispec)
+            else:
+                site_def.pop(specie_nm)
+            # create new specie with default settings and parameters
+            specie_def = {}
+            new_settings = OrderedDict.fromkeys(xrsdkit.form_factor_settings[snm])
+            for stg_nm in new_settings: new_settings[stg_nm] = xrsdkit.setting_defaults[stg_nm]
+            specie_def.update(new_settings)
+            new_params = OrderedDict.fromkeys(xrsdkit.form_factor_params[snm])
+            for pnm in new_params: new_params[pnm] = xrsdkit.param_defaults[pnm]
+            specie_def.update(new_params)
+            # add the new specie 
+            if snm in site_def:
+                ispec = site_def.keys().index(snm)
+                if not isinstance(site_def[snm],list):
+                    site_def[snm] = [site_def[snm]]
+                iispec = len(site_def[snm]) 
+                site_def[snm].append(specie_def)
+            else:
+                ispec = len(site_def)
+                site_def[snm] = specie_def 
+                iispec = 0
+            self.destroy_specie_frame(pop_nm,site_nm,specie_nm,iispec)
+            self.create_specie_frame(pop_nm,site_nm,snm,ispec,iispec)
+            #self.destroy_specie_param_frames(pop_nm,site_nm,specie_nm,iispec)
+            #self.create_specie_param_frames(pop_nm,site_nm,snm,specie_idx)
+
     def update_param(self,pop_nm,param_nm,draw_plots=False,event=None):
         print('update_param on {}, {}'.format(pop_nm,param_nm))
         p = self.param_vars[pop_nm][param_nm].get()
@@ -695,7 +735,7 @@ class XRSDFitGUI(Operation):
         #else:
         # TODO: restore the entry widget to the previous value
 
-    def update_param_bound(self,pop_nm,param_nm,i,event=None):
+    def update_param_bound(self,pop_nm,param_nm,i,event=None):# it works only when "Enter" is pressed
         p = self.param_bound_vars[pop_nm][param_nm][i].get()
         # TODO: check if the entry is valid
         is_valid = True
@@ -703,10 +743,24 @@ class XRSDFitGUI(Operation):
             new_bounds = xrsdkit.param_bound_defaults[param_nm]
             if xrsdkit.contains_param(self.inputs['param_bounds'],pop_nm,param_nm):
                 new_bounds = self.inputs['param_bounds'][pop_nm]['parameters'][param_nm]
-            new_bounds[i] = p
+            if i==0: new_bounds=(p, new_bounds[1]) # new_bounds is a tuple and it is immutable
+            else: new_bounds=(new_bounds[0], p)
             xrsdkit.update_param(self.inputs['param_bounds'],pop_nm,param_nm,new_bounds)
             # TODO: check if the new bounds have excluded the parameter value,
             # and update the parameter value if necessary.
+
+    def update_fixed_param(self,pop_nm,param_nm,event=None):
+        p=self.param_var_vars[pop_nm][param_nm].get()
+        p=not p
+        xrsdkit.update_param(self.inputs['fixed_params'],pop_nm,param_nm,p)
+        #print('after: ', self.inputs['fixed_params'][pop_nm]['parameters'][param_nm])
+
+    def update_param_constraints(self,pop_nm,param_nm,event=None):# it works only when "Enter" is pressed
+        p = self.param_constraints_vars[pop_nm][param_nm].get()
+        # TODO: check if the entry is valid
+        is_valid = True
+        if is_valid:
+            xrsdkit.update_param(self.inputs['param_constraints'],pop_nm,param_nm,p)
 
     def update_coord(self,pop_nm,site_nm,coord_idx,draw_plots=False,event=None):
         new_coord_val = self.coordinate_vars[pop_nm][site_nm][coord_idx].get()
@@ -718,10 +772,6 @@ class XRSDFitGUI(Operation):
                 self.draw_plots()
         #else:
         # TODO: restore the entry widget to the previous value
-
-    def update_specie(self,pop_nm,site_nm,specie_nm,iispec):
-        new_specie_nm = self.specie_vars[pop_nm][site_nm][specie_nm][iispec].get()
-        # TODO: finish this update
 
     def fit(self):
         ftr = xrsdkit.fitting.xrsd_fitter.XRSDFitter(self.q_I,self.populations,self.src_wl)
@@ -893,19 +943,28 @@ class XRSDFitGUI(Operation):
     def destroy_specie_frames(self,pop_nm,site_nm):
         specie_nm_list = list(self.specie_frames[pop_nm][site_nm].keys())
         for specie_nm in specie_nm_list: 
-            self.destroy_specie_frame(pop_nm,site_nm,specie_nm)
+            specie_frms = self.specie_frames[pop_nm][site_nm][specie_nm]
+            for iispec in range(len(specie_frms))[::-1]:
+                self.destroy_specie_frame(pop_nm,site_nm,specie_nm,iispec)
 
-    def destroy_specie_frame(self,pop_nm,site_nm,specie_nm):
-        specie_frms = self.specie_frames[pop_nm][site_nm][specie_nm]
-        for ispec in range(len(specie_frms))[::-1]:
-            self.destroy_specie_param_frames(pop_nm,site_nm,specie_nm,ispec)
-            specie_frm = self.specie_frames[pop_nm][site_nm][specie_nm].pop(ispec)
-            specie_frm.pack_forget()
-            specie_frm.destroy()
+    def destroy_specie_frame(self,pop_nm,site_nm,specie_nm,iispec):
+        self.destroy_specie_setting_frames(pop_nm,site_nm,specie_nm,iispec)
+        self.destroy_specie_param_frames(pop_nm,site_nm,specie_nm,iispec)
+        specie_frm = self.specie_frames[pop_nm][site_nm][specie_nm].pop(iispec)
+        specie_frm.pack_forget()
+        specie_frm.destroy()
 
-    def destroy_specie_param_frames(self,pop_nm,site_nm,specie_nm,ispec):
-        sparam_frms = self.specie_param_frames[pop_nm][site_nm][specie_nm][ispec]
-        sparam_nm_list = list(self.specie_param_frames[pop_nm][site_nm][specie_nm][ispec].keys())
+    def destroy_specie_setting_frames(self,pop_nm,site_nm,specie_nm,iispec):
+        stg_frms = self.specie_setting_frames[pop_nm][site_nm][specie_nm][iispec]
+        stg_nm_list = list(self.specie_setting_frames[pop_nm][site_nm][specie_nm][iispec].keys())
+        for stg_nm in stg_nm_list:
+            stg_frm = stg_frms.pop(stg_nm)
+            stg_frm.pack_forget()
+            stg_frm.destroy()
+
+    def destroy_specie_param_frames(self,pop_nm,site_nm,specie_nm,iispec):
+        sparam_frms = self.specie_param_frames[pop_nm][site_nm][specie_nm][iispec]
+        sparam_nm_list = list(self.specie_param_frames[pop_nm][site_nm][specie_nm][iispec].keys())
         for sparam_nm in sparam_nm_list:
             sparam_frm = sparam_frms.pop(sparam_nm)
             sparam_frm.pack_forget()
