@@ -55,10 +55,7 @@ class XRSDFitGUI(Operation):
         self.pc = self.inputs['param_constraints']
         self.fit_report = None
         self.q_I_opt = None
-        self.success_flag = False
         self.xrsd_fitter = XRSDFitter(self.q_I,self.populations,self.src_wl)
-
-        self.vars = {}
 
         self.fit_gui = Tk()
         self.fit_gui.title('xrsd profile fitter')
@@ -93,6 +90,7 @@ class XRSDFitGUI(Operation):
         self.logI_weighted_var = None 
         self.error_weighted_var = None 
         self.fit_obj_var = None 
+        self.good_fit_var = None
 
         # create the plots
         self.build_plot_widgets()
@@ -164,7 +162,7 @@ class XRSDFitGUI(Operation):
         self.outputs['populations'] = self.populations
         self.outputs['report'] = self.fit_report
         self.outputs['q_I_opt'] = self.q_I_opt
-        self.outputs['success_flag'] = self.vars['var_good_fit'].get()
+        self.outputs['success_flag'] = self.good_fit_var.get()
         self.fit_gui.destroy()
 
     def draw_plots(self):
@@ -367,7 +365,6 @@ class XRSDFitGUI(Operation):
         stnml.grid(row=0,column=1,columnspan=3,sticky=tkinter.W+tkinter.E)
         rmb = Button(sitef,text='Remove')
         rmb.grid(row=0,column=4)
-        # TODO: connect the entry to renaming the site 
         # TODO: connect rmb to deleting the site 
 
         site_def = popd['basis'][site_nm]
@@ -473,7 +470,6 @@ class XRSDFitGUI(Operation):
         speccb.grid(row=0,column=1,sticky=tkinter.W+tkinter.E)
         rmspecb = Button(specf,text='Remove')
         rmspecb.grid(row=0,column=2)
-        # TODO: connect speccb to changing the specie
         # TODO: connect rmspecb to removing the specie
         self.create_specie_setting_frames(pop_nm,site_nm,specie_nm,iispec)
         self.create_specie_param_frames(pop_nm,site_nm,specie_nm,iispec)
@@ -817,14 +813,12 @@ class XRSDFitGUI(Operation):
         logwtbox = Checkbutton(cf,text="log(I) weighted",variable=self.logI_weighted_var)
         logwtbox.select()
         logwtbox.grid(row=1,column=2,sticky=tkinter.W)
-        # TODO: connect these check boxes to variables 
         fitbtn = Button(cf,text='Fit',width=10,command=self.fit)
         fitbtn.grid(row=2,column=0)
         finbtn = Button(cf,text='Finish',width=10,command=self.finish)
         finbtn.grid(row=2,column=1)
-        var_good_fit = tkinter.BooleanVar()
-        self.vars['var_good_fit'] = var_good_fit
-        fitcb = Checkbutton(cf,text="Good fit", variable=var_good_fit)
+        self.good_fit_var = tkinter.BooleanVar(cf) 
+        fitcb = Checkbutton(cf,text="Good fit", variable=self.good_fit_var)
         fitcb.grid(row=2,column=2,sticky=tkinter.W)
         cf.pack(side=tkinter.TOP,pady=2,padx=2,fill="both",expand=True)
 
