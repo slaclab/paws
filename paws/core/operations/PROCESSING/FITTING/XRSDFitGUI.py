@@ -351,7 +351,6 @@ class XRSDFitGUI(Operation):
         self.specie_param_vars[pop_nm] = OrderedDict()
         self.specie_setting_frames[pop_nm] = OrderedDict()
         self.specie_setting_vars[pop_nm] = OrderedDict()
-        self.new_site_frames[pop_nm] = OrderedDict()
         pf = self.pop_frames[pop_nm]
         popd = self.populations[pop_nm]
         npars = len(xrsdkit.structure_params[popd['structure']])
@@ -374,9 +373,8 @@ class XRSDFitGUI(Operation):
         stl.grid(row=0,column=0,sticky=tkinter.E)
         stnml = Label(sitef,text=site_nm,anchor='w')
         stnml.grid(row=0,column=1,columnspan=3,sticky=tkinter.W+tkinter.E)
-        rmb = Button(sitef,text='Remove')
+        rmb = Button(sitef,text='Remove',command=partial(self.remove_site,pop_nm,site_nm))
         rmb.grid(row=0,column=4)
-        # TODO: connect rmb to deleting the site 
 
         site_def = popd['basis'][site_nm]
         if popd['structure'] in xrsdkit.crystalline_structure_names:
@@ -405,9 +403,11 @@ class XRSDFitGUI(Operation):
             # TODO: controls for varying,bounding,constraining coords
         else:
             self.coordinate_vars[pop_nm][site_nm] = [None,None,None]
-
         self.create_specie_frames(pop_nm,site_nm)
         sitef.grid(row=5+npars+nstgs+ist,column=0,columnspan=4,sticky=tkinter.E+tkinter.W)
+        if pop_nm in self.new_site_frames:
+            if self.new_site_frames[pop_nm] is not None:
+                self.repack_new_site_frame(pop_nm)
 
     def create_new_site_frame(self,pop_nm):
         pf = self.pop_frames[pop_nm]
@@ -574,15 +574,26 @@ class XRSDFitGUI(Operation):
 
     def new_site(self,pop_nm):
         new_nm = self.new_site_vars[pop_nm].get()
-        nsts = len(self.populations[pop_nm]['basis'])
-        self.populations[pop_nm]['basis'][new_nm] = {'flat':{}} 
-        self.create_site_frame(pop_nm,new_nm,nsts)
+        if new_nm in self.populations[pop_nm]['basis']:
+            self.new_site_vars[pop_nm].set(self.default_new_site_name(pop_nm))
+        else:
+            nsts = len(self.populations[pop_nm]['basis'])
+            self.populations[pop_nm]['basis'][new_nm] = {'flat':{}} 
+            self.create_site_frame(pop_nm,new_nm,nsts)
+            self.new_site_vars[pop_nm].set(self.default_new_site_name(pop_nm))
+            self.draw_plots()
 
     def remove_population(self,pop_nm):
         self.destroy_pop_frame(pop_nm)
         self.populations.pop(pop_nm)
         self.draw_plots()
         self.repack_entry_widgets()
+
+    def remove_site(self,pop_nm,site_nm):
+        self.destroy_site_frame(pop_nm,site_nm)
+        self.populations[pop_nm]['basis'].pop(site_nm)
+        self.draw_plots()
+        self.repack_basis_widgets(pop_nm)
 
     def update_all_population_values(self,new_pops):
         # assume the structure and settings of new_pops
@@ -899,6 +910,15 @@ class XRSDFitGUI(Operation):
                     specf = self.specie_frames[pop_nm][site_nm][specie_nm][iispec]
                     specf.pack_forget()
                     specf.grid(row=2+ispec+iispec,column=0,columnspan=5,pady=4,sticky=tkinter.E+tkinter.W)
+        self.repack_new_site_frame(pop_nm)
+
+    def repack_new_site_frame(self,pop_nm):
+        popd = self.populations[pop_nm]
+        nsts = len(popd['basis'])
+        npars = len(xrsdkit.structure_params[popd['structure']])
+        nstgs = len(xrsdkit.structure_settings[popd['structure']])
+        self.new_site_frames[pop_nm].pack_forget()
+        self.new_site_frames[pop_nm].grid(row=5+npars+nstgs+nsts,column=0,columnspan=4)
 
     def destroy_entry_widgets(self):
         pop_nm_list = list(self.pop_frames.keys())
