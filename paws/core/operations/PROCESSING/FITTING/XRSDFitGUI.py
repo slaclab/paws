@@ -65,12 +65,9 @@ class XRSDFitGUI(Operation):
         scrollbar.config(command=self.fit_gui_canvas.xview)
         self.fit_gui_canvas.config(scrollregion=(0,0,1290,730), xscrollcommand=scrollbar.set)
         self.main_frame = Frame(self.fit_gui_canvas,bd=4,relief=tkinter.SUNKEN)#, background="green")
-        self.fit_gui_canvas.create_window(0,0,window=self.main_frame, anchor='nw')
-        # we need fill=tkinter.BOTH, expand=tkinter.YES for  self.main_frame, but we cannot use pack()
-        #self.main_frame.pack(fill=tkinter.BOTH, expand=tkinter.YES)
+        self.window = self.fit_gui_canvas.create_window(0,0,window=self.main_frame, anchor='nw')
+        self.fit_gui_canvas.bind("<Configure>", self.onCanvasConfigure)
 
-
-       
         # data structures for maintaining refs to widgets
         self.pop_frames = OrderedDict()
         self.param_frames = OrderedDict()
@@ -116,6 +113,21 @@ class XRSDFitGUI(Operation):
         # after tk loop exits, finish Operation
         #self.finish()
 
+    def onCanvasConfigure(self, event):
+        #Resize the inner frame to match the canvas
+        minWidth = self.main_frame.winfo_reqwidth()
+        minHeight = self.main_frame.winfo_reqheight()
+
+        if self.fit_gui.winfo_width() >= minWidth:
+            newWidth = self.fit_gui.winfo_width()
+        else:
+            newWidth = minWidth
+        if self.fit_gui.winfo_height() >= minHeight:
+            newHeight = self.fit_gui.winfo_height()
+        else:
+            newHeight = minHeight
+        self.fit_gui_canvas.itemconfigure(self.window, width=newWidth, height=newHeight)
+
     def get_tk_object_dicts(self):
         all_dicts = [self.pop_frames, \
             self.structure_vars, self.coordinate_vars, \
@@ -133,7 +145,7 @@ class XRSDFitGUI(Operation):
     def build_plot_widgets(self):
         self.plot_frame = Frame(self.main_frame,bd=4,relief=tkinter.SUNKEN)#, background="green")
         self.plot_frame.pack(side=tkinter.LEFT, fill=tkinter.BOTH, expand=tkinter.YES,padx=2,pady=2)
-        #self.fit_gui_canvas.create_window(0,0,window=self.plot_frame, anchor='nw')##################
+        #self.fit_gui_canvas.create_window(0,0,window=self.plot_frame, anchor='nw')
         self.fig = Figure()
         self.fig.set_size_inches(8,7, forward=True)
         self.ax_plot = self.fig.add_subplot(111)
@@ -144,7 +156,7 @@ class XRSDFitGUI(Operation):
     def build_entry_widgets(self):
         self.scroll_frame = Frame(self.main_frame)
         self.scroll_frame.pack(side=tkinter.RIGHT,fill='y')
-        #self.fit_gui_canvas.create_window(820,0,window=self.scroll_frame, anchor='nw')##################
+        #self.fit_gui_canvas.create_window(820,0,window=self.scroll_frame, anchor='nw')
         self.pops_canvas = Canvas(self.scroll_frame, width=450)# height=730
         self.scroll_frame.bind_all("<MouseWheel>", self.on_mousewheel)
         self.scroll_frame.bind_all("<Button-4>", self.on_trackpad)
