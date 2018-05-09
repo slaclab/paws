@@ -59,11 +59,11 @@ class XRSDFitGUI(Operation):
         self.fit_gui.title('xrsd profile fitter')
 
         scrollbar = Scrollbar(self.fit_gui, orient='horizontal')
-        self.fit_gui_canvas = Canvas(self.fit_gui, width=1290, height=730) #background="green"
+        self.fit_gui_canvas = Canvas(self.fit_gui, width=1300, height=730) #background="green"
         scrollbar.pack(side=tkinter.BOTTOM, fill=tkinter.X)
         self.fit_gui_canvas.pack(side=tkinter.RIGHT,fill=tkinter.BOTH, expand=tkinter.YES)
         scrollbar.config(command=self.fit_gui_canvas.xview)
-        self.fit_gui_canvas.config(scrollregion=(0,0,1290,730), xscrollcommand=scrollbar.set)
+        self.fit_gui_canvas.config(scrollregion=(0,0,1300,730), xscrollcommand=scrollbar.set)
         self.main_frame = Frame(self.fit_gui_canvas,bd=4,relief=tkinter.SUNKEN)#, background="green")
         self.window = self.fit_gui_canvas.create_window(0,0,window=self.main_frame, anchor='nw')
         self.fit_gui_canvas.bind("<Configure>", self.onCanvasConfigure)
@@ -142,16 +142,46 @@ class XRSDFitGUI(Operation):
             self.new_specie_frames, self.new_specie_vars]
         return all_dicts
 
+
     def build_plot_widgets(self):
         self.plot_frame = Frame(self.main_frame,bd=4,relief=tkinter.SUNKEN)#, background="green")
         self.plot_frame.pack(side=tkinter.LEFT, fill=tkinter.BOTH, expand=tkinter.YES,padx=2,pady=2)
-        #self.fit_gui_canvas.create_window(0,0,window=self.plot_frame, anchor='nw')
+
         self.fig = Figure()
         self.fig.set_size_inches(8,7, forward=True)
         self.ax_plot = self.fig.add_subplot(111)
-        self.plot_canvas = FigureCanvasTkAgg(self.fig,self.plot_frame)
-        self.plot_canvas.get_tk_widget().pack(fill='both',expand=True)
+
+        self.canvas = Canvas(self.plot_frame, width=790)
+        #self.plot_frame.bind_all("<MouseWheel>", self.on_mousewheel2)
+        #self.plot_frame.bind_all("<Button-4>", self.on_trackpad2)
+        #self.plot_frame.bind_all("<Button-5>", self.on_trackpad2)
+        yScrollbar = Scrollbar(self.plot_frame)
+        yScrollbar.pack(side=tkinter.RIGHT,fill='y')
+        self.canvas.pack(fill='both',expand=True)
+
+        self.canvas.config(yscrollcommand=yScrollbar.set)
+        yScrollbar.config(command=self.canvas.yview)
+        self.plot_canvas = FigureCanvasTkAgg(self.fig,self.canvas)
+        self.mplCanvas = self.plot_canvas.get_tk_widget()
+        self.cwid = self.canvas.create_window(0, 0, window=self.mplCanvas, anchor='nw')
+        self.canvas.config(scrollregion=self.canvas.bbox('all'))
+        self.canvas.bind("<Configure>", self.onCanvasConfigure2)
         self.draw_plots()
+
+    def onCanvasConfigure2(self, event):
+        #Resize the inner frame to match the canvas
+        minWidth = self.mplCanvas.winfo_reqwidth()
+        minHeight = self.mplCanvas.winfo_reqheight()
+
+        if self.plot_frame.winfo_width() >= minWidth:
+            newWidth = self.plot_frame.winfo_width()
+        else:
+            newWidth = minWidth
+        if self.plot_frame.winfo_height() >= minHeight:
+            newHeight = self.plot_frame.winfo_height()
+        else:
+            newHeight = minHeight
+        self.canvas.itemconfigure(self.cwid, width=newWidth, height=newHeight)
 
     def build_entry_widgets(self):
         self.scroll_frame = Frame(self.main_frame)
@@ -177,12 +207,23 @@ class XRSDFitGUI(Operation):
     def on_mousewheel(self, event):
         self.pops_canvas.yview_scroll(-1 * event.delta, 'units')
 
+    #def on_mousewheel2(self, event):
+        #self.canvas.yview_scroll(-1 * event.delta, 'units')
+
     def on_trackpad(self, event):
         if event.num == 4:
             d = -2
         elif event.num == 5:
             d = 2
         self.pops_canvas.yview_scroll(d, 'units')
+    '''
+    def on_trackpad2(self, event):
+        if event.num == 4:
+            d = -2
+        elif event.num == 5:
+            d = 2
+        self.canvas.yview_scroll(d, 'units')
+    '''
 
     def finish(self):
         self.outputs['populations'] = self.populations
