@@ -7,7 +7,9 @@ from ...Operation import Operation
 inputs=OrderedDict(
     dir_path=None,
     regex='*.tif')
-outputs=OrderedDict(file_list=None)
+outputs=OrderedDict(
+    file_list=None,
+    filename_list=None)
 
 class BuildFileList(Operation):
     """
@@ -24,5 +26,7 @@ class BuildFileList(Operation):
         dirpath = self.inputs['dir_path']
         rx = self.inputs['regex']
         fl = glob.glob(os.path.join(dirpath,rx))
+        fnamel = [os.path.split(p)[-1] for p in fl] 
         self.outputs['file_list'] = fl
+        self.outputs['filename_list'] = fnamel
 
