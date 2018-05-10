@@ -718,7 +718,7 @@ class XRSDFitGUI(Operation):
 
     def new_population(self,event=None):
         new_nm = self.new_pop_var.get()
-        if new_nm in self.populations
+        if new_nm in self.populations:
             self.new_pop_var.set(self.default_new_pop_name())
         else:
             self.populations[new_nm] = xrsdkit.flat_noise(0.)
