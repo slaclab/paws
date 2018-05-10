@@ -1,5 +1,6 @@
 from collections import OrderedDict
 from functools import partial
+import copy
 
 import matplotlib
 matplotlib.use("TkAgg")
@@ -18,13 +19,16 @@ from ...Operation import Operation
 
 inputs = OrderedDict(
     q_I=None,
+    source_wavelength=None,
+    populations=None,
+    fixed_params=None,
+    param_bounds=None,
+    param_constraints=None)
+outputs = OrderedDict(
     populations=None,
     fixed_params=None,
     param_bounds=None,
     param_constraints=None,
-    source_wavelength=None)
-outputs = OrderedDict(
-    populations=None,
     report=None,
     q_I_opt=None,
     success_flag=False)
@@ -32,25 +36,32 @@ outputs = OrderedDict(
 class XRSDFitGUI(Operation):
     """Interactively fit a XRSD spectrum."""
 
+    # TODO: graceful exit with a call to finish() when the window is closed by force 
+
+
     def __init__(self):
         super(XRSDFitGUI, self).__init__(inputs, outputs)
         self.input_doc['q_I'] = 'n-by-2 array of q(1/Angstrom) versus I(arb).'
+        self.input_doc['source_wavelength'] = 'wavelength of light source, in Angstroms'
         self.input_doc['populations'] = 'dict defining populations, xrsdkit format'
         self.input_doc['fixed_params'] = 'dict defining fixed params, xrsdkit format'
         self.input_doc['param_bounds'] = 'dict defining param bounds, xrsdkit format'
         self.input_doc['param_constraints'] = 'dict defining param constraints, xrsdkit format'
         self.output_doc['populations'] = 'populations with parameters optimized'
+        self.output_doc['fixed_params'] = 'fixed_params after fitting complete'
+        self.output_doc['param_bounds'] = 'param_bounds after fitting complete'
+        self.output_doc['param_constraints'] = 'param_constraints after fitting complete'
         self.output_doc['report'] = 'dict reporting optimization results'
         self.output_doc['q_I_opt'] = 'computed intensity for the optimized populations'
         self.output_doc['success_flag'] = 'flag indicating user satisfaction with the fit'
 
     def run(self):
         self.q_I = self.inputs['q_I']
-        self.populations = self.inputs['populations']
         self.src_wl = self.inputs['source_wavelength']
-        self.pf = self.inputs['fixed_params']
-        self.pb = self.inputs['param_bounds']
-        self.pc = self.inputs['param_constraints']
+        self.populations = copy.deepcopy(self.inputs['populations'])
+        self.fixed_params = copy.deepcopy(self.inputs['fixed_params'])
+        self.param_bounds = copy.deepcopy(self.inputs['param_bounds'])
+        self.param_constraints = copy.deepcopy(self.inputs['param_constraints'])
         self.fit_report = None
         self.q_I_opt = None
         self.xrsd_fitter = XRSDFitter(self.q_I,self.populations,self.src_wl)
@@ -84,11 +95,12 @@ class XRSDFitGUI(Operation):
         # tkinter vars for entry and display
         self.structure_vars = OrderedDict()
         self.param_vars = OrderedDict()
-        self.param_var_vars = OrderedDict()
+        self.param_fix_vars = OrderedDict()
         self.param_bound_vars = OrderedDict()
         self.param_constraint_vars = OrderedDict()
         self.setting_vars = OrderedDict()
         self.coordinate_vars = OrderedDict()
+        self.coordinate_fix_vars = OrderedDict()
         self.specie_vars = OrderedDict()
         self.specie_param_vars = OrderedDict()
         self.specie_setting_vars = OrderedDict()
@@ -130,9 +142,9 @@ class XRSDFitGUI(Operation):
 
     def get_tk_object_dicts(self):
         all_dicts = [self.pop_frames, \
-            self.structure_vars, self.coordinate_vars, \
+            self.structure_vars, self.coordinate_vars, self.coordinate_fix_vars, \
             self.param_frames, self.param_vars, \
-            self.param_var_vars, self.param_bound_vars, self.param_constraint_vars, \
+            self.param_fix_vars, self.param_bound_vars, self.param_constraint_vars, \
             self.setting_frames, self.setting_vars, \
             self.site_frames, \
             self.specie_frames, self.specie_vars, \
@@ -228,6 +240,9 @@ class XRSDFitGUI(Operation):
 
     def finish(self):
         self.outputs['populations'] = self.populations
+        self.outputs['fixed_params'] = self.fixed_params
+        self.outputs['param_bounds'] = self.param_bounds
+        self.outputs['param_constraints'] = self.param_constraints
         self.outputs['report'] = self.fit_report
         self.outputs['q_I_opt'] = self.q_I_opt
         self.outputs['success_flag'] = self.good_fit_var.get()
@@ -250,10 +265,6 @@ class XRSDFitGUI(Operation):
         # create a frame for every population
         for pop_nm in self.populations.keys():
             self.create_pop_frame(pop_nm)
-        if self.new_pop_frame is not None:
-            self.repack_new_pop_frame()
-        if self.control_frame is not None:
-            self.repack_control_frame()
 
     def create_pop_frame(self,pop_nm):
         popd = self.populations[pop_nm]
@@ -281,6 +292,10 @@ class XRSDFitGUI(Operation):
         self.create_param_frames(pop_nm)
         self.create_site_frames(pop_nm)
         pf.pack(side=tkinter.TOP,pady=2,padx=2)
+        if self.new_pop_frame is not None:
+            self.repack_new_pop_frame()
+        if self.control_frame is not None:
+            self.repack_control_frame()
 
     def connected_entry(self,parent,tkvar,cbfun=None,entry_width=20):
         if cbfun:
@@ -296,13 +311,13 @@ class XRSDFitGUI(Operation):
             e = Entry(parent,width=20,textvariable=tkvar)
         return e
 
-    def connected_checkbutton(self,parent,varparamvar,cbfun):
+    def connected_checkbutton(self,parent,boolvar,cbfun,label=''):
         if cbfun:
             # to update internal data
             # associated with the widget
-            e = Checkbutton(parent,text="variable",variable=varparamvar,command=cbfun)
+            e = Checkbutton(parent,text=label,variable=boolvar,command=cbfun)
         else:
-            e = Checkbutton(parent,text="variable",variable=varparamvar)
+            e = Checkbutton(parent,text=label,variable=boolvar)
         return e
 
     def create_setting_frames(self,pop_nm):
@@ -337,7 +352,7 @@ class XRSDFitGUI(Operation):
     def create_param_frames(self,pop_nm):
         self.param_frames[pop_nm] = OrderedDict()
         self.param_vars[pop_nm] = OrderedDict()
-        self.param_var_vars[pop_nm] = OrderedDict()
+        self.param_fix_vars[pop_nm] = OrderedDict()
         self.param_bound_vars[pop_nm] = OrderedDict()
         self.param_constraint_vars[pop_nm] = OrderedDict()
         pf = self.pop_frames[pop_nm]
@@ -360,13 +375,14 @@ class XRSDFitGUI(Operation):
             pe = self.connected_entry(paramf,paramv,partial(self.update_param,pop_nm,param_nm,True))
             pe.grid(row=0,column=1,columnspan=2,sticky=tkinter.W)
 
-            varparamvar = BooleanVar(pf)
-            varparam = not xrsdkit.fixed_param_defaults[param_nm]
-            if xrsdkit.contains_param(self.inputs['fixed_params'],pop_nm,param_nm):
-                varparam = not self.inputs['fixed_params'][pop_nm]['parameters'][param_nm]
-            varparamvar.set(varparam)
-            self.param_var_vars[pop_nm][param_nm] = varparamvar
-            psw = self.connected_checkbutton(paramf,varparamvar,partial(self.update_fixed_param,pop_nm,param_nm))
+            pfixvar = BooleanVar(pf)
+            pfx = xrsdkit.fixed_param_defaults[param_nm]
+            if xrsdkit.contains_param(self.fixed_params,pop_nm,param_nm):
+                pfx = self.fixed_params[pop_nm]['parameters'][param_nm]
+            pfixvar.set(pfx)
+            self.param_fix_vars[pop_nm][param_nm] = pfixvar
+            psw = self.connected_checkbutton(paramf,pfixvar,
+                partial(self.update_fixed_param,pop_nm,param_nm),'fixed')
 
             psw.grid(row=0,column=3,sticky=tkinter.W)
             pbndl = Label(paramf,text='bounds:',width=10,anchor='e')
@@ -375,9 +391,9 @@ class XRSDFitGUI(Operation):
             ubndv = DoubleVar(pf)
             lbnd = xrsdkit.param_bound_defaults[param_nm][0]
             ubnd = xrsdkit.param_bound_defaults[param_nm][1]
-            if xrsdkit.contains_param(self.inputs['param_bounds'],pop_nm,param_nm):
-                lbnd = self.inputs['param_bounds'][pop_nm]['parameters'][param_nm][0]
-                ubnd = self.inputs['param_bounds'][pop_nm]['parameters'][param_nm][1]
+            if xrsdkit.contains_param(self.param_bounds,pop_nm,param_nm):
+                lbnd = self.param_bounds[pop_nm]['parameters'][param_nm][0]
+                ubnd = self.param_bounds[pop_nm]['parameters'][param_nm][1]
             if lbnd is None: lbnd = float('inf')
             if ubnd is None: ubnd = float('inf')
             lbndv.set(lbnd)
@@ -392,8 +408,8 @@ class XRSDFitGUI(Operation):
             pexpl.grid(row=2,column=0,sticky=tkinter.E)
             expr = StringVar(pf)
             expr.set("")
-            if xrsdkit.contains_param(self.inputs['param_constraints'],pop_nm,param_nm):
-                expr.set(self.inputs['param_constraints'][pop_nm]['parameters'][param_nm])
+            if xrsdkit.contains_param(self.param_constraints,pop_nm,param_nm):
+                expr.set(self.param_constraints[pop_nm]['parameters'][param_nm])
             self.param_constraint_vars[pop_nm][param_nm] = expr
             pexpe = self.connected_entry(paramf,expr,partial(self.update_param_constraints,pop_nm,param_nm))
             pexpe.grid(row=2,column=1,columnspan=3,sticky=tkinter.E+tkinter.W)
@@ -402,13 +418,13 @@ class XRSDFitGUI(Operation):
     def create_site_frames(self,pop_nm):
         self.site_frames[pop_nm] = OrderedDict()
         self.coordinate_vars[pop_nm] = OrderedDict()
+        self.coordinate_fix_vars[pop_nm] = OrderedDict()
         self.specie_frames[pop_nm] = OrderedDict()
         self.specie_vars[pop_nm] = OrderedDict()
         self.specie_param_frames[pop_nm] = OrderedDict()
         self.specie_param_vars[pop_nm] = OrderedDict()
         self.specie_setting_frames[pop_nm] = OrderedDict()
         self.specie_setting_vars[pop_nm] = OrderedDict()
-        self.new_site_frames[pop_nm] = OrderedDict()
         pf = self.pop_frames[pop_nm]
         popd = self.populations[pop_nm]
         npars = len(xrsdkit.structure_params[popd['structure']])
@@ -431,40 +447,61 @@ class XRSDFitGUI(Operation):
         stl.grid(row=0,column=0,sticky=tkinter.E)
         stnml = Label(sitef,text=site_nm,anchor='w')
         stnml.grid(row=0,column=1,columnspan=3,sticky=tkinter.W+tkinter.E)
-        rmb = Button(sitef,text='Remove')
+        rmb = Button(sitef,text='Remove',command=partial(self.remove_site,pop_nm,site_nm))
         rmb.grid(row=0,column=4)
-        # TODO: connect rmb to deleting the site
 
         site_def = popd['basis'][site_nm]
         if popd['structure'] in xrsdkit.crystalline_structure_names:
             cvarx = DoubleVar(sitef)
             cvary = DoubleVar(sitef)
             cvarz = DoubleVar(sitef)
+            cfixvarx = BooleanVar(sitef)
+            cfixvary = BooleanVar(sitef)
+            cfixvarz = BooleanVar(sitef)
             self.coordinate_vars[pop_nm][site_nm] = [cvarx,cvary,cvarz]
+            self.coordinate_fix_vars[pop_nm][site_nm] = [cfixvarx,cfixvary,cfixvarz]
             coordl = Label(sitef,text='coordinates:',width=12,anchor='e')
+            coordfixl = Label(sitef,text='fixed:',width=12,anchor='e')
             coorde1 = self.connected_entry(sitef,cvarx,partial(self.update_coord,pop_nm,site_nm,0),6)
-            coorde2 = self.connected_entry(sitef,cvary,partial(self.update_coord,pop_nm,site_nm,0),6)
-            coorde3 = self.connected_entry(sitef,cvarz,partial(self.update_coord,pop_nm,site_nm,0),6)
+            coorde2 = self.connected_entry(sitef,cvary,partial(self.update_coord,pop_nm,site_nm,1),6)
+            coorde3 = self.connected_entry(sitef,cvarz,partial(self.update_coord,pop_nm,site_nm,2),6)
+            coordcb1 = self.connected_checkbutton(sitef,cfixvarx,
+                partial(self.update_fixed_coord,pop_nm,site_nm,0),'x')
+            coordcb2 = self.connected_checkbutton(sitef,cfixvary,
+                partial(self.update_fixed_coord,pop_nm,site_nm,1),'y')
+            coordcb3 = self.connected_checkbutton(sitef,cfixvarz,
+                partial(self.update_fixed_coord,pop_nm,site_nm,2),'z')
             coordl.grid(row=1,column=0,sticky=tkinter.E)
             coorde1.grid(row=1,column=1)
             coorde2.grid(row=1,column=2)
             coorde3.grid(row=1,column=3)
+            coordfixl.grid(row=2,column=0,sticky=tkinter.E)
+            coordcb1.grid(row=2,column=1)
+            coordcb2.grid(row=2,column=2)
+            coordcb3.grid(row=2,column=3)
+            cdef = xrsdkit.param_defaults['coordinates']
+            c = [float(cdef),float(cdef),float(cdef)]
             if 'coordinates' in site_def:
                 c = site_def['coordinates']
-            else:
-                c = [0,0,0]
+            cfxdef = xrsdkit.fixed_param_defaults['coordinates']
+            cfx = [bool(cfxdef),bool(cfxdef),bool(cfxdef)]
+            if xrsdkit.contains_coordinates(self.fixed_params,pop_nm,site_nm):
+                cfx = self.fixed_params[pop_nm]['basis'][site_nm]['coordinates'] 
             cvarx.set(c[0])
             cvary.set(c[1])
             cvarz.set(c[2])
-            #coorde1.insert(0,str(c[0]))
-            #coorde2.insert(0,str(c[1]))
-            #coorde3.insert(0,str(c[2]))
-            # TODO: controls for varying,bounding,constraining coords
+            cfixvarx.set(cfx[0])
+            cfixvary.set(cfx[1])
+            cfixvarz.set(cfx[2])
+            # (low priority) TODO: controls for bounding,constraining coords
         else:
             self.coordinate_vars[pop_nm][site_nm] = [None,None,None]
-
+            self.coordinate_fix_vars[pop_nm][site_nm] = [None,None,None]
         self.create_specie_frames(pop_nm,site_nm)
         sitef.grid(row=5+npars+nstgs+ist,column=0,columnspan=4,sticky=tkinter.E+tkinter.W)
+        if pop_nm in self.new_site_frames:
+            if self.new_site_frames[pop_nm] is not None:
+                self.repack_new_site_frame(pop_nm)
 
     def create_new_site_frame(self,pop_nm):
         pf = self.pop_frames[pop_nm]
@@ -541,7 +578,7 @@ class XRSDFitGUI(Operation):
         # TODO: connect rmspecb to removing the specie
         self.create_specie_setting_frames(pop_nm,site_nm,specie_nm,iispec)
         self.create_specie_param_frames(pop_nm,site_nm,specie_nm,iispec)
-        specf.grid(row=2+ispec+iispec,column=0,columnspan=5,pady=4,sticky=tkinter.E+tkinter.W)
+        specf.grid(row=3+ispec+iispec,column=0,columnspan=5,pady=4,sticky=tkinter.E+tkinter.W)
 
     def create_specie_setting_frames(self,pop_nm,site_nm,specie_nm,iispec):
         popd = self.populations[pop_nm]
@@ -597,11 +634,13 @@ class XRSDFitGUI(Operation):
             #spare.insert(0,str(sparam_val))
             spvar.set(sparam_val)
             spare.grid(row=0,column=1,columnspan=2,sticky=tkinter.E+tkinter.W)
-            sparsw = Checkbutton(sparf,text="variable")
+            sparsw = Checkbutton(sparf,text="fixed")
             sparsw.grid(row=0,column=3,sticky=tkinter.W)
-            sparvar = not xrsdkit.fixed_param_defaults[sparam_nm]
-            # TODO: check for sparam in fixed_params
-            if sparvar: sparsw.select()
+
+            sparfx = xrsdkit.fixed_param_defaults[sparam_nm]
+            # TODO: check for sparam in fixed_params 
+            if sparfx: sparsw.select()
+
             sparbndl = Label(sparf,text='bounds:',width=10,anchor='e')
             sparbndl.grid(row=1,column=0,sticky=tkinter.E)
             sparbnde1 = Entry(sparf,width=8)
@@ -631,9 +670,18 @@ class XRSDFitGUI(Operation):
 
     def new_site(self,pop_nm):
         new_nm = self.new_site_vars[pop_nm].get()
-        nsts = len(self.populations[pop_nm]['basis'])
-        self.populations[pop_nm]['basis'][new_nm] = {'flat':{}}
-        self.create_site_frame(pop_nm,new_nm,nsts)
+        if new_nm in self.populations[pop_nm]['basis']:
+            self.new_site_vars[pop_nm].set(self.default_new_site_name(pop_nm))
+        else:
+            nsts = len(self.populations[pop_nm]['basis'])
+            self.populations[pop_nm]['basis'][new_nm] = {'flat':{}} 
+            if self.populations[pop_nm]['structure'] in xrsdkit.crystalline_structure_names:
+                cdef = xrsdkit.param_defaults['coordinates']
+                self.populations[pop_nm]['basis'][new_nm]['coordinates'] = [float(cdef),float(cdef),float(cdef)] 
+            self.create_site_frame(pop_nm,new_nm,nsts)
+            self.new_site_vars[pop_nm].set(self.default_new_site_name(pop_nm))
+            self.draw_plots()
+
 
     def remove_population(self,pop_nm):
         self.destroy_pop_frame(pop_nm)
@@ -641,13 +689,19 @@ class XRSDFitGUI(Operation):
         self.draw_plots()
         self.repack_entry_widgets()
 
+    def remove_site(self,pop_nm,site_nm):
+        self.destroy_site_frame(pop_nm,site_nm)
+        self.populations[pop_nm]['basis'].pop(site_nm)
+        self.draw_plots()
+        self.repack_basis_widgets(pop_nm)
+
     def update_all_population_values(self,new_pops):
         # assume the structure and settings of new_pops
         # will be the same as self.populations.
         for pop_nm,popd in new_pops.items():
             self.update_population_values(pop_nm,popd)
         #self.populations = new_pops
-
+        
     def update_population_values(self,pop_nm,pop_dict):
         for param_nm, param_val in pop_dict['parameters'].items():
             self.update_param_value(pop_nm,param_nm,param_val)
@@ -706,13 +760,14 @@ class XRSDFitGUI(Operation):
                     if 'coordinates' in site_def:
                         site_def.pop('coordinates')
 
-            self.destroy_param_frames(pop_nm)
             self.destroy_setting_frames(pop_nm)
-            self.create_param_frames(pop_nm)
-            self.create_setting_frames(pop_nm)
-
+            self.destroy_param_frames(pop_nm)
             self.destroy_site_frames(pop_nm)
+            self.create_setting_frames(pop_nm)
+            self.create_param_frames(pop_nm)
             self.create_site_frames(pop_nm)
+            #self.destroy_pop_frame(pop_nm)
+            #self.create_pop_frame(pop_nm)
             self.draw_plots()
 
     def update_specie(self,pop_nm,site_nm,specie_nm,iispec,var_nm,dummy,mode):
@@ -748,74 +803,127 @@ class XRSDFitGUI(Operation):
             #self.destroy_specie_param_frames(pop_nm,site_nm,specie_nm,iispec)
             #self.create_specie_param_frames(pop_nm,site_nm,snm,specie_idx)
 
-    def update_param(self,pop_nm,param_nm,draw_plots=False,event=None):
-        p = self.param_vars[pop_nm][param_nm].get()
-        if not p == self.populations[pop_nm]['parameters'][param_nm]:
-            # TODO: check if the entry is valid
-            is_valid = True
-            if is_valid:
-                self.populations[pop_nm]['parameters'][param_nm] = p
+    def update_setting(self,pop_nm,stg_nm,draw_plots=False,event=None):
+        s_old = self.populations[pop_nm]['settings'][stg_nm]
+        is_valid = True
+        try:
+            s = self.setting_vars[pop_nm][stg_nm].get()
+        except:
+            is_valid = False
+        if is_valid:
+            self.populations[pop_nm]['settings'][stg_nm] = s
+            if draw_plots:
+                self.draw_plots()
+        else:
+            self.setting_vars[pop_nm][stg_nm].set(s_old)
+        return is_valid
+
+    ### TODO: unify update_param functions below to work for specie params and coordinates as well
+    ### TODO: also unify to eliminate boilerplate 
+
+    def validate_and_update(self,parent,item_key,old_val,tkvar,draw_plots=False):
+        """Validate a Var entry and set its value in a parent data structure
+
+        If the entry is valid, the value is set in `parent` at `item_key`.
+        If the entry is not valid, the `tkvar` is reset to `old_val`.
+        
+        Parameters
+        ----------
+        parent : object
+            A data structure
+        item_key : object
+            A key for fetching an item from `parent`
+        old_val : object
+            A value to fall back on if the Var fails to get()
+        tkvar : tk.Variable
+            The tkinter Variable to get() the new value from
+
+        Returns
+        -------
+        is_valid : boolean
+            Flag for whether or not the entry was found to be valid
+        """
+        is_valid = True
+        try:
+            new_val = tkvar.get()
+        except:
+            is_valid = False
+        if is_valid:
+            if not new_val == old_val: 
+                parent[item_key] = new_val 
                 if draw_plots:
                     self.draw_plots()
-            #else:
-            # TODO: restore the entry widget to the previous value
+        else:
+            tkvar.set(old_val)
+        return is_valid
 
-    def update_setting(self,pop_nm,stg_nm,draw_plots=False,event=None):
-        stg_val = self.setting_vars[pop_nm][stg_nm].get()
-        # TODO: check if the entry is valid
-        is_valid = True
-        if is_valid:
-            self.populations[pop_nm]['settings'][stg_nm] = stg_val
-            if draw_plots:
-                self.draw_plots()
-        #else:
-        # TODO: restore the entry widget to the previous value
+    def update_param(self,pop_nm,param_nm,draw_plots=False,event=None):
+        params = self.populations[pop_nm]['parameters']
+        p_old = params[param_nm]
+        p_var = self.param_vars[pop_nm][param_nm]
+        return self.validate_and_update(params,param_nm,p_old,p_var,draw_plots)
 
-    def update_param_bound(self,pop_nm,param_nm,i,event=None):# it works only when "Enter" is pressed
-        p = self.param_bound_vars[pop_nm][param_nm][i].get()
-        # TODO: check if the entry is valid
-        is_valid = True
+    def update_param_bound(self,pop_nm,param_nm,bound_idx,draw_plots=False,event=None):
+        bounds = copy.deepcopy(xrsdkit.param_bound_defaults[param_nm])
+        if xrsdkit.contains_param(self.param_bounds,pop_nm,param_nm):
+            bounds = self.param_bounds[pop_nm]['parameters'][param_nm]
+        b_old = bounds[bound_idx]
+        b_var = self.param_bound_vars[pop_nm][param_nm][bound_idx]
+        is_valid = self.validate_and_update(bounds,bound_idx,b_old,b_var,False)
         if is_valid:
-            new_bounds = xrsdkit.param_bound_defaults[param_nm]
-            if xrsdkit.contains_param(self.inputs['param_bounds'],pop_nm,param_nm):
-                new_bounds = self.inputs['param_bounds'][pop_nm]['parameters'][param_nm]
-            if i==0: new_bounds=(p, new_bounds[1]) # new_bounds is a tuple and it is immutable
-            else: new_bounds=(new_bounds[0], p)
-            xrsdkit.update_param(self.inputs['param_bounds'],pop_nm,param_nm,new_bounds)
-            # TODO: check if the new bounds have excluded the parameter value,
-            # and update the parameter value if necessary.
+            xrsdkit.update_param(self.param_bounds,pop_nm,param_nm,bounds)
+            # TODO: check the value of the param- if it is outside the bounds, update it and draw_plots.
+        return is_valid
 
     def update_fixed_param(self,pop_nm,param_nm,event=None):
-        p=self.param_var_vars[pop_nm][param_nm].get()
-        p=not p
-        xrsdkit.update_param(self.inputs['fixed_params'],pop_nm,param_nm,p)
-
-    def update_param_constraints(self,pop_nm,param_nm,event=None):# it works only when "Enter" is pressed
-        p = self.param_constraint_vars[pop_nm][param_nm].get()
-        # TODO: check if the entry is valid
-        is_valid = True
+        fp = {} 
+        fx_old = bool(xrsdkit.fixed_param_defaults[param_nm])
+        if xrsdkit.contains_param(self.fixed_params,pop_nm,param_nm):
+            fp = self.fixed_params[pop_nm]['parameters']
+            fx_old = fp[param_nm]
+        fx_var = self.param_fix_vars[pop_nm][param_nm]
+        is_valid = self.validate_and_update(fp,param_nm,fx_old,fx_var,False)
         if is_valid:
-            xrsdkit.update_param(self.inputs['param_constraints'],pop_nm,param_nm,p)
+            xrsdkit.update_param(self.fixed_params,pop_nm,param_nm,fp[param_nm])
+        return is_valid
+
+    def update_param_constraints(self,pop_nm,param_nm,draw_plots=False,event=None):
+        pc = {}
+        pc_old = None
+        if xrsdkit.contains_param(self.param_constraints,pop_nm,param_nm):
+            pc = self.param_constraints[pop_nm]['parameters']
+            pc_old = pc[param_nm]
+        pc_var = self.param_constraint_vars[pop_nm][param_nm]
+        is_valid = self.validate_and_update(pc,param_nm,pc_old,pc_var,False)
+        # TODO: any additional validation of the constraint expression?
+        if is_valid:
+            xrsdkit.update_param(self.param_constraints,pop_nm,param_nm,pc[param_nm])
+            # TODO: check the value of the param- if violates constraints, update it and draw_plots.
+        return is_valid
 
     def update_coord(self,pop_nm,site_nm,coord_idx,draw_plots=False,event=None):
-        new_coord_val = self.coordinate_vars[pop_nm][site_nm][coord_idx].get()
-        # TODO: check if the entry is valid
-        is_valid = True
+        coords = self.populations[pop_nm]['basis'][site_nm]['coordinates']
+        c_old = coords[coord_idx]
+        c_var = self.coordinate_vars[pop_nm][site_nm][coord_idx]
+        return self.validate_and_update(coords,coord_idx,c_old,c_var,draw_plots)
+
+    def update_fixed_coord(self,pop_nm,site_nm,coord_idx,event=None):
+        fcdef = bool(xrsdkit.fixed_param_defaults['coordinates'])
+        fc = [bool(fcdef),bool(fcdef),bool(fcdef)] 
+        if xrsdkit.contains_coordinates(self.fixed_params,pop_nm,site_nm):
+            fc = self.fixed_params[pop_nm]['basis'][site_nm]['coordinates']
+        fc_old = fc[coord_idx]
+        fc_var = self.coordinate_fix_vars[pop_nm][site_nm][coord_idx]
+        is_valid = self.validate_and_update(fc,coord_idx,fc_old,fc_var,False)
         if is_valid:
-            self.populations[pop_nm]['basis'][site_nm]['coordinates'][coord_idx] = new_coord_val
-            if draw_plots:
-                self.draw_plots()
-        #else:
-        # TODO: restore the entry widget to the previous value
+            xrsdkit.update_coordinates(self.fixed_params,pop_nm,site_nm,fc)
+        return is_valid
 
     def fit(self):
         ftr = xrsdkit.fitting.xrsd_fitter.XRSDFitter(self.q_I,self.populations,self.src_wl)
-        fp = self.inputs['fixed_params']
-        pb = self.inputs['param_bounds']
-        pc = self.inputs['param_constraints']
         logIwtd = bool(self.logI_weighted_var.get())
         erwtd = bool(self.error_weighted_var.get())
-        p_opt,rpt = ftr.fit(fp,pb,pc,erwtd,logIwtd)
+        p_opt,rpt = ftr.fit(self.fixed_params,self.param_bounds,self.param_constraints,erwtd,logIwtd)
         self.fit_obj_var.set(rpt['final_objective'])
         self.update_all_population_values(p_opt)
         self.draw_plots()
@@ -921,14 +1029,23 @@ class XRSDFitGUI(Operation):
                     specf = self.specie_frames[pop_nm][site_nm][specie_nm][iispec]
                     specf.pack_forget()
                     specf.grid(row=2+ispec+iispec,column=0,columnspan=5,pady=4,sticky=tkinter.E+tkinter.W)
+        self.repack_new_site_frame(pop_nm)
 
-    def destroy_entry_widgets(self):
-        pop_nm_list = list(self.pop_frames.keys())
-        for pop_nm in pop_nm_list:
-            self.destroy_pop_frame(pop_nm)
-            self.structure_vars.pop(pop_nm)
-        self.repack_new_pop_frame()
-        self.repack_control_frame()
+    def repack_new_site_frame(self,pop_nm):
+        popd = self.populations[pop_nm]
+        nsts = len(popd['basis'])
+        npars = len(xrsdkit.structure_params[popd['structure']])
+        nstgs = len(xrsdkit.structure_settings[popd['structure']])
+        self.new_site_frames[pop_nm].pack_forget()
+        self.new_site_frames[pop_nm].grid(row=5+npars+nstgs+nsts,column=0,columnspan=4)
+
+    #def destroy_entry_widgets(self):
+    #    pop_nm_list = list(self.pop_frames.keys())
+    #    for pop_nm in pop_nm_list:
+    #        self.destroy_pop_frame(pop_nm)
+    #        self.structure_vars.pop(pop_nm)
+    #    self.repack_new_pop_frame()
+    #    self.repack_control_frame()
 
     def destroy_pop_frame(self,pop_nm):
         self.destroy_setting_frames(pop_nm)
@@ -949,9 +1066,8 @@ class XRSDFitGUI(Operation):
         param_nm_list = list(self.param_frames[pop_nm].keys())
         for param_nm in param_nm_list:
             self.param_vars[pop_nm].pop(param_nm)
-            self.param_var_vars[pop_nm].pop(param_nm)
-            #self.param_lbnd_vars[pop_nm].pop(param_nm)
-            #self.param_ubnd_vars[pop_nm].pop(param_nm)
+            self.param_fix_vars[pop_nm].pop(param_nm) 
+            self.param_bound_vars[pop_nm].pop(param_nm)  
             param_frm = self.param_frames[pop_nm].pop(param_nm)
             param_frm.pack_forget()
             param_frm.destroy()
