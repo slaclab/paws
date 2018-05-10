@@ -24,22 +24,22 @@ class LoadYAML(Operation):
         f = open(p,'r')
         ds = yaml.load(f)
         f.close()
-
         #
         #
         #
         #
-        for k,v in ds.items():
-            if isinstance(v,list) or isinstance(v,np.ndarray):
-                ds[k] = float(v[0])
-            elif ds[k] is None:
-                ds.pop(k)
-            else:
-                ds[k] = float(v)
+        #for k,v in ds.items():
+        #    if isinstance(v,list) or isinstance(v,np.ndarray):
+        #        ds[k] = float(v[0])
+        #    elif ds[k] is None:
+        #        ds.pop(k)
+        #    else:
+        #        ds[k] = float(v)
         #
         #
         #
         #
+        #import pdb; pdb.set_trace()
 
         self.outputs['yaml_output'] = ds 
 
