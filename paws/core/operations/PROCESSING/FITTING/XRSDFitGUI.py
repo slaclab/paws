@@ -11,8 +11,6 @@ from tkinter import Tk, Frame, Canvas, Button, Label, Entry, \
 OptionMenu, Scrollbar, Checkbutton, \
 StringVar, DoubleVar, BooleanVar, IntVar
 import numpy as np
-#from matplotlib import pyplot as plt
-#from matplotlib.widgets import Slider, Button, RadioButtons, TextBox
 import xrsdkit
 from xrsdkit.fitting.xrsd_fitter import XRSDFitter
 from ...Operation import Operation
@@ -35,9 +33,6 @@ outputs = OrderedDict(
         
 class XRSDFitGUI(Operation):
     """Interactively fit a XRSD spectrum."""
-
-    # TODO: graceful exit with a call to finish() when the window is closed by force 
-
 
     def __init__(self):
         super(XRSDFitGUI, self).__init__(inputs, outputs)
@@ -123,7 +118,7 @@ class XRSDFitGUI(Operation):
         self.fit_gui.mainloop()
 
         # after tk loop exits, finish Operation
-        #self.finish()
+        self.finish()
 
     def onCanvasConfigure(self, event):
         #Resize the inner frame to match the canvas
@@ -229,14 +224,13 @@ class XRSDFitGUI(Operation):
         elif event.num == 5:
             d = 2
         self.pops_canvas.yview_scroll(d, 'units')
-    '''
-    def on_trackpad2(self, event):
-        if event.num == 4:
-            d = -2
-        elif event.num == 5:
-            d = 2
-        self.canvas.yview_scroll(d, 'units')
-    '''
+
+    #def on_trackpad2(self, event):
+    #    if event.num == 4:
+    #        d = -2
+    #    elif event.num == 5:
+    #        d = 2
+    #    self.canvas.yview_scroll(d, 'units')
 
     def finish(self):
         self.outputs['populations'] = self.populations
@@ -589,7 +583,6 @@ class XRSDFitGUI(Operation):
         speccb.grid(row=0,column=1,sticky=tkinter.W+tkinter.E)
         rmspecb = Button(specf,text='Remove',command=partial(self.remove_specie,pop_nm,site_nm,specie_nm,iispec))
         rmspecb.grid(row=0,column=2)
-        # TODO: connect rmspecb to removing the specie
         self.create_specie_setting_frames(pop_nm,site_nm,specie_nm,iispec)
         self.create_specie_param_frames(pop_nm,site_nm,specie_nm,iispec)
         specf.grid(row=3+row_idx,column=0,columnspan=5,pady=4,sticky=tkinter.E+tkinter.W)
@@ -682,12 +675,15 @@ class XRSDFitGUI(Operation):
             sparl = Label(sparf,text='{}:'.format(sparam_nm),width=10,anchor='e') # sparam_nm is "occupancy"
             sparl.grid(row=0,column=0,sticky=tkinter.E)
             #spare = Entry(sparf,width=16)
+            # TODO: connect this entry to updating the specie_param
             spare = self.connected_entry(sparf,spvar,None)
             sparam_val = xrsdkit.param_defaults[sparam_nm]
             if sparam_nm in specd: sparam_val = specd[sparam_nm]
-            #spare.insert(0,str(sparam_val))
             spvar.set(sparam_val)
             spare.grid(row=0,column=1,columnspan=2,sticky=tkinter.E+tkinter.W)
+            sparsw = Checkbutton(sparf,text="fixed")
+            sparsw.grid(row=0,column=3,sticky=tkinter.W)
+            # TODO: connect sparsw to changing fixed_params
 
             sparfxvar = BooleanVar(specief)
             print("sparam_nm", sparam_nm)
@@ -711,14 +707,12 @@ class XRSDFitGUI(Operation):
             sparbnde2.insert(0,str(ubnd))
             sparbnde1.grid(row=1,column=1,sticky=tkinter.W)
             sparbnde2.grid(row=1,column=2,sticky=tkinter.W)
+            # TODO: connect sparbnde to changing param_bounds
             sparexpl = Label(sparf,text='expression:',width=10,anchor='e')
             sparexpl.grid(row=2,column=0,sticky=tkinter.E)
             sparexpe = Entry(sparf,width=16)
             # TODO: check for sparam in param_constraints
             sparexpe.grid(row=2,column=1,columnspan=3,sticky=tkinter.E+tkinter.W)
-            # TODO: connect sparame to setting the param
-            # TODO: connect sparsw to changing fixed_params
-            # TODO: connect sparbnde to changing param_bounds
             # TODO: connect sparexpe to setting param_constraints
 
 
@@ -766,7 +760,6 @@ class XRSDFitGUI(Operation):
         self.create_specie_frame(pop_nm,site_nm,spec_nm,nspec_tot)
         #self.repack_new_specie_frame(pop_nm,site_nm) 
         self.new_specie_vars[pop_nm][site_nm].set('flat')
-
 
     def remove_population(self,pop_nm):
         self.destroy_pop_frame(pop_nm)
@@ -897,21 +890,6 @@ class XRSDFitGUI(Operation):
             self.create_specie_setting_frames(pop_nm,site_nm,snm,iispec)
             self.create_specie_param_frames(pop_nm,site_nm,snm,iispec)
 
-    def update_setting(self,pop_nm,stg_nm,draw_plots=False,event=None):
-        s_old = self.populations[pop_nm]['settings'][stg_nm]
-        is_valid = True
-        try:
-            s = self.setting_vars[pop_nm][stg_nm].get()
-        except:
-            is_valid = False
-        if is_valid:
-            self.populations[pop_nm]['settings'][stg_nm] = s
-            if draw_plots:
-                self.draw_plots()
-        else:
-            self.setting_vars[pop_nm][stg_nm].set(s_old)
-        return is_valid
-
     def validate_and_update(self,parent,item_key,old_val,tkvar,draw_plots=False):
         """Validate a Var entry and set its value in a parent data structure
 
@@ -947,6 +925,12 @@ class XRSDFitGUI(Operation):
         else:
             tkvar.set(old_val)
         return is_valid
+
+    def update_setting(self,pop_nm,stg_nm,draw_plots=False,event=None):
+        stgs = self.populations[pop_nm]['settings']
+        s_old = stgs[stg_nm]
+        s_var = self.setting_vars[pop_nm][stg_nm]
+        return self.validate_and_update(stgs,stg_nm,s_old,s_var,draw_plots)
 
     def update_param(self,pop_nm,param_nm,draw_plots=False,event=None):
         params = self.populations[pop_nm]['parameters']
@@ -1201,3 +1185,5 @@ class XRSDFitGUI(Operation):
             sparam_frm = sparam_frms.pop(sparam_nm)
             sparam_frm.pack_forget()
             sparam_frm.destroy()
+
+
