@@ -726,7 +726,7 @@ class XRSDFitGUI(Operation):
 
     def update_form_factor(self,pop_nm,site_nm,var_nm,dummy,mode):
         ff = self.ff_vars[pop_nm][site_nm].get()
-        if not ff == self.populations[pop_nm][site_nm]['form']:
+        if not ff == self.populations[pop_nm]['basis'][site_nm]['form']:
             self.populations[pop_nm]['basis'][site_nm]['form'] = ff 
             new_params = OrderedDict.fromkeys(xrsdkit.form_factor_params[ff])
             for pnm in new_params: new_params[pnm] = xrsdkit.param_defaults[pnm]
@@ -737,6 +737,9 @@ class XRSDFitGUI(Operation):
             self.destroy_coordinate_widgets(pop_nm,site_nm)
             self.destroy_site_setting_widgets(pop_nm,site_nm)
             self.destroy_site_param_widgets(pop_nm,site_nm)
+            self.create_coordinate_widgets(pop_nm,site_nm)
+            self.create_site_setting_widgets(pop_nm,site_nm)
+            self.create_site_param_widgets(pop_nm,site_nm)
 
     def validate_and_update(self,parent,item_key,old_val,tkvar,draw_plots=False):
         """Validate a Var entry and set its value in a parent data structure
