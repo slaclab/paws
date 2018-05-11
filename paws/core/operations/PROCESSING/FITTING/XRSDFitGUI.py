@@ -475,9 +475,9 @@ class XRSDFitGUI(Operation):
             self.coordinate_fix_vars[pop_nm][site_nm] = [cfixvarx,cfixvary,cfixvarz]
             coordl = Label(coordf,text='coordinates:',width=12,anchor='e')
             coordfixl = Label(coordf,text='fixed:',width=12,anchor='e')
-            coorde1 = self.connected_entry(coordf,cvarx,partial(self.update_coord,pop_nm,site_nm,0),6)
-            coorde2 = self.connected_entry(coordf,cvary,partial(self.update_coord,pop_nm,site_nm,1),6)
-            coorde3 = self.connected_entry(coordf,cvarz,partial(self.update_coord,pop_nm,site_nm,2),6)
+            coorde1 = self.connected_entry(coordf,cvarx,partial(self.update_coord,pop_nm,site_nm,0,True),6)
+            coorde2 = self.connected_entry(coordf,cvary,partial(self.update_coord,pop_nm,site_nm,1,True),6)
+            coorde3 = self.connected_entry(coordf,cvarz,partial(self.update_coord,pop_nm,site_nm,2,True),6)
             coordcb1 = self.connected_checkbutton(coordf,cfixvarx,
                 partial(self.update_fixed_coord,pop_nm,site_nm,0),'x')
             coordcb2 = self.connected_checkbutton(coordf,cfixvary,
@@ -566,7 +566,7 @@ class XRSDFitGUI(Operation):
             stg_val = xrsdkit.setting_defaults[stg_nm]
             if stg_nm in site_def['settings']: stg_val = site_def['settings'][stg_nm]
             stgv.set(stg_val)
-            stge = self.connected_entry(stgf,stgv,partial(self.update_site_setting,pop_nm,site_nm,stg_nm))
+            stge = self.connected_entry(stgf,stgv,partial(self.update_site_setting,pop_nm,site_nm,stg_nm,True))
             stge.grid(row=0,column=1,sticky=tkinter.E+tkinter.W)
 
     def create_site_param_widgets(self,pop_nm,site_nm):
@@ -588,7 +588,7 @@ class XRSDFitGUI(Operation):
             param_val = xrsdkit.param_defaults[param_nm]
             if param_nm in site_def['parameters']: param_val = site_def['parameters'][param_nm]
             spvar.set(param_val)
-            spare = self.connected_entry(sparf,spvar,partial(self.update_site_param,pop_nm,site_nm,param_nm))
+            spare = self.connected_entry(sparf,spvar,partial(self.update_site_param,pop_nm,site_nm,param_nm,True))
             spare.grid(row=0,column=1,columnspan=2,sticky=tkinter.E+tkinter.W)
             sparsw = Checkbutton(sparf,text="fixed")
             sparsw.grid(row=0,column=3,sticky=tkinter.W)
@@ -651,8 +651,7 @@ class XRSDFitGUI(Operation):
             self.populations[pop_nm]['basis'][new_nm] = xrsdkit.default_site_definition('flat',xtal_flag)
             self.create_site_frame(pop_nm,new_nm)
             self.new_site_vars[pop_nm].set(self.default_new_site_name(pop_nm))
-            # no need to draw_plots: this site has no occupant
-            #self.draw_plots()
+            self.draw_plots()
             self.repack_new_site_frame(pop_nm) 
 
     def remove_population(self,pop_nm):
@@ -756,6 +755,7 @@ class XRSDFitGUI(Operation):
             self.create_coordinate_widgets(pop_nm,site_nm)
             self.create_site_setting_widgets(pop_nm,site_nm)
             self.create_site_param_widgets(pop_nm,site_nm)
+            self.draw_plots()
 
     def validate_and_update(self,parent,item_key,old_val,tkvar,draw_plots=False):
         """Validate a Var entry and set its value in a parent data structure
