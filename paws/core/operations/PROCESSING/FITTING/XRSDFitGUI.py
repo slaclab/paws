@@ -900,7 +900,7 @@ class XRSDFitGUI(Operation):
         if xrsdkit.contains_site_param(self.param_constraints,pop_nm,site_nm,param_nm):
             pc = self.site_param_constraints[pop_nm]['basis'][site_nm]
             pc_old = pc[param_nm]
-        pc_var = self.site_param_constraint_vars[pop_nm][site_nm][param_nm]
+        pc_var = self.param_constraint_vars[pop_nm][site_nm][param_nm]
         is_valid = self.validate_and_update(pc,param_nm,pc_old,pc_var,False)
         # TODO: any additional validation of the constraint expression?
         if is_valid:
