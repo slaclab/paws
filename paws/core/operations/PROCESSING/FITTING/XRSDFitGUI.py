@@ -80,6 +80,7 @@ class XRSDFitGUI(Operation):
         self.setting_frames = OrderedDict()
         self.site_frames = OrderedDict()
         self.specie_frames = OrderedDict()
+        self.remove_specie_buttons = OrderedDict()
         self.specie_setting_frames = OrderedDict()
         self.specie_param_frames = OrderedDict()
         self.new_site_frames = OrderedDict()
@@ -135,19 +136,19 @@ class XRSDFitGUI(Operation):
             newHeight = minHeight
         self.fit_gui_canvas.itemconfigure(self.window, width=newWidth, height=newHeight)
 
-    def get_tk_object_dicts(self):
-        all_dicts = [self.pop_frames, \
-            self.structure_vars, self.coordinate_vars, self.coordinate_fix_vars, \
-            self.param_frames, self.param_vars, \
-            self.param_fix_vars, self.param_bound_vars, self.param_constraint_vars, \
-            self.setting_frames, self.setting_vars, \
-            self.site_frames, \
-            self.specie_frames, self.specie_vars, \
-            self.specie_param_frames, self.specie_param_vars, \
-            self.specie_setting_frames, self.specie_setting_vars, \
-            self.new_site_frames, self.new_site_vars, \
-            self.new_specie_frames, self.new_specie_vars]
-        return all_dicts
+    #def get_tk_object_dicts(self):
+    #    all_dicts = [self.pop_frames, \
+    #        self.structure_vars, self.coordinate_vars, self.coordinate_fix_vars, \
+    #        self.param_frames, self.param_vars, \
+    #        self.param_fix_vars, self.param_bound_vars, self.param_constraint_vars, \
+    #        self.setting_frames, self.setting_vars, \
+    #        self.site_frames, \
+    #        self.specie_frames, self.specie_vars, \
+    #        self.specie_param_frames, self.specie_param_vars, \
+    #        self.specie_setting_frames, self.specie_setting_vars, \
+    #        self.new_site_frames, self.new_site_vars, \
+    #        self.new_specie_frames, self.new_specie_vars]
+    #    return all_dicts
 
 
     def build_plot_widgets(self):
@@ -416,6 +417,7 @@ class XRSDFitGUI(Operation):
         self.coordinate_vars[pop_nm] = OrderedDict()
         self.coordinate_fix_vars[pop_nm] = OrderedDict()
         self.specie_frames[pop_nm] = OrderedDict()
+        self.remove_specie_buttons[pop_nm] = OrderedDict()
         self.specie_vars[pop_nm] = OrderedDict()
         self.specie_param_frames[pop_nm] = OrderedDict()
         self.specie_param_vars[pop_nm] = OrderedDict()
@@ -554,6 +556,7 @@ class XRSDFitGUI(Operation):
             iispec = len(self.specie_frames[pop_nm][site_nm][specie_nm])
         if iispec == 0: 
             self.specie_frames[pop_nm][site_nm][specie_nm] = []
+            self.remove_specie_buttons[pop_nm][site_nm][specie_nm] = []
             self.specie_vars[pop_nm][site_nm][specie_nm] = []
             self.specie_param_frames[pop_nm][site_nm][specie_nm] = [OrderedDict()]
             self.specie_param_vars[pop_nm][site_nm][specie_nm] = [OrderedDict()]
@@ -578,11 +581,12 @@ class XRSDFitGUI(Operation):
         speccb = OptionMenu(specf,specvar,*spec_option_dict)
         specvar.set(specie_nm)
         specvar.trace('w',partial(self.update_specie,pop_nm,site_nm,specie_nm,iispec))
-        self.specie_frames[pop_nm][site_nm][specie_nm].append(specf)
-        self.specie_vars[pop_nm][site_nm][specie_nm].append(specvar)
         speccb.grid(row=0,column=1,sticky=tkinter.W+tkinter.E)
         rmspecb = Button(specf,text='Remove',command=partial(self.remove_specie,pop_nm,site_nm,specie_nm,iispec))
         rmspecb.grid(row=0,column=2)
+        self.specie_frames[pop_nm][site_nm][specie_nm].append(specf)
+        self.specie_vars[pop_nm][site_nm][specie_nm].append(specvar)
+        self.remove_specie_buttons[pop_nm][site_nm][specie_nm].append(rmspecb)
         self.create_specie_setting_frames(pop_nm,site_nm,specie_nm,iispec)
         self.create_specie_param_frames(pop_nm,site_nm,specie_nm,iispec)
         specf.grid(row=3+row_idx,column=0,columnspan=5,pady=4,sticky=tkinter.E+tkinter.W)
@@ -676,7 +680,7 @@ class XRSDFitGUI(Operation):
             sparl.grid(row=0,column=0,sticky=tkinter.E)
             #spare = Entry(sparf,width=16)
             # TODO: connect this entry to updating the specie_param
-            spare = self.connected_entry(sparf,spvar,None)
+            spare = self.connected_entry(sparf,spvar,partial(self.update_specie_param,pop_nm,site_nm,specie_nm,iispec))
             sparam_val = xrsdkit.param_defaults[sparam_nm]
             if sparam_nm in specd: sparam_val = specd[sparam_nm]
             spvar.set(sparam_val)
@@ -778,10 +782,6 @@ class XRSDFitGUI(Operation):
         spec_def = self.populations[pop_nm]['basis'][site_nm][specie_nm]
         if isinstance(spec_def,list):
             spec_def.pop(iispec)
-            # TODO (BUG): if iispec is not the end of the list,
-            # the remove_specie partial() callbacks will now be mis-indexed.
-            # Think of a graceful solution for this,
-            # ideally doing away with the iispec arguments altogether.
         else:
             self.populations[pop_nm]['basis'][site_nm].pop(specie_nm)
         self.draw_plots()
@@ -1104,6 +1104,9 @@ class XRSDFitGUI(Operation):
                     specf = self.specie_frames[pop_nm][site_nm][specie_nm][iispec]
                     specf.pack_forget()
                     specf.grid(row=2+ispec+iispec,column=0,columnspan=5,pady=4,sticky=tkinter.E+tkinter.W)
+                    rmspecb = self.remove_specie_buttons[pop_nm][site_nm][specie_nm][iispec]
+                    rmspecb.configure(command=partial(self.remove_specie,pop_nm,site_nm,specie_nm,iispec))
+                    # TODO reset entry widget callbacks 
         self.repack_new_site_frame(pop_nm)
 
     #def destroy_entry_widgets(self):
