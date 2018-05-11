@@ -100,6 +100,8 @@ class XRSDFitGUI(Operation):
         self.site_setting_vars = OrderedDict()
         self.site_param_vars = OrderedDict()
         self.site_param_fix_vars = OrderedDict()
+        self.site_param_bound_vars = OrderedDict()
+        self.site_param_constraint_vars = OrderedDict()
         self.new_site_vars = OrderedDict()
         self.new_pop_var = None
         self.logI_weighted_var = None
@@ -401,6 +403,8 @@ class XRSDFitGUI(Operation):
         self.site_param_frames[pop_nm] = OrderedDict()
         self.site_param_vars[pop_nm] = OrderedDict()
         self.site_param_fix_vars[pop_nm] = OrderedDict()
+        self.site_param_bound_vars[pop_nm] = OrderedDict()
+        self.site_param_constraint_vars[pop_nm] = OrderedDict()
         self.site_setting_frames[pop_nm] = OrderedDict()
         self.site_setting_vars[pop_nm] = OrderedDict()
         pf = self.pop_frames[pop_nm]
@@ -425,6 +429,8 @@ class XRSDFitGUI(Operation):
         self.site_param_frames[pop_nm][site_nm] = OrderedDict() 
         self.site_param_vars[pop_nm][site_nm] = OrderedDict()
         self.site_param_fix_vars[pop_nm][site_nm] = OrderedDict()
+        self.site_param_bound_vars[pop_nm][site_nm] = OrderedDict()
+        self.site_param_constraint_vars[pop_nm][site_nm] = OrderedDict()
 
         stl = Label(sitef,text='site name:',anchor='e')
         stl.grid(row=0,column=0,sticky=tkinter.E)
@@ -569,48 +575,60 @@ class XRSDFitGUI(Operation):
         icrd = 0
         if popd['structure'] in xrsdkit.crystalline_structure_names:
             icrd = 1
-        for isp,sparam_nm in enumerate(xrsdkit.form_factor_params[site_def['form']]):
+        for isp,param_nm in enumerate(xrsdkit.form_factor_params[site_def['form']]):
             sparf = Frame(sitef,bd=2,padx=4,pady=4,relief=tkinter.GROOVE)
             spvar = DoubleVar(sparf)
-            self.site_param_frames[pop_nm][site_nm][sparam_nm] = sparf
-            self.site_param_vars[pop_nm][site_nm][sparam_nm] = spvar
+            self.site_param_frames[pop_nm][site_nm][param_nm] = sparf
+            self.site_param_vars[pop_nm][site_nm][param_nm] = spvar
             sparf.grid(row=2+nstgs+icrd+isp,column=0,columnspan=3,sticky=tkinter.E+tkinter.W)
-            sparl = Label(sparf,text='{}:'.format(sparam_nm),width=10,anchor='e')
+            sparl = Label(sparf,text='{}:'.format(param_nm),width=10,anchor='e')
             sparl.grid(row=0,column=0,sticky=tkinter.E)
-            spare = self.connected_entry(sparf,spvar,partial(self.update_site_param,pop_nm,site_nm,sparam_nm))
-            sparam_val = xrsdkit.param_defaults[sparam_nm]
-            if sparam_nm in site_def['parameters']: sparam_val = site_def['parameters'][sparam_nm]
-            spvar.set(sparam_val)
+            spare = self.connected_entry(sparf,spvar,partial(self.update_site_param,pop_nm,site_nm,param_nm))
+            param_val = xrsdkit.param_defaults[param_nm]
+            if param_nm in site_def['parameters']: param_val = site_def['parameters'][param_nm]
+            spvar.set(param_val)
             spare.grid(row=0,column=1,columnspan=2,sticky=tkinter.E+tkinter.W)
             sparsw = Checkbutton(sparf,text="fixed")
             sparsw.grid(row=0,column=3,sticky=tkinter.W)
 
             sparfxvar = BooleanVar(sitef)
-            sparfx = xrsdkit.fixed_param_defaults[sparam_nm]
-            if xrsdkit.contains_site_param(self.fixed_params,pop_nm,site_nm,sparam_nm):
-                sparfx = self.fixed_params[pop_nm]['basis'][site_nm]['parameters'][sparam_nm]
+            sparfx = xrsdkit.fixed_param_defaults[param_nm]
+            if xrsdkit.contains_site_param(self.fixed_params,pop_nm,site_nm,param_nm):
+                sparfx = self.fixed_params[pop_nm]['basis'][site_nm]['parameters'][param_nm]
             sparfxvar.set(sparfx)
-            self.site_param_fix_vars[pop_nm][site_nm][sparam_nm] = sparfxvar
+            self.site_param_fix_vars[pop_nm][site_nm][param_nm] = sparfxvar
             sparsw = self.connected_checkbutton(sparf,sparfxvar,
-                partial(self.update_fixed_site_param,pop_nm,site_nm,sparam_nm),'fixed')
+                partial(self.update_fixed_site_param,pop_nm,site_nm,param_nm),'fixed')
             sparsw.grid(row=0,column=3,sticky=tkinter.W)
 
-            sparbndl = Label(sparf,text='bounds:',width=10,anchor='e')
-            sparbndl.grid(row=1,column=0,sticky=tkinter.E)
-            sparbnde1 = Entry(sparf,width=8)
-            sparbnde2 = Entry(sparf,width=8)
-            lbnd = xrsdkit.param_bound_defaults[sparam_nm][0]
-            ubnd = xrsdkit.param_bound_defaults[sparam_nm][1]
-            # TODO: check for sparam in param_bounds
-            sparbnde1.insert(0,str(lbnd))
-            sparbnde2.insert(0,str(ubnd))
+            lbv = DoubleVar(sitef)
+            ubv = DoubleVar(sitef)
+            bndl = Label(sparf,text='bounds:',width=10,anchor='e')
+            bndl.grid(row=1,column=0,sticky=tkinter.E)
+            lbnd = xrsdkit.param_bound_defaults[param_nm][0]
+            ubnd = xrsdkit.param_bound_defaults[param_nm][1]
+            if xrsdkit.contains_site_param(self.param_bounds,pop_nm,site_nm,param_nm):
+                lbnd = self.param_bounds[pop_nm]['basis'][site_nm]['parameters'][param_nm][0]
+                ubnd = self.param_bounds[pop_nm]['basis'][site_nm]['parameters'][param_nm][1]
+            if lbnd is None: lbnd = float('inf')
+            if ubnd is None: ubnd = float('inf')
+            lbv.set(lbnd)
+            ubv.set(ubnd)
+            self.site_param_bound_vars[pop_nm][site_nm][param_nm] = [lbv,ubv]
+            sparbnde1 = self.connected_entry(sparf,lbv,partial(self.update_site_param_bound,pop_nm,site_nm,param_nm,0),8)
+            sparbnde2 = self.connected_entry(sparf,ubv,partial(self.update_site_param_bound,pop_nm,site_nm,param_nm,1),8)
             sparbnde1.grid(row=1,column=1,sticky=tkinter.W)
             sparbnde2.grid(row=1,column=2,sticky=tkinter.W)
-            # TODO: connect sparbnde to changing param_bounds
-            sparexpl = Label(sparf,text='expression:',width=10,anchor='e')
-            sparexpl.grid(row=2,column=0,sticky=tkinter.E)
-            sparexpe = Entry(sparf,width=16)
-            # TODO: check for sparam in param_constraints
+            
+            spexpl = Label(sparf,text='expression:',width=10,anchor='e')
+            spexpl.grid(row=2,column=0,sticky=tkinter.E)
+            expr = StringVar(sparf)
+            expr.set("")
+            if xrsdkit.contains_site_param(self.param_constraints,pop_nm,site_nm,param_nm):
+                expr.set(self.site_param_constraints[pop_nm]['basis'][site_nm]['parameters'][param_nm])
+            self.site_param_constraint_vars[pop_nm][site_nm][param_nm] = expr
+            sparexpe = self.connected_entry(sparf,expr,partial(self.update_site_param_constraints,pop_nm,site_nm,param_nm))
+            
             sparexpe.grid(row=2,column=1,columnspan=3,sticky=tkinter.E+tkinter.W)
             # TODO: connect sparexpe to setting param_constraints
 
@@ -857,11 +875,37 @@ class XRSDFitGUI(Operation):
             xrsdkit.update_coordinates(self.fixed_params,pop_nm,site_nm,fc)
         return is_valid
 
-    def update_site_param(self,pop_nm,site_nm,sparam_nm,draw_plots=False,event=None):
+    def update_site_param(self,pop_nm,site_nm,param_nm,draw_plots=False,event=None):
         site_def = self.populations[pop_nm]['basis'][site_nm]
-        sp_old = site_def['parameters'][sparam_nm]
-        sp_var = self.site_param_vars[pop_nm][site_nm][sparam_nm]
-        return self.validate_and_update(site_def['parameters'],sparam_nm,sp_old,sp_var,draw_plots)
+        sp_old = site_def['parameters'][param_nm]
+        sp_var = self.site_param_vars[pop_nm][site_nm][param_nm]
+        return self.validate_and_update(site_def['parameters'],param_nm,sp_old,sp_var,draw_plots)
+
+    def update_site_param_bound(self,pop_nm,site_nm,param_nm,bound_idx,draw_plots=False,event=None):
+        bounds = copy.deepcopy(xrsdkit.param_bound_defaults[param_nm])
+        if xrsdkit.contains_site_param(self.param_bounds,pop_nm,site_nm,param_nm):
+            bounds = self.param_bounds[pop_nm]['basis'][site_nm]['parameters'][param_nm]
+        b_old = bounds[bound_idx]
+        b_var = self.site_param_bound_vars[pop_nm][site_nm][param_nm][bound_idx]
+        is_valid = self.validate_and_update(bounds,bound_idx,b_old,b_var,False)
+        if is_valid:
+            xrsdkit.update_site_param(self.param_bounds,pop_nm,site_nm,param_nm,bounds)
+            # TODO: check the value of the param- if it is outside the bounds, update it and draw_plots.
+        return is_valid
+
+    def update_site_param_constraints(self,pop_nm,site_nm,param_nm,draw_plots=False,event=None):
+        pc = {}
+        pc_old = None
+        if xrsdkit.contains_site_param(self.param_constraints,pop_nm,site_nm,param_nm):
+            pc = self.site_param_constraints[pop_nm]['basis'][site_nm]
+            pc_old = pc[param_nm]
+        pc_var = self.site_param_constraint_vars[pop_nm][site_nm][param_nm]
+        is_valid = self.validate_and_update(pc,param_nm,pc_old,pc_var,False)
+        # TODO: any additional validation of the constraint expression?
+        if is_valid:
+            xrsdkit.update_site_param(self.param_constraints,pop_nm,site_nm,param_nm,pc[param_nm])
+            # TODO: check the value of the param- if violates constraints, update it and draw_plots.
+        return is_valid
 
     def fit(self):
         ftr = xrsdkit.fitting.xrsd_fitter.XRSDFitter(self.q_I,self.populations,self.src_wl)
