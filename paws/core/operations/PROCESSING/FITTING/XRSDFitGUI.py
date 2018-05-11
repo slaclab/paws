@@ -702,7 +702,7 @@ class XRSDFitGUI(Operation):
     def update_site_param_values(self,pop_nm,site_nm,site_params):
         sp = self.populations[pop_nm]['basis'][site_nm]['parameters']
         param_vars = self.site_param_vars[pop_nm][site_nm]
-        for param_nm,param_val in site_params:
+        for param_nm,param_val in site_params.items():
             sp[param_nm] = param_val
             param_vars[param_nm].set(param_val)
 
