@@ -59,7 +59,7 @@ class XRSDFitGUI(Operation):
         self.param_constraints = copy.deepcopy(self.inputs['param_constraints'])
         self.fit_report = None
         self.q_I_opt = None
-        self.xrsd_fitter = XRSDFitter(self.q_I,self.populations,self.src_wl)
+        self.finished = False
 
         self.fit_gui = Tk()
         self.fit_gui.title('xrsd profile fitter')
@@ -116,10 +116,12 @@ class XRSDFitGUI(Operation):
         self.build_entry_widgets()
 
         # start the tk loop
+        self.fit_gui.protocol('WM_DELETE_WINDOW',self.finish)
         self.fit_gui.mainloop()
 
-        # after tk loop exits, finish Operation
-        self.finish()
+        # if tk loop exits without calling finish(), call it now.
+        if not self.finished: 
+            self.finish()
 
     def finish(self):
         self.outputs['populations'] = self.populations
@@ -130,6 +132,7 @@ class XRSDFitGUI(Operation):
         self.outputs['q_I_opt'] = self.q_I_opt
         self.outputs['success_flag'] = self.good_fit_var.get()
         self.fit_gui.destroy()
+        self.finished = True
 
     def onCanvasConfigure(self, event):
         #Resize the inner frame to match the canvas
