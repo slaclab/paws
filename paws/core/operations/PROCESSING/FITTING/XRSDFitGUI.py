@@ -446,7 +446,7 @@ class XRSDFitGUI(Operation):
         self.create_coordinate_widgets(pop_nm,site_nm)
         self.create_site_setting_widgets(pop_nm,site_nm)
         self.create_site_param_widgets(pop_nm,site_nm)
-        sitef.grid(row=5+npars+nstgs+site_row,column=0,columnspan=4,sticky=tkinter.E+tkinter.W)
+        sitef.grid(row=5+npars+nstgs+site_row,column=0,columnspan=3,sticky=tkinter.E+tkinter.W)
         if pop_nm in self.new_site_frames:
             if self.new_site_frames[pop_nm] is not None:
                 self.repack_new_site_frame(pop_nm)
