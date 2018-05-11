@@ -18,10 +18,10 @@ from ...Operation import Operation
 inputs = OrderedDict(
     q_I=None,
     source_wavelength=None,
-    populations=None,
-    fixed_params=None,
-    param_bounds=None,
-    param_constraints=None)
+    populations={},
+    fixed_params={},
+    param_bounds={},
+    param_constraints={})
 outputs = OrderedDict(
     populations=None,
     fixed_params=None,
@@ -522,9 +522,10 @@ class XRSDFitGUI(Operation):
         self.new_site_vars[pop_nm] = nsv
         addl = Label(nsf,text='add site:',anchor='e')
         addl.grid(row=0,column=0,sticky=tkinter.E)
-        stnme = self.connected_entry(nsf,nsv,None)
         nsv.set(self.default_new_site_name(pop_nm))
+        stnme = self.connected_entry(nsf,nsv,None)
         stnme.grid(row=0,column=1,sticky=tkinter.W)
+        stnme.bind('<Return>',partial(self.new_site,pop_nm))
         addb = Button(nsf,text='Add',width=10,command=partial(self.new_site,pop_nm))
         addb.grid(row=0,column=2)
         nsf.grid(row=5+npars+nstgs+nsts,column=0,columnspan=4)
@@ -559,12 +560,10 @@ class XRSDFitGUI(Operation):
             stgf.grid(row=1+icrd+istg,column=0,columnspan=3,sticky=tkinter.E+tkinter.W)
             stgl = Label(stgf,text='{}:'.format(stg_nm),width=10,anchor='e')
             stgl.grid(row=0,column=0,sticky=tkinter.E)
-            #stge = Entry(stgf,width=16,textvariable=stgvar)
-            # TODO: connect this entry to a callback
-            stge = self.connected_entry(stgf,stgv,None)
             stg_val = xrsdkit.setting_defaults[stg_nm]
-            if stg_nm in specd: stg_val = specd[stg_nm]
+            if stg_nm in site_def['settings']: stg_val = site_def['settings'][stg_nm]
             stgv.set(stg_val)
+            stge = self.connected_entry(stgf,stgv,partial(self.update_site_setting,pop_nm,site_nm,stg_nm))
             stge.grid(row=0,column=1,sticky=tkinter.E+tkinter.W)
 
     def create_site_param_widgets(self,pop_nm,site_nm):
@@ -583,10 +582,10 @@ class XRSDFitGUI(Operation):
             sparf.grid(row=2+nstgs+icrd+isp,column=0,columnspan=3,sticky=tkinter.E+tkinter.W)
             sparl = Label(sparf,text='{}:'.format(param_nm),width=10,anchor='e')
             sparl.grid(row=0,column=0,sticky=tkinter.E)
-            spare = self.connected_entry(sparf,spvar,partial(self.update_site_param,pop_nm,site_nm,param_nm))
             param_val = xrsdkit.param_defaults[param_nm]
             if param_nm in site_def['parameters']: param_val = site_def['parameters'][param_nm]
             spvar.set(param_val)
+            spare = self.connected_entry(sparf,spvar,partial(self.update_site_param,pop_nm,site_nm,param_nm))
             spare.grid(row=0,column=1,columnspan=2,sticky=tkinter.E+tkinter.W)
             sparsw = Checkbutton(sparf,text="fixed")
             sparsw.grid(row=0,column=3,sticky=tkinter.W)
@@ -627,31 +626,27 @@ class XRSDFitGUI(Operation):
             if xrsdkit.contains_site_param(self.param_constraints,pop_nm,site_nm,param_nm):
                 expr.set(self.site_param_constraints[pop_nm]['basis'][site_nm]['parameters'][param_nm])
             self.site_param_constraint_vars[pop_nm][site_nm][param_nm] = expr
-            sparexpe = self.connected_entry(sparf,expr,partial(self.update_site_param_constraints,pop_nm,site_nm,param_nm))
             
+            sparexpe = self.connected_entry(sparf,expr,partial(self.update_site_param_constraints,pop_nm,site_nm,param_nm))
             sparexpe.grid(row=2,column=1,columnspan=3,sticky=tkinter.E+tkinter.W)
-            # TODO: connect sparexpe to setting param_constraints
 
     def new_population(self,event=None):
         new_nm = self.new_pop_var.get()
         if new_nm in self.populations:
             self.new_pop_var.set(self.default_new_pop_name())
         else:
-            self.populations[new_nm] = xrsdkit.flat_noise(0.)
+            self.populations[new_nm] = xrsdkit.unidentified_population()
             self.create_pop_frame(new_nm)
             self.repack_entry_widgets()
 
-    def new_site(self,pop_nm):
+    def new_site(self,pop_nm,event=None):
         new_nm = self.new_site_vars[pop_nm].get()
         if new_nm in self.populations[pop_nm]['basis']:
             self.new_site_vars[pop_nm].set(self.default_new_site_name(pop_nm))
         else:
-            nsts = len(self.populations[pop_nm]['basis'])
-            self.populations[pop_nm]['basis'][new_nm] = {} 
-            if self.populations[pop_nm]['structure'] in xrsdkit.crystalline_structure_names:
-                cdef = xrsdkit.param_defaults['coordinates']
-                self.populations[pop_nm]['basis'][new_nm]['coordinates'] = [float(cdef),float(cdef),float(cdef)] 
-            self.create_site_frame(pop_nm,new_nm,nsts)
+            xtal_flag = self.populations[pop_nm]['structure'] in xrsdkit.crystalline_structure_names
+            self.populations[pop_nm]['basis'][new_nm] = xrsdkit.default_site_definition('flat',xtal_flag)
+            self.create_site_frame(pop_nm,new_nm)
             self.new_site_vars[pop_nm].set(self.default_new_site_name(pop_nm))
             # no need to draw_plots: this site has no occupant
             #self.draw_plots()
@@ -881,6 +876,12 @@ class XRSDFitGUI(Operation):
         sp_var = self.site_param_vars[pop_nm][site_nm][param_nm]
         return self.validate_and_update(site_def['parameters'],param_nm,sp_old,sp_var,draw_plots)
 
+    def update_site_setting(self,pop_nm,site_nm,setting_nm,draw_plots=False,event=None):
+        site_def = self.populations[pop_nm]['basis'][site_nm]
+        s_old = site_def['settings'][setting_nm]
+        s_var = self.site_setting_vars[pop_nm][site_nm][setting_nm]
+        return self.validate_and_update(site_def['settings'],setting_nm,s_old,s_var,draw_plots)
+
     def update_site_param_bound(self,pop_nm,site_nm,param_nm,bound_idx,draw_plots=False,event=None):
         bounds = copy.deepcopy(xrsdkit.param_bound_defaults[param_nm])
         if xrsdkit.contains_site_param(self.param_bounds,pop_nm,site_nm,param_nm):
@@ -939,6 +940,7 @@ class XRSDFitGUI(Operation):
         self.new_pop_var = StringVar(self.pops_frame)
         nme = self.connected_entry(npf,self.new_pop_var,None)
         nme.grid(row=0,column=1,sticky=tkinter.W)
+        nme.bind('<Return>',self.new_population)
         addb = Button(npf,text='Add',width=10,command=self.new_population)
         addb.grid(row=0,column=2)
 
