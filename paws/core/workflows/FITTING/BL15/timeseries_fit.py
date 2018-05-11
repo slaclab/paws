@@ -71,7 +71,7 @@ wf.set_op_input('t_T','x_shift_flag',True)
 wf.set_op_input('saxs_batch','work_item','saxs_fit','entire workflow')
 wf.set_op_input('saxs_batch','input_arrays',['t_filenames.outputs.x','t_filenames.outputs.y'],'workflow item')
 wf.set_op_input('saxs_batch','input_keys',['time','saxs_filepath'])
-wf.set_op_input('saxs_batch','pass_thru_params',{'populations':'fit_populations'})
+wf.set_op_input('saxs_batch','serial_params',{'populations':'fit_populations'})
 
 wf.set_op_input('t_params','batch_outputs','saxs_batch.outputs.batch_outputs','workflow item')
 wf.set_op_input('t_params','x_key','time')
