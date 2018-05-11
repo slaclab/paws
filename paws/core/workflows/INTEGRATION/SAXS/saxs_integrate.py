@@ -52,5 +52,5 @@ wf.set_op_input('output_CSV','headers',['q (1/angstrom)','intensity (arb)'])
 wf.set_op_input('output_CSV','filename','read_image.outputs.filename','workflow item')
 wf.set_op_input('output_CSV','filetag','_dz')
 
-pawstools.save_to_wfl(os.path.join(pawstools.sourcedir,'core','workflows','SAXS','saxs_integrate.wfl'),wfmgr)
+pawstools.save_to_wfl(os.path.join(pawstools.sourcedir,'core','workflows','INTEGRATION','SAXS','saxs_integrate.wfl'),wfmgr)
 

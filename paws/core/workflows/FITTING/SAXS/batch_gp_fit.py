@@ -35,12 +35,12 @@ pops = {}
 pops['noise'] = dict(
     structure = 'diffuse',
     parameters = {'I0':0.1},
-    basis = {'flat_noise':{'flat':{}}}
+    basis = {'flat_noise':{'form':'flat'}}
     )
 pops['scatterers'] = dict(
     structure = 'diffuse',
     parameters = {},
-    basis = {'gp_scatterers':{'guinier_porod':{'G':100.,'rg':10.,'D':4.}}}
+    basis = {'gp_scatterers':{'form':'guinier_porod','parameters':{'G':100.,'rg':10.,'D':4.}}}
     )
 
 wf = wfmgr.workflows['saxs_fit']
@@ -90,5 +90,5 @@ wf.set_op_input('fit_params','x_key','filename')
 wf.set_op_input('fit_params','y_key','fit_params')
 
 
-pawstools.save_to_wfl(os.path.join(pawstools.sourcedir,'core','workflows','SAXS','batch_saxs_fit.wfl'),wfmgr)
+pawstools.save_to_wfl(os.path.join(pawstools.sourcedir,'core','workflows','FITTING','SAXS','batch_gp_fit.wfl'),wfmgr)
 
