@@ -679,7 +679,7 @@ class XRSDFitGUI(Operation):
             self.specie_param_frames[pop_nm][site_nm][specie_nm][iispec][sparam_nm] = sparf
             self.specie_param_vars[pop_nm][site_nm][specie_nm][iispec][sparam_nm] = spvar
             sparf.grid(row=1+nstgs+isp,column=0,columnspan=3,sticky=tkinter.E+tkinter.W)
-            sparl = Label(sparf,text='{}:'.format(sparam_nm),width=10,anchor='e')
+            sparl = Label(sparf,text='{}:'.format(sparam_nm),width=10,anchor='e') # sparam_nm is "occupancy"
             sparl.grid(row=0,column=0,sticky=tkinter.E)
             #spare = Entry(sparf,width=16)
             spare = self.connected_entry(sparf,spvar,None)
@@ -688,12 +688,17 @@ class XRSDFitGUI(Operation):
             #spare.insert(0,str(sparam_val))
             spvar.set(sparam_val)
             spare.grid(row=0,column=1,columnspan=2,sticky=tkinter.E+tkinter.W)
-            sparsw = Checkbutton(sparf,text="fixed")
-            sparsw.grid(row=0,column=3,sticky=tkinter.W)
 
+            sparfxvar = BooleanVar(specief)
+            print("sparam_nm", sparam_nm)
             sparfx = xrsdkit.fixed_param_defaults[sparam_nm]
-            # TODO: check for sparam in fixed_params 
-            if sparfx: sparsw.select()
+            if xrsdkit.contains_param(self.fixed_params,pop_nm,sparam_nm):
+                sparfx = self.fixed_params[pop_nm]['parameters'][sparam_nm]
+            sparfxvar.set(sparfx)
+            self.param_fix_vars[pop_nm][sparam_nm] = sparfxvar
+            sparsw = self.connected_checkbutton(sparf,sparfxvar,
+                partial(self.update_fixed_param,pop_nm,sparam_nm),'fixed')
+            sparsw.grid(row=0,column=3,sticky=tkinter.W)
 
             sparbndl = Label(sparf,text='bounds:',width=10,anchor='e')
             sparbndl.grid(row=1,column=0,sticky=tkinter.E)
@@ -715,6 +720,7 @@ class XRSDFitGUI(Operation):
             # TODO: connect sparsw to changing fixed_params
             # TODO: connect sparbnde to changing param_bounds
             # TODO: connect sparexpe to setting param_constraints
+
 
     def new_population(self,event=None):
         new_nm = self.new_pop_var.get()
