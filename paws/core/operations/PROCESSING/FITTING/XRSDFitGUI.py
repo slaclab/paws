@@ -79,6 +79,7 @@ class XRSDFitGUI(Operation):
         self.param_frames = OrderedDict()
         self.setting_frames = OrderedDict()
         self.site_frames = OrderedDict()
+        self.coordinate_frames = OrderedDict()
         self.site_setting_frames = OrderedDict()
         self.site_param_frames = OrderedDict()
         self.new_site_frames = OrderedDict()
@@ -94,6 +95,7 @@ class XRSDFitGUI(Operation):
         self.setting_vars = OrderedDict()
         self.coordinate_vars = OrderedDict()
         self.coordinate_fix_vars = OrderedDict()
+        self.ff_vars = OrderedDict()
         self.site_vars = OrderedDict()
         self.site_setting_vars = OrderedDict()
         self.site_param_vars = OrderedDict()
@@ -274,7 +276,7 @@ class XRSDFitGUI(Operation):
         popnml = Label(pf,text=pop_nm,anchor='w')
         popnml.grid(row=0,column=1,sticky=tkinter.W)
         rmb = Button(pf,text='Remove',command=partial(self.remove_population,pop_nm))
-        rmb.grid(row=0,column=2)
+        rmb.grid(row=0,column=2,sticky=tkinter.E+tkinter.W)
 
         strl = Label(pf,text='structure:',width=12,anchor='e')
         strl.grid(row=1,column=0,sticky=tkinter.E)
@@ -283,7 +285,7 @@ class XRSDFitGUI(Operation):
         strcb = OptionMenu(pf,strvar,*str_option_dict)
         strvar.set(popd['structure'])
         strvar.trace('w',partial(self.update_structure,pop_nm))
-        strcb.grid(row=1,column=1,sticky=tkinter.W)
+        strcb.grid(row=1,column=1,columnspan=2,sticky=tkinter.E+tkinter.W)
         self.structure_vars[pop_nm] = strvar
 
         self.create_setting_frames(pop_nm)
@@ -392,8 +394,10 @@ class XRSDFitGUI(Operation):
 
     def create_site_frames(self,pop_nm):
         self.site_frames[pop_nm] = OrderedDict()
+        self.coordinate_frames[pop_nm] = OrderedDict()
         self.coordinate_vars[pop_nm] = OrderedDict()
         self.coordinate_fix_vars[pop_nm] = OrderedDict()
+        self.ff_vars[pop_nm] = OrderedDict()
         self.site_param_frames[pop_nm] = OrderedDict()
         self.site_param_vars[pop_nm] = OrderedDict()
         self.site_param_fix_vars[pop_nm] = OrderedDict()
@@ -425,43 +429,65 @@ class XRSDFitGUI(Operation):
         stl = Label(sitef,text='site name:',anchor='e')
         stl.grid(row=0,column=0,sticky=tkinter.E)
         stnml = Label(sitef,text=site_nm,anchor='w')
-        stnml.grid(row=0,column=1,columnspan=3,sticky=tkinter.W+tkinter.E)
+        stnml.grid(row=0,column=1,sticky=tkinter.W+tkinter.E)
         rmb = Button(sitef,text='Remove',command=partial(self.remove_site,pop_nm,site_nm))
-        rmb.grid(row=0,column=4)
+        rmb.grid(row=0,column=2,sticky=tkinter.E+tkinter.W)
 
-        site_def = popd['basis'][site_nm]
+        ffl = Label(sitef,text='form:',width=12,anchor='e')
+        ffl.grid(row=1,column=0,sticky=tkinter.E)
+        ffvar = StringVar(sitef)
+        ff_option_dict = OrderedDict.fromkeys(xrsdkit.form_factor_names)
+        ffcb = OptionMenu(sitef,ffvar,*ff_option_dict)
+        ffvar.set(popd['basis'][site_nm]['form'])
+        ffvar.trace('w',partial(self.update_form_factor,pop_nm,site_nm))
+        ffcb.grid(row=1,column=1,columnspan=2,sticky=tkinter.E+tkinter.W)
+        self.ff_vars[pop_nm][site_nm] = ffvar
+
+        self.create_coordinate_widgets(pop_nm,site_nm)
+        self.create_site_setting_widgets(pop_nm,site_nm)
+        self.create_site_param_widgets(pop_nm,site_nm)
+        sitef.grid(row=5+npars+nstgs+site_row,column=0,columnspan=4,sticky=tkinter.E+tkinter.W)
+        if pop_nm in self.new_site_frames:
+            if self.new_site_frames[pop_nm] is not None:
+                self.repack_new_site_frame(pop_nm)
+
+    def create_coordinate_widgets(self,pop_nm,site_nm):
+        popd = self.populations[pop_nm]
+        sitef = self.site_frames[pop_nm][site_nm]   
         if popd['structure'] in xrsdkit.crystalline_structure_names:
-            cvarx = DoubleVar(sitef)
-            cvary = DoubleVar(sitef)
-            cvarz = DoubleVar(sitef)
-            cfixvarx = BooleanVar(sitef)
-            cfixvary = BooleanVar(sitef)
-            cfixvarz = BooleanVar(sitef)
+            coordf = Frame(sitef,bd=0,pady=0,padx=0)
+            cvarx = DoubleVar(coordf)
+            cvary = DoubleVar(coordf)
+            cvarz = DoubleVar(coordf)
+            cfixvarx = BooleanVar(coordf)
+            cfixvary = BooleanVar(coordf)
+            cfixvarz = BooleanVar(coordf)
             self.coordinate_vars[pop_nm][site_nm] = [cvarx,cvary,cvarz]
             self.coordinate_fix_vars[pop_nm][site_nm] = [cfixvarx,cfixvary,cfixvarz]
-            coordl = Label(sitef,text='coordinates:',width=12,anchor='e')
-            coordfixl = Label(sitef,text='fixed:',width=12,anchor='e')
-            coorde1 = self.connected_entry(sitef,cvarx,partial(self.update_coord,pop_nm,site_nm,0),6)
-            coorde2 = self.connected_entry(sitef,cvary,partial(self.update_coord,pop_nm,site_nm,1),6)
-            coorde3 = self.connected_entry(sitef,cvarz,partial(self.update_coord,pop_nm,site_nm,2),6)
-            coordcb1 = self.connected_checkbutton(sitef,cfixvarx,
+            coordl = Label(coordf,text='coordinates:',width=12,anchor='e')
+            coordfixl = Label(coordf,text='fixed:',width=12,anchor='e')
+            coorde1 = self.connected_entry(coordf,cvarx,partial(self.update_coord,pop_nm,site_nm,0),6)
+            coorde2 = self.connected_entry(coordf,cvary,partial(self.update_coord,pop_nm,site_nm,1),6)
+            coorde3 = self.connected_entry(coordf,cvarz,partial(self.update_coord,pop_nm,site_nm,2),6)
+            coordcb1 = self.connected_checkbutton(coordf,cfixvarx,
                 partial(self.update_fixed_coord,pop_nm,site_nm,0),'x')
-            coordcb2 = self.connected_checkbutton(sitef,cfixvary,
+            coordcb2 = self.connected_checkbutton(coordf,cfixvary,
                 partial(self.update_fixed_coord,pop_nm,site_nm,1),'y')
-            coordcb3 = self.connected_checkbutton(sitef,cfixvarz,
+            coordcb3 = self.connected_checkbutton(coordf,cfixvarz,
                 partial(self.update_fixed_coord,pop_nm,site_nm,2),'z')
-            coordl.grid(row=1,column=0,sticky=tkinter.E)
-            coorde1.grid(row=1,column=1)
-            coorde2.grid(row=1,column=2)
-            coorde3.grid(row=1,column=3)
-            coordfixl.grid(row=2,column=0,sticky=tkinter.E)
-            coordcb1.grid(row=2,column=1)
-            coordcb2.grid(row=2,column=2)
-            coordcb3.grid(row=2,column=3)
+            coordf.grid(row=2,column=0,columnspan=3)
+            coordl.grid(row=0,column=0,sticky=tkinter.E)
+            coorde1.grid(row=0,column=1)
+            coorde2.grid(row=0,column=2)
+            coorde3.grid(row=0,column=3)
+            coordfixl.grid(row=1,column=0,sticky=tkinter.E)
+            coordcb1.grid(row=1,column=1)
+            coordcb2.grid(row=1,column=2)
+            coordcb3.grid(row=1,column=3)
             cdef = xrsdkit.param_defaults['coordinates']
             c = [float(cdef),float(cdef),float(cdef)]
-            if 'coordinates' in site_def:
-                c = site_def['coordinates']
+            if 'coordinates' in popd['basis'][site_nm]:
+                c = popd['basis'][site_nm]['coordinates']
             cfxdef = xrsdkit.fixed_param_defaults['coordinates']
             cfx = [bool(cfxdef),bool(cfxdef),bool(cfxdef)]
             if xrsdkit.contains_coordinates(self.fixed_params,pop_nm,site_nm):
@@ -474,15 +500,9 @@ class XRSDFitGUI(Operation):
             cfixvarz.set(cfx[2])
             # (low priority) TODO: controls for bounding,constraining coords
         else:
+            self.coordinate_frames[pop_nm][site_nm] = None 
             self.coordinate_vars[pop_nm][site_nm] = [None,None,None]
             self.coordinate_fix_vars[pop_nm][site_nm] = [None,None,None]
-        # TODO: create widget for selecting the form factor, similar to structure selection widgets
-        self.create_site_setting_widgets(pop_nm,site_nm)
-        self.create_site_param_widgets(pop_nm,site_nm)
-        sitef.grid(row=5+npars+nstgs+site_row,column=0,columnspan=4,sticky=tkinter.E+tkinter.W)
-        if pop_nm in self.new_site_frames:
-            if self.new_site_frames[pop_nm] is not None:
-                self.repack_new_site_frame(pop_nm)
 
     def create_new_site_frame(self,pop_nm):
         pf = self.pop_frames[pop_nm]
@@ -515,6 +535,9 @@ class XRSDFitGUI(Operation):
         popd = self.populations[pop_nm]
         site_def = popd['basis'][site_nm]
         sitef = self.site_frames[pop_nm][site_nm]
+        icrd = 0
+        if popd['structure'] in xrsdkit.crystalline_structure_names:
+            icrd = 1
         for istg,stg_nm in enumerate(xrsdkit.form_factor_settings[site_def['form']]):
             stgf = Frame(sitef,bd=2,padx=4,pady=4,relief=tkinter.GROOVE)
 
@@ -527,7 +550,7 @@ class XRSDFitGUI(Operation):
 
             self.site_setting_frames[pop_nm][site_nm][stg_nm] = stgf
             self.site_setting_vars[pop_nm][site_nm][stg_nm] = stgv
-            stgf.grid(row=1+istg,column=0,columnspan=3,sticky=tkinter.E+tkinter.W)
+            stgf.grid(row=1+icrd+istg,column=0,columnspan=3,sticky=tkinter.E+tkinter.W)
             stgl = Label(stgf,text='{}:'.format(stg_nm),width=10,anchor='e')
             stgl.grid(row=0,column=0,sticky=tkinter.E)
             #stge = Entry(stgf,width=16,textvariable=stgvar)
@@ -543,12 +566,15 @@ class XRSDFitGUI(Operation):
         site_def = popd['basis'][site_nm]
         sitef = self.site_frames[pop_nm][site_nm]
         nstgs = len(xrsdkit.form_factor_settings[site_def['form']])
+        icrd = 0
+        if popd['structure'] in xrsdkit.crystalline_structure_names:
+            icrd = 1
         for isp,sparam_nm in enumerate(xrsdkit.form_factor_params[site_def['form']]):
             sparf = Frame(sitef,bd=2,padx=4,pady=4,relief=tkinter.GROOVE)
             spvar = DoubleVar(sparf)
             self.site_param_frames[pop_nm][site_nm][sparam_nm] = sparf
             self.site_param_vars[pop_nm][site_nm][sparam_nm] = spvar
-            sparf.grid(row=1+nstgs+isp,column=0,columnspan=3,sticky=tkinter.E+tkinter.W)
+            sparf.grid(row=2+nstgs+icrd+isp,column=0,columnspan=3,sticky=tkinter.E+tkinter.W)
             sparl = Label(sparf,text='{}:'.format(sparam_nm),width=10,anchor='e')
             sparl.grid(row=0,column=0,sticky=tkinter.E)
             spare = self.connected_entry(sparf,spvar,partial(self.update_site_param,pop_nm,site_nm,sparam_nm))
@@ -697,6 +723,20 @@ class XRSDFitGUI(Operation):
             #self.destroy_pop_frame(pop_nm)
             #self.create_pop_frame(pop_nm)
             self.draw_plots()
+
+    def update_form_factor(self,pop_nm,site_nm,var_nm,dummy,mode):
+        ff = self.ff_vars[pop_nm][site_nm].get()
+        if not ff == self.populations[pop_nm][site_nm]['form']:
+            self.populations[pop_nm]['basis'][site_nm]['form'] = ff 
+            new_params = OrderedDict.fromkeys(xrsdkit.form_factor_params[ff])
+            for pnm in new_params: new_params[pnm] = xrsdkit.param_defaults[pnm]
+            self.populations[pop_nm]['basis'][site_nm]['parameters'] = new_params
+            new_settings = OrderedDict.fromkeys(xrsdkit.form_factor_settings[ff])
+            for snm in new_settings: new_settings[snm] = xrsdkit.setting_defaults[snm]
+            self.populations[pop_nm]['basis'][site_nm]['settings'] = new_settings
+            self.destroy_coordinate_widgets(pop_nm,site_nm)
+            self.destroy_site_setting_widgets(pop_nm,site_nm)
+            self.destroy_site_param_widgets(pop_nm,site_nm)
 
     def validate_and_update(self,parent,item_key,old_val,tkvar,draw_plots=False):
         """Validate a Var entry and set its value in a parent data structure
@@ -953,16 +993,41 @@ class XRSDFitGUI(Operation):
     def destroy_site_frames(self,pop_nm):
         site_nm_list = list(self.site_frames[pop_nm].keys())
         for site_nm in site_nm_list:
+            self.destroy_coordinate_widgets(pop_nm,site_nm)
+            self.destroy_site_setting_widgets(pop_nm,site_nm)
+            self.destroy_site_param_widgets(pop_nm,site_nm)
             self.destroy_site_frame(pop_nm,site_nm)
         self.destroy_new_site_frame(pop_nm)
 
-    def destroy_new_site_frame(self,pop_nm):
-        site_frm = self.new_site_frames.pop(pop_nm)
-        site_frm.pack_forget()
-        site_frm.destroy()
+    def destroy_coordinate_widgets(self,pop_nm,site_nm):
+        if self.coordinate_frames[pop_nm][site_nm] is not None:
+            self.coordinate_vars[pop_nm].pop(site_nm)
+            self.coordinate_fix_vars[pop_nm].pop(site_nm)
+            coord_frm = self.coordinate_frames[pop_nm].pop(site_nm)
+            coord_frm.pack_forget()
+            coord_frm.destroy()
+
+    def destroy_site_setting_widgets(self,pop_nm,site_nm):
+        for setting_nm in list(self.site_setting_frames[pop_nm][site_nm].keys()):
+            self.site_setting_vars[pop_nm][site_nm].pop(setting_nm)
+            setting_frm = self.site_setting_frames[pop_nm][site_nm].pop(setting_nm)
+            setting_frm.pack_forget()
+            setting_frm.destroy()
+
+    def destroy_site_param_widgets(self,pop_nm,site_nm):
+        for param_nm in list(self.site_param_frames[pop_nm][site_nm].keys()):
+            self.site_param_vars[pop_nm][site_nm].pop(param_nm)
+            param_frm = self.site_param_frames[pop_nm][site_nm].pop(param_nm)
+            param_frm.pack_forget()
+            param_frm.destroy()
 
     def destroy_site_frame(self,pop_nm,site_nm):
         site_frm = self.site_frames[pop_nm].pop(site_nm)
+        site_frm.pack_forget()
+        site_frm.destroy()
+
+    def destroy_new_site_frame(self,pop_nm):
+        site_frm = self.new_site_frames.pop(pop_nm)
         site_frm.pack_forget()
         site_frm.destroy()
 
