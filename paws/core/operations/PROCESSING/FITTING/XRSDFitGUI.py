@@ -676,17 +676,17 @@ class XRSDFitGUI(Operation):
             for snm in new_settings: new_settings[snm] = xrsdkit.setting_defaults[snm]
             self.populations[pop_nm]['settings'] = new_settings
 
-            # TODO: 
-            # if the new structure is crystalline, ensure coordinates are set
-            # and ensure that noncrystalline form factors are not present
             new_basis = self.populations[pop_nm]['basis']
-            #for site_nm, site_def in new_basis.items():
-            #    if s in xrsdkit.crystalline_structure_names:
-            #        if not 'coordinates' in site_def:
-            #            site_def['coordinates'] = [0.,0.,0.]
-            #    else:
-            #        if 'coordinates' in site_def:
-            #            site_def.pop('coordinates')
+            site_nms = list(new_basis.keys())
+            for site_nm in site_nms:
+                if s in xrsdkit.crystalline_structure_names:
+                    if new_basis[site_nm]['form'] in xrsdkit.noncrystalline_ff_names:
+                        new_basis.pop(site_nm)
+                    elif not 'coordinates' in new_basis[site_nm]:
+                        new_basis[site_nm]['coordinates'] = [0.,0.,0.]
+                else:
+                    if 'coordinates' in new_basis[site_nm]:
+                        new_basis[site_nm].pop('coordinates')
 
             self.destroy_setting_frames(pop_nm)
             self.destroy_param_frames(pop_nm)
