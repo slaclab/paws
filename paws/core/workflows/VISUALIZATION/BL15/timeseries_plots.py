@@ -110,5 +110,5 @@ wf.set_op_input('write_params','data','read_params.outputs.yaml_output','workflo
 #
 #
 
-pawstools.save_to_wfl(os.path.join(pawstools.sourcedir,'core','workflows','SAXS','BL15','timeseries_plots.wfl'),wfmgr)
+pawstools.save_to_wfl(os.path.join(pawstools.sourcedir,'core','workflows','VISUALIZATION','BL15','timeseries_plots.wfl'),wfmgr)
 

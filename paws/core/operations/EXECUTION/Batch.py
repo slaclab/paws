@@ -14,7 +14,7 @@ inputs=OrderedDict(
     input_keys=[],
     static_inputs=[],
     static_input_keys=[],
-    pass_thru_params={},
+    serial_params={},
     order_array=None,
     order_function=None,
     flag=True)
@@ -48,7 +48,7 @@ class Batch(Operation):
             'either Operation.inputs or Workflow.inputs, '\
             'depending on whether `work_item` is an Operation or a Workflow'
 
-        self.input_doc['pass_thru_params'] = 'dict of '\
+        self.input_doc['serial_params'] = 'dict of '\
             'input_name:output_name pairs, where the `work_item` input '\
             'for input_name is set using the `work_item` output output_name '\
             'from the previous execution of `work_item`. '\
@@ -79,7 +79,7 @@ class Batch(Operation):
         self.input_datatype['input_keys'] = 'list'
         self.input_datatype['static_inputs'] = 'list'
         self.input_datatype['static_input_keys'] = 'list'
-        self.input_datatype['pass_thru_params'] = 'dict'
+        self.input_datatype['serial_params'] = 'dict'
 
     def run(self):
         wrkitm = self.inputs['work_item']
@@ -88,7 +88,7 @@ class Batch(Operation):
         inpks = self.inputs['input_keys']
         stat_inps = self.inputs['static_inputs']
         stat_inpks = self.inputs['static_input_keys']
-        pass_thru_params = self.inputs['pass_thru_params']
+        ser_params = self.inputs['serial_params']
         f = self.inputs['flag']
 
         if bool(f):
@@ -138,8 +138,8 @@ class Batch(Operation):
                     for inpnm,inpval in zip(stat_inpks,stat_inps):
                         wrkitm.set_input(inpnm,inpval)
 
-                if any(pass_thru_params) and out_dict is not None:
-                    for inp_name,out_name in pass_thru_params.items():
+                if any(ser_params) and out_dict is not None:
+                    for inp_name,out_name in ser_params.items():
                         wrkitm.set_input(inp_name,out_dict[out_name])
 
                 wrkitm.run()

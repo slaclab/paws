@@ -25,7 +25,7 @@ op_maps['read_header']['saxs_filepath'] = 'IO.FILESYSTEM.BuildFilePath'
 
 op_maps['saxs_fit']['time'] = 'PACKAGING.Identity'
 op_maps['saxs_fit']['read_saxs'] = 'IO.NUMPY.Loadtxt_q_I_dI'
-op_maps['saxs_fit']['fit_saxs'] = 'PROCESSING.FITTING.XRSDFitGUI'
+op_maps['saxs_fit']['fit_saxs'] = 'PROCESSING.FITTING.XRSDFit'
 #op_maps['saxs_fit']['log_I'] = 'PROCESSING.BASIC.LogY'
 #op_maps['saxs_fit']['log_Ifit'] = 'PROCESSING.BASIC.LogY'
 #op_maps['saxs_fit']['output_CSV'] = 'IO.CSV.WriteArrayCSV'
@@ -71,7 +71,7 @@ wf.set_op_input('t_T','x_shift_flag',True)
 wf.set_op_input('saxs_batch','work_item','saxs_fit','entire workflow')
 wf.set_op_input('saxs_batch','input_arrays',['t_filenames.outputs.x','t_filenames.outputs.y'],'workflow item')
 wf.set_op_input('saxs_batch','input_keys',['time','saxs_filepath'])
-wf.set_op_input('saxs_batch','pass_thru_params',{'populations':'fit_populations'})
+wf.set_op_input('saxs_batch','serial_params',{'populations':'fit_populations'})
 
 wf.set_op_input('t_params','batch_outputs','saxs_batch.outputs.batch_outputs','workflow item')
 wf.set_op_input('t_params','x_key','time')
@@ -142,5 +142,5 @@ wf.set_op_input('fit_saxs','q_I','read_saxs.outputs.q_I','workflow item')
 #wf.set_op_input('output_params','file_path','params_path.outputs.file_path','workflow item')
 #wf.set_op_input('output_params','data','fit_spectrum.outputs.params','workflow item')
 
-pawstools.save_to_wfl(os.path.join(pawstools.sourcedir,'core','workflows','SAXS','BL15','timeseries_gui_fit.wfl'),wfmgr)
+pawstools.save_to_wfl(os.path.join(pawstools.sourcedir,'core','workflows','FITTING','BL15','timeseries_fit.wfl'),wfmgr)
 
