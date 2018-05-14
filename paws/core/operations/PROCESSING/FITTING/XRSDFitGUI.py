@@ -630,12 +630,11 @@ class XRSDFitGUI(Operation):
 
     def new_population(self,event=None):
         new_nm = self.new_pop_var.get()
-        if new_nm in self.populations:
-            self.new_pop_var.set(self.default_new_pop_name())
-        else:
+        if not new_nm in self.populations:
             self.populations[new_nm] = xrsdkit.unidentified_population()
             self.create_pop_frame(new_nm)
             self.repack_entry_widgets()
+        self.new_pop_var.set(self.default_new_pop_name())
 
     def new_site(self,pop_nm,event=None):
         new_nm = self.new_site_vars[pop_nm].get()
