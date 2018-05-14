@@ -21,7 +21,8 @@ inputs = OrderedDict(
     populations={},
     fixed_params={},
     param_bounds={},
-    param_constraints={})
+    param_constraints={},
+    q_range=[0.,float('inf')])
 outputs = OrderedDict(
     populations=None,
     fixed_params=None,
@@ -42,6 +43,7 @@ class XRSDFitGUI(Operation):
         self.input_doc['fixed_params'] = 'dict defining fixed params, xrsdkit format'
         self.input_doc['param_bounds'] = 'dict defining param bounds, xrsdkit format'
         self.input_doc['param_constraints'] = 'dict defining param constraints, xrsdkit format'
+        self.input_doc['q_range'] = 'lower and upper q-limits for the fit objective'
         self.output_doc['populations'] = 'populations with parameters optimized'
         self.output_doc['fixed_params'] = 'fixed_params after fitting complete'
         self.output_doc['param_bounds'] = 'param_bounds after fitting complete'
@@ -57,6 +59,7 @@ class XRSDFitGUI(Operation):
         self.fixed_params = copy.deepcopy(self.inputs['fixed_params'])
         self.param_bounds = copy.deepcopy(self.inputs['param_bounds'])
         self.param_constraints = copy.deepcopy(self.inputs['param_constraints'])
+        self.q_range = self.inputs['q_range']
         self.fit_report = None
         self.q_I_opt = None
         self.finished = False
@@ -107,6 +110,7 @@ class XRSDFitGUI(Operation):
         self.logI_weighted_var = None
         self.error_weighted_var = None
         self.fit_obj_var = None
+        self.q_range_vars = [None, None]
         self.good_fit_var = None
 
         # create the plots
@@ -909,7 +913,14 @@ class XRSDFitGUI(Operation):
         ftr = xrsdkit.fitting.xrsd_fitter.XRSDFitter(self.q_I,self.populations,self.src_wl)
         logIwtd = bool(self.logI_weighted_var.get())
         erwtd = bool(self.error_weighted_var.get())
-        p_opt,rpt = ftr.fit(self.fixed_params,self.param_bounds,self.param_constraints,erwtd,logIwtd)
+        q_lo = self.q_range_vars[0].get()
+        q_hi = self.q_range_vars[1].get()
+        lmf_params = ftr.pack_lmfit_params(self.populations,self.fixed_params,self.param_bounds,self.param_constraints)
+        if self.message_callback:
+            lmf_params.pretty_print()
+        p_opt,rpt = ftr.fit(self.fixed_params,self.param_bounds,self.param_constraints,erwtd,logIwtd,[q_lo,q_hi])
+        if self.message_callback:
+            ftr.print_report(self.populations,p_opt,rpt) 
         self.fit_obj_var.set(rpt['final_objective'])
         self.update_all_population_values(p_opt)
         self.draw_plots()
@@ -966,24 +977,36 @@ class XRSDFitGUI(Operation):
         objl = Label(cf,text='objective:',anchor='e')
         objl.grid(row=0,column=0,rowspan=2,sticky=tkinter.E)
         rese = Entry(cf,width=20,state='readonly',textvariable=self.fit_obj_var)
-        rese.grid(row=0,column=1,rowspan=2,sticky=tkinter.W)
-        self.fit_obj_var.set(str(self.compute_objective()))
+        rese.grid(row=0,column=1,rowspan=2,columnspan=2,sticky=tkinter.W)
+        self.update_fit_objective()
         self.error_weighted_var = BooleanVar(cf)
         ewtcb = Checkbutton(cf,text="error weighted",variable=self.error_weighted_var)
         ewtcb.select()
-        ewtcb.grid(row=0,column=2,sticky=tkinter.W)
+        ewtcb.grid(row=0,column=3,sticky=tkinter.W)
         self.logI_weighted_var = BooleanVar(cf)
         logwtbox = Checkbutton(cf,text="log(I) weighted",variable=self.logI_weighted_var)
         logwtbox.select()
-        logwtbox.grid(row=1,column=2,sticky=tkinter.W)
+        logwtbox.grid(row=1,column=3,sticky=tkinter.W)
+        q_range_lbl = Label(cf,text='q-range:',anchor='e')
+        q_range_lbl.grid(row=2,column=0)
+        self.q_range_vars = [DoubleVar(cf),DoubleVar(cf)]
+        q_lo_ent = Entry(cf,width=8,textvariable=self.q_range_vars[0])
+        q_hi_ent = Entry(cf,width=8,textvariable=self.q_range_vars[1])
+        q_lo_ent.grid(row=2,column=1)
+        q_hi_ent.grid(row=2,column=2)
+        self.q_range_vars[0].set(self.q_range[0])
+        self.q_range_vars[1].set(self.q_range[1])
         fitbtn = Button(cf,text='Fit',width=10,command=self.fit)
-        fitbtn.grid(row=2,column=0)
+        fitbtn.grid(row=3,column=0)
         finbtn = Button(cf,text='Finish',width=10,command=self.finish)
-        finbtn.grid(row=2,column=1)
+        finbtn.grid(row=3,column=1,columnspan=2)
         self.good_fit_var = tkinter.BooleanVar(cf)
         fitcb = Checkbutton(cf,text="Good fit", variable=self.good_fit_var)
-        fitcb.grid(row=2,column=2,sticky=tkinter.W)
+        fitcb.grid(row=3,column=3,sticky=tkinter.W)
         cf.pack(side=tkinter.TOP,pady=2,padx=2,fill="both",expand=True)
+
+    def update_fit_objective(self):
+        self.fit_obj_var.set(str(self.compute_objective()))
 
     def repack_entry_widgets(self):
         for pop_nm,pf in self.pop_frames.items():
