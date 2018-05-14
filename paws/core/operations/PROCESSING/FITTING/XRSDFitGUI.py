@@ -185,12 +185,9 @@ class XRSDFitGUI(Operation):
 
     def connected_entry(self,parent,tkvar,cbfun=None,entry_width=20):
         if cbfun:
-            # piggyback on entry validation
-            # to update internal data
-            # associated with the entry widget
-            # NOTE: validatecommand must return a boolean
+            # piggyback on entry validation to update internal data
+            # NOTE: validatecommand must return a boolean, or else it will disconnect quietly
             e = Entry(parent,width=entry_width,textvariable=tkvar,validate="focusout",validatecommand=cbfun)
-            #e = Entry(parent,width=20,textvariable=tkvar)
             # also respond to the return key
             e.bind('<Return>',cbfun)
         else:
@@ -199,8 +196,6 @@ class XRSDFitGUI(Operation):
 
     def connected_checkbutton(self,parent,boolvar,cbfun,label=''):
         if cbfun:
-            # to update internal data
-            # associated with the widget
             e = Checkbutton(parent,text=label,variable=boolvar,command=cbfun)
         else:
             e = Checkbutton(parent,text=label,variable=boolvar)
@@ -992,7 +987,7 @@ class XRSDFitGUI(Operation):
         cf.pack(side=tkinter.TOP,pady=2,padx=2,fill="both",expand=True)
 
     def repack_entry_widgets(self):
-        for ipop,pop_nm in enumerate(self.populations.keys()):
+        for pop_nm,pf in self.pop_frames.items():
             pf = self.pop_frames[pop_nm]
             pf.pack_forget()
             pf.pack(side=tkinter.TOP,pady=2,padx=2)
