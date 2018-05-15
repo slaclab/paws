@@ -37,6 +37,17 @@ outputs = OrderedDict(
 # TODO: if structure in xrsdkit.crystalline_structure_names, block form factor selections
 #   for all of the xrsdkit.noncrystalline_form_factor_names.
 
+# TODO: display the lmfit parameter names for all params and site_params.
+#   see xrsdkit.fitting.xrsdfitter.XRSDFitter.flatten_params() for how lmfit parameters are named.
+
+# TODO: whenever any param or site_param value is updated,
+#   check all of self.param_constraints and update params as necessary to satisfy the constraints.
+
+# TODO: when a param is fixed or has a constraint set,
+#   make the entry widget read-only
+
+# TODO: generally make the gui cleaner and more user-friendly.
+
 class XRSDFitGUI(Operation):
     """Interactively fit a XRSD spectrum."""
 
@@ -633,7 +644,7 @@ class XRSDFitGUI(Operation):
             expr = StringVar(sparf)
             expr.set("")
             if xrsdkit.contains_site_param(self.param_constraints,pop_nm,site_nm,param_nm):
-                expr.set(self.site_param_constraints[pop_nm]['basis'][site_nm]['parameters'][param_nm])
+                expr.set(self.param_constraints[pop_nm]['basis'][site_nm]['parameters'][param_nm])
             self.site_param_constraint_vars[pop_nm][site_nm][param_nm] = expr
             
             sparexpe = self.connected_entry(sparf,expr,partial(self.update_site_param_constraints,pop_nm,site_nm,param_nm))
@@ -653,20 +664,20 @@ class XRSDFitGUI(Operation):
             self.new_site_vars[pop_nm].set(self.default_new_site_name(pop_nm))
         else:
             self.make_new_site(pop_nm,site_nm,'flat')
-            self.create_site_frame(pop_nm,new_nm)
+            self.create_site_frame(pop_nm,site_nm)
             self.new_site_vars[pop_nm].set(self.default_new_site_name(pop_nm))
             self.draw_plots()
             self.repack_new_site_frame(pop_nm) 
 
     def make_new_site(self,pop_nm,site_name,ff_name):
-        pd,fp,pb,pc = xrsdkit.new_site(self.populations,pop_nm,'flat')
+        pd,fp,pb,pc = xrsdkit.new_site(self.populations,pop_nm,site_name,ff_name)
         xrsdkit.update_populations(self.populations,pd)
         if any(fp):
             xrsdkit.update_populations(self.fixed_params,fp)
         if any(pb):
             xrsdkit.update_populations(self.param_bounds,pb)
         if any(pc):
-            xrsdkit.update_populations(self.param_bounds,pc)
+            xrsdkit.update_populations(self.param_constraints,pc)
 
     def remove_population(self,pop_nm):
         self.destroy_pop_frame(pop_nm)
@@ -909,9 +920,9 @@ class XRSDFitGUI(Operation):
         pc = {}
         pc_old = None
         if xrsdkit.contains_site_param(self.param_constraints,pop_nm,site_nm,param_nm):
-            pc = self.site_param_constraints[pop_nm]['basis'][site_nm]
+            pc = self.param_constraints[pop_nm]['basis'][site_nm]['parameters']
             pc_old = pc[param_nm]
-        pc_var = self.param_constraint_vars[pop_nm][site_nm][param_nm]
+        pc_var = self.site_param_constraint_vars[pop_nm][site_nm][param_nm]
         is_valid = self.validate_and_update(pc,param_nm,pc_old,pc_var,False)
         # TODO: any additional validation of the constraint expression?
         if is_valid:
