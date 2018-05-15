@@ -26,10 +26,13 @@ op_maps['read_header']['saxs_filepath'] = 'IO.FILESYSTEM.BuildFilePath'
 
 op_maps['saxs_fit']['experiment_id'] = 'PACKAGING.Container'
 op_maps['saxs_fit']['read_saxs'] = 'IO.NUMPY.Loadtxt_q_I_dI'
-# TODO: operation to check filesystem for existing solution
-# TODO: conditionally use existing solution to set up initial condition for fit 
 op_maps['saxs_fit']['fit_saxs'] = 'PROCESSING.FITTING.XRSDFitGUI'
+op_maps['saxs_fit']['populations_file'] = 'IO.FILESYSTEM.BuildFilePath'
+op_maps['saxs_fit']['save_populations'] = 'IO.YAML.SaveYAML'
 op_maps['saxs_fit']['make_pif'] = 'PACKAGING.PIF.PackXRSDPIF'
+
+# TODO: conditionally use existing solution to set up initial condition for fit 
+# TODO: skip saving populations if not good fit
 
 wfmgr = WfManager()
 # add the workflows and activate/add the operations:
@@ -79,8 +82,8 @@ wf.set_op_input('t_T','x_shift_flag',True)
 wf.set_op_input('saxs_batch','work_item','saxs_fit','entire workflow')
 wf.set_op_input('saxs_batch','input_arrays',['t_T.outputs.x','t_T.outputs.y','t_filenames.outputs.y'],'workflow item')
 wf.set_op_input('saxs_batch','input_keys',['time','temperature','saxs_filepath'])
-wf.set_op_input('saxs_batch','static_inputs',['experiment_id.inputs.data'],'workflow item')
-wf.set_op_input('saxs_batch','static_input_keys',['experiment_id'])
+wf.set_op_input('saxs_batch','static_inputs',['experiment_id.inputs.data','header_files.inputs.dir_path'],'workflow item')
+wf.set_op_input('saxs_batch','static_input_keys',['experiment_id','dir_path'])
 wf.set_op_input('saxs_batch','serial_params',
     {'populations':'populations','param_bounds':'param_bounds','fixed_params':'fixed_params'})
 
@@ -135,6 +138,7 @@ wf.connect_input('populations','fit_saxs.inputs.populations')
 wf.connect_input('fixed_params','fit_saxs.inputs.fixed_params')
 wf.connect_input('param_bounds','fit_saxs.inputs.param_bounds')
 wf.connect_input('param_constraints','fit_saxs.inputs.param_constraints')
+wf.connect_input('dir_path','populations_file.inputs.dir_path')
 
 wf.connect_output('q_I','read_saxs.outputs.q_I')
 wf.connect_output('q_I_opt','fit_saxs.outputs.q_I_opt')
@@ -146,6 +150,11 @@ wf.connect_output('pif','make_pif.outputs.pif')
 
 wf.set_op_input('read_saxs','delimiter',',')
 wf.set_op_input('fit_saxs','q_I','read_saxs.outputs.q_I','workflow item')
+wf.set_op_input('populations_file','filename','read_saxs.outputs.filename','workflow item')
+wf.set_op_input('populations_file','ext','yml')
+
+wf.set_op_input('save_populations','file_path','populations_file.outputs.file_path','workflow item')
+wf.set_op_input('save_populations','data','fit_saxs.outputs.populations','workflow item')
 
 wf.set_op_input('make_pif','experiment_id','experiment_id.inputs.data','workflow item')
 wf.set_op_input('make_pif','t_utc',None)            # time connects here
