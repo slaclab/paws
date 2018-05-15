@@ -428,6 +428,7 @@ class XRSDFitGUI(Operation):
         sitef = Frame(pf,bd=2,pady=4,padx=10,relief=tkinter.GROOVE)
         self.site_frames[pop_nm][site_nm] = sitef
         self.site_setting_frames[pop_nm][site_nm] = OrderedDict() 
+        self.site_setting_vars[pop_nm][site_nm] = OrderedDict()
         self.site_param_frames[pop_nm][site_nm] = OrderedDict() 
         self.site_param_vars[pop_nm][site_nm] = OrderedDict()
         self.site_param_fix_vars[pop_nm][site_nm] = OrderedDict()
@@ -470,6 +471,7 @@ class XRSDFitGUI(Operation):
             cfixvarx = BooleanVar(coordf)
             cfixvary = BooleanVar(coordf)
             cfixvarz = BooleanVar(coordf)
+            self.coordinate_frames[pop_nm][site_nm] = coordf 
             self.coordinate_vars[pop_nm][site_nm] = [cvarx,cvary,cvarz]
             self.coordinate_fix_vars[pop_nm][site_nm] = [cfixvarx,cfixvary,cfixvarz]
             coordl = Label(coordf,text='coordinates:',width=12,anchor='e')
