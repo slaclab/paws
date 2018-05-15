@@ -31,7 +31,23 @@ outputs = OrderedDict(
     report=None,
     q_I_opt=None,
     success_flag=False)
-        
+       
+# TODO: block the "good fit" checkbox until after the "fit" button has been used at least once
+
+# TODO: if structure in xrsdkit.crystalline_structure_names, block form factor selections
+#   for all of the xrsdkit.noncrystalline_form_factor_names.
+
+# TODO: display the lmfit parameter names for all params and site_params.
+#   see xrsdkit.fitting.xrsdfitter.XRSDFitter.flatten_params() for how lmfit parameters are named.
+
+# TODO: whenever any param or site_param value is updated,
+#   check all of self.param_constraints and update params as necessary to satisfy the constraints.
+
+# TODO: when a param is fixed or has a constraint set,
+#   make the entry widget read-only
+
+# TODO: generally make the gui cleaner and more user-friendly.
+
 class XRSDFitGUI(Operation):
     """Interactively fit a XRSD spectrum."""
 
@@ -428,6 +444,7 @@ class XRSDFitGUI(Operation):
         sitef = Frame(pf,bd=2,pady=4,padx=10,relief=tkinter.GROOVE)
         self.site_frames[pop_nm][site_nm] = sitef
         self.site_setting_frames[pop_nm][site_nm] = OrderedDict() 
+        self.site_setting_vars[pop_nm][site_nm] = OrderedDict()
         self.site_param_frames[pop_nm][site_nm] = OrderedDict() 
         self.site_param_vars[pop_nm][site_nm] = OrderedDict()
         self.site_param_fix_vars[pop_nm][site_nm] = OrderedDict()
@@ -470,6 +487,7 @@ class XRSDFitGUI(Operation):
             cfixvarx = BooleanVar(coordf)
             cfixvary = BooleanVar(coordf)
             cfixvarz = BooleanVar(coordf)
+            self.coordinate_frames[pop_nm][site_nm] = coordf 
             self.coordinate_vars[pop_nm][site_nm] = [cvarx,cvary,cvarz]
             self.coordinate_fix_vars[pop_nm][site_nm] = [cfixvarx,cfixvary,cfixvarz]
             coordl = Label(coordf,text='coordinates:',width=12,anchor='e')
@@ -626,7 +644,7 @@ class XRSDFitGUI(Operation):
             expr = StringVar(sparf)
             expr.set("")
             if xrsdkit.contains_site_param(self.param_constraints,pop_nm,site_nm,param_nm):
-                expr.set(self.site_param_constraints[pop_nm]['basis'][site_nm]['parameters'][param_nm])
+                expr.set(self.param_constraints[pop_nm]['basis'][site_nm]['parameters'][param_nm])
             self.site_param_constraint_vars[pop_nm][site_nm][param_nm] = expr
             
             sparexpe = self.connected_entry(sparf,expr,partial(self.update_site_param_constraints,pop_nm,site_nm,param_nm))
@@ -641,16 +659,25 @@ class XRSDFitGUI(Operation):
         self.new_pop_var.set(self.default_new_pop_name())
 
     def new_site(self,pop_nm,event=None):
-        new_nm = self.new_site_vars[pop_nm].get()
-        if new_nm in self.populations[pop_nm]['basis']:
+        site_nm = self.new_site_vars[pop_nm].get()
+        if site_nm in self.populations[pop_nm]['basis']:
             self.new_site_vars[pop_nm].set(self.default_new_site_name(pop_nm))
         else:
-            xtal_flag = self.populations[pop_nm]['structure'] in xrsdkit.crystalline_structure_names
-            self.populations[pop_nm]['basis'][new_nm] = xrsdkit.default_site_definition('flat',xtal_flag)
-            self.create_site_frame(pop_nm,new_nm)
+            self.make_new_site(pop_nm,site_nm,'flat')
+            self.create_site_frame(pop_nm,site_nm)
             self.new_site_vars[pop_nm].set(self.default_new_site_name(pop_nm))
             self.draw_plots()
             self.repack_new_site_frame(pop_nm) 
+
+    def make_new_site(self,pop_nm,site_name,ff_name):
+        pd,fp,pb,pc = xrsdkit.new_site(self.populations,pop_nm,site_name,ff_name)
+        xrsdkit.update_populations(self.populations,pd)
+        if any(fp):
+            xrsdkit.update_populations(self.fixed_params,fp)
+        if any(pb):
+            xrsdkit.update_populations(self.param_bounds,pb)
+        if any(pc):
+            xrsdkit.update_populations(self.param_constraints,pc)
 
     def remove_population(self,pop_nm):
         self.destroy_pop_frame(pop_nm)
@@ -740,13 +767,7 @@ class XRSDFitGUI(Operation):
     def update_form_factor(self,pop_nm,site_nm,var_nm,dummy,mode):
         ff = self.ff_vars[pop_nm][site_nm].get()
         if not ff == self.populations[pop_nm]['basis'][site_nm]['form']:
-            self.populations[pop_nm]['basis'][site_nm]['form'] = ff 
-            new_params = OrderedDict.fromkeys(xrsdkit.form_factor_params[ff])
-            for pnm in new_params: new_params[pnm] = xrsdkit.param_defaults[pnm]
-            self.populations[pop_nm]['basis'][site_nm]['parameters'] = new_params
-            new_settings = OrderedDict.fromkeys(xrsdkit.form_factor_settings[ff])
-            for snm in new_settings: new_settings[snm] = xrsdkit.setting_defaults[snm]
-            self.populations[pop_nm]['basis'][site_nm]['settings'] = new_settings
+            self.make_new_site(pop_nm,site_nm,ff)
             self.destroy_coordinate_widgets(pop_nm,site_nm)
             self.destroy_site_setting_widgets(pop_nm,site_nm)
             self.destroy_site_param_widgets(pop_nm,site_nm)
@@ -766,7 +787,7 @@ class XRSDFitGUI(Operation):
         parent : object
             A data structure
         item_key : object
-            A key for fetching an item from `parent`
+            A key for addressing an item in the `parent`
         old_val : object
             A value to fall back on if the Var fails to get()
         tkvar : tk.Variable
@@ -847,10 +868,10 @@ class XRSDFitGUI(Operation):
             pc_old = pc[param_nm]
         pc_var = self.param_constraint_vars[pop_nm][param_nm]
         is_valid = self.validate_and_update(pc,param_nm,pc_old,pc_var,False)
-        # TODO: any additional validation of the constraint expression?
+        # TODO (low priority): any additional validation of the constraint expression?
         if is_valid:
             xrsdkit.update_param(self.param_constraints,pop_nm,param_nm,pc[param_nm])
-            # TODO: check the value of the param- if violates constraints, update it and draw_plots.
+            # TODO: check the value of the param- if violates the constraint, update it and draw_plots.
         return is_valid
 
     def update_coord(self,pop_nm,site_nm,coord_idx,draw_plots=False,event=None):
@@ -899,9 +920,9 @@ class XRSDFitGUI(Operation):
         pc = {}
         pc_old = None
         if xrsdkit.contains_site_param(self.param_constraints,pop_nm,site_nm,param_nm):
-            pc = self.site_param_constraints[pop_nm]['basis'][site_nm]
+            pc = self.param_constraints[pop_nm]['basis'][site_nm]['parameters']
             pc_old = pc[param_nm]
-        pc_var = self.param_constraint_vars[pop_nm][site_nm][param_nm]
+        pc_var = self.site_param_constraint_vars[pop_nm][site_nm][param_nm]
         is_valid = self.validate_and_update(pc,param_nm,pc_old,pc_var,False)
         # TODO: any additional validation of the constraint expression?
         if is_valid:
