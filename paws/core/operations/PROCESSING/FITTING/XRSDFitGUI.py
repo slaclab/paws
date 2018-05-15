@@ -31,6 +31,8 @@ outputs = OrderedDict(
     report=None,
     q_I_opt=None,
     success_flag=False)
+
+# TODO: the initial value of the objective readout appears to be incorrect
        
 # TODO: block the "good fit" checkbox until after the "fit" button has been used at least once
 
