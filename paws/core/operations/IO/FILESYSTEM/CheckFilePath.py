@@ -7,7 +7,7 @@ from ...Operation import Operation
 inputs=OrderedDict(
     file_path=None)
 outputs=OrderedDict(
-    file_exists_flag=None)
+    file_exists=None)
 
 class CheckFilePath(Operation):
     """Checks a file path and returns whether or not the file exists"""
@@ -15,7 +15,7 @@ class CheckFilePath(Operation):
     def __init__(self):
         super(CheckFilePath, self).__init__(inputs, outputs)
         self.input_doc['file_path'] = 'filesystem path'
-        self.output_doc['file_exists_flag'] = 'boolean indicating '\
+        self.output_doc['file_exists'] = 'boolean indicating '\
         'whether or not file exists' 
 
     def run(self):
