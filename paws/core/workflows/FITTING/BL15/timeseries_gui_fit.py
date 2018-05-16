@@ -32,6 +32,7 @@ op_maps['read_saxs']['param_constraints'] = 'PACKAGING.Container'
 op_maps['read_saxs']['conditional_fit'] = 'EXECUTION.Conditional'
 
 op_maps['fit_saxs']['fit_saxs'] = 'PROCESSING.FITTING.XRSDFitGUI'
+op_maps['fit_saxs']['conditional_save'] = 'EXECUTION.Conditional'
 op_maps['fit_saxs']['save_populations'] = 'IO.YAML.SaveYAML'
 
 wfmgr = WfManager()
@@ -152,7 +153,13 @@ wf.connect_output('populations','fit_saxs.outputs.populations')
 wf.connect_output('fixed_params','fit_saxs.outputs.fixed_params')
 wf.connect_output('param_bounds','fit_saxs.outputs.param_bounds')
 wf.connect_output('param_constraints','fit_saxs.outputs.param_constraints')
-wf.set_op_input('save_populations','data','fit_saxs.outputs.populations','workflow item')
+
+wf.set_op_input('conditional_save','work_item','save_populations','workflow item')
+wf.set_op_input('conditional_save','inputs',['fit_saxs.outputs.populations'],'workflow item')
+wf.set_op_input('conditional_save','input_keys',['data'])
+wf.set_op_input('conditional_save','condition','fit_saxs.outputs.success_flag','workflow item')
+wf.set_op_input('conditional_save','run_condition',True)
+wf.deactivate_op('save_populations')
 
 pawstools.save_to_wfl(os.path.join(pawstools.sourcedir,'core','workflows','FITTING','BL15','timeseries_gui_fit.wfl'),wfmgr)
 
