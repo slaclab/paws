@@ -20,5 +20,5 @@ class CheckFilePath(Operation):
 
     def run(self):
         fp = self.inputs['file_path']
-        self.outputs['file_path'] = os.path.exists(fp)
+        self.outputs['file_exists'] = os.path.exists(fp)
 
