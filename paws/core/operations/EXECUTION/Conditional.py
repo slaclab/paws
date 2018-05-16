@@ -58,6 +58,5 @@ class Conditional(Operation):
         else:
             self.message_callback('condition not met: skipping execution')
 
-        print(out_dict)
         self.outputs['outputs'] = out_dict
 
