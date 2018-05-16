@@ -131,8 +131,6 @@ def load_cfg(cfg_file):
         cfg_data = OrderedDict() 
     return cfg_data
 
-
-
 def save_to_dict(wf_manager):
     d = {} 
     d['OP_ACTIVATION_FLAGS'] = {k:True for k in wf_manager.op_manager.keys() if wf_manager.op_manager.is_op_activated(k)}

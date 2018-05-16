@@ -20,7 +20,7 @@ class Workflow(TreeModel):
     """
 
     def __init__(self):
-        flag_dict = OrderedDict(select=False,enable=True)
+        flag_dict = OrderedDict(select=False,enable=True,active=True)
         super(Workflow,self).__init__(flag_dict)
         self.inputs = OrderedDict()
         self.outputs = OrderedDict()
@@ -233,9 +233,10 @@ class Workflow(TreeModel):
         """
         stk = []
         valid_wf_inputs = [] 
+        inactive_ops = []
         diagnostics = {}
         continue_flag = True
-        while not self.stack_size(stk) == self.n_operations() and continue_flag:
+        while not self.stack_size(stk+[inactive_ops]) == self.n_operations() and continue_flag:
             ops_rdy = []
             ops_not_rdy = []
             for op_name in self.operations.keys():
@@ -258,9 +259,14 @@ class Workflow(TreeModel):
                 if op_rdy:
                     ops_rdy.append(op_name)
             if any(ops_rdy):
-                stk.append(ops_rdy)
+                ops_to_run = []
                 for op_name in ops_rdy:
                     valid_wf_inputs += self.get_valid_wf_inputs(op_name)
+                    if self.is_op_active(op_name):
+                        ops_to_run.append(op_name)
+                    elif not op_name in inactive_ops:
+                        inactive_ops.append(op_name) 
+                stk.append(ops_to_run)
             else:
                 continue_flag = False
         return stk,diagnostics
@@ -346,6 +352,20 @@ class Workflow(TreeModel):
                 op = self.get_data_from_uri(op_name) 
                 op.stop()
 
+    def activate_op(self,opname):
+        self.set_op_active(opname,True)
+
+    def deactivate_op(self,opname):
+        self.set_op_active(opname,False)
+
+    def set_op_active(self,opname,flag=True):
+        op_item = self.get_from_uri(opname)
+        op_item.flags['active'] = flag
+
+    def is_op_active(self,opname,flag=True):
+        op_item = self.get_from_uri(opname)
+        return op_item.flags['active']
+
     def enable_op(self,opname):
         self.set_op_enabled(opname,True)
 
@@ -366,6 +386,12 @@ class Workflow(TreeModel):
             dct[opnm] = self.get_from_uri(opnm).flags['enable']
         return dct
 
+    def op_active_flags(self):
+        dct = OrderedDict()
+        for opnm in self.operations.keys():
+            dct[opnm] = self.get_from_uri(opnm).flags['active']
+        return dct
+
     def setup_dict(self):
         """Return a dict that describes the Workflow setup.""" 
         wf_dict = OrderedDict() 
@@ -374,6 +400,7 @@ class Workflow(TreeModel):
         wf_dict['WORKFLOW_INPUTS'] = self.inputs
         wf_dict['WORKFLOW_OUTPUTS'] = self.outputs
         wf_dict['OP_ENABLE_FLAGS'] = self.op_enable_flags()
+        wf_dict['OP_ACTIVE_FLAGS'] = self.op_active_flags()
         return wf_dict
 
     def build_clone(self):
@@ -400,6 +427,8 @@ class Workflow(TreeModel):
             new_wf.add_operation(op_name,new_op)
             if not self.is_op_enabled(op_name):
                 new_wf.disable_op(op_name)
+            if not self.is_op_active(op_name):
+                new_wf.deactivate_op(op_name)
         return new_wf
 
     @classmethod
