@@ -9,6 +9,8 @@ from ..plugins.PluginManager import PluginManager
 from .Workflow import Workflow
 from .. import pawstools
 
+# TODO: make changes to allow dict workflow_item inputs
+
 class WfManager(object):
     """
     Manager for paws Workflows. 
