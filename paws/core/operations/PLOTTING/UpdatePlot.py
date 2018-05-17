@@ -11,11 +11,11 @@ inputs = OrderedDict(
     clear=True)
 outputs = OrderedDict()
 
-class DrawPlot(Operation):
+class UpdatePlot(Operation):
     """Update existing axes with new data"""
 
     def __init__(self):
-        super(DrawPlot,self).__init__(inputs,outputs) 
+        super(UpdatePlot,self).__init__(inputs,outputs) 
         self.input_doc['axes'] = 'Existing matplotlib axes'
         self.input_doc['x_y_data'] = 'n-by-2 array of x and y values'
         self.input_doc['clear'] = 'boolean flag, clear plot if True'
