@@ -684,6 +684,12 @@ class XRSDFitGUI(Operation):
     def remove_population(self,pop_nm):
         self.destroy_pop_frame(pop_nm)
         self.populations.pop(pop_nm)
+        if pop_nm in self.fixed_params:
+            self.fixed_params.pop(pop_nm)
+        if pop_nm in self.param_bounds:
+            self.param_bounds.pop(pop_nm)
+        if pop_nm in self.param_constraints:
+            self.param_constraints.pop(pop_nm)
         self.draw_plots()
         self.repack_entry_widgets()
 
@@ -1078,6 +1084,7 @@ class XRSDFitGUI(Operation):
             self.param_vars[pop_nm].pop(param_nm)
             self.param_fix_vars[pop_nm].pop(param_nm) 
             self.param_bound_vars[pop_nm].pop(param_nm)  
+            self.param_constraint_vars[pop_nm].pop(param_nm)  
             param_frm = self.param_frames[pop_nm].pop(param_nm)
             param_frm.pack_forget()
             param_frm.destroy()
@@ -1109,6 +1116,9 @@ class XRSDFitGUI(Operation):
     def destroy_site_param_widgets(self,pop_nm,site_nm):
         for param_nm in list(self.site_param_frames[pop_nm][site_nm].keys()):
             self.site_param_vars[pop_nm][site_nm].pop(param_nm)
+            self.site_param_fix_vars[pop_nm][site_nm].pop(param_nm)
+            self.site_param_bound_vars[pop_nm][site_nm].pop(param_nm)
+            self.site_param_constraint_vars[pop_nm][site_nm].pop(param_nm)
             param_frm = self.site_param_frames[pop_nm][site_nm].pop(param_nm)
             param_frm.pack_forget()
             param_frm.destroy()
