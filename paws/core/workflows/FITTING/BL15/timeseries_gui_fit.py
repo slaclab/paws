@@ -89,7 +89,7 @@ wf = wfmgr.workflows['read_header']
 # input 0: header file
 wf.connect_input('header_filepath','read_header.inputs.file_path') 
 # input 1: key for fetching time from header dictionary 
-wf.connect_input('time_key','time_temp.inputs.temp_key')
+wf.connect_input('time_key','time_temp.inputs.time_key')
 # input 3: directory containing SAXS pattern csv files 
 wf.connect_input('saxs_dir','saxs_filepath.inputs.dir_path')
 
