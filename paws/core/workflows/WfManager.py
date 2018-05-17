@@ -79,6 +79,24 @@ class WfManager(object):
         self.wf_running[wf_name] = False
         return wf
 
+    def add_operation(self,wf_name,op_name,op_uri):
+        """Name and add an Operation to a Workflow.
+
+        Parameters
+        ----------
+        wf_name : str
+            name of the Workflow to add the Operation to
+        op_name : str
+            name to give to the new Operation
+        op_uri : str
+            uri for locating the Operation
+        """
+        self.workflows[wf_name].add_operation(op_name,self.get_operation(op_uri))
+
+    def get_operation(self,op_uri):
+        """Get the Operation at `op_uri` from self.op_manager"""
+        return self.op_manager.get_operation(op_uri)
+
     def n_workflows(self):
         """Return the current number of Workflows"""
         return len(self.workflows)
