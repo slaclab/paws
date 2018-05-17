@@ -9,6 +9,8 @@ from ..plugins.PluginManager import PluginManager
 from .Workflow import Workflow
 from .. import pawstools
 
+# TODO: make changes to allow dict workflow_item inputs
+
 class WfManager(object):
     """
     Manager for paws Workflows. 
@@ -196,11 +198,14 @@ class WfManager(object):
         self.add_workflow(wf_name)
         wfins = wf_setup_dict.pop('WORKFLOW_INPUTS')
         wfouts = wf_setup_dict.pop('WORKFLOW_OUTPUTS')
-        opflags = wf_setup_dict.pop('OP_ENABLE_FLAGS')
+        op_enable_flags = wf_setup_dict.pop('OP_ENABLE_FLAGS')
+        op_active_flags = wf_setup_dict.pop('OP_ACTIVE_FLAGS')
         for op_tag, op_setup_dict in wf_setup_dict.items():
             self.workflows[wf_name].load_operation(op_tag,op_setup_dict,self.op_manager)
-            if not opflags[op_tag]:
+            if not op_enable_flags[op_tag]:
                 self.workflows[wf_name].disable_op(op_tag)
+            if not op_active_flags[op_tag]:
+                self.workflows[wf_name].deactivate_op(op_tag)
         for inpname,inpval in wfins.items():
             self.workflows[wf_name].connect_input(inpname,inpval)
         for outname,outval in wfouts.items():

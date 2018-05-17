@@ -34,18 +34,22 @@ class TimeTempFromHeader(Operation):
         d = self.inputs['header_dict']
         ktime = self.inputs['time_key']
         ktemp = self.inputs['temp_key']
-        time_str = str(d[ktime])
-        temp = float(d[ktemp])
-        # process the UTC time in seconds assuming %a %b %d %H:%M:%S %Y format
-        # set local time zone for utc-awareness 
-        tz = tzlocal.get_localzone()
-        # use strptime to create a naive datetime object
-        dt = datetime.datetime.strptime(time_str.strip(),"%a %b %d %H:%M:%S %Y")
-        # add in timezone information to make a utc-aware datetime object
-        dt_aware = datetime.datetime(dt.year,dt.month,dt.day,dt.hour,dt.minute,dt.second,dt.microsecond,tz)
-        # interpret the time in UTC milliseconds
-        t_utc = time.mktime(dt_aware.timetuple())
-        self.outputs['date_time'] = time_str
-        self.outputs['time'] = float(t_utc)
-        self.outputs['temperature'] = temp
+        if ktime is not None:
+            time_str = str(d[ktime])
+            # process the UTC time in seconds assuming %a %b %d %H:%M:%S %Y format
+            # set local time zone for utc-awareness 
+            tz = tzlocal.get_localzone()
+            # use strptime to create a naive datetime object
+            dt = datetime.datetime.strptime(time_str.strip(),"%a %b %d %H:%M:%S %Y")
+            # add in timezone information to make a utc-aware datetime object
+            dt_aware = datetime.datetime(dt.year,dt.month,dt.day,dt.hour,dt.minute,dt.second,dt.microsecond,tz)
+            # interpret the time in UTC milliseconds
+            t_utc = time.mktime(dt_aware.timetuple())
+            self.outputs['date_time'] = time_str
+            self.outputs['time'] = float(t_utc)
+        if ktemp is not None:
+            temp = float(d[ktemp])
+            self.outputs['temperature'] = temp
+
+
 

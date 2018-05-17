@@ -24,11 +24,11 @@ inputs = OrderedDict(
     param_constraints={},
     q_range=[0.,float('inf')])
 outputs = OrderedDict(
-    populations=None,
-    fixed_params=None,
-    param_bounds=None,
-    param_constraints=None,
-    report=None,
+    populations={},
+    fixed_params={},
+    param_bounds={},
+    param_constraints={},
+    report={},
     q_I_opt=None,
     success_flag=False)
 

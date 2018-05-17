@@ -12,13 +12,9 @@ class Operation(object):
     def __init__(self,inputs,outputs):
         self.inputs = OrderedDict(copy.deepcopy(inputs))
         self.outputs = OrderedDict(copy.deepcopy(outputs))
-        self.input_locator = OrderedDict.fromkeys(self.inputs.keys())
-        self.outputs = OrderedDict.fromkeys(self.outputs.keys()) 
         self.input_doc = OrderedDict.fromkeys(self.inputs.keys()) 
-
-        # input types determine how inputs are handled 
-        # when workflows using the operation are executed or serialized
-        #self.input_type = OrderedDict.fromkeys(self.inputs.keys()) 
+        self.output_doc = OrderedDict.fromkeys(self.outputs.keys()) 
+        self.input_locator = OrderedDict.fromkeys(self.inputs.keys())
 
         # input datatypes are used for typecasting,
         # for when values are set indirectly,
@@ -29,7 +25,6 @@ class Operation(object):
         # in which case gui applications should have some default behavior.
         self.input_datatype = OrderedDict.fromkeys(self.inputs.keys())
 
-        self.output_doc = OrderedDict.fromkeys(self.outputs.keys()) 
         for name in self.inputs.keys(): 
         #    self.input_type[name] = basic_type 
             self.input_locator[name] = pawstools.InputLocator(pawstools.basic_type,self.inputs[name])
@@ -111,6 +106,8 @@ class Operation(object):
             #    # NOTE: have to implement __deepcopy__
             #    # for whatever the input is.
             #    new_op.inputs[nm] = copy.deepcopy(self.inputs[nm]) 
+            #if il.tp == pawstools.basic_type:
+            #    new_op.inputs[nm] = copy.deepcopy(self.inputs[nm])
             new_op.input_locator[nm] = new_il
         #new_op.message_callback = self.message_callback
         #new_op.data_callback = self.data_callback

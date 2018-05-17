@@ -49,11 +49,14 @@ class Conditional(Operation):
         out_dict = wrk.get_outputs()
 
         if cond == rcond: 
+            self.message_callback('condition met: running')
             if any(inpks): 
                 for inpk,inpval in zip(inpks,inpvals):
                     wrk.set_input(inpk,inpval)
             wrk.run()
             out_dict = wrk.get_outputs()
+        else:
+            self.message_callback('condition not met: skipping execution')
 
         self.outputs['outputs'] = out_dict
 
