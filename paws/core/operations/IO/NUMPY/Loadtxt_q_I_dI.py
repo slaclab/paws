@@ -40,6 +40,7 @@ class Loadtxt_q_I_dI(Operation):
         filename_noext = os.path.splitext(filename)[0]
         self.outputs['filename'] = filename_noext 
 
+        self.message_callback('loading data from {}...'.format(filename))
         d = np.loadtxt(p, delimiter=dlm)
         self.outputs['q'] = d[:,0]
         self.outputs['I'] = d[:,1]

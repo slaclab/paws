@@ -22,19 +22,17 @@ inputs = OrderedDict(
     fixed_params={},
     param_bounds={},
     param_constraints={},
-    q_range=[0.,float('inf')])
+    q_range=[0.,float('inf')],
+    good_fit_prior=False)
 outputs = OrderedDict(
     populations={},
     fixed_params={},
     param_bounds={},
     param_constraints={},
+    q_range=[0.,float('inf')],
+    good_fit_flag=False,
     report={},
-    q_I_opt=None,
-    success_flag=False)
-
-# TODO: the initial value of the objective readout appears to be incorrect
-       
-# TODO: block the "good fit" checkbox until after the "fit" button has been used at least once
+    q_I_opt=None) 
 
 # TODO: if structure in xrsdkit.crystalline_structure_names, block form factor selections
 #   for all of the xrsdkit.noncrystalline_form_factor_names.
@@ -61,6 +59,7 @@ class XRSDFitGUI(Operation):
         self.input_doc['fixed_params'] = 'dict defining fixed params, xrsdkit format'
         self.input_doc['param_bounds'] = 'dict defining param bounds, xrsdkit format'
         self.input_doc['param_constraints'] = 'dict defining param constraints, xrsdkit format'
+        self.input_doc['good_fit_prior'] = 'flag indicating whether a good fit is expected'
         self.input_doc['q_range'] = 'lower and upper q-limits for the fit objective'
         self.output_doc['populations'] = 'populations with parameters optimized'
         self.output_doc['fixed_params'] = 'fixed_params after fitting complete'
@@ -68,7 +67,7 @@ class XRSDFitGUI(Operation):
         self.output_doc['param_constraints'] = 'param_constraints after fitting complete'
         self.output_doc['report'] = 'dict reporting optimization results'
         self.output_doc['q_I_opt'] = 'computed intensity for the optimized populations'
-        self.output_doc['success_flag'] = 'flag indicating user satisfaction with the fit'
+        self.output_doc['good_fit_flag'] = 'flag indicating user satisfaction with the fit'
 
     def run(self):
         self.q_I = self.inputs['q_I']
@@ -78,6 +77,7 @@ class XRSDFitGUI(Operation):
         self.param_bounds = copy.deepcopy(self.inputs['param_bounds'])
         self.param_constraints = copy.deepcopy(self.inputs['param_constraints'])
         self.q_range = self.inputs['q_range']
+        self.good_fit_prior = self.inputs['good_fit_prior']
         self.fit_report = None
         self.q_I_opt = None
         self.finished = False
@@ -142,8 +142,12 @@ class XRSDFitGUI(Operation):
         self.fit_gui.mainloop()
 
         # if tk loop exits without calling finish(), call it now.
-        if not self.finished: 
-            self.finish()
+        #if not self.finished: 
+        #    self.finish()
+
+    def close_gui(self):
+        self.finish()
+        self.fit_gui.destroy()
 
     def finish(self):
         self.outputs['populations'] = self.populations
@@ -152,9 +156,10 @@ class XRSDFitGUI(Operation):
         self.outputs['param_constraints'] = self.param_constraints
         self.outputs['report'] = self.fit_report
         self.outputs['q_I_opt'] = self.q_I_opt
-        self.outputs['success_flag'] = self.good_fit_var.get()
-        self.fit_gui.destroy()
-        self.finished = True
+        self.outputs['q_range'] = [self.q_range_vars[0].get(),self.q_range_vars[1].get()]
+        self.outputs['good_fit_flag'] = self.good_fit_var.get()
+        #self.finished = True
+        #self.fit_gui.destroy()
 
     def onCanvasConfigure(self, event):
         #Resize the inner frame to match the canvas
@@ -945,11 +950,13 @@ class XRSDFitGUI(Operation):
         q_lo = self.q_range_vars[0].get()
         q_hi = self.q_range_vars[1].get()
         lmf_params = ftr.pack_lmfit_params(self.populations,self.fixed_params,self.param_bounds,self.param_constraints)
+        #if self.message_callback:
+        #    self.message_callback(lmf_params.pretty_print())
         if self.message_callback:
-            lmf_params.pretty_print()
+            print('fitting...')
         p_opt,rpt = ftr.fit(self.fixed_params,self.param_bounds,self.param_constraints,erwtd,logIwtd,[q_lo,q_hi])
         if self.message_callback:
-            ftr.print_report(self.populations,p_opt,rpt) 
+            self.message_callback(ftr.print_report(self.populations,p_opt,rpt))
         self.fit_obj_var.set(rpt['final_objective'])
         self.update_all_population_values(p_opt)
         self.draw_plots()
@@ -958,7 +965,7 @@ class XRSDFitGUI(Operation):
         ftr = xrsdkit.fitting.xrsd_fitter.XRSDFitter(self.q_I,self.populations,self.src_wl)
         erwtd = bool(self.error_weighted_var.get())
         logIwtd = bool(self.logI_weighted_var.get())
-        return ftr.evaluate_residual(self.populations,erwtd,logIwtd)
+        return ftr.evaluate_residual(self.populations,erwtd,logIwtd,self.q_range)
 
     def repack_new_pop_frame(self):
         self.new_pop_frame.pack_forget()
@@ -1027,11 +1034,13 @@ class XRSDFitGUI(Operation):
         self.q_range_vars[1].set(self.q_range[1])
         fitbtn = Button(cf,text='Fit',width=10,command=self.fit)
         fitbtn.grid(row=3,column=0)
-        finbtn = Button(cf,text='Finish',width=10,command=self.finish)
+        finbtn = Button(cf,text='Finish',width=10,command=self.close_gui)
         finbtn.grid(row=3,column=1,columnspan=2)
         self.good_fit_var = tkinter.BooleanVar(cf)
         fitcb = Checkbutton(cf,text="Good fit", variable=self.good_fit_var)
         fitcb.grid(row=3,column=3,sticky=tkinter.W)
+        print('good fit prior: {}'.format(self.good_fit_prior))
+        self.good_fit_var.set(self.good_fit_prior)
         cf.pack(side=tkinter.TOP,pady=2,padx=2,fill="both",expand=True)
 
     def update_fit_objective(self):
