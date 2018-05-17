@@ -29,6 +29,8 @@ op_maps['read_saxs']['populations'] = 'PACKAGING.Container'
 op_maps['read_saxs']['fixed_params'] = 'PACKAGING.Container'
 op_maps['read_saxs']['param_bounds'] = 'PACKAGING.Container'
 op_maps['read_saxs']['param_constraints'] = 'PACKAGING.Container'
+op_maps['read_saxs']['q_range'] = 'PACKAGING.Container'
+op_maps['read_saxs']['good_fit_prior'] = 'PACKAGING.Container'
 op_maps['read_saxs']['conditional_fit'] = 'EXECUTION.Conditional'
 
 op_maps['fit_saxs']['fit_saxs'] = 'PROCESSING.FITTING.XRSDFitGUI'
@@ -81,7 +83,8 @@ wf.set_op_input('saxs_batch','static_inputs',['saxs_dir.inputs.data'],'workflow 
 wf.set_op_input('saxs_batch','static_input_keys',['populations_dir'])
 wf.set_op_input('saxs_batch','serial_params',
     {'populations':'populations','param_bounds':'param_bounds',
-    'fixed_params':'fixed_params','param_constraints':'param_constraints'})
+    'fixed_params':'fixed_params','param_constraints':'param_constraints',
+    'q_range':'q_range','good_fit_prior':'good_fit_flag'})
 
 
 wf = wfmgr.workflows['read_header']
@@ -115,10 +118,14 @@ wf.connect_input('populations','populations.inputs.data')
 wf.connect_input('fixed_params','fixed_params.inputs.data')
 wf.connect_input('param_bounds','param_bounds.inputs.data')
 wf.connect_input('param_constraints','param_constraints.inputs.data')
+wf.connect_input('q_range','q_range.inputs.data')
+wf.connect_input('good_fit_prior','good_fit_prior.inputs.data')
 wf.connect_output('populations','conditional_fit.outputs.outputs.populations')
 wf.connect_output('fixed_params','conditional_fit.outputs.outputs.fixed_params')
 wf.connect_output('param_bounds','conditional_fit.outputs.outputs.param_bounds')
 wf.connect_output('param_constraints','conditional_fit.outputs.outputs.param_constraints')
+wf.connect_output('q_range','conditional_fit.outputs.outputs.q_range')
+wf.connect_output('good_fit_flag','conditional_fit.outputs.outputs.good_fit_flag')
 
 wf.set_op_input('read_saxs','delimiter',',')
 wf.set_op_input('populations_file','ext','yml')
@@ -128,6 +135,8 @@ wf.set_op_input('populations','data',{})
 wf.set_op_input('fixed_params','data',{})
 wf.set_op_input('param_bounds','data',{})
 wf.set_op_input('param_constraints','data',{})
+wf.set_op_input('q_range','data',[0.,float('inf')])
+wf.set_op_input('good_fit_prior','data',False)
 
 wf.set_op_input('conditional_fit','condition','check_pops_file.outputs.file_exists','workflow item')
 wf.set_op_input('conditional_fit','run_condition',False)
@@ -135,9 +144,13 @@ wf.set_op_input('conditional_fit','work_item','fit_saxs','entire workflow')
 wf.set_op_input('conditional_fit','inputs',
     ['read_saxs.outputs.q_I','populations_file.outputs.file_path',
     'populations.inputs.data','fixed_params.inputs.data',
-    'param_bounds.inputs.data','param_constraints.inputs.data'],'workflow item')
+    'param_bounds.inputs.data','param_constraints.inputs.data',
+    'q_range.inputs.data','good_fit_prior.inputs.data'],'workflow item')
 wf.set_op_input('conditional_fit','input_keys',
-    ['q_I','populations_file','populations','fixed_params','param_bounds','param_constraints'])
+    ['q_I','populations_file',
+    'populations','fixed_params',
+    'param_bounds','param_constraints',
+    'q_range','good_fit_prior'])
 
 
 wf = wfmgr.workflows['fit_saxs']
@@ -149,15 +162,19 @@ wf.connect_input('populations','fit_saxs.inputs.populations')
 wf.connect_input('fixed_params','fit_saxs.inputs.fixed_params')
 wf.connect_input('param_bounds','fit_saxs.inputs.param_bounds')
 wf.connect_input('param_constraints','fit_saxs.inputs.param_constraints')
+wf.connect_input('q_range','fit_saxs.inputs.q_range')
+wf.connect_input('good_fit_prior','fit_saxs.inputs.good_fit_prior')
 wf.connect_output('populations','fit_saxs.outputs.populations')
 wf.connect_output('fixed_params','fit_saxs.outputs.fixed_params')
 wf.connect_output('param_bounds','fit_saxs.outputs.param_bounds')
 wf.connect_output('param_constraints','fit_saxs.outputs.param_constraints')
+wf.connect_output('q_range','fit_saxs.outputs.q_range')
+wf.connect_output('good_fit_flag','fit_saxs.outputs.good_fit_flag')
 
 wf.set_op_input('conditional_save','work_item','save_populations','workflow item')
 wf.set_op_input('conditional_save','inputs',['fit_saxs.outputs.populations'],'workflow item')
 wf.set_op_input('conditional_save','input_keys',['data'])
-wf.set_op_input('conditional_save','condition','fit_saxs.outputs.success_flag','workflow item')
+wf.set_op_input('conditional_save','condition','fit_saxs.outputs.good_fit_flag','workflow item')
 wf.set_op_input('conditional_save','run_condition',True)
 wf.deactivate_op('save_populations')
 
