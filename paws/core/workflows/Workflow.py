@@ -261,7 +261,9 @@ class Workflow(TreeModel):
             if any(ops_rdy):
                 ops_to_run = []
                 for op_name in ops_rdy:
-                    valid_wf_inputs += self.get_valid_wf_inputs(op_name)
+                    for wf_input_name in self.get_valid_wf_inputs(op_name):
+                        if not wf_input_name in valid_wf_inputs:
+                            valid_wf_inputs.append(wf_input_name)
                     if self.is_op_active(op_name):
                         ops_to_run.append(op_name)
                     elif not op_name in inactive_ops:
