@@ -35,7 +35,7 @@ op_maps['read_saxs']['conditional_fit'] = 'EXECUTION.Conditional'
 
 op_maps['fit_saxs']['fit_saxs'] = 'PROCESSING.FITTING.XRSDFitGUI'
 op_maps['fit_saxs']['conditional_save'] = 'EXECUTION.Conditional'
-op_maps['fit_saxs']['save_populations'] = 'IO.YAML.SaveYAML'
+op_maps['fit_saxs']['save_populations'] = 'IO.YAML.SaveXRSDFit'
 
 wfmgr = WfManager()
 # add the workflows and activate/add the operations:
@@ -172,8 +172,18 @@ wf.connect_output('q_range','fit_saxs.outputs.q_range')
 wf.connect_output('good_fit_flag','fit_saxs.outputs.good_fit_flag')
 
 wf.set_op_input('conditional_save','work_item','save_populations','workflow item')
-wf.set_op_input('conditional_save','inputs',['fit_saxs.outputs.populations'],'workflow item')
-wf.set_op_input('conditional_save','input_keys',['data'])
+wf.set_op_input('conditional_save','inputs',
+    ['fit_saxs.outputs.populations',
+    'fit_saxs.outputs.fixed_params',
+    'fit_saxs.outputs.param_bounds',
+    'fit_saxs.outputs.param_constraints',
+    'fit_saxs.outputs.report'],'workflow item')
+wf.set_op_input('conditional_save','input_keys',
+    ['populations',
+    'fixed_params',
+    'param_bounds',
+    'param_constraints',
+    'report'])
 wf.set_op_input('conditional_save','condition','fit_saxs.outputs.good_fit_flag','workflow item')
 wf.set_op_input('conditional_save','run_condition',True)
 wf.deactivate_op('save_populations')

@@ -1,15 +1,12 @@
 from collections import OrderedDict
 
-import numpy as np
-
 import yaml
 from ...Operation import Operation
 
 inputs=OrderedDict(
     file_path=None,
     data=None)
-outputs=OrderedDict(
-    yaml_output=None)
+outputs=OrderedDict()
 
 class SaveYAML(Operation):
     """Save some data to a YAML file."""
@@ -22,10 +19,6 @@ class SaveYAML(Operation):
     def run(self):
         p = self.inputs['file_path']
         d = self.inputs['data']
-
         stream = open(p,'w')
         yaml.dump(d, stream)
-
-        #datastring = yaml.dump(data)
-        #self.outputs['data_string'] = datastring[:min([len(datastring),1000])]
 
