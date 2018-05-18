@@ -29,10 +29,10 @@ outputs = OrderedDict(
     fixed_params={},
     param_bounds={},
     param_constraints={},
-    q_range=[0.,float('inf')],
-    good_fit_flag=False,
     report={},
-    q_I_opt=None) 
+    q_I_opt = None,
+    q_range=[0.,float('inf')],
+    good_fit_flag=False) 
 
 # TODO: if structure in xrsdkit.crystalline_structure_names, block form factor selections
 #   for all of the xrsdkit.noncrystalline_form_factor_names.
@@ -45,6 +45,8 @@ outputs = OrderedDict(
 
 # TODO: when a param is fixed or has a constraint set,
 #   make the entry widget read-only
+
+# TODO: make plot frame zoom-able
 
 # TODO: generally make the gui cleaner and more user-friendly.
 
@@ -955,6 +957,8 @@ class XRSDFitGUI(Operation):
         if self.message_callback:
             print('fitting...')
         p_opt,rpt = ftr.fit(self.fixed_params,self.param_bounds,self.param_constraints,erwtd,logIwtd,[q_lo,q_hi])
+        self.q_I_opt = xrsdkit.scattering.compute_intensity(self.q_I[:,0],self.populations,self.src_wl)
+        self.fit_report = rpt
         if self.message_callback:
             self.message_callback(ftr.print_report(self.populations,p_opt,rpt))
         self.fit_obj_var.set(rpt['final_objective'])
