@@ -5,8 +5,6 @@ import paws
 from paws.core.workflows.WfManager import WfManager
 from paws.core import pawstools
 
-# TODO: if populations file exists, re-fit
-
 # specify workflow names: 
 wf_names = ['main','read_header','read_saxs','fit_saxs']
 # specify operation names and corresponding modules: 
@@ -28,6 +26,8 @@ op_maps['read_saxs']['read_saxs'] = 'IO.NUMPY.Loadtxt_q_I_dI'
 op_maps['read_saxs']['populations_file'] = 'IO.FILESYSTEM.BuildFilePath'
 op_maps['read_saxs']['check_pops_file'] = 'IO.FILESYSTEM.CheckFilePath'
 op_maps['read_saxs']['populations'] = 'PACKAGING.Container'
+op_maps['read_saxs']['conditional_read'] = 'EXECUTION.Conditional'
+op_maps['read_saxs']['read_pops'] = 'IO.YAML.LoadXRSDFit'
 op_maps['read_saxs']['conditional_fit'] = 'EXECUTION.Conditional'
 
 op_maps['fit_saxs']['fit_saxs'] = 'PROCESSING.FITTING.XRSDFit'
@@ -105,11 +105,22 @@ wf.connect_input('filename','populations_file.inputs.filename')
 wf.connect_input('saxs_filepath','read_saxs.inputs.file_path')
 wf.connect_input('populations_dir','populations_file.inputs.dir_path')
 wf.connect_input('populations','populations.inputs.data')
-wf.connect_output('populations','conditional_fit.outputs.outputs.populations')
+#wf.connect_output('populations','conditional_fit.outputs.outputs.populations')
+wf.connect_conditional_output('populations',
+    condition_uri='check_pops_file.outputs.file_exists',
+    if_true_uri='conditional_read.outputs.outputs.populations',
+    else_uri='conditional_fit.outputs.outputs.populations')
 
 wf.set_op_input('read_saxs','delimiter',',')
 wf.set_op_input('populations_file','ext','yml')
 wf.set_op_input('check_pops_file','file_path','populations_file.outputs.file_path','workflow item')
+
+wf.set_op_input('conditional_read','condition','check_pops_file.outputs.file_exists','workflow item')
+wf.set_op_input('conditional_read','run_condition',True)
+wf.set_op_input('conditional_read','work_item','read_pops','workflow item')
+wf.set_op_input('conditional_read','inputs',['populations_file.outputs.file_path'],'workflow item')
+wf.set_op_input('conditional_read','input_keys',['file_path'])
+wf.deactivate_op('read_pops')
 
 wf.set_op_input('conditional_fit','condition','check_pops_file.outputs.file_exists','workflow item')
 wf.set_op_input('conditional_fit','run_condition',False)
