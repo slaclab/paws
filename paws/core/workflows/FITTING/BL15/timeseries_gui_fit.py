@@ -45,9 +45,6 @@ for wf_name,op_map in op_maps.items():
         op = wfmgr.op_manager.get_operation(op_uri)
         wfmgr.workflows[wf_name].add_operation(op_name,op)
 
-pgmgr = wfmgr.plugin_manager
-pgmgr.add_plugin('citrination_client','CitrinationClient')
-
 wf = wfmgr.workflows['main']
 
 # input 0: header files location
