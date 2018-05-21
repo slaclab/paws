@@ -48,6 +48,8 @@ outputs = OrderedDict(
 
 # TODO: make plot frame zoom-able
 
+# TODO: add sub-curves for individual populations
+
 # TODO: generally make the gui cleaner and more user-friendly.
 
 class XRSDFitGUI(Operation):
@@ -70,6 +72,10 @@ class XRSDFitGUI(Operation):
         self.output_doc['report'] = 'dict reporting optimization results'
         self.output_doc['q_I_opt'] = 'computed intensity for the optimized populations'
         self.output_doc['good_fit_flag'] = 'flag indicating user satisfaction with the fit'
+        self.input_datatype['populations'] = 'dict'
+        self.input_datatype['fixed_params'] = 'dict'
+        self.input_datatype['param_bounds'] = 'dict'
+        self.input_datatype['param_constraints'] = 'dict'
 
     def run(self):
         self.q_I = self.inputs['q_I']
@@ -97,6 +103,31 @@ class XRSDFitGUI(Operation):
         self.window = self.fit_gui_canvas.create_window(0,0,window=self.main_frame, anchor='nw')
         self.fit_gui_canvas.bind("<Configure>", self.onCanvasConfigure)
 
+        self.reset_all_widgets()
+
+        # create the plots
+        self.build_plot_widgets()
+
+        # create the widgets for population control
+        self.build_entry_widgets()
+
+        # start the tk loop
+        self.fit_gui.protocol('WM_DELETE_WINDOW',self.finish)
+        self.fit_gui.mainloop()
+
+        # if tk loop exits without calling finish(), call it now.
+        #if not self.finished: 
+        #    self.finish()
+
+    def close_gui(self):
+        self.finish()
+        self.fit_gui_canvas = None 
+        self.main_frame = None 
+        self.window = None 
+        self.reset_all_widgets()
+        self.fit_gui.destroy()
+
+    def reset_all_widgets(self):
         # data structures for maintaining refs to widgets
         self.pop_frames = OrderedDict()
         self.param_frames = OrderedDict()
@@ -133,33 +164,17 @@ class XRSDFitGUI(Operation):
         self.q_range_vars = [None, None]
         self.good_fit_var = None
 
-        # create the plots
-        self.build_plot_widgets()
-
-        # create the widgets for population control
-        self.build_entry_widgets()
-
-        # start the tk loop
-        self.fit_gui.protocol('WM_DELETE_WINDOW',self.finish)
-        self.fit_gui.mainloop()
-
-        # if tk loop exits without calling finish(), call it now.
-        #if not self.finished: 
-        #    self.finish()
-
-    def close_gui(self):
-        self.finish()
-        self.fit_gui.destroy()
+        
 
     def finish(self):
-        self.outputs['populations'] = self.populations
-        self.outputs['fixed_params'] = self.fixed_params
-        self.outputs['param_bounds'] = self.param_bounds
-        self.outputs['param_constraints'] = self.param_constraints
-        self.outputs['report'] = self.fit_report
-        self.outputs['q_I_opt'] = self.q_I_opt
-        self.outputs['q_range'] = [self.q_range_vars[0].get(),self.q_range_vars[1].get()]
-        self.outputs['good_fit_flag'] = self.good_fit_var.get()
+        self.outputs['populations'] = copy.deepcopy(self.populations)
+        self.outputs['fixed_params'] = copy.deepcopy(self.fixed_params)
+        self.outputs['param_bounds'] = copy.deepcopy(self.param_bounds)
+        self.outputs['param_constraints'] = copy.deepcopy(self.param_constraints)
+        self.outputs['report'] = copy.deepcopy(self.fit_report)
+        self.outputs['q_I_opt'] = copy.deepcopy(self.q_I_opt)
+        self.outputs['q_range'] = copy.deepcopy([self.q_range_vars[0].get(),self.q_range_vars[1].get()])
+        self.outputs['good_fit_flag'] = copy.copy(self.good_fit_var.get())
         #self.finished = True
         #self.fit_gui.destroy()
 
@@ -283,10 +298,15 @@ class XRSDFitGUI(Operation):
         #self.ax_plot.loglog(self.q_I[:,0],self.q_I[:,1],lw=2,color='black')
         I_est = xrsdkit.scattering.compute_intensity(self.q_I[:,0],self.populations,self.src_wl)
         self.ax_plot.semilogy(self.q_I[:,0],I_est,lw=2,color='red')
+        colors='gbcmyk'
+        for ip,nm in enumerate(self.pop_frames.keys()):
+            pd = self.populations[nm]
+            I_p = xrsdkit.scattering.compute_intensity(self.q_I[:,0],{nm:pd},self.src_wl)
+            self.ax_plot.semilogy(self.q_I[:,0],I_p,lw=1,color=colors[ip])
         #self.ax_plot.loglog(self.q_I[:,0],I_est,lw=2,color='red')
         self.ax_plot.set_xlabel('q (1/Angstrom)')
         self.ax_plot.set_ylabel('Intensity (counts)')
-        self.ax_plot.legend(['measured','computed'])
+        self.ax_plot.legend(['measured','computed']+list(self.pop_frames.keys()))
         self.plot_canvas.draw()
 
     def create_entry_widgets(self):
@@ -1043,7 +1063,6 @@ class XRSDFitGUI(Operation):
         self.good_fit_var = tkinter.BooleanVar(cf)
         fitcb = Checkbutton(cf,text="Good fit", variable=self.good_fit_var)
         fitcb.grid(row=3,column=3,sticky=tkinter.W)
-        print('good fit prior: {}'.format(self.good_fit_prior))
         self.good_fit_var.set(self.good_fit_prior)
         cf.pack(side=tkinter.TOP,pady=2,padx=2,fill="both",expand=True)
 
