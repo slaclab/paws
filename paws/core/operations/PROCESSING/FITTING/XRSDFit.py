@@ -9,18 +9,18 @@ from ...Operation import Operation
 
 inputs = OrderedDict(
     q_I=None,
-    populations=None,
-    fixed_params=None,
-    param_bounds=None,
-    param_constraints=None,
+    source_wavelength=None,
+    populations={},
+    fixed_params={},
+    param_bounds={},
+    param_constraints={},
+    q_range=[0.,float('inf')],
     error_weighted=True,
-    logI_weighted=True,
-    logq_weighted=False,
-    source_wavelength=None)
+    logI_weighted=True)
 
 outputs = OrderedDict(
-    populations=None,
-    report=None,
+    populations={},
+    report={},
     q_I_opt=None)
 
 class XRSDFit(Operation):
@@ -33,29 +33,16 @@ class XRSDFit(Operation):
     def __init__(self):
         super(XRSDFit, self).__init__(inputs, outputs)
         self.input_doc['q_I'] = 'n-by-2 array of wave vectors (1/Angstrom) and intensities (counts)'
-        self.input_doc['populations'] = 'dict specifying '\
-            'scatterer populations and initial guesses for parameters, '\
-            'formatted according to the xrsdkit specifications'
-        self.input_doc['fixed_params'] = 'dict indicating which parameters '\
-            'should be held fixed during optimization, '\
-            'where the dict structure mirrors `populations`, '\
-            'but with boolean values'
-        self.input_doc['param_bounds'] = 'like `fixed_params`, '\
-            'but with tuple values specifying '\
-            'the lower and upper parameter bounds'
-        self.input_doc['param_constraints'] = 'like `fixed_params`, '\
-            'but with expressions (strings) as values, '\
-            'where the expressions define the constraints '\
-            'according to the xrsdkit specifications'
-        self.input_doc['source_wavelength'] = 'wavelength '\
-            'of x-ray source, in Angstroms'
+        self.input_doc['source_wavelength'] = 'wavelength of light source, in Angstroms'
+        self.input_doc['populations'] = 'dict defining populations, xrsdkit format'
+        self.input_doc['fixed_params'] = 'dict defining fixed params, xrsdkit format'
+        self.input_doc['param_bounds'] = 'dict defining param bounds, xrsdkit format'
+        self.input_doc['param_constraints'] = 'dict defining param constraints, xrsdkit format'
+        self.input_doc['q_range'] = 'lower and upper q-limits for the fit objective'
+        self.output_doc['populations'] = 'populations with parameters optimized'
+        self.output_doc['report'] = 'dict reporting optimization results'
+        self.output_doc['q_I_opt'] = 'computed intensity for the optimized populations'
 
-        self.output_doc['populations'] = 'similar to input `populations`, '\
-            'but with the optimized parameters'
-        self.output_doc['report'] = 'dict expressing '\
-            'the numerical results of the optimization'
-        self.output_doc['q_I_opt'] = 'n-by-2 array '\
-            'of q and the optimized computed intensity profile'
         self.input_datatype['populations'] = 'dict'
         self.input_datatype['fixed_params'] = 'dict'
         self.input_datatype['param_bounds'] = 'dict'
@@ -63,17 +50,17 @@ class XRSDFit(Operation):
 
     def run(self):
         q_I = self.inputs['q_I']
+        src_wl = self.inputs['source_wavelength']        
         pops = self.inputs['populations']
         p_fix = self.inputs['fixed_params']
         p_b = self.inputs['param_bounds']
         p_c = self.inputs['param_constraints']
         errwtd = self.inputs['error_weighted']
         logIwtd = self.inputs['logI_weighted']
-        logqwtd = self.inputs['logq_weighted']
-        src_wl = self.inputs['source_wavelength']        
+        qrng = self.inputs['q_range']
 
         xrf = XRSDFitter(q_I,pops,src_wl)
-        fit_pops,rpt = xrf.fit(p_fix,p_b,p_c,errwtd,logIwtd,logqwtd)
+        fit_pops,rpt = xrf.fit(p_fix,p_b,p_c,errwtd,logIwtd,qrng)
 
         self.message_callback(xrf.print_report(pops,fit_pops,rpt))
  
