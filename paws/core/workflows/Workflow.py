@@ -151,6 +151,12 @@ class Workflow(TreeModel):
     def connect_output(self,wf_output_name,op_output_uris):
         self.outputs[wf_output_name] = op_output_uris
 
+    def connect_conditional_output(self,wf_output_name,condition_uri,if_true_uri,else_uri):
+        self.outputs[wf_output_name] = dict(
+            condition_uri = condition_uri,
+            if_true_uri = if_true_uri,
+            else_uri = else_uri) 
+
     def break_input(self,wf_input_name):
         self.inputs.pop(wf_input_name)
     
@@ -189,7 +195,7 @@ class Workflow(TreeModel):
         return il.val  
 
     def get_wf_output(self,wf_output_name):
-        """Get all outputs in self.outputs[`wf_output_name`]."""
+        """Get elf.outputs[`wf_output_name`]."""
         r = self.outputs[wf_output_name]
         if isinstance(r,list):
             dl = []
@@ -199,6 +205,15 @@ class Workflow(TreeModel):
                 else:
                     dl.append(None)
             return dl
+        elif isinstance(r,dict) and all([k in r for k in ['condition_uri','if_true_uri','else_uri']]):
+            if self.contains_uri(r['condition_uri']):
+                cond = self.get_data_from_uri(r['condition_uri'])
+            if cond and self.contains_uri(r['if_true_uri']):
+                return self.get_data_from_uri(r['if_true_uri'])
+            elif self.contains_uri(r['else_uri']):
+                return self.get_data_from_uri(r['else_uri'])
+            else:
+                raise KeyError('Failed to get conditional workflow output: {}'.format(r))
         else:
             if self.contains_uri(r):
                 return self.get_data_from_uri(r)
