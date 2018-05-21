@@ -258,8 +258,8 @@ class Workflow(TreeModel):
                 diagnostics.update(op_diag)
                 if op_rdy:
                     ops_rdy.append(op_name)
+            ops_to_run = []
             if any(ops_rdy):
-                ops_to_run = []
                 for op_name in ops_rdy:
                     for wf_input_name in self.get_valid_wf_inputs(op_name):
                         if not wf_input_name in valid_wf_inputs:
@@ -268,6 +268,7 @@ class Workflow(TreeModel):
                         ops_to_run.append(op_name)
                     elif not op_name in inactive_ops:
                         inactive_ops.append(op_name) 
+            if any(ops_to_run):
                 stk.append(ops_to_run)
             else:
                 continue_flag = False
