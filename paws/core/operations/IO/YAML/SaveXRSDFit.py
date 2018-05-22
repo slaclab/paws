@@ -26,6 +26,7 @@ class SaveXRSDFit(Operation):
         self.input_doc['report'] = 'xrsdkit fit report'
 
     def run(self):
+        self.message_callback('writing to {}'.format(self.inputs['file_path']))
         save_fit(self.inputs['file_path'],
             self.inputs['populations'],
             self.inputs['fixed_params'],
