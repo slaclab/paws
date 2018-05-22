@@ -12,7 +12,7 @@ op_maps = OrderedDict.fromkeys(wf_names)
 for wf_name in wf_names:
     op_maps[wf_name] = OrderedDict()
 op_maps['main']['header_files'] = 'IO.FILESYSTEM.BuildFileList'
-op_maps['main']['header_batch'] = 'EXECUTION.Batch't
+op_maps['main']['header_batch'] = 'EXECUTION.Batch'
 op_maps['main']['t_filepaths'] = 'PACKAGING.BATCH.XYDataFromBatch'
 op_maps['main']['t_filenames'] = 'PACKAGING.BATCH.XYDataFromBatch'
 op_maps['main']['saxs_dir'] = 'PACKAGING.Container'
