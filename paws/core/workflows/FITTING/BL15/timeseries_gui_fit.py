@@ -12,7 +12,7 @@ op_maps = OrderedDict.fromkeys(wf_names)
 for wf_name in wf_names:
     op_maps[wf_name] = OrderedDict()
 op_maps['main']['header_files'] = 'IO.FILESYSTEM.BuildFileList'
-op_maps['main']['header_batch'] = 'EXECUTION.Batch'
+op_maps['main']['header_batch'] = 'EXECUTION.Batch't
 op_maps['main']['t_filepaths'] = 'PACKAGING.BATCH.XYDataFromBatch'
 op_maps['main']['t_filenames'] = 'PACKAGING.BATCH.XYDataFromBatch'
 op_maps['main']['saxs_dir'] = 'PACKAGING.Container'
@@ -53,6 +53,9 @@ wf.connect_input('header_dir','header_files.inputs.dir_path')
 wf.connect_input('header_regex','header_files.inputs.regex') 
 # input 2: saxs files location 
 wf.connect_input('saxs_dir','saxs_dir.inputs.data') 
+# inputs 3-4: lower and upper indices to run
+wf.connect_input('lower_index',['t_filenames.inputs.lower_index','t_filepaths.inputs.lower_index'])
+wf.connect_input('upper_index',['t_filenames.inputs.upper_index','t_filepaths.inputs.upper_index'])
 
 wf.set_op_input('header_batch','work_item','read_header','entire workflow')
 wf.set_op_input('header_batch','input_arrays',['header_files.outputs.file_list'],'workflow item')
