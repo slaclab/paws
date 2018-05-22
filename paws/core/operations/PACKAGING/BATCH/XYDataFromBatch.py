@@ -9,7 +9,9 @@ inputs = OrderedDict(
     x_key=None,
     y_key=None,
     x_sort_flag=False,
-    x_shift_flag=False) 
+    x_shift_flag=False, 
+    lower_index=None,
+    upper_index=None) 
 outputs = OrderedDict(
     x=None,
     y=None,
@@ -28,6 +30,8 @@ class XYDataFromBatch(Operation):
         self.input_doc['y_key'] = 'key for y data from batch_outputs'
         self.input_doc['x_sort_flag'] = 'if True, sort data for increasing x' 
         self.input_doc['x_shift_flag'] = 'if True, shift x data so that its minimum value is zero' 
+        self.input_doc['lower_index'] = 'optional list slice lower limit, inclusive'
+        self.input_doc['upper_index'] = 'optional list slice upper limit, exclusive'
         self.output_doc['x'] = 'array of the x values'
         self.output_doc['y'] = 'array of the y values'
         self.output_doc['x_y'] = 'n-by-2 array of x and y values'
@@ -38,6 +42,8 @@ class XYDataFromBatch(Operation):
         ky = self.inputs['y_key']
         sortflag = self.inputs['x_shift_flag']
         shiftflag = self.inputs['x_shift_flag']
+        lidx = self.inputs['lower_index']
+        uidx = self.inputs['upper_index']
 
         x_list = []
         y_list = []
@@ -56,9 +62,15 @@ class XYDataFromBatch(Operation):
             i_xsort = np.argsort(x_all)
             x_list = list(x_all[i_xsort])
             y_list = list(y_all[i_xsort])
+        if lidx is not None:
+            x_list = x_list[lidx:]
+            y_list = y_list[lidx:]
+            uidx = uidx-lidx
+        if uidx is not None:
+            x_list = x_list[:uidx]
+            y_list = y_list[:uidx]
 
         self.outputs['x'] = x_list
         self.outputs['y'] = y_list
         self.outputs['x_y'] = zip(x_list,y_list)
-
 
