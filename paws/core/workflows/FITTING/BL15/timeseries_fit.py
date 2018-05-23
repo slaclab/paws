@@ -6,7 +6,7 @@ from paws.core.workflows.WfManager import WfManager
 from paws.core import pawstools
 
 # specify workflow names: 
-wf_names = ['main','read_header','read_saxs','fit_saxs']
+wf_names = ['main','read_header','read_and_fit']
 # specify operation names and corresponding modules: 
 op_maps = OrderedDict.fromkeys(wf_names)
 for wf_name in wf_names:
@@ -22,16 +22,14 @@ op_maps['read_header']['read_header'] = 'IO.BL15.ReadHeader_SSRL15'
 op_maps['read_header']['time_temp'] = 'PACKAGING.BL15.TimeTempFromHeader'
 op_maps['read_header']['saxs_filepath'] = 'IO.FILESYSTEM.BuildFilePath'
 
-op_maps['read_saxs']['read_saxs'] = 'IO.NUMPY.Loadtxt_q_I_dI'
-op_maps['read_saxs']['populations_file'] = 'IO.FILESYSTEM.BuildFilePath'
-op_maps['read_saxs']['check_pops_file'] = 'IO.FILESYSTEM.CheckFilePath'
-op_maps['read_saxs']['populations'] = 'PACKAGING.Container'
-op_maps['read_saxs']['conditional_read'] = 'EXECUTION.Conditional'
-op_maps['read_saxs']['read_pops'] = 'IO.YAML.LoadXRSDFit'
-op_maps['read_saxs']['conditional_fit'] = 'EXECUTION.Conditional'
-
-op_maps['fit_saxs']['fit_saxs'] = 'PROCESSING.FITTING.XRSDFit'
-op_maps['fit_saxs']['save_populations'] = 'IO.YAML.SaveXRSDFit'
+op_maps['read_and_fit']['read_saxs'] = 'IO.NUMPY.Loadtxt_q_I_dI'
+op_maps['read_and_fit']['populations'] = 'PACKAGING.Container'
+op_maps['read_and_fit']['populations_file'] = 'IO.FILESYSTEM.BuildFilePath'
+op_maps['read_and_fit']['check_pops_file'] = 'IO.FILESYSTEM.CheckFilePath'
+op_maps['read_and_fit']['conditional_read'] = 'EXECUTION.Conditional'
+op_maps['read_and_fit']['read_pops'] = 'IO.YAML.LoadXRSDFit'
+op_maps['read_and_fit']['fit_saxs'] = 'PROCESSING.FITTING.XRSDFit'
+op_maps['read_and_fit']['save_populations'] = 'IO.YAML.SaveXRSDFit'
 
 wfmgr = WfManager()
 # add the workflows and activate/add the operations:
@@ -71,7 +69,7 @@ wf.set_op_input('t_filepaths','y_key','saxs_filepath')
 wf.set_op_input('t_filepaths','x_sort_flag',True)
 wf.set_op_input('t_filepaths','x_shift_flag',True)
 
-wf.set_op_input('saxs_batch','work_item','read_saxs','entire workflow')
+wf.set_op_input('saxs_batch','work_item','read_and_fit','entire workflow')
 wf.set_op_input('saxs_batch','input_arrays',
     ['t_filenames.outputs.y','t_filepaths.outputs.y'],'workflow item')
 wf.set_op_input('saxs_batch','input_keys',['filename','saxs_filepath'])
@@ -102,17 +100,23 @@ wf.set_op_input('saxs_filepath','suffix','_dz_bgsub')
 wf.set_op_input('saxs_filepath','ext','csv')
 
 
-wf = wfmgr.workflows['read_saxs']
+wf = wfmgr.workflows['read_and_fit']
 
+wf.connect_input('source_wavelength','fit_saxs.inputs.source_wavelength')
 wf.connect_input('filename','populations_file.inputs.filename')
 wf.connect_input('saxs_filepath','read_saxs.inputs.file_path')
 wf.connect_input('populations_dir','populations_file.inputs.dir_path')
 wf.connect_input('populations','populations.inputs.data')
-#wf.connect_output('populations','conditional_fit.outputs.outputs.populations')
-wf.connect_conditional_output('populations',
-    condition_uri='check_pops_file.outputs.file_exists',
-    if_true_uri='conditional_read.outputs.outputs.populations',
-    else_uri='conditional_fit.outputs.outputs.populations')
+wf.connect_input('fixed_params','fit_saxs.inputs.fixed_params')
+wf.connect_input('param_bounds','fit_saxs.inputs.param_bounds')
+wf.connect_input('param_constraints','fit_saxs.inputs.param_constraints')
+wf.connect_input('q_range','fit_saxs.inputs.q_range')
+
+wf.connect_output('populations','fit_saxs.outputs.populations')
+wf.connect_output('report','fit_saxs.outputs.report')
+wf.connect_output('fixed_params','fit_saxs.inputs.fixed_params')
+wf.connect_output('param_bounds','fit_saxs.inputs.param_bounds')
+wf.connect_output('param_constraints','fit_saxs.inputs.param_constraints')
 
 wf.set_op_input('read_saxs','delimiter',',')
 wf.set_op_input('populations_file','ext','yml')
@@ -125,37 +129,18 @@ wf.set_op_input('conditional_read','inputs',['populations_file.outputs.file_path
 wf.set_op_input('conditional_read','input_keys',['file_path'])
 wf.deactivate_op('read_pops')
 
-wf.set_op_input('conditional_fit','condition','check_pops_file.outputs.file_exists','workflow item')
-wf.set_op_input('conditional_fit','run_condition',False)
-wf.set_op_input('conditional_fit','work_item','fit_saxs','entire workflow')
-wf.set_op_input('conditional_fit','inputs',
-    ['read_saxs.outputs.q_I',
-    'populations_file.outputs.file_path',
-    'populations.inputs.data'],'workflow item')
-wf.set_op_input('conditional_fit','input_keys',
-    ['q_I','populations_file',
-    'populations'])
+wf.set_op_input('fit_saxs','q_I','read_saxs.outputs.q_I','workflow item')
+wf.set_conditional_input('fit_saxs.inputs.populations',
+    condition_uri='check_pops_file.outputs.file_exists',
+    if_true_uri='conditional_read.outputs.outputs.populations',
+    else_uri='populations.inputs.data')
 
-wf = wfmgr.workflows['fit_saxs']
-
-wf.connect_input('populations_file','save_populations.inputs.file_path')
-wf.connect_input('q_I','fit_saxs.inputs.q_I')
-wf.connect_input('source_wavelength','fit_saxs.inputs.source_wavelength')
-wf.connect_input('populations','fit_saxs.inputs.populations')
-wf.connect_input('fixed_params','fit_saxs.inputs.fixed_params')
-wf.connect_input('param_bounds','fit_saxs.inputs.param_bounds')
-wf.connect_input('param_constraints','fit_saxs.inputs.param_constraints')
-wf.connect_input('q_range','fit_saxs.inputs.q_range')
-wf.connect_output('populations','fit_saxs.outputs.populations')
-wf.connect_output('fixed_params','fit_saxs.outputs.fixed_params')
-wf.connect_output('param_bounds','fit_saxs.outputs.param_bounds')
-wf.connect_output('param_constraints','fit_saxs.outputs.param_constraints')
-
+wf.set_op_input('save_populations','file_path','populations_file.outputs.file_path','workflow item')
 wf.set_op_input('save_populations','populations','fit_saxs.outputs.populations','workflow item')
+wf.set_op_input('save_populations','report','fit_saxs.outputs.report','workflow item')
 wf.set_op_input('save_populations','fixed_params','fit_saxs.inputs.fixed_params','workflow item')
 wf.set_op_input('save_populations','param_bounds','fit_saxs.inputs.param_bounds','workflow item')
 wf.set_op_input('save_populations','param_constraints','fit_saxs.inputs.param_constraints','workflow item')
-wf.set_op_input('save_populations','report','fit_saxs.outputs.report','workflow item')
 
 pawstools.save_to_wfl(os.path.join(pawstools.sourcedir,'core','workflows','FITTING','BL15','timeseries_fit.wfl'),wfmgr)
 
