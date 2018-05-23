@@ -56,9 +56,7 @@ class DictTree(object):
                 del itm[k]
                 #itm.pop(k)
         except Exception as ex:
-            msg = str('\n[{}] Encountered an error while trying to delete uri {}: \n'
-            .format(__name__,uri))
-            ex.message = msg + ex.message
+            msg = '[{}] Encountered an error while trying to delete uri: {}'.format(__name__,uri)
             raise ex
 
     def set_uri(self,uri='',val=None):
@@ -92,8 +90,7 @@ class DictTree(object):
                 #if not uri in self._all_uris:
                 #    self._all_uris.append(uri)
         except Exception as ex:
-            msg = str('\n[{}] Encountered an error while trying to set uri {}: \n'
-            .format(__name__,uri)) + ex.message
+            msg = '[{}] Encountered an error while trying to set uri: {}'.format(__name__,uri)
             raise KeyError(msg)
 
     def get_from_uri(self,uri=''):
@@ -130,8 +127,7 @@ class DictTree(object):
                                 found = True           
             return itm
         except Exception as ex:
-            msg = str('[{}] Encountered an error while fetching uri {}: \n'
-            .format(__name__,uri) + ex.message)
+            msg = '[{}] Encountered an error while fetching uri: {}'.format(__name__,uri)
             raise KeyError(msg) 
 
     def is_uri_valid(self,uri):
