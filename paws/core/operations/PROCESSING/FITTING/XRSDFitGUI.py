@@ -86,7 +86,7 @@ class XRSDFitGUI(Operation):
         self.param_constraints = copy.deepcopy(self.inputs['param_constraints'])
         self.q_range = self.inputs['q_range']
         self.good_fit_prior = self.inputs['good_fit_prior']
-        self.fit_report = None
+        self.fit_report = {} 
         self.q_I_opt = None
         self.finished = False
 
@@ -460,8 +460,9 @@ class XRSDFitGUI(Operation):
         nstgs = len(xrsdkit.structure_settings[popd['structure']])
         basisl = Label(pf,text='--------- BASIS ---------')
         basisl.grid(row=4+nstgs+npars,column=0,columnspan=3)
-        for site_nm in popd['basis'].keys():
-            self.create_site_frame(pop_nm,site_nm)
+        if 'basis' in popd:
+            for site_nm in popd['basis'].keys():
+                self.create_site_frame(pop_nm,site_nm)
         self.create_new_site_frame(pop_nm)
 
     def create_site_frame(self,pop_nm,site_nm):
@@ -562,7 +563,9 @@ class XRSDFitGUI(Operation):
     def create_new_site_frame(self,pop_nm):
         pf = self.pop_frames[pop_nm]
         popd = self.populations[pop_nm]
-        nsts = len(popd['basis'])
+        nsts = 0
+        if 'basis' in popd:
+            nsts = len(popd['basis'])
         npars = len(xrsdkit.structure_params[popd['structure']])
         nstgs = len(xrsdkit.structure_settings[popd['structure']])
         nsf = Frame(pf,bd=2,pady=10,padx=10,relief=tkinter.GROOVE)
@@ -581,7 +584,9 @@ class XRSDFitGUI(Operation):
 
     def repack_new_site_frame(self,pop_nm):
         popd = self.populations[pop_nm]
-        nsts = len(popd['basis'])
+        nsts = 0
+        if 'basis' in popd:
+            nsts = len(popd['basis'])
         npars = len(xrsdkit.structure_params[popd['structure']])
         nstgs = len(xrsdkit.structure_settings[popd['structure']])
         self.new_site_frames[pop_nm].pack_forget()
@@ -1023,9 +1028,10 @@ class XRSDFitGUI(Operation):
     def default_new_site_name(self,pop_nm):
         ist = 0
         nm = 'site_'+str(ist)
-        while nm in self.populations[pop_nm]['basis']:
-            ist += 1
-            nm = 'site_'+str(ist)
+        if 'basis' in self.populations[pop_nm]:
+            while nm in self.populations[pop_nm]['basis']:
+                ist += 1
+                nm = 'site_'+str(ist)
         return nm
 
     def create_control_frame(self):
