@@ -24,6 +24,9 @@ op_maps['read_header']['saxs_filepath'] = 'IO.FILESYSTEM.BuildFilePath'
 
 op_maps['read_and_fit']['read_saxs'] = 'IO.NUMPY.Loadtxt_q_I_dI'
 op_maps['read_and_fit']['populations'] = 'PACKAGING.Container'
+op_maps['read_and_fit']['fixed_params'] = 'PACKAGING.Container'
+op_maps['read_and_fit']['param_bounds'] = 'PACKAGING.Container'
+op_maps['read_and_fit']['param_constraints'] = 'PACKAGING.Container'
 op_maps['read_and_fit']['populations_file'] = 'IO.FILESYSTEM.BuildFilePath'
 op_maps['read_and_fit']['check_pops_file'] = 'IO.FILESYSTEM.CheckFilePath'
 op_maps['read_and_fit']['conditional_read'] = 'EXECUTION.Conditional'
@@ -75,7 +78,9 @@ wf.set_op_input('saxs_batch','input_arrays',
 wf.set_op_input('saxs_batch','input_keys',['filename','saxs_filepath'])
 wf.set_op_input('saxs_batch','static_inputs',['saxs_dir.inputs.data'],'workflow item')
 wf.set_op_input('saxs_batch','static_input_keys',['populations_dir'])
-wf.set_op_input('saxs_batch','serial_params',{'populations':'populations'})
+wf.set_op_input('saxs_batch','serial_params',
+    {'populations':'populations','param_bounds':'param_bounds',
+    'fixed_params':'fixed_params','param_constraints':'param_constraints'})
 
 
 wf = wfmgr.workflows['read_header']
@@ -107,9 +112,9 @@ wf.connect_input('filename','populations_file.inputs.filename')
 wf.connect_input('saxs_filepath','read_saxs.inputs.file_path')
 wf.connect_input('populations_dir','populations_file.inputs.dir_path')
 wf.connect_input('populations','populations.inputs.data')
-wf.connect_input('fixed_params','fit_saxs.inputs.fixed_params')
-wf.connect_input('param_bounds','fit_saxs.inputs.param_bounds')
-wf.connect_input('param_constraints','fit_saxs.inputs.param_constraints')
+wf.connect_input('fixed_params','fixed_params.inputs.data')
+wf.connect_input('param_bounds','param_bounds.inputs.data')
+wf.connect_input('param_constraints','param_constraints.inputs.data')
 wf.connect_input('q_range','fit_saxs.inputs.q_range')
 
 wf.connect_output('populations','fit_saxs.outputs.populations')
@@ -134,6 +139,18 @@ wf.set_conditional_input('fit_saxs.inputs.populations',
     condition_uri='check_pops_file.outputs.file_exists',
     if_true_uri='conditional_read.outputs.outputs.populations',
     else_uri='populations.inputs.data')
+wf.set_conditional_input('fit_saxs.inputs.fixed_params',
+    condition_uri='check_pops_file.outputs.file_exists',
+    if_true_uri='conditional_read.outputs.outputs.fixed_params',
+    else_uri='fixed_params.inputs.data')
+wf.set_conditional_input('fit_saxs.inputs.param_bounds',
+    condition_uri='check_pops_file.outputs.file_exists',
+    if_true_uri='conditional_read.outputs.outputs.param_bounds',
+    else_uri='param_bounds.inputs.data')
+wf.set_conditional_input('fit_saxs.inputs.param_constraints',
+    condition_uri='check_pops_file.outputs.file_exists',
+    if_true_uri='conditional_read.outputs.outputs.param_constraints',
+    else_uri='param_constraints.inputs.data')
 
 wf.set_op_input('save_populations','file_path','populations_file.outputs.file_path','workflow item')
 wf.set_op_input('save_populations','populations','fit_saxs.outputs.populations','workflow item')

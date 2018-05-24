@@ -143,6 +143,8 @@ wf.deactivate_op('read_pops')
 wf.set_op_input('good_fit_prior','data',False)
 wf.set_op_input('q_range','data',[0.,float('inf')])
 wf.set_op_input('fit_saxs','q_I','read_saxs.outputs.q_I','workflow item')
+wf.set_op_input('fit_saxs','q_range','q_range.inputs.data','workflow item')
+wf.set_op_input('fit_saxs','good_fit_prior','good_fit_prior.inputs.data','workflow item')
 wf.set_conditional_input('fit_saxs.inputs.populations',
     condition_uri='check_pops_file.outputs.file_exists',
     if_true_uri='conditional_read.outputs.outputs.populations',
@@ -159,65 +161,6 @@ wf.set_conditional_input('fit_saxs.inputs.param_constraints',
     condition_uri='check_pops_file.outputs.file_exists',
     if_true_uri='conditional_read.outputs.outputs.param_constraints',
     else_uri='param_constraints.inputs.data')
-wf.set_op_input('fit_saxs','q_range','q_range.inputs.data','workflow item')
-wf.set_op_input('fit_saxs','good_fit_prior','good_fit_prior.inputs.data','workflow item')
-
-
-#wf.connect_output('good_fit_flag','conditional_fit.outputs.outputs.good_fit_flag')
-#wf.connect_output('q_range','conditional_fit.outputs.outputs.q_range')
-#wf.connect_output('populations','conditional_fit.outputs.outputs.populations')
-#wf.connect_output('fixed_params','conditional_fit.outputs.outputs.fixed_params')
-#wf.connect_output('param_bounds','conditional_fit.outputs.outputs.param_bounds')
-#wf.connect_output('param_constraints','conditional_fit.outputs.outputs.param_constraints')
-#wf.connect_conditional_output('populations',
-#    condition_uri='check_pops_file.outputs.file_exists',
-#    if_true_uri='conditional_read.outputs.outputs.populations',
-#    else_uri='conditional_fit.outputs.outputs.populations')
-#wf.connect_conditional_output('fixed_params',
-#    condition_uri='check_pops_file.outputs.file_exists',
-#    if_true_uri='conditional_read.outputs.outputs.fixed_params',
-#    else_uri='conditional_fit.outputs.outputs.fixed_params')
-#wf.connect_conditional_output('param_bounds',
-#    condition_uri='check_pops_file.outputs.file_exists',
-#    if_true_uri='conditional_read.outputs.outputs.param_bounds',
-#    else_uri='conditional_fit.outputs.outputs.param_bounds')
-#wf.connect_conditional_output('param_constraints',
-#    condition_uri='check_pops_file.outputs.file_exists',
-#    if_true_uri='conditional_read.outputs.outputs.param_constraints',
-#    else_uri='conditional_fit.outputs.outputs.param_constraints')
-
-#wf.connect_input('q_I','fit_saxs.inputs.q_I')
-#wf.connect_input('source_wavelength','fit_saxs.inputs.source_wavelength')
-#wf.connect_input('populations','fit_saxs.inputs.populations')
-#wf.connect_input('fixed_params','fit_saxs.inputs.fixed_params')
-#wf.connect_input('param_bounds','fit_saxs.inputs.param_bounds')
-#wf.connect_input('param_constraints','fit_saxs.inputs.param_constraints')
-#wf.connect_input('q_range','fit_saxs.inputs.q_range')
-#wf.connect_input('good_fit_prior','fit_saxs.inputs.good_fit_prior')
-
-
-#wf.set_op_input('populations','data',{})
-#wf.set_op_input('fixed_params','data',{})
-#wf.set_op_input('param_bounds','data',{})
-#wf.set_op_input('param_constraints','data',{})
-#wf.set_op_input('q_range','data',[0.,float('inf')])
-#wf.set_op_input('good_fit_prior','data',False)
-
-#wf.set_op_input('conditional_fit','condition','check_pops_file.outputs.file_exists','workflow item')
-#wf.set_op_input('conditional_fit','run_condition',False)
-#wf.set_op_input('conditional_fit','condition','check_pops_file.outputs.file_exists','workflow item')
-#wf.set_op_input('conditional_fit','run_condition',False)
-#wf.set_op_input('conditional_fit','work_item','fit_saxs','entire workflow')
-#wf.set_op_input('conditional_fit','inputs',
-#    ['read_saxs.outputs.q_I','populations_file.outputs.file_path',
-#    'populations.inputs.data','fixed_params.inputs.data',
-#    'param_bounds.inputs.data','param_constraints.inputs.data',
-#    'q_range.inputs.data','good_fit_prior.inputs.data'],'workflow item')
-#wf.set_op_input('conditional_fit','input_keys',
-#    ['q_I','populations_file',
-#    'populations','fixed_params',
-#    'param_bounds','param_constraints',
-#    'q_range','good_fit_prior'])
 
 
 wf.set_op_input('conditional_save','work_item','save_populations','workflow item')
