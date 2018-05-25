@@ -42,13 +42,10 @@ outputs = OrderedDict(
 
 # TODO: whenever any param or site_param value is updated,
 #   check all of self.param_constraints and update params as necessary to satisfy the constraints.
-
 # TODO: when a param is fixed or has a constraint set,
 #   make the entry widget read-only
 
 # TODO: make plot frame zoom-able
-
-# TODO: add sub-curves for individual populations
 
 # TODO: generally make the gui cleaner and more user-friendly.
 
@@ -111,6 +108,9 @@ class XRSDFitGUI(Operation):
         # create the widgets for population control
         self.build_entry_widgets()
 
+        # draw the plots...
+        self.draw_plots()
+
         # start the tk loop
         self.fit_gui.protocol('WM_DELETE_WINDOW',self.finish)
         self.fit_gui.mainloop()
@@ -163,8 +163,6 @@ class XRSDFitGUI(Operation):
         self.fit_obj_var = None
         self.q_range_vars = [None, None]
         self.good_fit_var = None
-
-        
 
     def finish(self):
         self.outputs['populations'] = copy.deepcopy(self.populations)
@@ -269,7 +267,6 @@ class XRSDFitGUI(Operation):
         #self.canvas.config(scrollregion=self.canvas.bbox('all'))
         self.canvas.config(scrollregion=(0,0,730,730))
         self.canvas.bind("<Configure>", self.onCanvasConfigure2)
-        self.draw_plots()
 
     def build_entry_widgets(self):
         self.scroll_frame = Frame(self.main_frame)
@@ -308,6 +305,7 @@ class XRSDFitGUI(Operation):
         self.ax_plot.set_ylabel('Intensity (counts)')
         self.ax_plot.legend(['measured','computed']+list(self.pop_frames.keys()))
         self.plot_canvas.draw()
+        self.update_fit_objective()
 
     def create_entry_widgets(self):
         self.pop_frames = OrderedDict()
@@ -1044,7 +1042,7 @@ class XRSDFitGUI(Operation):
         objl.grid(row=0,column=0,rowspan=2,sticky=tkinter.E)
         rese = Entry(cf,width=20,state='readonly',textvariable=self.fit_obj_var)
         rese.grid(row=0,column=1,rowspan=2,columnspan=2,sticky=tkinter.W)
-        self.update_fit_objective()
+        #self.update_fit_objective()
         self.error_weighted_var = BooleanVar(cf)
         ewtcb = Checkbutton(cf,text="error weighted",variable=self.error_weighted_var)
         ewtcb.select()
