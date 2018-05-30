@@ -17,7 +17,7 @@ class LoadXRSDFit(Operation):
 
     def __init__(self):
         super(LoadXRSDFit, self).__init__(inputs, outputs)
-        self.input_doc['file_path'] = 'path where YAML file will be saved'
+        self.input_doc['file_path'] = 'path to YAML file'
         self.output_doc['populations'] = 'xrsdkit populations'
         self.output_doc['fixed_params'] = 'xrsdkit fixed_params'
         self.output_doc['param_bounds'] = 'xrsdkit param_bounds'
@@ -25,6 +25,7 @@ class LoadXRSDFit(Operation):
         self.output_doc['report'] = 'xrsdkit fit report'
 
     def run(self):
+        self.message_callback('loading from {}'.format(self.inputs['file_path']))
         pops,fp,pb,pc,rpt = load_fit(self.inputs['file_path'])
         self.outputs['populations'] = pops
         self.outputs['fixed_params'] = fp

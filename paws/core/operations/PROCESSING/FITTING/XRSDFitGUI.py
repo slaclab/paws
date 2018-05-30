@@ -42,13 +42,10 @@ outputs = OrderedDict(
 
 # TODO: whenever any param or site_param value is updated,
 #   check all of self.param_constraints and update params as necessary to satisfy the constraints.
-
 # TODO: when a param is fixed or has a constraint set,
 #   make the entry widget read-only
 
 # TODO: make plot frame zoom-able
-
-# TODO: add sub-curves for individual populations
 
 # TODO: generally make the gui cleaner and more user-friendly.
 
@@ -86,7 +83,7 @@ class XRSDFitGUI(Operation):
         self.param_constraints = copy.deepcopy(self.inputs['param_constraints'])
         self.q_range = self.inputs['q_range']
         self.good_fit_prior = self.inputs['good_fit_prior']
-        self.fit_report = None
+        self.fit_report = {} 
         self.q_I_opt = None
         self.finished = False
 
@@ -110,6 +107,9 @@ class XRSDFitGUI(Operation):
 
         # create the widgets for population control
         self.build_entry_widgets()
+
+        # draw the plots...
+        self.draw_plots()
 
         # start the tk loop
         self.fit_gui.protocol('WM_DELETE_WINDOW',self.finish)
@@ -163,8 +163,6 @@ class XRSDFitGUI(Operation):
         self.fit_obj_var = None
         self.q_range_vars = [None, None]
         self.good_fit_var = None
-
-        
 
     def finish(self):
         self.outputs['populations'] = copy.deepcopy(self.populations)
@@ -269,7 +267,6 @@ class XRSDFitGUI(Operation):
         #self.canvas.config(scrollregion=self.canvas.bbox('all'))
         self.canvas.config(scrollregion=(0,0,730,730))
         self.canvas.bind("<Configure>", self.onCanvasConfigure2)
-        self.draw_plots()
 
     def build_entry_widgets(self):
         self.scroll_frame = Frame(self.main_frame)
@@ -308,6 +305,7 @@ class XRSDFitGUI(Operation):
         self.ax_plot.set_ylabel('Intensity (counts)')
         self.ax_plot.legend(['measured','computed']+list(self.pop_frames.keys()))
         self.plot_canvas.draw()
+        self.update_fit_objective()
 
     def create_entry_widgets(self):
         self.pop_frames = OrderedDict()
@@ -460,8 +458,9 @@ class XRSDFitGUI(Operation):
         nstgs = len(xrsdkit.structure_settings[popd['structure']])
         basisl = Label(pf,text='--------- BASIS ---------')
         basisl.grid(row=4+nstgs+npars,column=0,columnspan=3)
-        for site_nm in popd['basis'].keys():
-            self.create_site_frame(pop_nm,site_nm)
+        if 'basis' in popd:
+            for site_nm in popd['basis'].keys():
+                self.create_site_frame(pop_nm,site_nm)
         self.create_new_site_frame(pop_nm)
 
     def create_site_frame(self,pop_nm,site_nm):
@@ -562,7 +561,9 @@ class XRSDFitGUI(Operation):
     def create_new_site_frame(self,pop_nm):
         pf = self.pop_frames[pop_nm]
         popd = self.populations[pop_nm]
-        nsts = len(popd['basis'])
+        nsts = 0
+        if 'basis' in popd:
+            nsts = len(popd['basis'])
         npars = len(xrsdkit.structure_params[popd['structure']])
         nstgs = len(xrsdkit.structure_settings[popd['structure']])
         nsf = Frame(pf,bd=2,pady=10,padx=10,relief=tkinter.GROOVE)
@@ -581,7 +582,9 @@ class XRSDFitGUI(Operation):
 
     def repack_new_site_frame(self,pop_nm):
         popd = self.populations[pop_nm]
-        nsts = len(popd['basis'])
+        nsts = 0
+        if 'basis' in popd:
+            nsts = len(popd['basis'])
         npars = len(xrsdkit.structure_params[popd['structure']])
         nstgs = len(xrsdkit.structure_settings[popd['structure']])
         self.new_site_frames[pop_nm].pack_forget()
@@ -1023,9 +1026,10 @@ class XRSDFitGUI(Operation):
     def default_new_site_name(self,pop_nm):
         ist = 0
         nm = 'site_'+str(ist)
-        while nm in self.populations[pop_nm]['basis']:
-            ist += 1
-            nm = 'site_'+str(ist)
+        if 'basis' in self.populations[pop_nm]:
+            while nm in self.populations[pop_nm]['basis']:
+                ist += 1
+                nm = 'site_'+str(ist)
         return nm
 
     def create_control_frame(self):
@@ -1038,7 +1042,7 @@ class XRSDFitGUI(Operation):
         objl.grid(row=0,column=0,rowspan=2,sticky=tkinter.E)
         rese = Entry(cf,width=20,state='readonly',textvariable=self.fit_obj_var)
         rese.grid(row=0,column=1,rowspan=2,columnspan=2,sticky=tkinter.W)
-        self.update_fit_objective()
+        #self.update_fit_objective()
         self.error_weighted_var = BooleanVar(cf)
         ewtcb = Checkbutton(cf,text="error weighted",variable=self.error_weighted_var)
         ewtcb.select()

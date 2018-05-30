@@ -14,9 +14,8 @@ class Workflow(TreeModel):
     
     This and other paws classes are TreeModels
     mostly for graphical considerations,
-    where these (pure python) TreeModels can interface 
-    with gui-based tree views by adding a relatively thin adapter,
-    such as paws.qt.QTreeModel.QTreeModel.
+    where these TreeModels can interface 
+    with gui-based tree views by adding a relatively thin adapter.
     """
 
     def __init__(self):
@@ -24,9 +23,9 @@ class Workflow(TreeModel):
         super(Workflow,self).__init__(flag_dict)
         self.inputs = OrderedDict()
         self.outputs = OrderedDict()
+        self.conditional_inputs = OrderedDict()
         self.operations = self._root_dict
         self.dependencies = {} 
-        self.plugin_names = []
         self.message_callback = self.tagged_print
         self.data_callback = self.set_item 
         self.stop_flag = False
@@ -48,10 +47,6 @@ class Workflow(TreeModel):
         #op.message_callback = self.message_callback
         op.data_callback = partial(self.set_op_item,op_name)
         self.set_item(op_name,op)
-
-    def add_plugin(self,plugin_name):
-        """Add the `plugin_name` to self.plugin_names"""
-        self.plugin_names.append(plugin_name)
 
     def load_operation(self,op_name,op_setup_dict,op_manager):
         """Load an Operation from a dict that specifies its parameters.
@@ -157,6 +152,12 @@ class Workflow(TreeModel):
             if_true_uri = if_true_uri,
             else_uri = else_uri) 
 
+    def set_conditional_input(self,op_input_uri,condition_uri,if_true_uri,else_uri):
+        self.conditional_inputs[op_input_uri] = dict(
+            condition_uri = condition_uri,
+            if_true_uri = if_true_uri,
+            else_uri = else_uri) 
+
     def break_input(self,wf_input_name):
         self.inputs.pop(wf_input_name)
     
@@ -171,20 +172,12 @@ class Workflow(TreeModel):
 
     def set_input(self,wf_input_name,val,tp=None):
         """Set a value for all inputs in self.inputs[`wf_input_name`]."""
-        urilist = self.inputs[wf_input_name]
-        if not isinstance(urilist,list):
-            urilist = [urilist]
-        for uri in urilist:
+        r = self.inputs[wf_input_name]
+        if not isinstance(r,list):
+            r = [r]
+        for uri in r:
             p = uri.split('.')
-            if len(p) == 3 and p[1] == 'inputs':
-                self.set_op_input(p[0],p[2],val,tp)
-            else:
-                # TODO: consider whether any other structure should be allowed.
-                # For now, raise an exception.
-                #self.set_item(uri,val)
-                msg = 'uri {} does not seem to '\
-                'be an Operation input'.format(uri)
-                raise KeyError(msg)
+            self.set_op_input(p[0],p[2],val,tp)
 
     def get_wf_input_value(self,wf_input_name):
         uri = self.inputs[wf_input_name]
@@ -296,7 +289,22 @@ class Workflow(TreeModel):
         diagnostics = {op_name:''} 
         for name,il in op.input_locator.items():
             msg = ''
-            if il.tp == pawstools.workflow_item:
+            inp_uri = op_name+'.inputs.'+name
+            if inp_uri in self.conditional_inputs:
+                inp_spec = self.conditional_inputs[inp_uri]
+                c_uri = inp_spec['condition_uri']
+                t_uri = inp_spec['if_true_uri']
+                e_uri = inp_spec['else_uri']
+                c_uri = c_uri[:sum(len(s) for s in c_uri.split('.')[:3])+2]
+                t_uri = t_uri[:sum(len(s) for s in t_uri.split('.')[:3])+2]
+                e_uri = e_uri[:sum(len(s) for s in e_uri.split('.')[:3])+2]
+                if all([u in valid_wf_inputs for u in [c_uri, t_uri, e_uri]]):
+                    inp_rdy = True
+                else:
+                    inp_rdy = False
+                    msg = 'conditional input {} (={}) '.format(inp_uri,inp_spec)\
+                    + 'not satisfied by valid inputs list: {}'.format(valid_wf_inputs)
+            elif il.tp == pawstools.workflow_item:
                 inp_rdy = False
                 if isinstance(il.val,list):
                     if all([v in valid_wf_inputs for v in il.val]):
@@ -352,8 +360,16 @@ class Workflow(TreeModel):
                 self.message_callback('running: {}'.format(op_name))
                 op = self.get_data_from_uri(op_name) 
                 for inpnm,il in op.input_locator.items():
-                    if il.tp == pawstools.workflow_item:
-                        self.set_op_item(op_name,'inputs.'+inpnm,self.get_wf_data(il))
+                    inp_uri = op_name+'.inputs.'+inpnm
+                    if inp_uri in self.conditional_inputs:
+                        inp_spec = self.conditional_inputs[inp_uri]
+                        cond = self.get_data_from_uri(inp_spec['condition_uri'])
+                        if cond:
+                            self.set_item(inp_uri,self.get_data_from_uri(inp_spec['if_true_uri']))
+                        else:
+                            self.set_item(inp_uri,self.get_data_from_uri(inp_spec['else_uri']))
+                    elif il.tp == pawstools.workflow_item:
+                        self.set_item(inp_uri,self.get_wf_data(il))
                 op.stop_flag = False
                 op.run() 
                 for outnm,outdata in op.outputs.items():
@@ -415,8 +431,10 @@ class Workflow(TreeModel):
         wf_dict = OrderedDict() 
         for op_name,op in self.operations.items():
             wf_dict[op_name] = op.setup_dict()
-        wf_dict['WORKFLOW_INPUTS'] = self.inputs
-        wf_dict['WORKFLOW_OUTPUTS'] = self.outputs
+        wf_dict['INPUTS'] = self.inputs
+        wf_dict['OUTPUTS'] = self.outputs
+        wf_dict['CONDITIONAL_INPUTS'] = self.conditional_inputs
+        wf_dict['DEPENDENCIES'] = self.dependencies
         wf_dict['OP_ENABLE_FLAGS'] = self.op_enable_flags()
         wf_dict['OP_ACTIVE_FLAGS'] = self.op_active_flags()
         return wf_dict
@@ -425,9 +443,9 @@ class Workflow(TreeModel):
         """Produce a clone of this Workflow."""
         new_wf = self.clone() 
         new_wf.inputs = copy.deepcopy(self.inputs)
+        new_wf.conditional_inputs = copy.deepcopy(self.conditional_inputs)
         new_wf.outputs = copy.deepcopy(self.outputs)
         new_wf.dependencies = copy.deepcopy(self.dependencies)
-        new_wf.plugin_names = copy.deepcopy(self.plugin_names)
         # NOTE 1: cloned workflows will dump messages to self.message_callback 
         #new_wf.message_callback = self.message_callback
         # NOTE 2: they will also dump their data to self.data_callback.

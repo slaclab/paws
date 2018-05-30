@@ -44,7 +44,6 @@ class WfManager(object):
         self.wf_clones = OrderedDict()
         # dict of bools to keep track of who is at work:
         self.wf_running = OrderedDict() 
-        self.plugin_names = OrderedDict()
         self.message_callback = self.tagged_print
         self.pool=None
 
@@ -130,11 +129,7 @@ class WfManager(object):
         self.message_callback('stopping workflow {}'.format(wf_name))
         if wf_name in self.wf_clones.keys():
             wf = self.wf_clones.pop(wf_name)
-            wf_pgn_names = self.plugin_names.pop(wf_name)
             wf.stop()
-            for pgn_name in wf_pgn_names:
-                if not any(pgn_name in pnms for pnms in self.plugin_names.values()):
-                    self.plugin_manager.stop_plugin(pgn_name)
         #else:
         #    wf = self.workflows[wf_name]
         #    wf.stop()
@@ -147,7 +142,6 @@ class WfManager(object):
         """ 
         wf = self.workflows[wf_name]
         wf_clone = wf.build_clone()
-        plugin_names = wf.plugin_names 
         #for op_name,op in wf_clone.operations.items():
         #    op.message_callback = wf.message_callback
         #    op.data_callback = partial( wf.set_op_item,op_name )
@@ -180,19 +174,15 @@ class WfManager(object):
                         # NOTE 2: workflow_item inputs are retrieved during execution
                         wf_clone.set_op_item(op_tag,'inputs.'+inpname,
                         copy.deepcopy(il.val))
-                for inpname,il in op.input_locator.items():
-                    if il.tp == pawstools.plugin_item and il.val is not None:
-                        vals = il.val
-                        if not isinstance(vals,list):
-                            vals = [vals]
-                        for val in vals:
-                            pgin_name = val.split('.')[0]
-                            if not pgin_name in plugin_names:
-                                plugin_names.append(pgin_name)
-        self.plugin_names[wf_name] = plugin_names
-        #for pgn_name in plugin_names:
-        #    if not self.plugin_manager.plugin_running[pgn_name]:
-        #        self.plugin_manager.start_plugin(pgn_name) 
+                #for inpname,il in op.input_locator.items():
+                #    if il.tp == pawstools.plugin_item and il.val is not None:
+                #        vals = il.val
+                #        if not isinstance(vals,list):
+                #            vals = [vals]
+                #        for val in vals:
+                #            pgin_name = val.split('.')[0]
+                #            if not pgin_name in plugin_names:
+                #                plugin_names.append(pgin_name)
         return wf_clone
 
     def get_plugin_data(self,il):
@@ -214,8 +204,10 @@ class WfManager(object):
             dict specifying workflow setup
         """
         self.add_workflow(wf_name)
-        wfins = wf_setup_dict.pop('WORKFLOW_INPUTS')
-        wfouts = wf_setup_dict.pop('WORKFLOW_OUTPUTS')
+        wfins = wf_setup_dict.pop('INPUTS')
+        wfouts = wf_setup_dict.pop('OUTPUTS')
+        cond_ins = wf_setup_dict.pop('CONDITIONAL_INPUTS')
+        deps = wf_setup_dict.pop('DEPENDENCIES')
         op_enable_flags = wf_setup_dict.pop('OP_ENABLE_FLAGS')
         op_active_flags = wf_setup_dict.pop('OP_ACTIVE_FLAGS')
         for op_tag, op_setup_dict in wf_setup_dict.items():
@@ -228,5 +220,11 @@ class WfManager(object):
             self.workflows[wf_name].connect_input(inpname,inpval)
         for outname,outval in wfouts.items():
             self.workflows[wf_name].connect_output(outname,outval)
+        for op_name, dep_ops in deps.items():
+            self.workflows[wf_name].set_dependency(op_name,dep_ops)
+        for inp_uri,inp_spec in cond_ins.items():
+            self.workflows[wf_name].set_conditional_input(
+                inp_uri,inp_spec['condition_uri'],inp_spec['if_true_uri'],inp_spec['else_uri'])
+        
 
 
