@@ -14,9 +14,8 @@ class Workflow(TreeModel):
     
     This and other paws classes are TreeModels
     mostly for graphical considerations,
-    where these (pure python) TreeModels can interface 
-    with gui-based tree views by adding a relatively thin adapter,
-    such as paws.qt.QTreeModel.QTreeModel.
+    where these TreeModels can interface 
+    with gui-based tree views by adding a relatively thin adapter.
     """
 
     def __init__(self):
