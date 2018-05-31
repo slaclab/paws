@@ -50,7 +50,8 @@ class ShipToDataSet(Operation):
             self.message_callback('Uploading {} to dataset {}'.format(json_file,dsid))
             r = cl_pgn.client.upload_file(json_file,dataset_id = dsid)
         else:
-            r = 'dry run: no shipment occurred.'
+            r = 'ship_flag is set to False- no shipment occurred'
+            self.message_callback(r)
         if not json_flag:
             self.message_callback('Removing {}'.format(json_file))
             os.remove(json_file) 
