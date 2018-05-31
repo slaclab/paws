@@ -295,10 +295,10 @@ class Workflow(TreeModel):
                 c_uri = inp_spec['condition_uri']
                 t_uri = inp_spec['if_true_uri']
                 e_uri = inp_spec['else_uri']
-                c_uri = c_uri[:sum(len(s) for s in c_uri.split('.')[:3])+2]
-                t_uri = t_uri[:sum(len(s) for s in t_uri.split('.')[:3])+2]
-                e_uri = e_uri[:sum(len(s) for s in e_uri.split('.')[:3])+2]
-                if all([u in valid_wf_inputs for u in [c_uri, t_uri, e_uri]]):
+                #c_uri = c_uri[:sum(len(s) for s in c_uri.split('.')[:3])+2]
+                #t_uri = t_uri[:sum(len(s) for s in t_uri.split('.')[:3])+2]
+                #e_uri = e_uri[:sum(len(s) for s in e_uri.split('.')[:3])+2]
+                if all([self.uri_match(u,valid_wf_inputs) for u in [c_uri, t_uri, e_uri]]):
                     inp_rdy = True
                 else:
                     inp_rdy = False
@@ -307,10 +307,10 @@ class Workflow(TreeModel):
             elif il.tp == pawstools.workflow_item:
                 inp_rdy = False
                 if isinstance(il.val,list):
-                    if all([v in valid_wf_inputs for v in il.val]):
+                    if all([self.uri_match(v,valid_wf_inputs) for v in il.val]):
                         inp_rdy = True 
                 else:
-                    if il.val in valid_wf_inputs: 
+                    if self.uri_match(il.val,valid_wf_inputs): 
                         inp_rdy = True 
                 if not inp_rdy:
                     msg = 'Operation input {} (={}) '.format(name,il.val)\
@@ -324,6 +324,14 @@ class Workflow(TreeModel):
         else:
             op_rdy = False
         return op_rdy,diagnostics 
+
+    @staticmethod
+    def uri_match(uri,valid_uris):
+        uri_parts = uri.split('.')
+        if len(uri_parts) > 3: uri_parts = uri_parts[:3]
+        short_uri = uri_parts[0]
+        for uu in uri_parts[1:]: short_uri += '.'+uu
+        return short_uri in valid_uris            
 
     def get_valid_wf_inputs(self,op_name):
         """Get all valid uris referring to Operation data.
