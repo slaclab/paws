@@ -8,6 +8,7 @@ inputs=OrderedDict(
     experiment_id=None,
     t_utc=None,
     temperature=None,
+    source_wavelength=None,
     q_I=None,
     populations=None)
 outputs=OrderedDict(pif=None)
@@ -21,6 +22,7 @@ class PackXRSDPIF(Operation):
             '(pif uid = experiment_id+"_"+t_utc)'
         self.input_doc['t_utc'] = 'time in seconds utc'
         self.input_doc['temperature'] = 'temperature of the system in degrees Celsius'
+        self.input_doc['source_wavelength'] = 'light source wavelength in Angstroms'
         self.input_doc['q_I'] = 'n-by-2 array of q values and corresponding saxs intensities'
         self.input_doc['populations'] = 'dict enumerating scatterer populations'
         self.output_doc['pif'] = 'pif object representing the input data'
@@ -35,9 +37,10 @@ class PackXRSDPIF(Operation):
         if t_utc is not None:
             uid_full = uid_full+'_'+str(int(t_utc))
         temp_C = self.inputs['temperature']
+        src_wl = self.inputs['source_wavelength']
         q_I = self.inputs['q_I']
 
-        csys = piftools.make_pif(uid_full,expt_id,t_utc,q_I,temp_C,pops)
+        csys = piftools.make_pif(uid_full,expt_id,t_utc,q_I,temp_C,src_wl,pops)
 
         self.outputs['pif'] = csys
 
