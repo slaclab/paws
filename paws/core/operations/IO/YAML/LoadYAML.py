@@ -25,22 +25,6 @@ class LoadYAML(Operation):
         ds = yaml.load(f)
         f.close()
 
-        #
-        #
-        #
-        #
-        for k,v in ds.items():
-            if isinstance(v,list) or isinstance(v,np.ndarray):
-                ds[k] = float(v[0])
-            elif ds[k] is None:
-                ds.pop(k)
-            else:
-                ds[k] = float(v)
-        #
-        #
-        #
-        #
-
         self.outputs['yaml_output'] = ds 
 
 
