@@ -167,7 +167,10 @@ class TreeModel(object):
             #raise ex
 
     def get_data_from_uri(self,uri):
-        return self._tree.get_from_uri(uri)
+        if isinstance(uri,list):
+            return [self._tree.get_from_uri(r) for r in uri]
+        else:
+            return self._tree.get_from_uri(uri)
 
     def root_tags(self):
         return self._tree.root_keys()
