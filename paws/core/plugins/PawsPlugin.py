@@ -19,39 +19,43 @@ class PawsPlugin(object):
     def __init__(self,inputs):
         super(PawsPlugin,self).__init__()
         self.inputs = OrderedDict(copy.deepcopy(inputs))
-        self.input_locator = OrderedDict.fromkeys(self.inputs.keys())
         self.input_doc = OrderedDict.fromkeys(self.inputs.keys()) 
-        for name in self.inputs.keys(): 
-            self.input_locator[name] = pawstools.InputLocator(pawstools.basic_type,self.inputs[name])
         self.message_callback = self.tagged_print
         self.data_callback = None 
+        # take the running_lock when toggling the run flag 
         self.running_lock = Condition()
         self.running = False
         self.n_events = 0
+        # use command_lock to add or pop commands from the queue
         self.command_lock = Condition()
         self.commands = queue.Queue() 
+        # use history lock to edit the history
         self.history_lock = Condition()
         self.history = []
+        # the thread_clone is the working Plugin
         self.thread_clone = None
+        # this plugin becomes the thread_clone's proxy
         self.proxy = None
+        # keep track of py version for convenience
         self.py_version = int(sys.version[0])
 
     def __getitem__(self,key):
         if key == 'inputs':
             return self.inputs
+        elif key == 'history':
+            return self.history
+        elif key == 'running':
+            return self.running
+        elif key == 'commands':
+            return self.commands
         else:
             raise KeyError('[{}] {} not in valid plugin keys: {}'
             .format(__name__,key,self.keys()))
     def keys(self):
-        return ['inputs'] 
+        return ['inputs','history','running','commands'] 
 
     def tagged_print(self,msg):
         print('[{}] {}'.format(type(self).__name__,msg))
-
-    def get_plugin_content(self):
-        with self.history_lock:
-            h = copy.deepcopy(self.history)
-        return {'history':h}
 
     def description(self):
         """Describe the plugin.
@@ -104,12 +108,13 @@ class PawsPlugin(object):
     def build_clone(self):
         """Clone the Plugin."""
         new_pgn = self.clone()
-        for inp_nm,il in self.input_locator.items():
-            if il.tp == pawstools.basic_type:
-                new_pgn.inputs[inp_nm] = copy.deepcopy(self.inputs[inp_nm]) 
-            elif il.tp == pawstools.plugin_item:
-                # plugins are expected to be threadsafe
-                new_pgn.inputs[inp_nm] = self.inputs[inp_nm]
+        # TODO: refactor
+        #for inp_nm,il in self.input_locator.items():
+        #    if il.tp == pawstools.basic_type:
+        #        new_pgn.inputs[inp_nm] = copy.deepcopy(self.inputs[inp_nm]) 
+        #    elif il.tp == pawstools.plugin_item:
+        #        # plugins are expected to be threadsafe
+        #        new_pgn.inputs[inp_nm] = self.inputs[inp_nm]
         #new_pgn.data_callback = self.data_callback
         #new_pgn.message_callback = self.message_callback
         #if self.running:
@@ -122,14 +127,17 @@ class PawsPlugin(object):
         pgin_mod = pgin_mod[pgin_mod.find('.')+1:]
         dct = OrderedDict() 
         dct['plugin_module'] = pgin_mod
-        inp_dct = OrderedDict() 
-        for nm,il in self.input_locator.items():
-            inp_dct[nm] = {'tp':copy.copy(il.tp),'val':copy.copy(il.val)}
-        dct['inputs'] = inp_dct 
+        # TODO: refactor
+        # TODO: make more like workflow setup dict
+        #inp_dct = OrderedDict() 
+        #for nm,il in self.input_locator.items():
+        #    inp_dct[nm] = {'tp':copy.copy(il.tp),'val':copy.copy(il.val)}
+        #dct['inputs'] = inp_dct 
         return dct
 
-    def add_to_history(self,t,cmd,resp):
-        self.history.append(OrderedDict(t=t,command=cmd,response=resp))
+    def add_to_history(self,t,msg):
+        """Add a timestamp and a message to the plugin's history."""
+        self.history.append((t,msg))
         self.n_events += 1
         if np.mod(self.n_events,1000) == 0:
             self.dump_history(900)
@@ -141,8 +149,8 @@ class PawsPlugin(object):
         dump_file = open(dump_path,'a')
         h = self.history
         if n_events is not None: h = self.history[:n_events]
-        for ev in h:
-            dump_file.write('{} :: {} :: {}\n'.format(ev['t'],ev['command'],ev['response']))
+        for t,msg in h:
+            dump_file.write('{}: {} \n'.format(t,msg))
         dump_file.close()
 
     def notify_locks(self,locks):
