@@ -12,7 +12,7 @@ class OpManager(TreeModel):
 
     def __init__(self):
         default_flags = OrderedDict()
-        default_flags['active'] = False
+        default_flags['enabled'] = False
         super(OpManager,self).__init__(default_flags)
         self.message_callback = self.tagged_print 
         self.cat_op_list = []
@@ -22,7 +22,7 @@ class OpManager(TreeModel):
         print('[{}] {}'.format(type(self).__name__,msg))
 
     def get_operation(self,operation_uri):
-        """Get an Operation, activate it if needed, instantiate, return.
+        """Get an Operation, enable it if needed, instantiate, return.
 
         Parameters
         ----------
@@ -35,9 +35,9 @@ class OpManager(TreeModel):
         op : Operation
             the instantiated Operation 
         """
-        if not self.is_op_activated(operation_uri):
+        if not self.is_op_enabled(operation_uri):
             try:
-                self.activate_op(operation_uri)
+                self.enable_op(operation_uri)
             except ImportError as ex:
                 from paws.core.pawstools import OperationLoadError
                 msg = 'Most likely, the system '\
@@ -83,11 +83,11 @@ class OpManager(TreeModel):
         op_uri = cat_module+'.'+op_name
         self.set_item(op_uri,None)
 
-    def activate_op(self,op_module):
+    def enable_op(self,op_module):
         """Import Operation module and add its Operation subclass to the tree.
 
         This method imports the Operation to check compatibility,
-        and then sets the 'active' flag to True.
+        and then sets the 'enabled' flag to True.
         After this, the Operation is available
         via self.get_op()
 
@@ -104,19 +104,19 @@ class OpManager(TreeModel):
         optest = op()
         self.set_item(op_module,op)
         op_itm = self.get_from_uri(op_module)
-        self.set_flagged(op_itm,'active',True)
+        self.set_flagged(op_itm,'enabled',True)
 
-    def is_op_activated(self,op_module):
-        """Return boolean indicating whether Operation is active.
+    def is_op_enabled(self,op_module):
+        """Return boolean indicating whether Operation is enabled.
 
         Parameters
         ----------
         op_module : str
             Name of the Operation module.
-            see activate_op().
+            see enable_op().
         """
         op_itm = self.get_from_uri(op_module)
-        return op_itm.flags['active']
+        return op_itm.flags['enabled']
 
     def n_ops(self):
         return len(self.cat_op_list) 
@@ -134,14 +134,14 @@ class OpManager(TreeModel):
         if isinstance(catdata,dict):
             for k,x in catdata.items():
                 if x is None:
-                    # this should be the case for non-activated ops
+                    # this should be the case for non-enabled ops
                     tree_string = tree_string + rowprefix + '{} (disabled) \n'.format(k)
                 elif isinstance(x,dict):
                     # this should be the case for a subcat
                     next_cat_tree = self.print_cat(cat_uri+'.'+k,rowprefix+'    ')
                     tree_string = tree_string + rowprefix + '{}: {}'.format(k,next_cat_tree)
                 else:
-                    # the only remaining case is an activated operation
+                    # the only remaining case is an enabled operation
                     tree_string = tree_string + rowprefix + '{} \n'.format(k)
         return tree_string
 
