@@ -6,14 +6,14 @@ from collections import OrderedDict
 import numpy as np
 
 import paws
-from paws.core import pawstools
-from paws.core import plugins
-from paws.core import operations
-from paws.core import workflows 
-from paws.core.plugins.PawsPlugin import PawsPlugin
-from paws.core.workflows.WfManager import WfManager
-from paws.core.workflows.Workflow import Workflow 
-from paws.core.operations.Operation import Operation
+from paws import pawstools
+from paws import plugins
+from paws import operations
+from paws import workflows 
+from paws.plugins.PawsPlugin import PawsPlugin
+from paws.workflows.WfManager import WfManager
+from paws.workflows.Workflow import Workflow 
+from paws.operations.Operation import Operation
 
 def test_init():
     wf_manager = WfManager() 

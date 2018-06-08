@@ -2,8 +2,8 @@ import os
 from collections import OrderedDict
 
 import paws
-from paws.core.workflows.WfManager import WfManager
-from paws.core import pawstools
+from paws.workflows.WfManager import WfManager
+from paws import pawstools
 
 # specify workflow names: 
 wf_names = ['saxs_integrate']
@@ -52,5 +52,5 @@ wf.set_op_input('output_CSV','headers',['q (1/angstrom)','intensity (arb)'])
 wf.set_op_input('output_CSV','filename','read_image.outputs.filename','workflow item')
 wf.set_op_input('output_CSV','filetag','_dz')
 
-pawstools.save_to_wfl(os.path.join(pawstools.sourcedir,'core','workflows','INTEGRATION','SAXS','saxs_integrate.wfl'),wfmgr)
+pawstools.save_to_wfl(os.path.join(pawstools.sourcedir,'workflows','INTEGRATION','SAXS','saxs_integrate.wfl'),wfmgr)
 

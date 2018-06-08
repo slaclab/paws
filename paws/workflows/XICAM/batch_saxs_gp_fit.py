@@ -2,8 +2,8 @@ import os
 from collections import OrderedDict
 
 import paws
-from paws.core.workflows.WfManager import WfManager
-from paws.core import pawstools
+from paws.workflows.WfManager import WfManager
+from paws import pawstools
 
 # specify workflow names: 
 wf_names = ['saxs_gp_fit','batch_saxs_gp_fit']
@@ -67,5 +67,5 @@ wf.set_op_input('Batch Execution','work_item','saxs_gp_fit','entire workflow')
 wf.set_op_input('Batch Execution','input_arrays',None)
 wf.set_op_input('Batch Execution','input_keys',['file_path'])
 
-pawstools.save_to_wfl(os.path.join(pawstools.sourcedir,'core','workflows','XICAM','batch_saxs_gp_fit.wfl'),wfmgr)
+pawstools.save_to_wfl(os.path.join(pawstools.sourcedir,'workflows','XICAM','batch_saxs_gp_fit.wfl'),wfmgr)
 

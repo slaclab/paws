@@ -2,8 +2,8 @@ import os
 from collections import OrderedDict
 
 import paws
-from paws.core.workflows.WfManager import WfManager
-from paws.core import pawstools
+from paws.workflows.WfManager import WfManager
+from paws import pawstools
 
 wfmgr = WfManager()
 wfmgr.add_workflow('main')
@@ -72,5 +72,5 @@ wf.connect_input('logy','make_plot.inputs.logy')
 wf.set_op_input('read_data','delimiter',',')
 wf.set_op_input('make_plot','x_y_data','read_data.outputs.q_I','workflow item')
 
-pawstools.save_to_wfl(os.path.join(pawstools.sourcedir,'core','workflows','VISUALIZATION','BL15','timeseries_plots.wfl'),wfmgr)
+pawstools.save_to_wfl(os.path.join(pawstools.sourcedir,'workflows','VISUALIZATION','BL15','timeseries_plots.wfl'),wfmgr)
 

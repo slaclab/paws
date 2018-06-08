@@ -10,12 +10,9 @@ from . import operations
 from . import workflows
 
 p = os.path.abspath(__file__)
-# p = (pawsroot)/paws/core/pawstools.py
+# p = (pawsroot)/paws/pawstools.py
 
 d = os.path.dirname(p)
-# d = (pawsroot)/paws/core/
-
-d = os.path.dirname(d)
 # d = (pawsroot)/paws/
 sourcedir = str(d)
 
@@ -23,6 +20,7 @@ d = os.path.dirname(d)
 # d = (pawsroot)/
 rootdir = str(d)
 
+# TODO: ensure this is valid cross-platform
 user_homedir = os.path.expanduser("~")
 
 paws_scratch_dir = os.path.join(user_homedir,'.paws_scratch')

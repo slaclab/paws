@@ -39,7 +39,7 @@ class OpManager(TreeModel):
             try:
                 self.enable_op(operation_uri)
             except ImportError as ex:
-                from paws.core.pawstools import OperationLoadError
+                from paws.pawstools import OperationLoadError
                 msg = 'Most likely, the system '\
                     'does not have the right dependencies '\
                     'for Operation {}'.format(operation_uri)
@@ -57,7 +57,7 @@ class OpManager(TreeModel):
             The first string in the tuple indicates the category subpackage.
             The second string in the tuple indicates the operation module.
             The default is to load all operations 
-            detected by paws.core.operations at startup.
+            detected by paws.operations at startup.
         """
         for cat_op in cat_op_list:
             self.add_cat(cat_op[0])

@@ -2,8 +2,8 @@ import os
 from collections import OrderedDict
 
 import paws
-from paws.core.workflows.WfManager import WfManager
-from paws.core import pawstools
+from paws.workflows.WfManager import WfManager
+from paws import pawstools
 
 # specify workflow names: 
 wf_names = ['main','read_header','postprocess']
@@ -169,5 +169,5 @@ wf.deactivate_op('read_pops')
 wf.set_op_input('make_pif','q_I','read_data.outputs.q_I','workflow item')
 wf.set_op_input('make_pif','populations','conditional_read.outputs.outputs.populations','workflow item')
 
-pawstools.save_to_wfl(os.path.join(pawstools.sourcedir,'core','workflows','FITTING','BL15','timeseries_postprocess.wfl'),wfmgr)
+pawstools.save_to_wfl(os.path.join(pawstools.sourcedir,'workflows','FITTING','BL15','timeseries_postprocess.wfl'),wfmgr)
 

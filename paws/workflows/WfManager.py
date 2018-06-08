@@ -24,10 +24,10 @@ class WfManager(object):
         Parameters
         ----------
         op_manager : OpManager (optional)
-            an operations manager (see paws.core.operations.OpManager)-
+            an operations manager (see paws.operations.OpManager)-
             if not provided, a default OpManager will be created.
         plugin_manager : PluginManager (optional)
-            a plugins manager (see paws.core.plugins.PluginManager)-
+            a plugins manager (see paws.plugins.PluginManager)-
             if not provided, a default PluginManager will be created.
         """
         super(WfManager,self).__init__()
@@ -207,7 +207,7 @@ class WfManager(object):
     def load_packaged_wfl(self,workflow_uri,wf_manager):
         wf_mod = importlib.import_module('.'+workflow_uri,workflows.__name__)
         wfl_path = sourcedir
-        wfl_path = os.path.join(wfl_path,'core','workflows')
+        wfl_path = os.path.join(wfl_path,'workflows')
         p = workflow_uri.split('.')
         for mp in p:
             wfl_path = os.path.join(wfl_path,mp)

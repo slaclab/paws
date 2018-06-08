@@ -2,8 +2,8 @@ import os
 from collections import OrderedDict
 
 import paws
-from paws.core.workflows.WfManager import WfManager
-from paws.core import pawstools
+from paws.workflows.WfManager import WfManager
+from paws import pawstools
 
 
 # specify workflow names: 
@@ -90,5 +90,5 @@ wf.set_op_input('fit_params','x_key','filename')
 wf.set_op_input('fit_params','y_key','fit_params')
 
 
-pawstools.save_to_wfl(os.path.join(pawstools.sourcedir,'core','workflows','FITTING','SAXS','batch_gp_fit.wfl'),wfmgr)
+pawstools.save_to_wfl(os.path.join(pawstools.sourcedir,'workflows','FITTING','SAXS','batch_gp_fit.wfl'),wfmgr)
 

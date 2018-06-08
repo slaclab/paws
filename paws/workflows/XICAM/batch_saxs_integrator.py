@@ -2,8 +2,8 @@ import os
 from collections import OrderedDict
 
 import paws
-from paws.core.workflows.WfManager import WfManager
-from paws.core import pawstools
+from paws.workflows.WfManager import WfManager
+from paws import pawstools
 
 # specify workflow names: 
 wf_names = ['saxs_integrator','batch_saxs_integrator']
@@ -94,5 +94,5 @@ wf.set_op_input('Batch Execution','static_inputs',['Integrator Setup.outputs.int
 wf.set_op_input('Batch Execution','static_input_keys',['integrator'])
 
 # save the workflows in a .wfl file
-pawstools.save_to_wfl(os.path.join(pawstools.sourcedir,'core','workflows','XICAM','batch_saxs_integrator.wfl'),wfmgr)
+pawstools.save_to_wfl(os.path.join(pawstools.sourcedir,'workflows','XICAM','batch_saxs_integrator.wfl'),wfmgr)
 
