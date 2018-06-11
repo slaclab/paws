@@ -21,52 +21,45 @@ def test_init():
 def test_add_wf():
     wf_manager = WfManager() 
     wf_manager.add_workflow('test')
-    assert isinstance(wf_manager.workflows['test'],Workflow)
 
 def test_add_op():
     wf_manager = WfManager() 
-    wf_test = wf_manager.add_workflow('test')
-    test_listprimes = wf_manager.op_manager.get_operation('TESTS.ListPrimes')
-    wf_test.add_operation('listprimes',test_listprimes)
-    assert isinstance(test_listprimes,Operation)
+    wf_manager.add_workflow('test')
+    wf_manager.load_operation('test','listprimes','TESTS.ListPrimes')
 
 def test_execute():
     wf_manager = WfManager() 
-    wf_test = wf_manager.add_workflow('test')
-    test_listprimes = wf_manager.op_manager.get_operation('TESTS.ListPrimes')
-    wf_test.add_operation('listprimes',test_listprimes)
+    wf_manager.add_workflow('test')
+    wf_manager.load_operation('test','listprimes','TESTS.ListPrimes')
     wf_manager.run_workflow('test') 
 
 def test_save():
     wf_manager = WfManager() 
     wf_test = wf_manager.add_workflow('test')
-    test_listprimes = wf_manager.op_manager.get_operation('TESTS.ListPrimes')
-    wf_test.add_operation('listprimes',test_listprimes)
+    wf_manager.load_operation('test','listprimes','TESTS.ListPrimes')
     wfl_path = os.path.join(pawstools.paws_scratch_dir,'test.wfl')
-    pawstools.save_to_wfl(wfl_path,wf_manager)
+    wf_manager.save_to_wfl(wfl_path)
 
 def test_load():
     wf_manager = WfManager()
     wfl_path = os.path.join(pawstools.paws_scratch_dir,'test.wfl') 
-    pawstools.load_wfl(wfl_path,wf_manager)
+    wf_manager.load_wfl(wfl_path)
     wf_manager.run_workflow('test') 
 
 def test_get_output():
     wf_manager = WfManager()
     wfl_path = os.path.join(pawstools.paws_scratch_dir,'test.wfl') 
-    pawstools.load_wfl(wfl_path,wf_manager)
+    wf_manager.load_wfl(wfl_path)
     wf_manager.workflows['test'].connect_output('primes','listprimes.outputs.primes_list')
     wf_manager.run_workflow('test')
-    p = wf_manager.workflows['test'].get_wf_output('primes')
-    print(p)
+    p = wf_manager.workflows['test'].get_output('primes')
+    print('list of primes: {}'.format(p))
 
 def test_load_plugins():
     wf_manager = WfManager()
     for i,plugin_name in enumerate(plugins.plugin_name_list):
         print('loading {} ...'.format(plugin_name))
-        pgin = wf_manager.plugin_manager.get_plugin(plugin_name)
-        wf_manager.plugin_manager.add_plugin('plugin_'+str(i),plugin_name)
-        assert isinstance(pgin,PawsPlugin)
+        wf_manager.plugin_manager.add_plugin('test_'+plugin_name,plugin_name)
 
 def test_load_operations():
     wf_manager = WfManager()
@@ -76,21 +69,23 @@ def test_load_operations():
         assert isinstance(op,Operation)
 
 def test_run_operations():
+    # TODO: build default inputs for Operations
     wf_manager = WfManager()
     runnable_ops = dict.fromkeys(wf_manager.op_manager.list_operations())
     for op_module in wf_manager.op_manager.list_operations():
-        print('running {} ...'.format(op_module))
         op = wf_manager.op_manager.get_operation(op_module)
         try:
+            print('running {} ...'.format(op_module))
             op.run()
+            runnable_ops[op_module] = True 
         except Exception as ex:
             runnable_ops[op_module] = False
-        runnable_ops[op_module] = True 
+            print('{} does not run.'.format(op_module))
     return runnable_ops
 
 def test_load_wfls():
     for wf_mod in workflows.wf_modules:
         wf_manager = WfManager()
         print('loading {} ...'.format(wf_mod))
-        pawstools.load_packaged_wfl(wf_mod,wf_manager)
+        wf_manager.load_packaged_wfl(wf_mod)
 
