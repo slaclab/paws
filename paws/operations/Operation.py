@@ -71,21 +71,6 @@ class Operation(object):
         """Clone the Operation"""
         return self.clone()
 
-    def setup_dict(self):
-        """Produce a dictionary fully describing the setup of the Operation.
-
-        Returns
-        -------
-        dct : dict
-            Dictionary specifying the module name and input setup 
-            for the current state of the Operation
-        """
-        op_modulename = self.__module__[self.__module__.find('operations'):]
-        op_modulename = op_modulename[op_modulename.find('.')+1:]
-        dct = OrderedDict() 
-        dct['op_module'] = op_modulename
-        return dct
-
     def set_input(self,input_name,val):
         self.inputs[input_name] = val    
 
@@ -95,8 +80,7 @@ class Operation(object):
 
     def description(self):
         """Provide a string describing the Operation."""
-        return str(type(self).__name__+": "
-        + self.doc_as_string()
+        return str(type(self).__name__+": "+ self.doc_as_string()
 
     def doc_as_string(self):
         if self.__doc__:

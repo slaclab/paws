@@ -132,19 +132,8 @@ class WfManager(object):
             #new_wf.data_callback = self.workflows[wf_name].data_callback
         return wf_clone
 
-    def setup_dict(self):
-        """Return a dict that describes the Workflow setup.""" 
-        wf_dict = OrderedDict() 
-        for op_name,op in self.operations.items():
-            wf_dict[op_name] = op.setup_dict()
-        wf_dict['INPUTS'] = self.inputs
-        wf_dict['OUTPUTS'] = self.outputs
-        wf_dict['CONNECTIONS'] = self.op_connections
-        wf_dict['DEPENDENCIES'] = self.op_dependencies
-        wf_dict['ENABLED_FLAGS'] = self.op_enabled_flags()
-        return wf_dict
 
-    def load_workflow(self,wf_name,wf_setup_dict):
+    def load_workflow(self,wf_name,wf_dict):
         """Load a workflow from a dict that specifies its parameters.
 
         If `wf_name` is not unique, self.workflows[wf_name] is overwritten.
@@ -153,39 +142,70 @@ class WfManager(object):
         ----------
         wf_name : str
             name to be given to the new workflow
-        wf_setup_dict : dict
+        wf_dict : dict
             dict specifying workflow setup
         """
         self.add_workflow(wf_name)
-        wfins = wf_setup_dict.pop('INPUTS')
-        wfouts = wf_setup_dict.pop('OUTPUTS')
-        cond_ins = wf_setup_dict.pop('CONDITIONAL_INPUTS')
-        deps = wf_setup_dict.pop('DEPENDENCIES')
-        op_enable_flags = wf_setup_dict.pop('ENABLED_FLAGS')
-        for op_tag, op_setup_dict in wf_setup_dict.items():
-            self.workflows[wf_name].load_operation(op_tag,op_setup_dict,self.op_manager)
-            if not op_enable_flags[op_tag]:
-                self.workflows[wf_name].disable_op(op_tag)
-        for inpname,inpval in wfins.items():
+        for op_tag, op_module in wf_dict['OPERATIONS'].items():
+            self.load_operation(wf_name,op_tag,op_module)
+        for inpname,inpval in wf_dict['INPUTS'].items():
             self.workflows[wf_name].connect_input(inpname,inpval)
-        for outname,outval in wfouts.items():
+        for outname,outval in wf_dict['OUTPUTS'].items():
             self.workflows[wf_name].connect_output(outname,outval)
-        for op_name, dep_ops in deps.items():
+        for out_uri, in_map in wf_dict['CONNECTIONS'].items():
+            self.workflows[wf_name].connect(out_uri,in_map)
+        for op_name, dep_ops in wf_dict['DEPENDENCIES'].items():
             self.workflows[wf_name].set_dependency(op_name,dep_ops)
+        for op_name, flag in wf_dict['ENABLED_FLAGS'].items():
+            self.workflows[wf_name].set_op_enabled(op_name,flag)
+        
+    def load_operation(self,wf_name,op_name,op_module):
+        """Load an Operation from a dict that specifies its parameters.
+
+        If `op_name` is not unique, the Operation is overwritten.
+
+        Parameters
+        ----------
+        wf_name : str
+            name of workflow to add Operation 
+        op_name : str
+            name to be given to the new Operation 
+        op_module : str 
+            uri of Operation module 
+        """
+        if not self.op_manager.is_op_enabled(op_module):
+            self.op_manager.enable_op(op_module)
+        op = self.op_manager.get_data_from_uri(op_uri)()
+        self.add_operation(op_name,op)
 
     def setup_dict(self):
         d = {} 
+        d['PAWS_VERSION'] = pawstools.__version__
         d['OP_ENABLED_FLAGS'] = {k:True for k in self.op_manager.keys() if self.op_manager.is_op_enabled(k)}
-        d['PAWS_VERSION'] = __version__
-        wfman_dict = OrderedDict.fromkeys(self.workflows)
-        for wfname,wf in self.workflows.items():
-            wfman_dict[wfname] = wf.setup_dict() 
+        wfman_dict = OrderedDict.fromkeys(self.workflows.keys())
+        for wfname in self.workflows.keys():
+            wfman_dict[wfname] = self.wf_setup_dict(wfname)
         d['WORKFLOWS'] = wfman_dict
         pgin_dict = OrderedDict.fromkeys(self.plugin_manager.plugins.keys()) 
-        for pgin_name,pgin in self.plugin_manager.plugins.items():
-            pgin_dict[pgin_name] = pgin.setup_dict()
-        d['PLUGINS'] = pgin_dict
+        for pgin_name in self.plugin_manager.plugins.keys():
+            pgin_dict[pgin_name] = self.plugin_manager.plugin_setup_dict(pgin_name)
+        d['PLUGINS'] = self.plugin_manager.setup_dict()
         return d
+
+    def wf_setup_dict(self,wf_name):
+        """Return a dict that describes the Workflow setup.""" 
+        wf_dict = OrderedDict()
+        wf = self.workflows[wf_name] 
+        wf_dict['OPERATIONS'] = OrderedDict.fromkeys(wf.operations)
+        for op_name,op in wf.operations.items():
+            wf_dict['OPERATIONS'][op_name] = op.__module__[op.__module__.find('operations.')+1:] 
+        wf_dict['INPUTS'] = wf.inputs
+        wf_dict['OUTPUTS'] = wf.outputs
+        wf_dict['OP_INPUTS'] = wf.op_inputs
+        wf_dict['CONNECTIONS'] = wf.op_connections
+        wf_dict['DEPENDENCIES'] = wf.op_dependencies
+        wf_dict['ENABLED_FLAGS'] = wf.op_enabled_flags()
+        return wf_dict
 
     def save_to_wfl(self,wfl_filename):
         """Save workflows, plugins, and active operations to a .wfl file.
@@ -203,55 +223,53 @@ class WfManager(object):
             wfl_filename = wfl_filename + '.wfl'
         pawstools.save_file(wfl_filename,self.setup_dict())
 
-# TODO: continue from here
-    def load_packaged_wfl(self,workflow_uri,wf_manager):
-        wf_mod = importlib.import_module('.'+workflow_uri,workflows.__name__)
-        wfl_path = sourcedir
+    def load_packaged_wfl(self,workflow_uri):
+        # the following import saves a .wfl configuration file 
+        importlib.import_module('.'+workflow_uri,workflows.__name__)
+        wfl_path = pawstools.sourcedir
         wfl_path = os.path.join(wfl_path,'workflows')
         p = workflow_uri.split('.')
         for mp in p:
             wfl_path = os.path.join(wfl_path,mp)
         wfl_filename = wfl_path+'.wfl'
-        load_wfl(wfl_filename,wf_manager)
+        self.load_wfl(wfl_filename)
 
-def load_wfl(wfl_filename,wf_manager):
-    """Set up a OpManager, PluginManager, and WfManager from a .wfl file.
+    def load_wfl(self,wfl_filename):
+        """Set up the WfManager and its OpManager and PluginManager, from a .wfl file.
 
-    Parameters
-    ----------
-    wfl_filename : str
-        path to a .wfl file to be loaded
-    """
-    f = open(wfl_filename,'r')
-    d = yaml.load(f)
-    f.close()
-    if 'PAWS_VERSION' in d.keys():
-        wfl_version = d['PAWS_VERSION']
-    else:
-        wfl_version = '0.0.0'
-    wfl_vparts = re.match(r'(\d+)\.(\d+)\.(\d+)',wfl_version)
-    wfl_vparts = list(map(int,wfl_vparts.groups()))
-    current_vparts = re.match(r'(\d+)\.(\d+)\.(\d+)',__version__)  
-    current_vparts = list(map(int,current_vparts.groups()))
-    if wfl_vparts[0] < current_vparts[0] or wfl_vparts[1] < current_vparts[1]:
-        warnings.warn('WARNING: paws (version {}) '\
-        'is trying to load a state built in version {} - '\
-        'this is likely to cause things to crash, '\
-        'until the workflows and plugins are reviewed/refactored '\
-        'under the current version.'.format(__version__,wfl_version))  
-    if 'OP_ACTIVATION_FLAGS' in d.keys():
-        for op_module,flag in d['OP_ACTIVATION_FLAGS'].items():
-            if op_module in operations.op_modules:
-                if flag:
-                    wf_manager.op_manager.activate_op(op_module)
-    if 'WORKFLOWS' in d.keys():
-        wf_dict = d['WORKFLOWS']
-        for wf_name,wf_setup_dict in wf_dict.items():
-            wf_manager.load_workflow(wf_name,wf_setup_dict)
-    if 'PLUGINS' in d.keys():
-        plugins_dict = d['PLUGINS']
-        for plugin_name,plugin_setup_dict in plugins_dict.items():
-            wf_manager.plugin_manager.load_plugin(plugin_name,plugin_setup_dict)
+        Parameters
+        ----------
+        wfl_filename : str
+            path to a .wfl file to be loaded
+        """
+        f = open(wfl_filename,'r')
+        d = yaml.load(f)
+        f.close()
+        if 'PAWS_VERSION' in d.keys():
+            wfl_version = d['PAWS_VERSION']
+        else:
+            wfl_version = '0.0.0'
+        wfl_vparts = re.match(r'(\d+)\.(\d+)\.(\d+)',wfl_version)
+        wfl_vparts = list(map(int,wfl_vparts.groups()))
+        current_vparts = re.match(r'(\d+)\.(\d+)\.(\d+)',pawstools.__version__)  
+        current_vparts = list(map(int,current_vparts.groups()))
+        if wfl_vparts[0] < current_vparts[0] or wfl_vparts[1] < current_vparts[1]:
+            warnings.warn('WARNING: paws (version {}) '\
+            'is trying to load a state built in version {} - '\
+            'this is likely to cause things to crash, '\
+            'until the workflows and plugins are reviewed/refactored '\
+            'under the current version.'.format(pawstools.__version__,wfl_version))  
+        if 'OP_ENABLED_FLAGS' in d.keys():
+            for op_module,flag in d['OP_ENABLED_FLAGS'].items():
+                if not op_module in operations.op_modules:
+                    raise Exception('Operation module {} not found'.format(op_module))
+                self.op_manager.enable_op(op_module)
+        if 'WORKFLOWS' in d.keys():
+            wf_dict = d['WORKFLOWS']
+            for wf_name,wf_setup_dict in wf_dict.items():
+                self.load_workflow(wf_name,wf_setup_dict)
+        if 'PLUGINS' in d.keys():
+            self.plugin_manager.load_plugins(pg_dict)
 
 
 
