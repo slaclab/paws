@@ -37,19 +37,19 @@ def test_save():
     wf_manager = WfManager() 
     wf_test = wf_manager.add_workflow('test')
     wf_manager.load_operation('test','listprimes','TESTS.ListPrimes')
-    wfl_path = os.path.join(pawstools.paws_scratch_dir,'test.wfl')
-    wf_manager.save_to_wfl(wfl_path)
+    wfm_path = os.path.join(pawstools.paws_scratch_dir,'test.wfm')
+    wf_manager.save_to_wfm(wfm_path)
 
 def test_load():
     wf_manager = WfManager()
-    wfl_path = os.path.join(pawstools.paws_scratch_dir,'test.wfl') 
-    wf_manager.load_wfl(wfl_path)
+    wfm_path = os.path.join(pawstools.paws_scratch_dir,'test.wfm') 
+    wf_manager.load_wfm(wfm_path)
     wf_manager.run_workflow('test') 
 
 def test_get_output():
     wf_manager = WfManager()
-    wfl_path = os.path.join(pawstools.paws_scratch_dir,'test.wfl') 
-    wf_manager.load_wfl(wfl_path)
+    wfm_path = os.path.join(pawstools.paws_scratch_dir,'test.wfm') 
+    wf_manager.load_wfm(wfm_path)
     wf_manager.workflows['test'].connect_output('primes','listprimes.outputs.primes_list')
     wf_manager.run_workflow('test')
     p = wf_manager.workflows['test'].get_output('primes')
@@ -83,9 +83,18 @@ def test_run_operations():
             print('{} does not run.'.format(op_module))
     return runnable_ops
 
-def test_load_wfls():
-    for wf_mod in workflows.wf_modules:
+wfl_modules = [\
+    'FITTING.BL15.ReadCSV_XRSDFit',
+    'IO.BL15.ReadHeader']
+wfm_modules = ['FITTING.BL15.timeseries_fit']
+def test_load_wfms():
+    #for wf_mod in workflows.wf_modules:
+    for iw,wm in enumerate(wfl_modules):
         wf_manager = WfManager()
-        print('loading {} ...'.format(wf_mod))
-        wf_manager.load_packaged_wfl(wf_mod)
+        print('loading {} ...'.format(wm))
+        wf_manager.load_packaged_workflow('test_wf_{}'.format(iw),wm)
+    for wm in wfm_modules:
+        wf_manager = WfManager()
+        print('loading {} ...'.format(wm))
+        wf_manager.load_packaged_wfm(wm)
 
