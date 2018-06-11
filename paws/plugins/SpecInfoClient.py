@@ -4,7 +4,6 @@ import socket
 from threading import Condition
 
 from .PawsPlugin import PawsPlugin
-from .. import pawstools
 
 inputs = OrderedDict(
     host=None,

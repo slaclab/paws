@@ -7,7 +7,6 @@ from threading import Condition
 import serial
 
 from .PawsPlugin import PawsPlugin
-from .. import pawstools
 
 inputs = OrderedDict(
     serial_device=None,

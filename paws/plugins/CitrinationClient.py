@@ -4,7 +4,6 @@ from collections import OrderedDict
 from pypif import pif
 from citrination_client import CitrinationClient as CitClient
 
-from .. import pawstools
 from .PawsPlugin import PawsPlugin
 
 inputs = OrderedDict(

@@ -143,3 +143,6 @@ class PawsPlugin(object):
                 else:
                     l.notify_all()
 
+    def get_plugin_content(self):
+        return {}
+

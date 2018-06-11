@@ -7,7 +7,6 @@ from threading import Condition
 import paramiko
 
 from .PawsPlugin import PawsPlugin
-from .. import pawstools
 
 inputs = OrderedDict(
     username=None,

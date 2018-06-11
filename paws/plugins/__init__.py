@@ -1,6 +1,5 @@
 import pkgutil
 import os
-from .. import pawstools
 
 def load_plugins(pkg_path):
     p_names = []
