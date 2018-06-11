@@ -108,32 +108,12 @@ class PawsPlugin(object):
     def build_clone(self):
         """Clone the Plugin."""
         new_pgn = self.clone()
-        # TODO: refactor
-        #for inp_nm,il in self.input_locator.items():
-        #    if il.tp == pawstools.basic_type:
-        #        new_pgn.inputs[inp_nm] = copy.deepcopy(self.inputs[inp_nm]) 
-        #    elif il.tp == pawstools.plugin_item:
-        #        # plugins are expected to be threadsafe
-        #        new_pgn.inputs[inp_nm] = self.inputs[inp_nm]
+        # TODO: plugins may have other plugins as input- handle this
+        for inp_nm,val in self.inputs.items():
+            new_pgn.inputs[inp_nm] = copy.deepcopy(val) 
         #new_pgn.data_callback = self.data_callback
         #new_pgn.message_callback = self.message_callback
-        #if self.running:
-        #    new_pgn.start()
         return new_pgn
-
-    def setup_dict(self):
-        """Return a dict that states the plugin's module and inputs."""
-        pgin_mod = self.__module__[self.__module__.find('plugins'):]
-        pgin_mod = pgin_mod[pgin_mod.find('.')+1:]
-        dct = OrderedDict() 
-        dct['plugin_module'] = pgin_mod
-        # TODO: refactor
-        # TODO: make more like workflow setup dict
-        #inp_dct = OrderedDict() 
-        #for nm,il in self.input_locator.items():
-        #    inp_dct[nm] = {'tp':copy.copy(il.tp),'val':copy.copy(il.val)}
-        #dct['inputs'] = inp_dct 
-        return dct
 
     def add_to_history(self,t,msg):
         """Add a timestamp and a message to the plugin's history."""
