@@ -9,7 +9,7 @@ from ...Operation import Operation
 inputs=OrderedDict(
     header_dict=None,
     time_key=None,
-    temp_key=None)
+    temperature_key=None)
 outputs=OrderedDict(
     date_time=None,
     time=None,
@@ -25,7 +25,7 @@ class TimeTempFromHeader(Operation):
         super(TimeTempFromHeader,self).__init__(inputs,outputs)        
         self.input_doc['header_dict'] = 'dict produced from detector output header file.'
         self.input_doc['time_key'] = 'key in header_dict that refers to the time' 
-        self.input_doc['temp_key'] = 'key in header_dict that refers to the temperature' 
+        self.input_doc['temperature_key'] = 'key in header_dict that refers to the temperature' 
         self.output_doc['date_time'] = 'string representation of the time'
         self.output_doc['time'] = 'UTC time in seconds'
         self.output_doc['temperature'] = 'Temperature'
@@ -33,7 +33,7 @@ class TimeTempFromHeader(Operation):
     def run(self):
         d = self.inputs['header_dict']
         ktime = self.inputs['time_key']
-        ktemp = self.inputs['temp_key']
+        ktemp = self.inputs['temperature_key']
         if ktime is not None:
             time_str = str(d[ktime])
             # process the UTC time in seconds assuming %a %b %d %H:%M:%S %Y format

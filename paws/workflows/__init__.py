@@ -22,12 +22,12 @@ def load_workflows(path_,pkg,cat_root=''):
             cat_list = cat_list + pkg_cats
             wf_modules.update(pkg_wf_modules)
         else:
-            # assume the module defines workflows and generates a .wfl
+            # assume the module defines workflows and generates a .wfm or .wfl
             if not cat_root in cat_list:
                 cat_list.append(cat_root)
             cat_wf_list.append( (cat_root,modname) )
             wf_modules[cat_root+'.'+modname] = os.path.join(path_[0],modname) 
-    # don't import these modules: it will cause and import loop
+    # don't import these modules: it will cause an import loop
     #for wf_uri,wf_path in wf_modules.items():
     #    wf_mod = importlib.import_module('.'+wf_uri,__name__)
     return cat_list, cat_wf_list, wf_modules

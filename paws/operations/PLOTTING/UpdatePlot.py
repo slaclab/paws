@@ -36,9 +36,10 @@ class UpdatePlot(Operation):
             ax.semilogy(xy[:,0],xy[:,1])
         elif lx:
             ax.semilogx(xy[:,0],xy[:,1])
-        plt.ion()
-        plt.show()
-        plt.pause(0.001)
+        if xy:
+            plt.ion()
+            plt.show()
+            plt.pause(0.001)
 
 
 

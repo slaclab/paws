@@ -40,9 +40,9 @@ class Batch(Operation):
         self.output_doc['batch_outputs'] = 'list of dicts, '\
             'where each dict contains the `work_item` outputs.'
 
-        self.input_datatype['batch_inputs'] = 'dict'
-        self.input_datatype['static_inputs'] = 'dict'
-        self.input_datatype['serial_params'] = 'dict'
+        self.input_datatype['batch_inputs'] = dict
+        self.input_datatype['static_inputs'] = dict
+        self.input_datatype['serial_params'] = dict
 
     def run(self):
         wrkitm = self.inputs['work_item'].build_clone()

@@ -76,11 +76,13 @@ class Workflow(TreeModel):
         else:
             if not isinstance(input_map,list): input_map = [input_map]
             self.op_connections[output_uri] = input_map
-
-    def connect_plugin(self,input_uri,plugin_item_uri):
+    
+    # TODO: use an input_map here like self.connect()
+    def connect_plugin(self,plugin_item_uri,input_uri):
         self.plugin_connections[input_uri] = plugin_item_uri
 
-    def connect_workflow(self,input_uri,wf_name):
+    # TODO: use an input_map here like self.connect()
+    def connect_workflow(self,wf_name,input_uri):
         self.workflow_connections[input_uri] = wf_name 
 
     def connect_input(self,input_name,targets):

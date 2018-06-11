@@ -1,6 +1,4 @@
-"""
-Various tools for working with Workflows and Operations
-"""
+"""Various tools for use in various Operations"""
 
 import glob
 import copy
@@ -27,32 +25,4 @@ class FileSystemIterator(Iterator):
 
     def __next__(self):
         return self.next()
-
-class ExecutionError(Exception):
-    def __init__(self,msg):
-        super(ExecutionError,self).__init__(self,msg)
-
-def get_uri_from_dict(uri,d):
-    keys = uri.split('.')
-    itm = d
-    for k in keys:
-        if not isinstance(itm,dict):
-            msg = 'something in {} is not a dict'.format(uri)
-            raise KeyError(msg)
-        if not k in itm.keys():
-            msg = 'did not find uri {} in dict'.format(uri)
-            raise KeyError(msg)
-        else:
-            itm = itm[k]
-    return itm
-
-def dict_contains_uri(uri,d):
-    keys = uri.split('.')
-    itm = d
-    for k in keys:
-        if not k in itm.keys():
-            return False
-        else:
-            itm = itm[k]
-    return True
 

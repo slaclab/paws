@@ -35,5 +35,5 @@ class MakePlot(Operation):
             ax.semilogx(xy[:,0],xy[:,1])
         else:
             ax.plot(xy[:,0],xy[:,1])
-        plt.show()
+        if xy: plt.show()
 

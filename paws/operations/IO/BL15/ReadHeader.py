@@ -10,13 +10,13 @@ outputs=OrderedDict(
     dir_path=None,
     filename=None)
 
-class ReadHeader_SSRL15(Operation):
+class ReadHeader(Operation):
     """
     Read a .txt header from beamline 1-5 at SSRL into a dict.
     """
 
     def __init__(self):
-        super(ReadHeader_SSRL15, self).__init__(inputs, outputs)
+        super(ReadHeader, self).__init__(inputs, outputs)
         self.input_doc['file_path'] = 'path to a .txt header file produced by beamline 1-5 at SSRL.'
         self.output_doc['header_dict'] = 'the header file as a python dictionary'
         self.output_doc['filename'] = 'filename with path and extension stripped'
