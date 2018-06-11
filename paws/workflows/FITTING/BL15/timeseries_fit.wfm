@@ -1,0 +1,204 @@
+OP_ENABLED_FLAGS: {CONTROL.Switch: true, EXECUTION.Batch: true, EXECUTION.Conditional: true,
+  IO.BL15.ReadHeader: true, IO.FILESYSTEM.BuildFileList: true, IO.FILESYSTEM.BuildFilePath: true,
+  IO.FILESYSTEM.CheckFilePath: true, IO.NUMPY.Loadtxt_q_I_dI: true, IO.YAML.LoadXRSDFit: true,
+  IO.YAML.SaveXRSDFit: true, PACKAGING.BATCH.XYDataFromBatch: true, PACKAGING.BL15.TimeTempFromHeader: true,
+  PROCESSING.FITTING.XRSDFit: true}
+PAWS_VERSION: 0.8.9
+PLUGINS: !!python/object/apply:collections.OrderedDict
+- - - PLUGINS
+    - !!python/object/apply:collections.OrderedDict
+      - []
+  - - INPUTS
+    - !!python/object/apply:collections.OrderedDict
+      - []
+  - - CONNECTIONS
+    - !!python/object/apply:collections.OrderedDict
+      - []
+WORKFLOWS: !!python/object/apply:collections.OrderedDict
+- - - main
+    - !!python/object/apply:collections.OrderedDict
+      - - - OPERATIONS
+          - !!python/object/apply:collections.OrderedDict
+            - - [header_files, IO.FILESYSTEM.BuildFileList]
+              - [t_filepaths, PACKAGING.BATCH.XYDataFromBatch]
+              - [batch_fit, EXECUTION.Batch]
+              - [header_batch, EXECUTION.Batch]
+              - [t_filenames, PACKAGING.BATCH.XYDataFromBatch]
+        - - INPUTS
+          - !!python/object/apply:collections.OrderedDict
+            - - [header_dir, header_files.inputs.dir_path]
+              - [header_regex, header_files.inputs.regex]
+              - - data_dir
+                - [header_batch.inputs.static_inputs.data_dir, batch_fit.inputs.static_inputs.populations_dir]
+              - [image_dir, header_batch.inputs.static_inputs.image_dir]
+              - - lower_index
+                - [t_filenames.inputs.lower_index, t_filepaths.inputs.lower_index]
+              - - upper_index
+                - [t_filenames.inputs.upper_index, t_filepaths.inputs.upper_index]
+        - - OUTPUTS
+          - !!python/object/apply:collections.OrderedDict
+            - []
+        - - OP_INPUTS
+          - !!python/object/apply:collections.OrderedDict
+            - - - t_filenames
+                - !!python/object/apply:collections.OrderedDict
+                  - - [x_key, time]
+                    - [y_key, filename]
+                    - [x_sort_flag, true]
+                    - [x_shift_flag, true]
+              - - t_filepaths
+                - !!python/object/apply:collections.OrderedDict
+                  - - [x_key, time]
+                    - [y_key, data_filepath]
+                    - [x_sort_flag, true]
+                    - [x_shift_flag, true]
+              - - batch_fit
+                - !!python/object/apply:collections.OrderedDict
+                  - - - serial_params
+                      - {fixed_params: fixed_params, param_bounds: param_bounds, param_constraints: param_constraints,
+                        populations: populations}
+        - - CONNECTIONS
+          - !!python/object/apply:collections.OrderedDict
+            - - - header_files.outputs.file_list
+                - [header_batch.inputs.batch_inputs.header_filepath]
+              - - header_batch.outputs.batch_outputs
+                - [t_filenames.inputs.batch_outputs, t_filepaths.inputs.batch_outputs]
+              - - t_filenames.outputs.y
+                - [batch_fit.inputs.batch_inputs.filename]
+              - - t_filepaths.outputs.y
+                - [batch_fit.inputs.batch_inputs.data_filepath]
+        - - DEPENDENCIES
+          - !!python/object/apply:collections.OrderedDict
+            - []
+        - - ENABLED_FLAGS
+          - !!python/object/apply:collections.OrderedDict
+            - - [header_files, true]
+              - [t_filepaths, true]
+              - [batch_fit, true]
+              - [header_batch, true]
+              - [t_filenames, true]
+  - - read_header
+    - !!python/object/apply:collections.OrderedDict
+      - - - OPERATIONS
+          - !!python/object/apply:collections.OrderedDict
+            - - [read_header, IO.BL15.ReadHeader]
+              - [image_filepath, IO.FILESYSTEM.BuildFilePath]
+              - [time_temp, PACKAGING.BL15.TimeTempFromHeader]
+              - [data_filepath, IO.FILESYSTEM.BuildFilePath]
+        - - INPUTS
+          - !!python/object/apply:collections.OrderedDict
+            - - [header_filepath, read_header.inputs.file_path]
+              - [time_key, time_temp.inputs.time_key]
+              - [temperature_key, time_temp.inputs.temperature_key]
+              - [image_dir, image_filepath.inputs.dir_path]
+              - [data_dir, data_filepath.inputs.dir_path]
+              - [data_suffix, data_filepath.inputs.suffix]
+        - - OUTPUTS
+          - !!python/object/apply:collections.OrderedDict
+            - - [time, time_temp.outputs.time]
+              - [date_time, time_temp.outputs.date_time]
+              - [temperature, time_temp.outputs.temperature]
+              - [filename, read_header.outputs.filename]
+              - [image_filepath, image_filepath.outputs.file_path]
+              - [data_filepath, data_filepath.outputs.file_path]
+        - - OP_INPUTS
+          - !!python/object/apply:collections.OrderedDict
+            - []
+        - - CONNECTIONS
+          - !!python/object/apply:collections.OrderedDict
+            - - - read_header.outputs.header_dict
+                - [time_temp.inputs.header_dict]
+              - - read_header.outputs.filename
+                - [image_filepath.inputs.filename, data_filepath.inputs.filename]
+        - - DEPENDENCIES
+          - !!python/object/apply:collections.OrderedDict
+            - []
+        - - ENABLED_FLAGS
+          - !!python/object/apply:collections.OrderedDict
+            - - [read_header, true]
+              - [image_filepath, true]
+              - [time_temp, true]
+              - [data_filepath, true]
+  - - read_and_fit
+    - !!python/object/apply:collections.OrderedDict
+      - - - OPERATIONS
+          - !!python/object/apply:collections.OrderedDict
+            - - [param_bounds_switch, CONTROL.Switch]
+              - [read_saxs, IO.NUMPY.Loadtxt_q_I_dI]
+              - [param_constraints_switch, CONTROL.Switch]
+              - [fit_saxs, PROCESSING.FITTING.XRSDFit]
+              - [save_fit, IO.YAML.SaveXRSDFit]
+              - [conditional_read, EXECUTION.Conditional]
+              - [read_xrsdfit, IO.YAML.LoadXRSDFit]
+              - [check_pops_file, IO.FILESYSTEM.CheckFilePath]
+              - [populations_file, IO.FILESYSTEM.BuildFilePath]
+              - [fixed_params_switch, CONTROL.Switch]
+              - [populations_switch, CONTROL.Switch]
+        - - INPUTS
+          - !!python/object/apply:collections.OrderedDict
+            - - [source_wavelength, fit_saxs.inputs.source_wavelength]
+              - [filename, populations_file.inputs.filename]
+              - [saxs_filepath, read_saxs.inputs.file_path]
+              - [populations_dir, populations_file.inputs.dir_path]
+              - [populations, populations_switch.inputs.else_data]
+              - [fixed_params, fixed_params_switch.inputs.else_data]
+              - [param_bounds, param_bounds_switch.inputs.else_data]
+              - [param_constraints, param_constraints_switch.inputs.else_data]
+              - [q_range, fit_saxs.inputs.q_range]
+        - - OUTPUTS
+          - !!python/object/apply:collections.OrderedDict
+            - - [populations, fit_saxs.outputs.populations]
+              - [report, fit_saxs.outputs.report]
+              - [fixed_params, fit_saxs.inputs.fixed_params]
+              - [param_bounds, fit_saxs.inputs.param_bounds]
+              - [param_constraints, fit_saxs.inputs.param_constraints]
+        - - OP_INPUTS
+          - !!python/object/apply:collections.OrderedDict
+            - []
+        - - CONNECTIONS
+          - !!python/object/apply:collections.OrderedDict
+            - - - populations_file.outputs.file_path
+                - [check_pops_file.inputs.file_path, conditional_read.inputs.file_path,
+                  save_fit.inputs.file_path]
+              - - check_pops_file.outputs.file_exists
+                - [conditional_read.inputs.condition, populations_switch.inputs.condition,
+                  fixed_params_switch.inputs.condition, param_bounds_switch.inputs.condition,
+                  param_constraints_switch.inputs.condition]
+              - - read_xrsdfit
+                - [conditional_read.inputs.work_item]
+              - - read_saxs.outputs.q_I
+                - [fit_saxs.inputs.q_I]
+              - - populations_switch.outputs.data
+                - [fit_saxs.inputs.populations]
+              - - fixed_params_switch.outputs.data
+                - [fit_saxs.inputs.fixed_params]
+              - - param_bounds_switch.outputs.data
+                - [fit_saxs.inputs.param_bounds]
+              - - param_constraints_switch.outputs.data
+                - [fit_saxs.inputs.param_constraints]
+              - - fit_saxs.outputs.populations
+                - [save_fit.inputs.populations]
+              - - fit_saxs.outputs.report
+                - [save_fit.inputs.report]
+              - - fit_saxs.inputs.fixed_params
+                - [save_fit.inputs.fixed_params]
+              - - fit_saxs.inputs.param_bounds
+                - [save_fit.inputs.param_bounds]
+              - - fit_saxs.inputs.param_constraints
+                - [save_fit.inputs.param_constraints]
+        - - DEPENDENCIES
+          - !!python/object/apply:collections.OrderedDict
+            - []
+        - - ENABLED_FLAGS
+          - !!python/object/apply:collections.OrderedDict
+            - - [param_bounds_switch, true]
+              - [read_saxs, true]
+              - [param_constraints_switch, true]
+              - [fit_saxs, true]
+              - [save_fit, true]
+              - [conditional_read, true]
+              - [read_xrsdfit, false]
+              - [check_pops_file, true]
+              - [populations_file, true]
+              - [fixed_params_switch, true]
+              - [populations_switch, true]

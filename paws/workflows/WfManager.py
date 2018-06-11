@@ -164,7 +164,11 @@ class WfManager(object):
             self.workflows[wf_name].set_dependency(op_name,dep_ops)
         for op_name, flag in wf_dict['ENABLED_FLAGS'].items():
             self.workflows[wf_name].set_op_enabled(op_name,flag)
-        
+
+    def load_operations(self,wf_name,**kwargs):
+        for op_name,op_uri in kwargs.items():
+            self.load_operation(wf_name,op_name,op_uri)
+    
     def load_operation(self,wf_name,op_name,op_module):
         """Load an Operation from a dict that specifies its parameters.
 
@@ -197,11 +201,11 @@ class WfManager(object):
             pgin_dict[pgin_name] = self.plugin_manager.plugin_setup_dict(pgin_name)
         d['PLUGINS'] = self.plugin_manager.setup_dict()
         return d
-
+    
     def wf_setup_dict(self,wf_name):
         """Return a dict that describes the Workflow setup.""" 
         wf_dict = OrderedDict()
-        wf = self.workflows[wf_name] 
+        wf = self.workflows[wf_name]
         wf_dict['OPERATIONS'] = OrderedDict.fromkeys(wf.operations)
         for op_name,op in wf.operations.items():
             wf_dict['OPERATIONS'][op_name] = op.__module__[op.__module__.find('operations.')+11:] 
@@ -213,58 +217,78 @@ class WfManager(object):
         wf_dict['ENABLED_FLAGS'] = wf.op_enabled_flags()
         return wf_dict
 
-    def save_to_wfl(self,wfl_filename):
-        """Save workflows, plugins, and active operations to a .wfl file.
+    def save_to_wfm(self,wfm_filename):
+        """Save workflows, plugins, and active operations to a .wfm file.
 
-        The .wfl file is really just a YAML file. 
+        The .wfm file is really just a YAML file. 
 
         Parameters
         ----------
-        wfl_filename : str
-            full path of the .wfl file to be saved-
-            extension is optional, 
+        wfm_filename : str
+            full path of the .wfm file to be saved-
+            extension is automatically appended if not provided, 
             and an existing file will be overwritten.
         """
+        if not os.path.splitext(wfm_filename)[1] == '.wfm':
+            wfm_filename = wfm_filename + '.wfm'
+        print('saving workflow manager setup to {}'.format(wfm_filename))
+        pawstools.save_file(wfm_filename,self.setup_dict())
+
+    def save_to_wfl(self,wf_name,wfl_filename):
         if not os.path.splitext(wfl_filename)[1] == '.wfl':
             wfl_filename = wfl_filename + '.wfl'
-        pawstools.save_file(wfl_filename,self.setup_dict())
+        print('saving {} to {}'.format(wf_name,wfl_filename))
+        pawstools.save_file(wfl_filename,self.wf_setup_dict(wf_name))
 
-    def load_packaged_wfl(self,workflow_uri):
-        # the following import saves a .wfl configuration file 
+    def load_packaged_wfm(self,workflow_uri):
+        # the following import saves a .wfm configuration file 
         importlib.import_module('.'+workflow_uri,pawstools.wf_module)
-        wfl_path = pawstools.sourcedir
-        wfl_path = os.path.join(wfl_path,'workflows')
+        wfm_path = pawstools.sourcedir
+        wfm_path = os.path.join(wfm_path,'workflows')
         p = workflow_uri.split('.')
         for mp in p:
-            wfl_path = os.path.join(wfl_path,mp)
-        wfl_filename = wfl_path+'.wfl'
-        self.load_wfl(wfl_filename)
+            wfm_path = os.path.join(wfm_path,mp)
+        wfm_filename = wfm_path+'.wfm'
+        self.load_wfm(wfm_filename)
 
-    def load_wfl(self,wfl_filename):
-        """Set up the WfManager and its OpManager and PluginManager, from a .wfl file.
+    def load_packaged_workflow(self,wf_name,wf_uri):
+        importlib.import_module('.'+wf_uri,pawstools.wf_module)
+        wf_path = pawstools.sourcedir
+        wf_path = os.path.join(wf_path,'workflows')
+        p = wf_uri.split('.')
+        for mp in p:
+            wf_path = os.path.join(wf_path,mp)
+        wf_filename = wf_path+'.wfl'
+        f = open(wf_filename,'r')
+        d = yaml.load(f)
+        f.close()
+        self.load_workflow(wf_name,d)
+
+    def load_wfm(self,wfm_filename):
+        """Set up the WfManager and its OpManager and PluginManager, from a .wfm file.
 
         Parameters
         ----------
-        wfl_filename : str
-            path to a .wfl file to be loaded
+        wfm_filename : str
+            path to a .wfm file to be loaded
         """
-        f = open(wfl_filename,'r')
+        f = open(wfm_filename,'r')
         d = yaml.load(f)
         f.close()
         if 'PAWS_VERSION' in d.keys():
-            wfl_version = d['PAWS_VERSION']
+            wfm_version = d['PAWS_VERSION']
         else:
-            wfl_version = '0.0.0'
-        wfl_vparts = re.match(r'(\d+)\.(\d+)\.(\d+)',wfl_version)
-        wfl_vparts = list(map(int,wfl_vparts.groups()))
+            wfm_version = '0.0.0'
+        wfm_vparts = re.match(r'(\d+)\.(\d+)\.(\d+)',wfm_version)
+        wfm_vparts = list(map(int,wfm_vparts.groups()))
         current_vparts = re.match(r'(\d+)\.(\d+)\.(\d+)',pawstools.__version__)  
         current_vparts = list(map(int,current_vparts.groups()))
-        if wfl_vparts[0] < current_vparts[0] or wfl_vparts[1] < current_vparts[1]:
+        if wfm_vparts[0] < current_vparts[0] or wfm_vparts[1] < current_vparts[1]:
             warnings.warn('WARNING: paws (version {}) '\
             'is trying to load a state built in version {} - '\
             'this is likely to cause things to crash, '\
             'until the workflows and plugins are reviewed/refactored '\
-            'under the current version.'.format(pawstools.__version__,wfl_version))  
+            'under the current version.'.format(pawstools.__version__,wfm_version))  
         if 'OP_ENABLED_FLAGS' in d.keys():
             for op_module,flag in d['OP_ENABLED_FLAGS'].items():
                 if not op_module in operations.op_modules:
