@@ -61,7 +61,6 @@ class TreeModel(object):
         return itm.n_children()
 
     def set_item(self,itm_uri,itm_data=None):
-        #try:
         if '.' in itm_uri:
             parent_uri = itm_uri[:itm_uri.rfind('.')]
             parent_itm = self.get_from_uri(parent_uri)
@@ -69,25 +68,24 @@ class TreeModel(object):
         else:
             parent_itm = self._root_item
             itm_tag = itm_uri
-        # cast the itm_data as an embedded dict for tree-storage 
+        # create tree-like dict of references to item_data 
         treedata = self.build_tree(itm_data)
-        # add TreeItems to index the new TreeModel content 
+        # add TreeItems to index the new TreeModel content
+        # (TreeItems provide references to their parents)
+        # (This is handy for gui intefacing)
         self.tree_update(parent_itm,itm_tag,treedata)
-        # store the data 
+        # store a reference to the data-
+        # this employs the hierarchy of objects'
+        # implementations of __setitem__ and keys()
         self._tree.set_uri(itm_uri,itm_data)
-        #except Exception as ex:
-        #    msg = str('[{}] Encountered an error while trying to set uri {}: \n'
-        #    .format(__name__,itm_uri) + ex.message)
-        #    raise KeyError(msg) 
 
     def remove_item(self,itm_uri):
         self._tree.delete_uri(itm_uri)
-        # remove the corresponding subtree or TreeItem.
+        # remove the reference to the corresponding TreeItem 
         itm = self.get_from_uri(itm_uri)
         parent_itm = itm.parent 
         child_keys = [c.tag for c in parent_itm.children]
-        rm_row = child_keys.index(itm.tag)
-        parent_itm.children.pop(rm_row)
+        parent_itm.children.pop(child_keys.index(itm.tag))
 
     def tree_update(self,parent_itm,itm_tag,itm_data):
         """

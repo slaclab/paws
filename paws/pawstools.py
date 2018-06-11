@@ -9,6 +9,11 @@ import yaml
 from . import operations
 from . import workflows
 
+# Get the code version from the config.py file.
+# Reference version string as pawstools.__version__
+with open(os.path.join(sourcedir,'config.py')) as f: 
+    exec(f.read())
+
 p = os.path.abspath(__file__)
 # p = (pawsroot)/paws/pawstools.py
 
@@ -29,11 +34,6 @@ if not os.path.exists(paws_cfg_dir):
     os.mkdir(paws_cfg_dir)
 if not os.path.exists(paws_scratch_dir):
     os.mkdir(paws_scratch_dir)
-
-# Get the code version from the config.py file.
-# Reference version string as __version__
-with open(os.path.join(sourcedir,'config.py')) as f: 
-    exec(f.read())
 
 class WorkflowAborted(Exception):
     pass
