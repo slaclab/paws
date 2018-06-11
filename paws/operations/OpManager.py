@@ -6,6 +6,7 @@ from ..models.TreeModel import TreeModel
 from ..models.TreeItem import TreeItem
 from .. import operations as ops
 from ..operations.Operation import Operation
+from ..pawstools import OperationLoadError
 
 class OpManager(TreeModel):
     """OpManager provides access to and control over paws Operations."""
@@ -39,7 +40,6 @@ class OpManager(TreeModel):
             try:
                 self.enable_op(operation_uri)
             except ImportError as ex:
-                from paws.pawstools import OperationLoadError
                 msg = 'Most likely, the system '\
                     'does not have the right dependencies '\
                     'for Operation {}'.format(operation_uri)

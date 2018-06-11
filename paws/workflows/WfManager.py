@@ -1,9 +1,15 @@
 from __future__ import print_function
 from collections import OrderedDict
 from functools import partial
+import importlib
 import copy
+import os
+import re
 #from multiprocessing import Process,Pool
 
+import yaml
+
+from .. import operations
 from ..operations.OpManager import OpManager
 from ..plugins.PluginManager import PluginManager
 from .Workflow import Workflow
@@ -175,8 +181,8 @@ class WfManager(object):
         """
         if not self.op_manager.is_op_enabled(op_module):
             self.op_manager.enable_op(op_module)
-        op = self.op_manager.get_data_from_uri(op_uri)()
-        self.add_operation(op_name,op)
+        op = self.op_manager.get_data_from_uri(op_module)()
+        self.workflows[wf_name].add_operation(op_name,op)
 
     def setup_dict(self):
         d = {} 
@@ -198,7 +204,7 @@ class WfManager(object):
         wf = self.workflows[wf_name] 
         wf_dict['OPERATIONS'] = OrderedDict.fromkeys(wf.operations)
         for op_name,op in wf.operations.items():
-            wf_dict['OPERATIONS'][op_name] = op.__module__[op.__module__.find('operations.')+1:] 
+            wf_dict['OPERATIONS'][op_name] = op.__module__[op.__module__.find('operations.')+11:] 
         wf_dict['INPUTS'] = wf.inputs
         wf_dict['OUTPUTS'] = wf.outputs
         wf_dict['OP_INPUTS'] = wf.op_inputs
@@ -225,7 +231,7 @@ class WfManager(object):
 
     def load_packaged_wfl(self,workflow_uri):
         # the following import saves a .wfl configuration file 
-        importlib.import_module('.'+workflow_uri,workflows.__name__)
+        importlib.import_module('.'+workflow_uri,pawstools.wf_module)
         wfl_path = pawstools.sourcedir
         wfl_path = os.path.join(wfl_path,'workflows')
         p = workflow_uri.split('.')
@@ -269,7 +275,7 @@ class WfManager(object):
             for wf_name,wf_setup_dict in wf_dict.items():
                 self.load_workflow(wf_name,wf_setup_dict)
         if 'PLUGINS' in d.keys():
-            self.plugin_manager.load_plugins(pg_dict)
+            self.plugin_manager.load_plugins(d['PLUGINS'])
 
 
 

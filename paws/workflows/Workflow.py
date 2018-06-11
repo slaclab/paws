@@ -89,7 +89,7 @@ class Workflow(TreeModel):
     def connect_output(self,output_name,targets):
         self.outputs[output_name] = targets
 
-    def break(self,io_uri):
+    def break_connection(self,io_uri):
         if io_uri in self.op_connections:
             self.op_connections.pop(input_uri)
         else:
@@ -229,7 +229,7 @@ class Workflow(TreeModel):
 
     def prepare_operation(self,op_name):
         """Prepare according to op_connections, return the Operation"""
-        for output_uri,input_map in op_connections.items():
+        for output_uri,input_map in self.op_connections.items():
             for input_uri in input_map:
                 if input_uri.split('.')[0] == op_name:
                     self.set_item(input_uri,self.get_data_from_uri(output_uri))

@@ -4,8 +4,6 @@ import re
 from collections import OrderedDict
 import copy
 
-from .. import pawstools
-
 class Operation(object):
     """Class template for implementing paws operations"""
 
@@ -80,7 +78,7 @@ class Operation(object):
 
     def description(self):
         """Provide a string describing the Operation."""
-        return str(type(self).__name__+": "+ self.doc_as_string()
+        return str(type(self).__name__+": "+ self.doc_as_string())
 
     def doc_as_string(self):
         if self.__doc__:

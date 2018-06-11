@@ -8,11 +8,7 @@ import yaml
 
 from . import operations
 from . import workflows
-
-# Get the code version from the config.py file.
-# Reference version string as pawstools.__version__
-with open(os.path.join(sourcedir,'config.py')) as f: 
-    exec(f.read())
+wf_module = workflows.__name__
 
 p = os.path.abspath(__file__)
 # p = (pawsroot)/paws/pawstools.py
@@ -24,6 +20,11 @@ sourcedir = str(d)
 d = os.path.dirname(d)
 # d = (pawsroot)/
 rootdir = str(d)
+
+# Get the code version from the config.py file.
+# Reference version string as pawstools.__version__
+with open(os.path.join(sourcedir,'config.py')) as f: 
+    exec(f.read())
 
 # TODO: ensure this is valid cross-platform
 user_homedir = os.path.expanduser("~")
