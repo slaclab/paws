@@ -125,19 +125,20 @@ class WfManager(object):
 
     def prepare_wf(self,wf_name,stk):
         wf_clone = self.workflows[wf_name].build_clone()
-        for input_uri,pgn_itm_uri in wf_clone.plugin_connections.items():
+        for pgn_itm_uri,input_map in wf_clone.plugin_connections.items():
             pgn_itm = self.plugin_manager.get_data_from_uri(pgn_itm_uri)
-            wf_clone.set_item(input_uri,pgn_itm)
-        for input_uri,wf_name in wf_clone.workflow_connections.items():
+            for input_uri in input_map:
+                wf_clone.set_item(input_uri,pgn_itm)
+        for wf_name,input_map in wf_clone.workflow_connections.items():
             stk,diag = self.workflows[wf_name].execution_stack()
             new_wf = self.prepare_wf(wf_name,stk)
-            wf_clone.set_item(input_uri,wf)
+            for input_uri in input_map:
+                wf_clone.set_item(input_uri,new_wf)
             # TODO: think about appropriate way for these workflows to callback,
             # keep in mind they may be batch-executed, maybe in parallel 
             #new_wf.message_callback = self.workflows[wf_name].message_callback
             #new_wf.data_callback = self.workflows[wf_name].data_callback
         return wf_clone
-
 
     def load_workflow(self,wf_name,wf_dict):
         """Load a workflow from a dict that specifies its parameters.
@@ -154,16 +155,22 @@ class WfManager(object):
         self.add_workflow(wf_name)
         for op_tag, op_module in wf_dict['OPERATIONS'].items():
             self.load_operation(wf_name,op_tag,op_module)
-        for inpname,inpval in wf_dict['INPUTS'].items():
-            self.workflows[wf_name].connect_input(inpname,inpval)
-        for outname,outval in wf_dict['OUTPUTS'].items():
-            self.workflows[wf_name].connect_output(outname,outval)
+        for inpname,input_map in wf_dict['INPUTS'].items():
+            self.workflows[wf_name].connect_input(inpname,input_map)
+        for outname,out_map in wf_dict['OUTPUTS'].items():
+            self.workflows[wf_name].connect_output(outname,out_map)
+        for input_uri,val in wf_dict['OP_INPUTS'].items():
+            self.workflows[wf_name].set_wf_item(input_uri,val)
         for out_uri, in_map in wf_dict['CONNECTIONS'].items():
             self.workflows[wf_name].connect(out_uri,in_map)
         for op_name, dep_ops in wf_dict['DEPENDENCIES'].items():
             self.workflows[wf_name].set_dependency(op_name,dep_ops)
         for op_name, flag in wf_dict['ENABLED_FLAGS'].items():
             self.workflows[wf_name].set_op_enabled(op_name,flag)
+        for plugin_item_uri, input_map in wf_dict['PLUGIN_CONNECTIONS'].items():
+            self.workflows[wf_name].connect_plugin(plugin_item_uri,input_map)
+        for wwffnm, input_map in wf_dict['WORKFLOW_CONNECTIONS'].items():
+            self.workflows[wf_name].connect_workflow(wwffnm,input_map)
 
     def load_operations(self,wf_name,**kwargs):
         for op_name,op_uri in kwargs.items():
@@ -215,6 +222,8 @@ class WfManager(object):
         wf_dict['CONNECTIONS'] = wf.op_connections
         wf_dict['DEPENDENCIES'] = wf.op_dependencies
         wf_dict['ENABLED_FLAGS'] = wf.op_enabled_flags()
+        wf_dict['PLUGIN_CONNECTIONS'] = wf.plugin_connections
+        wf_dict['WORKFLOW_CONNECTIONS'] = wf.workflow_connections
         return wf_dict
 
     def save_to_wfm(self,wfm_filename):
@@ -231,13 +240,13 @@ class WfManager(object):
         """
         if not os.path.splitext(wfm_filename)[1] == '.wfm':
             wfm_filename = wfm_filename + '.wfm'
-        print('saving workflow manager setup to {}'.format(wfm_filename))
+        #print('saving workflow manager setup to {}'.format(wfm_filename))
         pawstools.save_file(wfm_filename,self.setup_dict())
 
     def save_to_wfl(self,wf_name,wfl_filename):
         if not os.path.splitext(wfl_filename)[1] == '.wfl':
             wfl_filename = wfl_filename + '.wfl'
-        print('saving {} to {}'.format(wf_name,wfl_filename))
+        #print('saving {} to {}'.format(wf_name,wfl_filename))
         pawstools.save_file(wfl_filename,self.wf_setup_dict(wf_name))
 
     def load_packaged_wfm(self,workflow_uri):

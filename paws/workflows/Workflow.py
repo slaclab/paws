@@ -55,11 +55,16 @@ class Workflow(TreeModel):
     def n_operations(self):
         return len(self.operations) 
 
+    def set_op_inputs(self,op_name,**kwargs):
+        for input_name,val in kwargs.items():
+            self.set_op_input(op_name,input_name,val)
+
     def set_op_input(self,op_name,input_name,val):
-        if not op_name in self.op_inputs: self.op_inputs[op_name] = OrderedDict()
-        self.op_inputs[op_name][input_name] = val
-        # TODO: consider whether to do this here vs at runtime
-        self.operations[op_name].set_input(input_name,val)
+        self.set_wf_item(op_name+'.inputs.'+input_name,val)
+
+    def set_wf_item(self,wf_item_uri,val):
+        # TODO: make this make more sense
+        self.op_inputs[wf_item_uri] = val
 
     def connect(self,output_uri,input_map):
         """Connect the output at `output_uri` to one or more inputs.
@@ -77,13 +82,25 @@ class Workflow(TreeModel):
             if not isinstance(input_map,list): input_map = [input_map]
             self.op_connections[output_uri] = input_map
     
-    # TODO: use an input_map here like self.connect()
-    def connect_plugin(self,plugin_item_uri,input_uri):
-        self.plugin_connections[input_uri] = plugin_item_uri
+    def connect_plugin(self,plugin_item_uri,input_map):
+        if plugin_item_uri in self.plugin_connections:
+            if isinstance(input_map,list):
+                self.plugin_connections[plugin_item_uri].extend(input_map)
+            else:
+                self.plugin_connections[plugin_item_uri].append(input_map)
+        else:
+            if not isinstance(input_map,list): input_map = [input_map]
+            self.plugin_connections[plugin_item_uri] = input_map 
 
-    # TODO: use an input_map here like self.connect()
-    def connect_workflow(self,wf_name,input_uri):
-        self.workflow_connections[input_uri] = wf_name 
+    def connect_workflow(self,wf_name,input_map):
+        if wf_name in self.workflow_connections:
+            if isinstance(input_map,list):
+                self.workflow_connections[wf_name].extend(input_map)
+            else:
+                self.workflow_connections[wf_name].append(input_map)
+        else:
+            if not isinstance(input_map,list): input_map = [input_map]
+            self.workflow_connections[wf_name] = input_map
 
     def connect_input(self,input_name,targets):
         self.inputs[input_name] = targets
@@ -123,7 +140,10 @@ class Workflow(TreeModel):
         if not isinstance(r,list):
             r = [r]
         for uri in r:
+            # Set the value for this Workflow
             self.set_item(uri,val)
+            # Set the wf_item map so self.build_clone() maintains the value 
+            self.set_wf_item(uri,val)
 
     def get_input(self,input_name):
         return self.get_data_from_uri(self.inputs[input_name])
@@ -143,7 +163,7 @@ class Workflow(TreeModel):
     def get_dependencies(self,op_name):
         """Return all Operations that are dependencies of Operation `op_name`"""
         deps = []
-        if op in self.op_dependencies:
+        if op_name in self.op_dependencies:
             deps.extend(self.op_dependencies[op_name])
         for output_uri,input_map in self.op_connections.items():
             for input_uri in input_map:
@@ -169,26 +189,30 @@ class Workflow(TreeModel):
         stk = []
         #valid_wf_inputs = [] 
         disabled_ops = []
+        for op_name in self.operations.keys():
+            if not self.is_enabled(op_name):
+                disabled_ops.append(op_name) 
         diagnostics = {}
         continue_flag = True
         while not stack_size(stk)+len(disabled_ops) == self.n_operations() and continue_flag:
             ops_rdy = []
             ops_not_rdy = []
             for op_name in self.operations.keys():
-                op_rdy,op_diag = False,{}
+                op_rdy,op_diag = False,{op_name:''}
                 if not self.is_enabled(op_name):
                     op_rdy = False
                     op_diag = {op_name:'Operation is disabled'}
                 elif not stack_contains(op_name,stk) and not op_name in disabled_ops:
-                    if op_name in self.op_dependencies.keys():
-                        dep_ops = self.get_dependencies(op_name)
-                        if all([stack_contains(nm,stk) for nm in dep_ops]):
-                            op_rdy,op_diag = True,{}
-                        else:
-                            op_rdy = False
-                            op_diag = {op_name:'One or more unsatisfied dependencies ({}) '.format(dep_ops)}
+                    #if op_name in self.op_dependencies.keys():
+                    dep_ops = self.get_dependencies(op_name)
+                    if all([stack_contains(nm,stk) or nm in disabled_ops for nm in dep_ops]):
+                        # TODO: consider if disabled ops should be dependencies 
+                        op_rdy,op_diag = True,{op_name:''}
                     else:
-                        op_rdy,op_diag = True,{}
+                        op_rdy = False
+                        op_diag = {op_name:'One or more unsatisfied dependencies ({}) '.format(dep_ops)}
+                    #else:
+                    #    op_rdy,op_diag = True,{}
                 diagnostics.update(op_diag)
                 if op_rdy:
                     ops_rdy.append(op_name)
@@ -197,8 +221,6 @@ class Workflow(TreeModel):
                 for op_name in ops_rdy:
                     if self.is_enabled(op_name):
                         ops_to_run.append(op_name)
-                    elif not op_name in disabled_ops:
-                        disabled_ops.append(op_name) 
             if any(ops_to_run):
                 stk.append(ops_to_run)
             else:
@@ -213,6 +235,8 @@ class Workflow(TreeModel):
         """
         self.stop_flag = False
         stk,diag = self.execution_stack()
+        for input_uri,input_value in self.op_inputs.items():
+            self.set_item(input_uri,input_value)
         bad_diag_keys = [k for k in diag.keys() if diag[k]]
         for k in bad_diag_keys:
             self.message_callback('WARNING- {} is not ready: {}'.format(k,diag[k]))
@@ -270,8 +294,11 @@ class Workflow(TreeModel):
         new_wf = self.clone() 
         new_wf.inputs = copy.deepcopy(self.inputs)
         new_wf.outputs = copy.deepcopy(self.outputs)
+        new_wf.op_inputs = copy.deepcopy(self.op_inputs)
         new_wf.op_dependencies = copy.deepcopy(self.op_dependencies)
         new_wf.op_connections = copy.deepcopy(self.op_connections)
+        new_wf.plugin_connections = copy.deepcopy(self.plugin_connections)
+        new_wf.workflow_connections = copy.deepcopy(self.workflow_connections)
         # TODO: consider how to handle callbacks,
         # considering threading, parallel processing
         #new_wf.message_callback = self.message_callback
