@@ -25,9 +25,8 @@ class Switch(Operation):
     def run(self):
         cond = self.inputs['condition']
         tcond = self.inputs['truth_condition']
-        if cond == rcond: 
+        if cond == tcond: 
             self.outputs['data'] = self.inputs['iftrue_data'] 
         else:
             self.outputs['data'] = self.inputs['else_data'] 
-        self.outputs['outputs'] = out_dict
 

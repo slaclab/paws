@@ -49,7 +49,7 @@ class Batch(Operation):
         inps = self.inputs['batch_inputs']
         stat_inps = self.inputs['static_inputs']
         ser_params = self.inputs['serial_params']
-        batch_size = len(inps[inps.keys()[0]])
+        batch_size = len(list(inps.values())[0])
 
         batch_outputs = [None for ib in range(batch_size)] 
         self.outputs['batch_outputs'] = batch_outputs
@@ -62,7 +62,7 @@ class Batch(Operation):
             if self.stop_flag:
                 self.message_callback('Batch stopped.')
                 return
-            inp_dict = OrderedDict.fromkeys(inps.keys()+stat_inps.keys())
+            inp_dict = OrderedDict.fromkeys(list(inps.keys())+list(stat_inps.keys()))
             for k in inps.keys():
                 inp_dict[k] = inps[k][batch_idx]
             for k in stat_inps.keys():
@@ -70,7 +70,7 @@ class Batch(Operation):
             for inp_name,inp_value in inp_dict.items():
                 wrkitm.set_input(inp_name,inp_value)
  
-            self.message_callback('BATCH RUN {} / {}'.format(i,n_batch-1))
+            self.message_callback('BATCH RUN {} / {}'.format(batch_idx,batch_size-1))
             #wrki = wrkitms[idx]
 
             if any(ser_params) and out_dict is not None:
@@ -79,8 +79,8 @@ class Batch(Operation):
 
             wrkitm.run()
             out_dict = copy.deepcopy(wrkitm.get_outputs())
-            self.outputs['batch_outputs'][i] = out_dict
+            self.outputs['batch_outputs'][batch_idx] = out_dict
             if self.data_callback: 
-                self.data_callback('outputs.batch_outputs.'+str(i),copy.deepcopy(out_dict))
+                self.data_callback('outputs.batch_outputs.'+str(batch_idx),copy.deepcopy(out_dict))
         self.message_callback('BATCH FINISHED')
 
