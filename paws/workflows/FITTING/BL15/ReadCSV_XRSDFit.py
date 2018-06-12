@@ -40,7 +40,8 @@ wf.connect_output('param_constraints','fit.inputs.param_constraints')
 
 wf.set_op_input('read_xrsd','delimiter',',')
 wf.set_op_input('populations_file','ext','yml')
-wf.connect('populations_file.outputs.file_path','check_pops_file.inputs.file_path')
+wf.connect('populations_file.outputs.file_path',
+    ['check_pops_file.inputs.file_path','conditional_read.inputs.inputs.file_path'])
 
 wf.connect('check_pops_file.outputs.file_exists',
     ['conditional_read.inputs.condition',
@@ -54,8 +55,12 @@ wf.set_op_input('populations_switch','truth_condition',True)
 wf.set_op_input('fixed_params_switch','truth_condition',True)
 wf.set_op_input('param_bounds_switch','truth_condition',True)
 wf.set_op_input('param_constraints_switch','truth_condition',True)
+wf.connect('conditional_read.outputs.outputs.populations','populations_switch.inputs.iftrue_data')
+wf.connect('conditional_read.outputs.outputs.fixed_params','fixed_params_switch.inputs.iftrue_data')
+wf.connect('conditional_read.outputs.outputs.param_bounds','param_bounds_switch.inputs.iftrue_data')
+wf.connect('conditional_read.outputs.outputs.param_constraints','param_constraints_switch.inputs.iftrue_data')
+
 wf.connect('read_xrsdfit','conditional_read.inputs.work_item')
-wf.connect('populations_file.outputs.file_path','conditional_read.inputs.file_path')
 wf.disable_op('read_xrsdfit')
 
 wf.connect('read_xrsd.outputs.q_I','fit.inputs.q_I')

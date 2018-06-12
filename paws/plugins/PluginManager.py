@@ -43,6 +43,10 @@ class PluginManager(TreeModel):
         p.data_callback = partial(self.set_plugin_item,plugin_name)
         self.set_item(plugin_name,p)
         self.get_from_uri(plugin_name).flags['running'] = False 
+    
+    def add_plugins(self,**kwargs):
+        for pgn_nm,pgn_mod in kwargs.items():
+            self.add_plugin(pgn_nm,pgn_mod)
 
     def set_plugin_item(self,pgn_name,item_uri,item_data):
         full_uri = pgn_name+'.'+item_uri
