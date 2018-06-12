@@ -34,15 +34,8 @@ wf.connect('header_files.outputs.file_list','header_batch.inputs.batch_inputs.he
 
 wf.connect('header_batch.outputs.batch_outputs',
     ['t_filenames.inputs.batch_outputs','t_filepaths.inputs.batch_outputs'])
-wf.set_op_input('t_filenames','x_key','time')
-wf.set_op_input('t_filenames','y_key','filename')
-wf.set_op_input('t_filenames','x_sort_flag',True)
-wf.set_op_input('t_filenames','x_shift_flag',True)
-
-wf.set_op_input('t_filepaths','x_key','time')
-wf.set_op_input('t_filepaths','y_key','data_filepath')
-wf.set_op_input('t_filepaths','x_sort_flag',True)
-wf.set_op_input('t_filepaths','x_shift_flag',True)
+wf.set_op_inputs('t_filenames',x_key='time',y_key='filename',x_sort_flag=True,x_shift_flag=True)
+wf.set_op_inputs('t_filepaths',x_key='time',y_key='data_filepath',x_sort_flag=True,x_shift_flag=True)
 
 wf.connect_workflow('read_and_fit','batch_fit.inputs.work_item')
 wf.connect('t_filenames.outputs.y','batch_fit.inputs.batch_inputs.filename')

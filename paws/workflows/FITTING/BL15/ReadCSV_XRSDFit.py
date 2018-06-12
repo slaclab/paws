@@ -7,7 +7,7 @@ wfmgr = WfManager()
 
 wfmgr.add_workflow('read_and_fit')
 wfmgr.load_operations('read_and_fit',
-    read_saxs='IO.NUMPY.Loadtxt_q_I_dI',
+    read_xrsd='IO.NUMPY.Loadtxt_q_I_dI',
     populations_file='IO.FILESYSTEM.BuildFilePath',
     check_pops_file='IO.FILESYSTEM.CheckFilePath',
     conditional_read='EXECUTION.Conditional',
@@ -16,29 +16,29 @@ wfmgr.load_operations('read_and_fit',
     fixed_params_switch='CONTROL.Switch', 
     param_bounds_switch='CONTROL.Switch', 
     param_constraints_switch='CONTROL.Switch', 
-    fit_saxs='PROCESSING.FITTING.XRSDFit',
+    fit='PROCESSING.FITTING.XRSDFit',
     save_fit='IO.YAML.SaveXRSDFit',
     )
 
 wf = wfmgr.workflows['read_and_fit']
 
-wf.connect_input('source_wavelength','fit_saxs.inputs.source_wavelength')
+wf.connect_input('source_wavelength','fit.inputs.source_wavelength')
 wf.connect_input('filename','populations_file.inputs.filename')
-wf.connect_input('saxs_filepath','read_saxs.inputs.file_path')
+wf.connect_input('data_filepath','read_xrsd.inputs.file_path')
 wf.connect_input('populations_dir','populations_file.inputs.dir_path')
 wf.connect_input('populations','populations_switch.inputs.else_data')
 wf.connect_input('fixed_params','fixed_params_switch.inputs.else_data')
 wf.connect_input('param_bounds','param_bounds_switch.inputs.else_data')
 wf.connect_input('param_constraints','param_constraints_switch.inputs.else_data')
-wf.connect_input('q_range','fit_saxs.inputs.q_range')
+wf.connect_input('q_range','fit.inputs.q_range')
 
-wf.connect_output('populations','fit_saxs.outputs.populations')
-wf.connect_output('report','fit_saxs.outputs.report')
-wf.connect_output('fixed_params','fit_saxs.inputs.fixed_params')
-wf.connect_output('param_bounds','fit_saxs.inputs.param_bounds')
-wf.connect_output('param_constraints','fit_saxs.inputs.param_constraints')
+wf.connect_output('populations','fit.outputs.populations')
+wf.connect_output('report','fit.outputs.report')
+wf.connect_output('fixed_params','fit.inputs.fixed_params')
+wf.connect_output('param_bounds','fit.inputs.param_bounds')
+wf.connect_output('param_constraints','fit.inputs.param_constraints')
 
-wf.set_op_input('read_saxs','delimiter',',')
+wf.set_op_input('read_xrsd','delimiter',',')
 wf.set_op_input('populations_file','ext','yml')
 wf.connect('populations_file.outputs.file_path','check_pops_file.inputs.file_path')
 
@@ -58,18 +58,18 @@ wf.connect('read_xrsdfit','conditional_read.inputs.work_item')
 wf.connect('populations_file.outputs.file_path','conditional_read.inputs.file_path')
 wf.disable_op('read_xrsdfit')
 
-wf.connect('read_saxs.outputs.q_I','fit_saxs.inputs.q_I')
-wf.connect('populations_switch.outputs.data','fit_saxs.inputs.populations')
-wf.connect('fixed_params_switch.outputs.data','fit_saxs.inputs.fixed_params')
-wf.connect('param_bounds_switch.outputs.data','fit_saxs.inputs.param_bounds')
-wf.connect('param_constraints_switch.outputs.data','fit_saxs.inputs.param_constraints')
+wf.connect('read_xrsd.outputs.q_I','fit.inputs.q_I')
+wf.connect('populations_switch.outputs.data','fit.inputs.populations')
+wf.connect('fixed_params_switch.outputs.data','fit.inputs.fixed_params')
+wf.connect('param_bounds_switch.outputs.data','fit.inputs.param_bounds')
+wf.connect('param_constraints_switch.outputs.data','fit.inputs.param_constraints')
 
 wf.connect('populations_file.outputs.file_path','save_fit.inputs.file_path')
-wf.connect('fit_saxs.outputs.populations','save_fit.inputs.populations')
-wf.connect('fit_saxs.outputs.report','save_fit.inputs.report')
-wf.connect('fit_saxs.inputs.fixed_params','save_fit.inputs.fixed_params')
-wf.connect('fit_saxs.inputs.param_bounds','save_fit.inputs.param_bounds')
-wf.connect('fit_saxs.inputs.param_constraints','save_fit.inputs.param_constraints')
+wf.connect('fit.outputs.populations','save_fit.inputs.populations')
+wf.connect('fit.outputs.report','save_fit.inputs.report')
+wf.connect('fit.inputs.fixed_params','save_fit.inputs.fixed_params')
+wf.connect('fit.inputs.param_bounds','save_fit.inputs.param_bounds')
+wf.connect('fit.inputs.param_constraints','save_fit.inputs.param_constraints')
 
 wfmgr.save_to_wfl('read_and_fit',os.path.join(pawstools.sourcedir,'workflows','FITTING','BL15','ReadCSV_XRSDFit.wfl'))
 
