@@ -21,6 +21,7 @@ class SpecInfoClient(PawsPlugin):
         self.input_doc['verbose'] = 'If True, plugin uses its message_callback' 
         self.loopscan_lock = Condition()
         self.sock = None
+        self.thread_blocking = True
 
     def description(self):
         desc = 'SpecInfoClient Plugin: '\

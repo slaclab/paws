@@ -24,6 +24,7 @@ class WfManager(object):
     are found in the current installation of paws.
     """
 
+    # TODO: instead, init with a string indicating a packaged wfm
     def __init__(self,op_manager=None,plugin_manager=None):
         """Initialize a workflow manager.
 
@@ -203,9 +204,6 @@ class WfManager(object):
         for wfname in self.workflows.keys():
             wfman_dict[wfname] = self.wf_setup_dict(wfname)
         d['WORKFLOWS'] = wfman_dict
-        pgin_dict = OrderedDict.fromkeys(self.plugin_manager.plugins.keys()) 
-        for pgin_name in self.plugin_manager.plugins.keys():
-            pgin_dict[pgin_name] = self.plugin_manager.plugin_setup_dict(pgin_name)
         d['PLUGINS'] = self.plugin_manager.setup_dict()
         return d
     

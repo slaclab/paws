@@ -11,6 +11,8 @@ class TreeModel(object):
     and can be modified for additional functionality
     in subclasses of TreeModel by adding TreeItem.flags.
     """
+    
+    # TODO: support TreeModels within TreeModels 
 
     def __init__(self,default_flags={}):
         super(TreeModel,self).__init__()

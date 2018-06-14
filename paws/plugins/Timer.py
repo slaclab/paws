@@ -27,8 +27,11 @@ class Timer(PawsPlugin):
         self.tz = tzlocal.get_localzone()
         self.ep = datetime.datetime.fromtimestamp(0,self.tz)
         self.t0_utc = None 
+        self.thread_blocking = True
 
     def start(self):
+        self.tz = tzlocal.get_localzone()
+        self.ep = datetime.datetime.fromtimestamp(0,self.tz)
         self.t0 = datetime.datetime.now(self.tz)
         self.t0_utc = (self.t0-self.ep).total_seconds()
         self.run_clone() 
@@ -64,8 +67,11 @@ class Timer(PawsPlugin):
                 keep_going = bool(self.proxy.running)
                 if vb and not keep_going: self.message_callback('timer STOPPED')
         with self.proxy.running_lock:
-            if vb: self.message_callback('timer FINISHED')
             self.proxy.stop()
+        # now that the plugin is stopped, notify any other plugins that are waiting on dt_lock
+        with self.proxy.dt_lock:
+            self.proxy.dt_notify()
+        if vb: self.message_callback('Timer FINISHED')
 
     def dt_notify(self):
         if int(self.py_version) == 2:
