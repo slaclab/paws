@@ -108,13 +108,26 @@ class PluginManager(TreeModel):
 
     def start_plugin(self,plugin_name):
         """Start the plugin referred to by `plugin_name`."""
+        self.message_callback('starting plugin {}'.format(plugin_name))
+        pgn = self.prepare_plugin(plugin_name)
+        self.get_from_uri(plugin_name).flags['running'] = True 
+        pgn.start()
+        
+    def prepare_plugin(self,plugin_name):
+        # keep track of run state with treeitem flags
+        pgn = self.plugins[plugin_name]
+        if pgn.thread_blocking:
+            pgn_clone = self.plugins[plugin_name].build_clone()
+            pgn.thread_clone = pgn_clone 
+            pgn.thread_clone.proxy = pgn
         for item_uri,input_map in self.connections.items():
             for input_uri in input_map:
-                self.set_item(input_uri,self.get_data_from_uri(item_uri))
-        self.message_callback('starting plugin {}'.format(plugin_name))
-        # keep track of run state with treeitem flags
-        self.get_from_uri(plugin_name).flags['running'] = True 
-        self.plugins[plugin_name].start()
+                if input_uri.split('.')[0] == plugin_name:
+                    self.set_item(input_uri,self.get_data_from_uri(item_uri))
+                    if pgn.thread_blocking:
+                        pgn_item_uri = input_uri[input_uri.find(plugin_name)+len(plugin_name)+1:]
+                        pgn_clone.set_item(pgn_item_uri,self.get_data_from_uri(item_uri))
+        return pgn
 
     def stop_plugin(self,plugin_name):
         self.message_callback('stopping plugin {}'.format(plugin_name))
@@ -124,12 +137,11 @@ class PluginManager(TreeModel):
 
     def setup_dict(self):
         pg_dict = OrderedDict()
-        pg_dict['PLUGINS'] = OrderedDict()
-        pg_dict['INPUTS'] = OrderedDict()
-        pg_dict['CONNECTIONS'] = self.connections 
         for pg_name,pg in self.plugins.items():
-            pg_dict['PLUGINS'][pg_name] = pg.__module__[pg.__module__.find('plugins.')+1:] 
-            pg_dict['INPUTS'][pg_name] = pg.inputs
+            pg_dict[pg_name] = OrderedDict()
+            pg_dict[pg_name]['MODULE'] = pg.__module__[pg.__module__.find('plugins.')+8:] 
+            pg_dict[pg_name]['INPUTS'] = pg.inputs
+        pg_dict['CONNECTIONS'] = self.connections 
         return pg_dict
 
     def load_plugins(self,pg_dict):
@@ -142,13 +154,12 @@ class PluginManager(TreeModel):
         pg_dict : dict 
             Dict specifying plugin setup
         """
-        for pg_name, pg_mod in pg_dict['PLUGINS'].items():
-            self.add_plugin(pg_name,pg_mod)
-        for pg_name, inps in pg_dict['INPUTS'].items():
-            for inp_name,val in inps.items():
-                self.set_input(pg_name,inp_name,val)
-        for item_uri,input_map in pg_dict['CONNECTIONS'].items():
+        for item_uri,input_map in pg_dict.pop('CONNECTIONS').items():
             self.connect(item_uri,input_map)
+        for pg_name in pg_dict.keys():
+            self.add_plugin(pg_name,pg_dict[pg_name]['MODULE'])
+            for inp_name, val in pg_dict[pg_name]['INPUTS'].items():
+                self.set_input(pg_name,inp_name,val)
 
     def n_plugins(self):
         """Return number of plugins currently loaded."""

@@ -10,10 +10,13 @@ else:
     import queue 
 
 import numpy as np
+import tzlocal
+import datetime
 
+from ..models.TreeModel import TreeModel
 from .. import pawstools
 
-class PawsPlugin(object):
+class PawsPlugin(TreeModel):
     """Base class for building PAWS Plugins."""
 
     def __init__(self,inputs):
@@ -32,12 +35,29 @@ class PawsPlugin(object):
         # use history lock to edit the history
         self.history_lock = Condition()
         self.history = []
-        # the thread_clone is the working Plugin
+        # by default, plugins are assumed to be non-blocking
+        self.thread_blocking = False
+        # if a plugin is blocking, it will act as a proxy,
+        # while a thread_clone does the work.
+        # proxy is the thread_clone's ref to this object, i.e.
+        # self.thread_clone.proxy == self.
         self.thread_clone = None
-        # this plugin becomes the thread_clone's proxy
         self.proxy = None
         # keep track of py version for convenience
         self.py_version = int(sys.version[0])
+        tz = tzlocal.get_localzone()
+        ep = datetime.datetime.fromtimestamp(0,tz)
+        t0 = datetime.datetime.now(tz)
+        t0_utc = int((t0-ep).total_seconds())
+        hfile = '{}_{}.log'.format(type(self).__name__,t0_utc)
+        self.history_path = os.path.join(pawstools.paws_scratch_dir,hfile)
+
+    def set_item(self,item_uri,val):
+        uri_parts = item_uri.split('.')
+        itm = self
+        for p in uri_parts[:-1]:
+            itm = itm[p]
+        itm[uri_parts[-1]] = val
 
     def __getitem__(self,key):
         if key == 'inputs':
@@ -80,8 +100,8 @@ class PawsPlugin(object):
     def run_clone(self):
         with self.running_lock:
             self.running = True
-        self.thread_clone = self.build_clone()
-        self.thread_clone.proxy = self
+        #self.thread_clone = self.build_clone()
+        #self.thread_clone.proxy = self
         th = Thread(target=self.thread_clone.run)
         th.start()
 
@@ -108,7 +128,6 @@ class PawsPlugin(object):
     def build_clone(self):
         """Clone the Plugin."""
         new_pgn = self.clone()
-        # TODO: plugins may have other plugins as input- handle this
         for inp_nm,val in self.inputs.items():
             new_pgn.inputs[inp_nm] = copy.deepcopy(val) 
         #new_pgn.data_callback = self.data_callback
@@ -125,12 +144,11 @@ class PawsPlugin(object):
             self.history = self.history[-100:]
 
     def dump_history(self,n_events=None):
-        dump_path = os.path.join(pawstools.paws_scratch_dir,'{}.log'.format(self))
-        dump_file = open(dump_path,'a')
+        dump_file = open(self.history_path,'a')
         h = self.history
         if n_events is not None: h = self.history[:n_events]
         for t,msg in h:
-            dump_file.write('{}: {} \n'.format(t,msg))
+            dump_file.write('{}: {}'.format(t,msg)+os.linesep)
         dump_file.close()
 
     def notify_locks(self,locks):
