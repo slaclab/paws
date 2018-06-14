@@ -61,6 +61,7 @@ class MitosPPumpController(PawsPlugin):
             target_pressure = None, 
             flow_rate = None, 
             target_flow_rate = None)
+        self.thread_blocking = True
 
     def start(self):
         self.run_clone()
@@ -89,13 +90,13 @@ class MitosPPumpController(PawsPlugin):
             with self.proxy.history_lock:
                 with tmr.dt_lock:
                     t_now = float(tmr.dt_utc())
-                self.proxy.add_to_history(t_now,cmd,resp.decode())
+                self.proxy.add_to_history(t_now,cmd+' '+resp.decode())
             if not resp.decode() == "#A0":
                 msg = "Pump failed to enter REMOTE control mode"
                 with self.proxy.history_lock:
                     with tmr.dt_lock:
                         t_now = float(tmr.dt_utc())
-                    self.proxy.add_to_history(t_now,'ERROR',msg)
+                    self.proxy.add_to_history(t_now,'ERROR: '+msg)
                 keep_going = False
                 with self.proxy.running_lock:
                     self.proxy.stop()
@@ -108,7 +109,7 @@ class MitosPPumpController(PawsPlugin):
         with self.proxy.history_lock:
             with tmr.dt_lock:
                 t_now = float(tmr.dt_utc())
-            self.proxy.add_to_history(t_now,cmd,resp.decode())
+            self.proxy.add_to_history(t_now,cmd+' '+resp.decode())
 
         while keep_going:
             with tmr.dt_lock:
@@ -127,7 +128,7 @@ class MitosPPumpController(PawsPlugin):
                 with self.proxy.history_lock:
                     with tmr.dt_lock:
                         t_now = float(tmr.dt_utc())
-                    self.proxy.add_to_history(t_now,cmd,resp.decode())
+                    self.proxy.add_to_history(t_now,cmd+' '+resp.decode())
             with tmr.running_lock:
                 if not tmr.running:
                     with self.proxy.running_lock:
@@ -140,9 +141,10 @@ class MitosPPumpController(PawsPlugin):
         self.send_line(cmd)
         resp = self.receive_line()
         with self.proxy.history_lock:
-            self.proxy.add_to_history(t_now,cmd,resp.decode())
+            self.proxy.add_to_history(t_now,cmd+' '+resp.decode())
             self.proxy.dump_history()
         self.ser.close()
+        if vb: self.message_callback('MitosPPumpController FINISHED')
 
     def send_line(self,line):
         self.ser.write("{}\r\n".format(line).encode('utf-8'))  
@@ -200,7 +202,7 @@ class MitosPPumpController(PawsPlugin):
         with self.proxy.history_lock:
             with self.proxy.inputs['timer'].dt_lock:
                 t_now = float(self.proxy.inputs['timer'].dt_utc())
-            self.proxy.add_to_history(t_now,cmd,resp.decode())
+            self.proxy.add_to_history(t_now,cmd+' '+resp.decode())
         self.state['error_code'] = int(s[0][2:])
         self.state['state_code'] = int(s[1])
         self.state['chamber_pressure'] = float(s[3])
