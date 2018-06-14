@@ -21,6 +21,7 @@ class CryoConController(PawsPlugin):
         self.input_doc['timer'] = 'Timer plugin for triggering client activities' 
         self.input_doc['verbose'] = 'If True, plugin uses its message_callback' 
         self.sock = None
+        self.thread_blocking = True
 
     def description(self):
         desc = 'CryoConController Plugin: '\
@@ -39,28 +40,14 @@ class CryoConController(PawsPlugin):
         self.sock = socket.create_connection((hst,prt)) 
         vb = self.inputs['verbose']
         tmr = self.inputs['timer'] 
-        cmd = '*idn?'
-        with tmr.dt_lock:
-            t_now = float(tmr.dt_utc())
-        self.send_line(cmd)
-        resp = self.receive_line()
-        if vb: self.message_callback('{} :: {} :: {}'.format(t_now,cmd,resp.decode()))
-        with self.proxy.history_lock:
-            self.proxy.add_to_history(t_now,cmd,resp.decode())
-        # TODO: some kind of loop to check for control before proceeding
+        self.run_cmd('*idn?')
         keep_going = True
         while keep_going: 
             while self.commands.qsize() > 0:
                 with self.command_lock:
                     cmd = self.commands.get()
                     self.commands.task_done()
-                with tmr.dt_lock:
-                    t_now = float(tmr.dt_utc())
-                self.send_line(cmd)
-                resp = self.receive_line()
-                if vb: self.message_callback('{} :: {} :: {}'.format(t_now,cmd,resp.decode()))
-                with self.proxy.history_lock:
-                    self.proxy.add_to_history(t_now,cmd,resp.decode())
+                self.run_cmd(cmd)
             with tmr.dt_lock:
                 tmr.dt_lock.wait()
             with tmr.running_lock:
@@ -70,14 +57,42 @@ class CryoConController(PawsPlugin):
             with self.proxy.running_lock:
                 keep_going = bool(self.proxy.running)
         self.sock.close()
+        if vb: self.message_callback('CryoConController FINISHED')
+
+    def run_cmd(self,cmd):
+        with self.inputs['timer'].dt_lock:
+            t_now = float(self.inputs['timer'].dt_utc())
+        self.send_line(cmd)
+        resp = self.receive_line()
+        if self.inputs['verbose']: self.message_callback('{}: {}'.format(t_now,cmd+' '+resp))
+        with self.proxy.history_lock:
+            self.proxy.add_to_history(t_now,cmd+' '+resp)
 
     def receive_line(self):
         bfr = bytearray(b' ' * 1024) 
         ln = self.sock.recv_into(bfr) 
-        bfr = bfr.strip()
+        bfr = bfr.strip().decode()
         return bfr
-    
-    def send_line(self, line):
-        self.sock.sendall(bytearray(line.encode('utf-8')))
 
+    def set_units(self,channel_str,unit_str):
+        with self.thread_clone.command_lock:
+            cmd = 'input {}: units {}'.format(channel_str,unit_str)
+            self.thread_clone.commands.put(cmd)
+
+    def loop_setup(self,loop_idx,channel_str,control_type='PID'):
+        with self.thread_clone.command_lock:
+            cmd = 'loop {}: source {}; type {}'.format(loop_idx,channel_str,control_type)
+            self.thread_clone.commands.put(cmd)
+
+    def set_temperature(self,loop_idx,T_set):
+        with self.thread_clone.command_lock:
+            cmd = 'loop {}: setpt {}'.format(loop_idx,T_set)
+            self.thread_clone.commands.put(cmd)
+
+    def start_control(self,loop_idx):
+        with self.thread_clone.command_lock:
+            self.thread_clone.commands.put('control')
+ 
+    def send_line(self, line):
+        self.sock.sendall(bytearray((line+'\n').encode('utf-8')))
 
