@@ -4,7 +4,7 @@ import time
 
 from ...Operation import Operation
 
-inputs=OrderedDict(ppump_controllers=None)
+inputs=OrderedDict(ppumps=None)
 outputs=OrderedDict()
         
 class StopPPumps(Operation):
@@ -12,11 +12,11 @@ class StopPPumps(Operation):
 
     def __init__(self):
         super(StopPPumps,self).__init__(inputs,outputs)
-        self.input_doc['ppump_controllers'] = 'list of MitosPPumpController plugins'
+        self.input_doc['ppumps'] = 'dict of MitosPPumpController plugins'
 
     def run(self):
-        ppcs = self.inputs['ppump_controllers'] 
-        for ipp,ppc in enumerate(ppcs):
-            ppc.set_idle()
+        ppcs = self.inputs['ppumps'] 
+        for pp_nm,pp in ppcs.items():
+            pp.set_idle()
             #ppc.set_flowrate(0)
 

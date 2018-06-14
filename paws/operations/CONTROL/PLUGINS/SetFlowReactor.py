@@ -21,13 +21,13 @@ class SetFlowReactor(Operation):
     def run(self):
         fr = self.inputs['flow_reactor'] 
         rcp = self.inputs['recipe']
-        self.message_callback(fr.print_recipe(rcp))
+        self.message_callback(fr.prettyprint_recipe(rcp))
         fr.set_recipe(rcp)
         d = self.inputs['delay']
         if d > 0:
             self.message_callback('blocking {} seconds'.format(d))
             time.sleep(d)
             self.message_callback('finished blocking'.format(d))
-        stat = fr.print_flow_rates()
+        stat = fr.print_status()
         self.message_callback(stat)
 
