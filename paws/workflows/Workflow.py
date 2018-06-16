@@ -5,19 +5,25 @@ from functools import partial
 import traceback
 import os
 
-from ..models.TreeModel import TreeModel
+from ..models.DictTree import DictTree 
 from ..operations.Operation import Operation
 
-class Workflow(TreeModel):
-    """Workflow built from paws Operations, with TreeModel interface.
+from .wftools import stack_contains, stack_size, print_stack
+
+class Workflow(DictTree):
+    """Workflow built from paws Operations, with DictTree interface.
     
-    This and other paws classes are TreeModels
-    mostly for convenient gui interfacing.
+    This and other paws classes are DictTrees 
+    mostly for convenient indexing.
     """
 
+    # TODO: allow __init__ from a .wfl file or dict 
     def __init__(self):
-        flag_dict = OrderedDict(selected=False,enabled=True)
-        super(Workflow,self).__init__(flag_dict)
+        super(Workflow,self).__init__()
+        # TODO: handle flags another way
+        #flag_dict = OrderedDict(selected=False,enabled=True)
+        #self.add_flag('selected',False) 
+        #self.add_flag('enabled',True) 
         self.inputs = OrderedDict()
         self.outputs = OrderedDict()
         self.op_inputs = OrderedDict()
@@ -27,8 +33,23 @@ class Workflow(TreeModel):
         self.op_dependencies = OrderedDict() 
         self.operations = self._root_dict
         self.message_callback = self.tagged_print
-        self.data_callback = self.set_item 
+        self.data_callback = self.set_data
         self.stop_flag = False
+
+    def keys(self):
+        return ['inputs','outputs']
+
+    def __setitem__(self,k,v):
+        if not k in self.keys():
+            raise KeyError('{} not in {}'.format(k,self.keys())
+
+    def __getitem__(self,k):
+        if not k in self.keys():
+            raise KeyError('{} not in {}'.format(k,self.keys())
+        if k == 'inputs':
+            return self.inputs
+        if k == 'outputs':
+            return self.outputs
 
     def tagged_print(self,msg):
         print('[{}] {}'.format(type(self).__name__,msg))
@@ -46,11 +67,16 @@ class Workflow(TreeModel):
         """
         #op.message_callback = self.message_callback
         op.data_callback = partial(self.set_op_item,op_name)
-        self.set_item(op_name,op)
+        self.set_data(op_name,op)
+
+    def set_op_item(self,op_name,item_key,item_data):
+        """Subroutine for use with functools.partial for callbacks"""
+        full_key = op_name+'.'+item_key
+        self.set_data(full_key,item_data)
 
     def remove_operation(self,op_name):
-        """Remove an Operation by providing its name as `op_name`."""
-        self.remove_item(op_name)
+        """Remove Operation `op_name`."""
+        self.remove_data(op_name)
 
     def n_operations(self):
         return len(self.operations) 
@@ -59,62 +85,51 @@ class Workflow(TreeModel):
         for input_name,val in kwargs.items():
             self.set_op_input(op_name,input_name,val)
 
-    def set_op_input(self,op_name,input_name,val):
-        self.set_wf_item(op_name+'.inputs.'+input_name,val)
+    def connect(self,item_key,input_map):
+        """Connect `item_key` data to one or more inputs.
 
-    def set_wf_item(self,wf_item_uri,val):
-        # TODO: make this make more sense
-        self.op_inputs[wf_item_uri] = val
-
-    def connect(self,output_uri,input_map):
-        """Connect the output at `output_uri` to one or more inputs.
-
-        Sets up Operation inputs listed in `input_map`
-        to take the value at `output_uri`.
-        `input_map` can be a TreeItem uri (string) or a list thereof.
+        Sets up Workflow keys listed in `input_map`
+        to take the value from `item_key`.
+        `input_map` can be a key (string) or a list thereof.
         """
-        if output_uri in self.op_connections:
-            if isinstance(input_map,list):
-                self.op_connections[output_uri].extend(input_map)
-            else:
-                self.op_connections[output_uri].append(input_map)
+        if item_key in self.op_connections:
+            try: self.op_connections[item_key].extend(input_map)
+            self.op_connections[item_key].append(input_map)
         else:
             if not isinstance(input_map,list): input_map = [input_map]
-            self.op_connections[output_uri] = input_map
+            self.op_connections[item_key] = input_map
     
-    def connect_plugin(self,plugin_item_uri,input_map):
-        if plugin_item_uri in self.plugin_connections:
-            if isinstance(input_map,list):
-                self.plugin_connections[plugin_item_uri].extend(input_map)
-            else:
-                self.plugin_connections[plugin_item_uri].append(input_map)
+    def connect_plugin(self,plugin_item_key,input_map):
+        if plugin_item_key in self.plugin_connections:
+            try: self.plugin_connections[plugin_item_key].extend(input_map)
+            self.plugin_connections[plugin_item_key].append(input_map)
         else:
             if not isinstance(input_map,list): input_map = [input_map]
-            self.plugin_connections[plugin_item_uri] = input_map 
+            self.plugin_connections[plugin_item_key] = input_map 
 
     def connect_workflow(self,wf_name,input_map):
         if wf_name in self.workflow_connections:
-            if isinstance(input_map,list):
-                self.workflow_connections[wf_name].extend(input_map)
-            else:
-                self.workflow_connections[wf_name].append(input_map)
+            try: self.workflow_connections[wf_name].extend(input_map)
+            self.workflow_connections[wf_name].append(input_map)
         else:
             if not isinstance(input_map,list): input_map = [input_map]
             self.workflow_connections[wf_name] = input_map
 
     def connect_input(self,input_name,targets):
+        if not isinstance(targets,list): targets = [targets]
         self.inputs[input_name] = targets
 
     def connect_output(self,output_name,targets):
+        if not isinstance(targets,list): targets = [targets]
         self.outputs[output_name] = targets
 
-    def break_connection(self,io_uri):
-        if io_uri in self.op_connections:
-            self.op_connections.pop(input_uri)
+    def break_connection(self,io_key):
+        if io_key in self.op_connections:
+            self.op_connections.pop(input_key)
         else:
-            for o_uri,i_uris in self.op_connections.items():
-                if io_uri in i_uris:
-                    i_uris.pop(i_uris.index(io_uri))
+            for o_key,i_keys in self.op_connections.items():
+                if io_key in i_keys:
+                    i_keys.pop(i_keys.index(io_key))
 
     def break_input(self,input_name):
         if input_name in self.inputs:
@@ -131,25 +146,30 @@ class Workflow(TreeModel):
         return d
 
     def set_input(self,input_name,val):
-        """Set a value for Operation inputs.
-
-        If `input_name` is in self.inputs,
-        `val` will be set for all self.inputs[`input_name`].
-        """
+        """Set a value for Workflow items in self.inputs[`input_name`]"""
         r = self.inputs[input_name]
-        if not isinstance(r,list):
-            r = [r]
-        for uri in r:
+        try:
             # Set the value for this Workflow
-            self.set_item(uri,val)
-            # Set the wf_item map so self.build_clone() maintains the value 
-            self.set_wf_item(uri,val)
-
-    def get_input(self,input_name):
-        return self.get_data_from_uri(self.inputs[input_name])
+            self.set_data(k,val)
+            # Update the wf_item map so self.build_clone() maintains the value 
+            self.set_wf_item(k,val)
+        except:
+            for k in r:
+                self.set_data(k,val)
+                self.set_wf_item(k,val)
 
     def get_output(self,output_name):
-        return self.get_data_from_uri(self.outputs[output_name])
+        out_map = self.outputs[output_name]
+        try: 
+            return self.get_data(out_map)
+        except:
+            return [self.get_data(k) for k in out_map]
+
+    def set_wf_item(self,wf_item_key,val):
+        self.op_inputs[wf_item_key] = val
+
+    def set_op_input(self,op_name,input_name,val):
+        self.set_wf_item(op_name+'.inputs.'+input_name,val)
 
     def set_dependency(self,op_name,dependency_ops):
         """Set `op_name` to depend on one or more other `dependency_ops`"""
@@ -165,10 +185,10 @@ class Workflow(TreeModel):
         deps = []
         if op_name in self.op_dependencies:
             deps.extend(self.op_dependencies[op_name])
-        for output_uri,input_map in self.op_connections.items():
-            for input_uri in input_map:
-                if input_uri.split('.')[0] == op_name:
-                    new_dep = output_uri.split('.')[0]
+        for output_key,input_map in self.op_connections.items():
+            for input_key in input_map:
+                if input_key.split('.')[0] == op_name:
+                    new_dep = output_key.split('.')[0]
                     if not new_dep in deps:
                         deps.append(new_dep)
         return deps
@@ -235,8 +255,8 @@ class Workflow(TreeModel):
         """
         self.stop_flag = False
         stk,diag = self.execution_stack()
-        for input_uri,input_value in self.op_inputs.items():
-            self.set_item(input_uri,input_value)
+        for itm_key,val in self.op_inputs.items():
+            self.set_data(itm_key,val)
         bad_diag_keys = [k for k in diag.keys() if diag[k]]
         for k in bad_diag_keys:
             self.message_callback('WARNING- {} is not ready: {}'.format(k,diag[k]))
@@ -255,11 +275,11 @@ class Workflow(TreeModel):
 
     def prepare_operation(self,op_name):
         """Prepare according to op_connections, return the Operation"""
-        for output_uri,input_map in self.op_connections.items():
-            for input_uri in input_map:
-                if input_uri.split('.')[0] == op_name:
-                    self.set_item(input_uri,self.get_data_from_uri(output_uri))
-        return self.get_data_from_uri(op_name) 
+        for output_key,input_map in self.op_connections.items():
+            for input_key in input_map:
+                if input_key.split('.')[0] == op_name:
+                    self.set_item(input_key,self.get_data(output_key))
+        return self.get_data(op_name) 
                     
     def stop(self):
         """Stop the Workflow and all of its Operations."""
@@ -267,7 +287,7 @@ class Workflow(TreeModel):
         stk,diag = self.execution_stack()
         for lst in stk:
             for op_name in lst: 
-                self.get_data_from_uri(op_name).stop()
+                self.get_data(op_name).stop()
 
     def enable_op(self,opname):
         self.set_op_enabled(opname,True)
@@ -275,19 +295,23 @@ class Workflow(TreeModel):
     def disable_op(self,opname):
         self.set_op_enabled(opname,False)
 
-    def set_op_enabled(self,opname,flag=True):
-        op_item = self.get_from_uri(opname)
-        op_item.flags['enabled'] = flag
+    # TODO: handle flags
+    #def set_op_enabled(self,opname,flag=True):
+    #    op_item = self.get_from_uri(opname)
+    #    op_item.flags['enabled'] = flag
 
+    # TODO: handle flags
     def is_enabled(self,opname):
-        op_item = self.get_from_uri(opname)
-        return op_item.flags['enabled']
+        return True
+    #    op_item = self.get_from_uri(opname)
+    #    return op_item.flags['enabled']
 
-    def op_enabled_flags(self):
-        dct = OrderedDict()
-        for opnm in self.operations.keys():
-            dct[opnm] = self.get_from_uri(opnm).flags['enabled']
-        return dct
+    # TODO: handle flags
+    #def op_enabled_flags(self):
+    #    dct = OrderedDict()
+    #    for opnm in self.operations.keys():
+    #        dct[opnm] = self.get_from_uri(opnm).flags['enabled']
+    #    return dct
 
     def build_clone(self):
         """Produce a clone of this Workflow."""
@@ -313,50 +337,4 @@ class Workflow(TreeModel):
     @classmethod
     def clone(cls):
         return cls()
-
-    def build_tree(self,x):
-        """Return a tree-like dict referencing the Workflow data.
-
-        This is a reimplemention of TreeModel.build_tree().
-        Reimplementing this allows Workflows to use TreeItem uris as keys.
-
-        For a Workflow, a dict is provided for each Operation,
-        where the operation dict contains the results of calling
-        self.build_tree(op.inputs) and self.build_tree(op.outputs). 
-        """
-        if isinstance(x,Operation):
-            d = OrderedDict()
-            d['inputs'] = self.build_tree(x.inputs)
-            d['outputs'] = self.build_tree(x.outputs)
-            return d
-        else:
-            return super(Workflow,self).build_tree(x) 
-
-    def set_op_item(self,op_name,item_uri,item_data):
-        """Subroutine for use with functools.partial for callbacks"""
-        full_uri = op_name+'.'+item_uri
-        self.set_item(full_uri,item_data)
-
-def stack_contains(itm,stk):
-    for lst in stk:
-        if itm in lst:
-            return True
-    return False
-
-def stack_size(stk):
-    sz = 0
-    for lst in stk:
-        sz += len(lst)
-    return sz
-
-def print_stack(stk):
-    stktxt = ''
-    opt_newline = os.linesep
-    n_layers = len(stk)
-    for i,lst in enumerate(stk):
-        if i == n_layers-1:
-            opt_newline = ''
-        stktxt += ('{}'+opt_newline).format(lst)
-    return stktxt
-
 
