@@ -28,6 +28,6 @@ class SetFlowReactor(Operation):
             self.message_callback('blocking {} seconds'.format(d))
             time.sleep(d)
             self.message_callback('finished blocking'.format(d))
-        stat = fr.print_status()
+        flag,stat = fr.check_status()
         self.message_callback(stat)
 
