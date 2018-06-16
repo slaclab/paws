@@ -22,6 +22,10 @@ class PluginManager(DictTree):
     def tagged_print(self,msg):
         print('[{}] {}'.format(type(self).__name__,msg))
 
+    def set_log_dir(self,dir_path):
+        for nm,pg in self.plugins.items():
+            pg.set_log_dir(dir_path)
+
     def add_plugin(self,plugin_name,plugin_module):
         """Import, name, and add a plugin.
 
