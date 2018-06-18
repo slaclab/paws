@@ -20,10 +20,7 @@ class Workflow(DictTree):
     # TODO: allow __init__ from a .wfl file or dict 
     def __init__(self):
         super(Workflow,self).__init__()
-        # TODO: handle flags another way
-        #flag_dict = OrderedDict(selected=False,enabled=True)
-        #self.add_flag('selected',False) 
-        #self.add_flag('enabled',True) 
+        self.ops_enabled = OrderedDict()
         self.inputs = OrderedDict()
         self.outputs = OrderedDict()
         self.op_inputs = OrderedDict()
@@ -31,7 +28,7 @@ class Workflow(DictTree):
         self.plugin_connections = OrderedDict()
         self.workflow_connections = OrderedDict()
         self.op_dependencies = OrderedDict() 
-        self.operations = self._root_dict
+        self.operations = self._root
         self.message_callback = self.tagged_print
         self.data_callback = self.set_data
         self.stop_flag = False
@@ -41,11 +38,11 @@ class Workflow(DictTree):
 
     def __setitem__(self,k,v):
         if not k in self.keys():
-            raise KeyError('{} not in {}'.format(k,self.keys())
+            raise KeyError('{} not in {}'.format(k,self.keys()))
 
     def __getitem__(self,k):
         if not k in self.keys():
-            raise KeyError('{} not in {}'.format(k,self.keys())
+            raise KeyError('{} not in {}'.format(k,self.keys()))
         if k == 'inputs':
             return self.inputs
         if k == 'outputs':
@@ -67,6 +64,7 @@ class Workflow(DictTree):
         """
         #op.message_callback = self.message_callback
         op.data_callback = partial(self.set_op_item,op_name)
+        self.ops_enabled[op_name] = True
         self.set_data(op_name,op)
 
     def set_op_item(self,op_name,item_key,item_data):
@@ -93,24 +91,30 @@ class Workflow(DictTree):
         `input_map` can be a key (string) or a list thereof.
         """
         if item_key in self.op_connections:
-            try: self.op_connections[item_key].extend(input_map)
-            self.op_connections[item_key].append(input_map)
+            try: 
+                self.op_connections[item_key].extend(input_map)
+            except:
+                self.op_connections[item_key].append(input_map)
         else:
             if not isinstance(input_map,list): input_map = [input_map]
             self.op_connections[item_key] = input_map
     
     def connect_plugin(self,plugin_item_key,input_map):
         if plugin_item_key in self.plugin_connections:
-            try: self.plugin_connections[plugin_item_key].extend(input_map)
-            self.plugin_connections[plugin_item_key].append(input_map)
+            try: 
+                self.plugin_connections[plugin_item_key].extend(input_map)
+            except:
+                self.plugin_connections[plugin_item_key].append(input_map)
         else:
             if not isinstance(input_map,list): input_map = [input_map]
             self.plugin_connections[plugin_item_key] = input_map 
 
     def connect_workflow(self,wf_name,input_map):
         if wf_name in self.workflow_connections:
-            try: self.workflow_connections[wf_name].extend(input_map)
-            self.workflow_connections[wf_name].append(input_map)
+            try: 
+                self.workflow_connections[wf_name].extend(input_map)
+            except:
+                self.workflow_connections[wf_name].append(input_map)
         else:
             if not isinstance(input_map,list): input_map = [input_map]
             self.workflow_connections[wf_name] = input_map
@@ -295,23 +299,17 @@ class Workflow(DictTree):
     def disable_op(self,opname):
         self.set_op_enabled(opname,False)
 
-    # TODO: handle flags
-    #def set_op_enabled(self,opname,flag=True):
-    #    op_item = self.get_from_uri(opname)
-    #    op_item.flags['enabled'] = flag
+    def set_op_enabled(self,opname,flag=True):
+        self.ops_enabled[opname] = True
 
-    # TODO: handle flags
     def is_enabled(self,opname):
-        return True
-    #    op_item = self.get_from_uri(opname)
-    #    return op_item.flags['enabled']
+        return self.ops_enabled[opname] 
 
-    # TODO: handle flags
-    #def op_enabled_flags(self):
-    #    dct = OrderedDict()
-    #    for opnm in self.operations.keys():
-    #        dct[opnm] = self.get_from_uri(opnm).flags['enabled']
-    #    return dct
+    def op_enabled_flags(self):
+        dct = OrderedDict()
+        for opnm in self.operations.keys():
+            dct[opnm] = self.ops_enabled[opnm]
+        return dct
 
     def build_clone(self):
         """Produce a clone of this Workflow."""

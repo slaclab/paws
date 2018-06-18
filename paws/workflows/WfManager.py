@@ -72,14 +72,14 @@ class WfManager(object):
             a reference to the new Workflow
         """
         wf = Workflow()
-        if not wf.is_tag_valid(wf_name): 
-            raise pawstools.WfNameError(wf.tag_error_message(wf_name))
+        if not wf.is_key_valid(wf_name): 
+            raise KeyError(wf.key_error_message(wf_name))
         #wf.message_callback = self.message_callback
         self.workflows[wf_name] = wf
         self.wf_running[wf_name] = False
         return wf
 
-    def add_operation(self,wf_name,op_name,op_uri):
+    def add_operation(self,wf_name,op_name,op_key):
         """Name and add an Operation to a Workflow.
 
         Parameters
@@ -88,14 +88,14 @@ class WfManager(object):
             name of the Workflow to add the Operation to
         op_name : str
             name to give to the new Operation
-        op_uri : str
-            uri for locating the Operation
+        op_key : str
+            key for locating the Operation
         """
-        self.workflows[wf_name].add_operation(op_name,self.get_operation(op_uri))
+        self.workflows[wf_name].add_operation(op_name,self.get_operation(op_key))
 
-    def get_operation(self,op_uri):
-        """Get the Operation at `op_uri` from self.op_manager"""
-        return self.op_manager.get_operation(op_uri)
+    def get_operation(self,op_key):
+        """Get the Operation at `op_key` from self.op_manager"""
+        return self.op_manager.get_operation(op_key)
 
     def n_workflows(self):
         """Return the current number of Workflows"""
@@ -126,15 +126,15 @@ class WfManager(object):
 
     def prepare_wf(self,wf_name,stk):
         wf_clone = self.workflows[wf_name].build_clone()
-        for pgn_itm_uri,input_map in wf_clone.plugin_connections.items():
-            pgn_itm = self.plugin_manager.get_data_from_uri(pgn_itm_uri)
-            for input_uri in input_map:
-                wf_clone.set_item(input_uri,pgn_itm)
+        for pgn_itm_key,input_map in wf_clone.plugin_connections.items():
+            pgn_itm = self.plugin_manager.get_data(pgn_itm_key)
+            for input_key in input_map:
+                wf_clone.set_data(input_key,pgn_itm)
         for wf_name,input_map in wf_clone.workflow_connections.items():
             stk,diag = self.workflows[wf_name].execution_stack()
             new_wf = self.prepare_wf(wf_name,stk)
-            for input_uri in input_map:
-                wf_clone.set_item(input_uri,new_wf)
+            for input_key in input_map:
+                wf_clone.set_data(input_key,new_wf)
             # TODO: think about appropriate way for these workflows to callback,
             # keep in mind they may be batch-executed, maybe in parallel 
             #new_wf.message_callback = self.workflows[wf_name].message_callback
@@ -160,22 +160,22 @@ class WfManager(object):
             self.workflows[wf_name].connect_input(inpname,input_map)
         for outname,out_map in wf_dict['OUTPUTS'].items():
             self.workflows[wf_name].connect_output(outname,out_map)
-        for input_uri,val in wf_dict['OP_INPUTS'].items():
-            self.workflows[wf_name].set_wf_item(input_uri,val)
-        for out_uri, in_map in wf_dict['CONNECTIONS'].items():
-            self.workflows[wf_name].connect(out_uri,in_map)
+        for input_key,val in wf_dict['OP_INPUTS'].items():
+            self.workflows[wf_name].set_wf_item(input_key,val)
+        for out_key, in_map in wf_dict['CONNECTIONS'].items():
+            self.workflows[wf_name].connect(out_key,in_map)
         for op_name, dep_ops in wf_dict['DEPENDENCIES'].items():
             self.workflows[wf_name].set_dependency(op_name,dep_ops)
         for op_name, flag in wf_dict['ENABLED_FLAGS'].items():
             self.workflows[wf_name].set_op_enabled(op_name,flag)
-        for plugin_item_uri, input_map in wf_dict['PLUGIN_CONNECTIONS'].items():
-            self.workflows[wf_name].connect_plugin(plugin_item_uri,input_map)
+        for plugin_item_key, input_map in wf_dict['PLUGIN_CONNECTIONS'].items():
+            self.workflows[wf_name].connect_plugin(plugin_item_key,input_map)
         for wwffnm, input_map in wf_dict['WORKFLOW_CONNECTIONS'].items():
             self.workflows[wf_name].connect_workflow(wwffnm,input_map)
 
     def load_operations(self,wf_name,**kwargs):
-        for op_name,op_uri in kwargs.items():
-            self.load_operation(wf_name,op_name,op_uri)
+        for op_name,op_key in kwargs.items():
+            self.load_operation(wf_name,op_name,op_key)
     
     def load_operation(self,wf_name,op_name,op_module):
         """Load an Operation from a dict that specifies its parameters.
@@ -189,17 +189,17 @@ class WfManager(object):
         op_name : str
             name to be given to the new Operation 
         op_module : str 
-            uri of Operation module 
+            key for locating Operation module 
         """
         if not self.op_manager.is_op_enabled(op_module):
             self.op_manager.enable_op(op_module)
-        op = self.op_manager.get_data_from_uri(op_module)()
+        op = self.op_manager.get_data(op_module)()
         self.workflows[wf_name].add_operation(op_name,op)
 
     def setup_dict(self):
         d = {} 
         d['PAWS_VERSION'] = pawstools.__version__
-        d['OP_ENABLED_FLAGS'] = {k:True for k in self.op_manager.keys() if self.op_manager.is_op_enabled(k)}
+        d['OP_ENABLED_FLAGS'] = {k:True for k in self.op_manager.list_operations() if self.op_manager.is_op_enabled(k)}
         wfman_dict = OrderedDict.fromkeys(self.workflows.keys())
         for wfname in self.workflows.keys():
             wfman_dict[wfname] = self.wf_setup_dict(wfname)
@@ -247,22 +247,22 @@ class WfManager(object):
         #print('saving {} to {}'.format(wf_name,wfl_filename))
         pawstools.save_file(wfl_filename,self.wf_setup_dict(wf_name))
 
-    def load_packaged_wfm(self,workflow_uri):
+    def load_packaged_wfm(self,workflow_key):
         # the following import saves a .wfm configuration file 
-        importlib.import_module('.'+workflow_uri,pawstools.wf_module)
+        importlib.import_module('.'+workflow_key,pawstools.wf_module)
         wfm_path = pawstools.sourcedir
         wfm_path = os.path.join(wfm_path,'workflows')
-        p = workflow_uri.split('.')
+        p = workflow_key.split('.')
         for mp in p:
             wfm_path = os.path.join(wfm_path,mp)
         wfm_filename = wfm_path+'.wfm'
         self.load_wfm(wfm_filename)
 
-    def load_packaged_workflow(self,wf_name,wf_uri):
-        importlib.import_module('.'+wf_uri,pawstools.wf_module)
+    def load_packaged_workflow(self,wf_name,wf_key):
+        importlib.import_module('.'+wf_key,pawstools.wf_module)
         wf_path = pawstools.sourcedir
         wf_path = os.path.join(wf_path,'workflows')
-        p = wf_uri.split('.')
+        p = wf_key.split('.')
         for mp in p:
             wf_path = os.path.join(wf_path,mp)
         wf_filename = wf_path+'.wfl'
@@ -298,8 +298,11 @@ class WfManager(object):
             'under the current version.'.format(pawstools.__version__,wfm_version))  
         if 'OP_ENABLED_FLAGS' in d.keys():
             for op_module,flag in d['OP_ENABLED_FLAGS'].items():
-                if not op_module in operations.op_modules:
-                    raise Exception('Operation module {} not found'.format(op_module))
+                #if not op_module in operations.op_modules:
+                #    print(op_module)
+                #    print(operations.op_modules)
+                #    import pdb; pdb.set_trace()
+                #    raise Exception('Operation module {} not found'.format(op_module))
                 self.op_manager.enable_op(op_module)
         if 'WORKFLOWS' in d.keys():
             wf_dict = d['WORKFLOWS']

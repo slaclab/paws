@@ -10,8 +10,9 @@ bad_chars = bad_chars.replace('.','')
 space_chars = [' ','\t','\n',os.linesep]
     
 def parent_key(key):
+    # TODO: handle the possibility of subkeys containing periods
     if '.' in key:
-        return key[:key.rfind('.')])
+        return key[:key.rfind('.')]
     else:
         return ''
 
@@ -42,7 +43,7 @@ class DictTree(object):
         return self.get_data(key)
 
     def __setitem__(self,key,val):
-        self.set_data(val)
+        self.set_data(key,val)
 
     def root_keys(self):
         return self._root.keys()
@@ -56,8 +57,16 @@ class DictTree(object):
         else:
             itm = self.get_data(root_key)
         itm_keys = []
-        try: itm_keys = itm.keys()        # if implements keys()
-        try: itm_keys = [str(i) for i in range(len(itm))] # if is an iterable
+        try:
+            # implements keys()? 
+            itm_keys = itm.keys()
+        except:
+            try:
+                # is an iterable?
+                itm_keys = [str(i) for i in range(len(itm))] 
+            except:
+                # give it no child keys
+                pass
         prefix = root_key
         if root_key: prefix += '.'
         sk = [prefix+s for s in itm_keys]
@@ -74,10 +83,12 @@ class DictTree(object):
             parent_itm = self.get_data(parent_key(key))
         itm_key = key.split('.')[-1]
         if itm_key:
-            # Note- parent items must implement __getitem__
-            try: parent_itm.pop(itm_key)
-            # in case parent_item was a list, try this
-            try: parent_itm.pop(int(itm_key))
+            try: 
+                # parent implements __getitem__()?
+                parent_itm.pop(itm_key)
+            except:
+                # parent item is list? 
+                parent_itm.pop(int(itm_key))
 
     def set_data(self,key='',val=None):
         """Sets the data at the given key."""
@@ -86,24 +97,37 @@ class DictTree(object):
             parent_itm = self.get_data(parent_key(key))
         itm_key = key.split('.')[-1]
         if itm_key:
-            # parent items must implement __setitem__
-            try: parent_itm[k] = val
-            try: parent_itm[int(k)] = val # list case
-            try: parent_itm.append(val) # append to list case
+            try: 
+                parent_itm[itm_key] = val
+            except:
+                try: 
+                    parent_itm[int(itm_key)] = val # list case
+                except:
+                    parent_itm.append(val) # append to list case
 
     def get_data(self,key=''):
         """Returns the data at the given key."""
         path = key.split('.')
         itm = self._root 
         for ik,k in enumerate(path):
-            try: itm = itm[k]
-            try: itm = itm[int(k)]
-            longer_key = k
-            for kk in path[ik+1:]:
-                longer_key += '.'
-                try: itm = itm[longer_key]
-                longer_key += kk
-                try: itm = itm[longer_key]
+            try: 
+                itm = itm[k]
+            except:
+                try: 
+                    itm = itm[int(k)]
+                except:
+                    longer_key = k
+                    for kk in path[ik+1:]:
+                        longer_key += '.'
+                        try: 
+                            itm = itm[longer_key]
+                        except: 
+                            pass
+                        longer_key += kk
+                        try: 
+                            itm = itm[longer_key]
+                        except: 
+                            pass
         return itm
 
     def is_key_valid(self,key):

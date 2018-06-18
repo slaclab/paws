@@ -1,3 +1,5 @@
+import os
+
 def stack_contains(itm,stk):
     for lst in stk:
         if itm in lst:
