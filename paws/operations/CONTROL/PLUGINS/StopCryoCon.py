@@ -4,7 +4,7 @@ import os
 
 from ...Operation import Operation
 
-inputs=OrderedDict(spec_infoclient=None)
+inputs=OrderedDict(cryocon=None)
 outputs=OrderedDict()
         
 class StopCryoCon(Operation):
@@ -12,9 +12,8 @@ class StopCryoCon(Operation):
 
     def __init__(self):
         super(StopCryoCon,self).__init__(inputs,outputs)
-        self.input_doc['spec_infoclient'] = 'A SpecInfoClient'
-        self.output_doc['report'] = 'dict reporting details of final state' 
+        self.input_doc['cryocon'] = 'A CryoConController Plugin'
 
     def run(self):
-        self.inputs['spec_infoclient'].stop_cryocon()
+        self.inputs['cryocon'].stop_control()
 

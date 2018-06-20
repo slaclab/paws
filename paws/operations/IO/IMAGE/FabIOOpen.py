@@ -33,6 +33,7 @@ class FabIOOpen(Operation):
         file_noext = os.path.splitext(file_nopath)[0]
         self.outputs['dir_path'] = dir_path 
         self.outputs['filename'] = file_noext 
+        self.message_callback('reading {}'.format(p))
         self.outputs['FabioImage'] = fabio.open(p)
         self.outputs['image_data'] = self.outputs['FabioImage'].data
 

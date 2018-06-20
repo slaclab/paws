@@ -19,16 +19,17 @@ class ReadHeader(Operation):
         super(ReadHeader, self).__init__(inputs, outputs)
         self.input_doc['file_path'] = 'path to a .txt header file produced by beamline 1-5 at SSRL.'
         self.output_doc['header_dict'] = 'the header file as a python dictionary'
+        self.output_doc['dir_path'] = 'directory path'
         self.output_doc['filename'] = 'filename with path and extension stripped'
 
     def run(self):
         p = self.inputs['file_path']
-        dir_path = os.path.split(p)[0]
-        file_nopath = os.path.split(p)[1]
-        file_noext = os.path.splitext(file_nopath)[0]
+        dir_path,filename = os.path.split(p)
+        file_noext = os.path.splitext(filename)[0]
         self.outputs['filename'] = file_noext 
         self.outputs['dir_path'] = dir_path 
         d = OrderedDict()
+        self.message_callback('reading {}'.format(p))
         for l in open(p,'r').readlines():
            if not l.strip() == '' and not l.strip()[0] == '#':
                 kvs = l.split(',')

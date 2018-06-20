@@ -49,8 +49,21 @@ class PawsPlugin(TreeModel):
         ep = datetime.datetime.fromtimestamp(0,tz)
         t0 = datetime.datetime.now(tz)
         t0_utc = int((t0-ep).total_seconds())
-        hfile = '{}_{}.log'.format(type(self).__name__,t0_utc)
-        self.history_path = os.path.join(pawstools.paws_scratch_dir,hfile)
+        self.history_file = '{}_{}.log'.format(type(self).__name__,t0_utc)
+        self.history_path = os.path.join(pawstools.paws_scratch_dir,self.history_file)
+
+    def set_log_path(self,file_path):
+        dp,fn = os.path.split(file_path)
+        self.history_file = fn 
+        self.history_path = file_path 
+
+    def set_log_file(self,file_name):
+        dp,fn = os.path.split(self.history_path)
+        self.history_file = file_name 
+        self.history_path = os.path.join(dp,file_name)
+
+    def set_log_dir(self,dir_path): 
+        self.history_path = os.path.join(dir_path,self.history_file)
 
     def set_item(self,item_uri,val):
         uri_parts = item_uri.split('.')

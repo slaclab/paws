@@ -25,6 +25,7 @@ wf.connect_input('image_dir','image_filepath.inputs.dir_path')
 wf.connect_input('image_dir','image_filepath.inputs.dir_path')
 wf.connect_input('data_dir','data_filepath.inputs.dir_path')
 wf.connect_input('data_suffix','data_filepath.inputs.suffix')
+wf.connect_input('data_ext','data_filepath.inputs.extension')
 
 wf.connect_output('time','time_temp.outputs.time')
 wf.connect_output('date_time','time_temp.outputs.date_time')
@@ -37,11 +38,12 @@ wf.connect('read_header.outputs.header_dict','time_temp.inputs.header_dict')
 wf.set_op_input('time_temp','time_key','time')
 wf.set_op_input('time_temp','temperature_key','TEMP')
 
-wf.connect('read_header.outputs.filename',
-    ['image_filepath.inputs.filename','data_filepath.inputs.filename'])
-wf.set_op_input('image_filepath','ext','tif')
+wf.connect('read_header.outputs.filename',[\
+    'image_filepath.inputs.filename',\
+    'data_filepath.inputs.filename'])
+wf.set_op_input('image_filepath','extension','tif')
 wf.set_op_input('data_filepath','suffix','_dz_bgsub')
-wf.set_op_input('data_filepath','ext','csv')
+wf.set_op_input('data_filepath','extension','dat')
 
-wfmgr.save_to_wfl('read_header',os.path.join(pawstools.sourcedir,'workflows','IO','BL15','ReadHeader.wfl'))
+wfmgr.save_to_wfl('read_header',os.path.join(pawstools.sourcedir,'workflows','IO','BL15','read_header.wfl'))
 

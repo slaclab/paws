@@ -20,5 +20,6 @@ class CheckFilePath(Operation):
 
     def run(self):
         fp = self.inputs['file_path']
+        self.message_callback('checking file path {}'.format(fp))
         self.outputs['file_exists'] = os.path.exists(fp)
 

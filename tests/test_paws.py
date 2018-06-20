@@ -83,9 +83,10 @@ def test_run_operations():
             print('{} does not run.'.format(op_module))
     return runnable_ops
 
+# TODO: automate loading of wf module list
 wfl_modules = [\
-    'FITTING.BL15.ReadCSV_XRSDFit',
-    'IO.BL15.ReadHeader']
+    'FITTING.BL15.read_and_fit',
+    'IO.BL15.read_header']
 wfm_modules = ['FITTING.BL15.timeseries_fit']
 def test_load_wfms():
     #for wf_mod in workflows.wf_modules:

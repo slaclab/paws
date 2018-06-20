@@ -43,6 +43,7 @@ class BgSubtract(Operation):
         I_bg = q_I_bg[:,1]
         bad_data = (I < 0) | (I_bg <= 0) | np.isnan(I) | np.isnan(I_bg)
         bg_factor = np.min(I[~bad_data] / I_bg[~bad_data])
+        if bg_factor > 1.: bg_factor = 1.
         I_out = I-(bg_factor*I_bg)
         dI = self.inputs['dI']
         dI_bg = self.inputs['dI_bg']

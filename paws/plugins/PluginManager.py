@@ -3,23 +3,28 @@ from collections import OrderedDict
 from functools import partial
 import importlib
 
-from ..models.TreeModel import TreeModel
+from ..models.DictTree import DictTree
 from .. import plugins as pgns
 from .. import pawstools
 from .PawsPlugin import PawsPlugin
 
-class PluginManager(TreeModel):
+class PluginManager(DictTree):
     """Tree for storing, browsing, and managing PawsPlugins"""
 
     def __init__(self):
-        flag_dict = OrderedDict(selected=False,running=False)
-        super(PluginManager,self).__init__(flag_dict)
-        self.plugins = self._root_dict
+        #flag_dict = OrderedDict(selected=False,running=False)
+        super(PluginManager,self).__init__()
+        self.plugins = self._root
+        self.plugins_running = OrderedDict()
         self.connections = OrderedDict()
         self.message_callback = self.tagged_print 
 
     def tagged_print(self,msg):
         print('[{}] {}'.format(type(self).__name__,msg))
+
+    def set_log_dir(self,dir_path):
+        for nm,pg in self.plugins.items():
+            pg.set_log_dir(dir_path)
 
     def add_plugin(self,plugin_name,plugin_module):
         """Import, name, and add a plugin.
@@ -37,20 +42,20 @@ class PluginManager(TreeModel):
             retrieve it with `plugin_module` = 'CATEGORY.MyPlugin'.
         """
         p = self.get_plugin(plugin_module)
-        if not self.is_tag_valid(plugin_name): 
-            raise pawstools.PluginNameError(self.tag_error_message(plugin_name))
+        if not self.is_key_valid(plugin_name): 
+            raise KeyError(self.key_error_message(plugin_name))
         #p.message_callback = self.message_callback
         p.data_callback = partial(self.set_plugin_item,plugin_name)
-        self.set_item(plugin_name,p)
-        self.get_from_uri(plugin_name).flags['running'] = False 
+        self.set_data(plugin_name,p)
+        self.plugins_running[plugin_name] = False 
     
     def add_plugins(self,**kwargs):
         for pgn_nm,pgn_mod in kwargs.items():
             self.add_plugin(pgn_nm,pgn_mod)
 
-    def set_plugin_item(self,pgn_name,item_uri,item_data):
-        full_uri = pgn_name+'.'+item_uri
-        self.set_item(full_uri,item_data)
+    def set_plugin_item(self,pgn_name,item_key,item_data):
+        full_key = pgn_name+'.'+item_key
+        self.set_data(full_key,item_data)
 
     def get_plugin(self,plugin_module): 
         """Import, instantiate, return a PawsPlugin from its module.
@@ -84,23 +89,23 @@ class PluginManager(TreeModel):
         val : object
             the data to be used as plugin input
         """
-        self.set_item(plugin_name+'.inputs.'+input_name,val)
+        self.set_data(plugin_name+'.inputs.'+input_name,val)
 
-    def connect(self,item_uri,input_map):
-        """Connect the data at `item_uri` to one or more inputs.
+    def connect(self,item_key,input_map):
+        """Connect the data at `item_key` to one or more inputs.
 
         Sets up Plugin inputs listed in `input_map`
-        to take the value at `item_uri`.
-        `input_map` can be a TreeItem uri (string) or a list thereof.
+        to take the value at `item_key`.
+        `input_map` can be a TreeItem key (string) or a list thereof.
         """
-        if item_uri in self.connections:
+        if item_key in self.connections:
             if isinstance(input_map,list):
-                self.connections[item_uri].extend(input_map)
+                self.connections[item_key].extend(input_map)
             else:
-                self.connections[item_uri].append(input_map)
+                self.connections[item_key].append(input_map)
         else:
             if not isinstance(input_map,list): input_map = [input_map]
-            self.connections[item_uri] = input_map
+            self.connections[item_key] = input_map
 
     def start_plugins(self,plugin_name_list):
         for pn in plugin_name_list:
@@ -110,30 +115,28 @@ class PluginManager(TreeModel):
         """Start the plugin referred to by `plugin_name`."""
         self.message_callback('starting plugin {}'.format(plugin_name))
         pgn = self.prepare_plugin(plugin_name)
-        self.get_from_uri(plugin_name).flags['running'] = True 
+        self.plugins_running[plugin_name] = True 
         pgn.start()
         
     def prepare_plugin(self,plugin_name):
-        # keep track of run state with treeitem flags
         pgn = self.plugins[plugin_name]
         if pgn.thread_blocking:
             pgn_clone = self.plugins[plugin_name].build_clone()
             pgn.thread_clone = pgn_clone 
             pgn.thread_clone.proxy = pgn
-        for item_uri,input_map in self.connections.items():
-            for input_uri in input_map:
-                if input_uri.split('.')[0] == plugin_name:
-                    self.set_item(input_uri,self.get_data_from_uri(item_uri))
+        for item_key,input_map in self.connections.items():
+            for input_key in input_map:
+                if input_key.split('.')[0] == plugin_name:
+                    self.set_data(input_key,self.get_data(item_key))
                     if pgn.thread_blocking:
-                        pgn_item_uri = input_uri[input_uri.find(plugin_name)+len(plugin_name)+1:]
-                        pgn_clone.set_item(pgn_item_uri,self.get_data_from_uri(item_uri))
+                        pgn_item_key = input_key[input_key.find(plugin_name)+len(plugin_name)+1:]
+                        pgn_clone.set_data(pgn_item_key,self.get_data(item_key))
         return pgn
 
     def stop_plugin(self,plugin_name):
         self.message_callback('stopping plugin {}'.format(plugin_name))
         self.plugins[plugin_name].stop()
-        # keep track of run state with treeitem flags
-        self.get_from_uri(plugin_name).flags['running'] = False 
+        self.plugins_running[plugin_name] = False 
 
     def setup_dict(self):
         pg_dict = OrderedDict()
@@ -154,8 +157,8 @@ class PluginManager(TreeModel):
         pg_dict : dict 
             Dict specifying plugin setup
         """
-        for item_uri,input_map in pg_dict.pop('CONNECTIONS').items():
-            self.connect(item_uri,input_map)
+        for item_key,input_map in pg_dict.pop('CONNECTIONS').items():
+            self.connect(item_key,input_map)
         for pg_name in pg_dict.keys():
             self.add_plugin(pg_name,pg_dict[pg_name]['MODULE'])
             for inp_name, val in pg_dict[pg_name]['INPUTS'].items():

@@ -2,14 +2,29 @@ from __future__ import print_function
 import os
 import string 
 from collections import OrderedDict
+        
+bad_chars = string.punctuation 
+bad_chars = bad_chars.replace('_','')
+bad_chars = bad_chars.replace('-','')
+bad_chars = bad_chars.replace('.','')
+space_chars = [' ','\t','\n',os.linesep]
+    
+def parent_key(key):
+    # TODO: handle the possibility of subkeys containing periods
+    if '.' in key:
+        return key[:key.rfind('.')]
+    else:
+        return ''
 
 class DictTree(object):
-    """
-    A tree as an ordered dictionary (root), 
-    extended by embedding other objects 
+    """A data structure for tree-like storage.
+
+    A DictTree has a root (an ordered dictionary), 
+    which is extended by embedding other objects 
     that are amenable to tree storage.
-    Fetches items by a uri string that is a sequence 
-    of dict keys, connected by '.'s.
+    Fetches items by keys (strings),
+    which are sequences 
+    of parent item keys(), connected by '.'s.
 
     Child items (end nodes of the tree)
     can be anything.
@@ -23,260 +38,143 @@ class DictTree(object):
         self._root = OrderedDict()
         if isinstance(data,dict):
             self._root = OrderedDict(data)
-        self.bad_chars = string.punctuation 
-        self.bad_chars = self.bad_chars.replace('_','')
-        self.bad_chars = self.bad_chars.replace('-','')
-        self.bad_chars = self.bad_chars.replace('.','')
-        self.space_chars = [' ','\t','\n',os.linesep]
-        #self._all_uris = []
 
-    def __getitem__(self,uri):
-        return self.get_from_uri(uri)
+    def __getitem__(self,key):
+        return self.get_data(key)
 
-    def __setitem__(self,uri,val):
-        self.set_uri(uri,val)
+    def __setitem__(self,key,val):
+        self.set_data(key,val)
 
     def root_keys(self):
         return self._root.keys()
 
-    def delete_uri(self,uri=''):
-        """
-        Delete the given uri, i.e., 
-        remove the corresponding key, value pair 
-        from the embedded dict.
-        """
-        try:
-            itm = self._root
-            if '.' in uri:
-                itm = self.get_from_uri(uri[:uri.rfind('.')])
-            path = uri.split('.')
-            k = path[-1]
-            if k:
-                # Note- parent items must implement __getitem__
-                del itm[k]
-                #itm.pop(k)
-        except Exception as ex:
-            msg = '[{}] Encountered an error while trying to delete uri: {}'.format(__name__,uri)
-            raise ex
-
-    def set_uri(self,uri='',val=None):
-        """
-        Set the data at the given uri to provided value val.
-        """
-        try:
-            itm = self._root
-            parent_uri = '' 
-            if '.' in uri:
-                parent_uri = uri[:uri.rfind('.')]
-                itm = self.get_from_uri(parent_uri)
-            k = uri.split('.')[-1]
-            # TODO: Is there a more graceful way to handle lists?
-            if k:
-                if isinstance(itm,list):
-                    list_idx = int(k)
-                    highest_idx = len(itm)
-                    if list_idx == highest_idx: 
-                        itm.append(val)
-                    elif list_idx < highest_idx:
-                        itm[list_idx] = val
-                    else:
-                        msg = 'Attempted to set index {} '.format(list_idx)\
-                            + 'of item at {} '.format(parent_uri)\
-                            + 'with current maximum index {}'.format(len(itm))
-                        raise IndexError(msg)
-                else:
-                    # Note- parent items must implement __setitem__
-                    itm[k] = val
-                #if not uri in self._all_uris:
-                #    self._all_uris.append(uri)
-        except Exception as ex:
-            msg = '[{}] Encountered an error while trying to set uri: {}'.format(__name__,uri)
-            raise KeyError(msg)
-
-    def get_from_uri(self,uri=''):
-        """
-        Return the data stored at uri.
-        Each data item in the lineage of the uri
-        must implement __getitem__() with support for
-        string-like keys, unless it is a list,
-        in which case the key is cast as int(key)
-        before using it as an index in the list.
-        """
-        try:
-            path = uri.split('.')
-            itm = self._root 
-            while any(path):
-                k = path.pop(0)
-                # TODO: Is there a more graceful way to handle lists?
-                if isinstance(itm,list):
-                    itm = itm[int(k)]
-                else:
-                    # Note- parent items must implement __getitem__ and keys()
-                    if k in itm.keys():
-                        itm = itm[k]
-                    else:
-                        # special case: this could be a dict with a key containing a '.'
-                        found = False
-                        while not found:
-                            k = k+'.'+path.pop(0)                        
-                            if k in itm.keys():
-                                itm = itm[k]
-                                found = True 
-                            elif k+'.' in itm.keys():
-                                itm = itm[k+'.']
-                                found = True           
-            return itm
-        except Exception as ex:
-            msg = '[{}] Encountered an error while fetching uri: {}'.format(__name__,uri)
-            raise KeyError(msg) 
-
-    def is_uri_valid(self,uri):
-        """
-        Check for validity of a uri. 
-        Uris may contain upper case letters, lower case letters, 
-        numbers, dashes (-), and underscores (_). 
-        Periods (.) are used as delimiters between tags in the uri.
-        Any whitespace or any character in the string.punctuation library
-        (other than -, _, or .) results in an invalid uri.
-        """
-        if not uri or any(map(lambda s: s in uri,self.space_chars))\
-            or any(map(lambda s: s in uri,self.bad_chars)):
-            return False 
-        return True 
-
-    def is_tag_valid(self,tag):
-        """
-        Check for validity of a tag.
-        The conditions for a valid tag are the same as for a valid uri,
-        except that a tag should not contain period (.) characters.
-        """
-        if not tag:
-            return False
-        elif '.' in tag:
-            return False 
-        else:
-            return self.is_uri_valid(tag)
-
-    def is_uri_unique(self,uri):
-        """
-        Check for uniqueness of a uri. 
-        """
-        return not self.contains_uri(uri)
-
-    def uri_error_message(self,uri):
-        """Provide a human-readable error message for bad uris."""
-        if not uri:
-            return 'error: entry is blank.'
-        elif any(map(lambda s: s in uri,self.space_chars)):
-            return 'error: \n"{}" contains whitespace.'.format(uri)
-        elif any(map(lambda s: s in uri,self.bad_chars)):
-            return 'error: \n"{}" contains special characters.'.format(uri)
-        else:
-            return 'error: \nunspecified error for "{}".'.format(uri)
-
-    def tag_error_message(self,tag):
-        """Provide a human-readable error message for bad tags."""
-        if '.' in tag:
-            return 'error: \n"{}" contains a period (.)\n'.format(tag)
-        else:
-            return self.uri_error_message(tag)
-
-    #def contains_uri(self,uri):
-    #    """Returns whether or not input uri points to an item in this tree."""
-    #    return uri in self._all_uris
-    def contains_uri(self,uri):
-        """
-        Check if the uri represents an item in this DictTree.
-        """
-        return uri in self.keys()
-
     def keys(self):
         return self.subkeys()
 
-    def subkeys(self,root_uri=''):
-        if not root_uri:
+    def subkeys(self,root_key=''):
+        if not root_key:
             itm = self._root
         else:
-            itm = self.get_from_uri(root_uri)
-        if isinstance(itm,list):
-            rootks = list(map(lambda i: str(i),range(len(itm))))
-        else:
+            itm = self.get_data(root_key)
+        itm_keys = []
+        try:
+            # implements keys()? 
+            itm_keys = itm.keys()
+        except:
             try:
-                rootks = itm.keys()
-            except Exception as ex:
-                # non-parental nodes may have no keys()
-                rootks = []
-        if root_uri:
-            prefix = root_uri + '.'
-        else:
-            prefix = root_uri
-        subks = list(map(lambda s:prefix+s,rootks))
-        for k in rootks:
-            nextks = self.subkeys(prefix+k) 
-            if any(nextks):
-                subks = subks + nextks
-        return subks
+                # is an iterable?
+                itm_keys = [str(i) for i in range(len(itm))] 
+            except:
+                # give it no child keys
+                pass
+        prefix = root_key
+        if root_key: prefix += '.'
+        sk = [prefix+s for s in itm_keys]
+        for k in itm_keys:
+            next_keys = self.subkeys(prefix+k) 
+            if any(next_keys):
+                sk.extend(next_keys)
+        return sk
 
-    def make_unique_uri(self,prefix):
-        """
-        Generate the next unique uri from prefix by appending '_x' to it, 
-        where x is a minimal nonnegative integer.
-        """
-        suffix = 0
-        gooduri = False
-        #urilist = self._all_uris
-        while not gooduri:
-            testuri = prefix+'_{}'.format(suffix)
-            if not self.contains_uri(testuri): 
-                gooduri = True
-            else:
-                suffix += 1
-        return testuri 
+    def delete_data(self,key=''):
+        """Attempts to de-reference the given key"""
+        parent_itm = self._root
+        if '.' in key:
+            parent_itm = self.get_data(parent_key(key))
+        itm_key = key.split('.')[-1]
+        if itm_key:
+            try: 
+                # parent implements __getitem__()?
+                parent_itm.pop(itm_key)
+            except:
+                # parent item is list? 
+                parent_itm.pop(int(itm_key))
 
-    def print_tree(self,root_uri='',rowprefix=''):
-        """
-        Print the content of the tree rooted at root_uri,
-        with each row of the string preceded by rowprefix.
-        """
-        if root_uri:
-            itm = self.get_from_uri(root_uri)
-        else:
-            itm = self._root
-        if isinstance(itm,dict):
-            tree_string = '\n'
-            for k,x in itm.items():
-                x_tree = self.print_tree(root_uri+'.'+k,rowprefix+'\t')
-                tree_string = tree_string+rowprefix+'{}: {}\n'.format(k,x_tree)
-        elif isinstance(itm,list):
-            tree_string = '\n'
-            for i,x in zip(range(len(itm)),itm):
-                x_tree = self.print_tree(root_uri+'.'+str(i),rowprefix+'\t')
-                tree_string = tree_string+rowprefix+'{}: {}\n'.format(i,x_tree)
-        else:
-            return '{}'.format(itm)
-        return tree_string
+    def set_data(self,key='',val=None):
+        """Sets the data at the given key."""
+        parent_itm = self._root
+        if '.' in key:
+            parent_itm = self.get_data(parent_key(key))
+        itm_key = key.split('.')[-1]
+        if itm_key:
+            try: 
+                parent_itm[itm_key] = val
+            except:
+                try: 
+                    parent_itm[int(itm_key)] = val # list case
+                except:
+                    parent_itm.append(val) # append to list case
 
-    def print_tree(self,root_uri='',rowprefix=''):
-        """
-        Print the content of the tree rooted at root_uri,
-        with each row of the string preceded by rowprefix.
-        """
-        if root_uri:
-            itm = self.get_from_uri(root_uri)
-        else:
-            itm = self._root
-        if isinstance(itm,dict):
-            tree_string = '\n'
-            for k,x in itm.items():
-                x_tree = self.print_tree(root_uri+'.'+k,rowprefix+'\t')
-                tree_string = tree_string+rowprefix+'{}: {}\n'.format(k,x_tree)
-        elif isinstance(itm,list):
-            tree_string = '\n'
-            for i,x in zip(range(len(itm)),itm):
-                x_tree = self.print_tree(root_uri+'.'+str(i),rowprefix+'\t')
-                tree_string = tree_string+rowprefix+'{}: {}\n'.format(i,x_tree)
-        else:
-            return '{}'.format(itm)
-        return tree_string
+    def get_data(self,key=''):
+        """Returns the data at the given key."""
+        path = key.split('.')
+        itm = self._root 
+        for ik,k in enumerate(path):
+            child_found = False
+            try: 
+                itm = itm[k]
+                child_found = True
+            except:
+                try: 
+                    itm = itm[int(k)]
+                    child_found = True
+                except:
+                    longer_key = k
+                    for kk in path[ik+1:]:
+                        longer_key += '.'
+                        try: 
+                            itm = itm[longer_key]
+                            child_found = True
+                        except: 
+                            pass
+                        longer_key += kk
+                        try: 
+                            itm = itm[longer_key]
+                            child_found = True
+                        except: 
+                            pass
+            if not child_found:
+                raise KeyError(key)
+        return itm
 
-            
+    def is_key_valid(self,key):
+        """Check key validity.
+
+        Keys may contain upper case letters, lower case letters, 
+        numbers, dashes (-), and underscores (_) and period (.) marks. 
+        Any whitespace or any character in the string.punctuation library
+        (other than -, _, or .) results in an invalid key.
+        """
+        if not key or any(map(lambda s: s in key,space_chars))\
+            or any(map(lambda s: s in key,bad_chars)):
+            return False 
+        return True 
+
+    def key_error_message(self,key):
+        """Provide a human-readable error message for bad keys."""
+        if not key:
+            return 'key is blank.'
+        elif any(map(lambda s: s in key,space_chars)):
+            return '"{}" contains whitespace.'.format(key)
+        elif any(map(lambda s: s in key,bad_chars)):
+            return '"{}" contains special characters.'.format(key)
+
+    def print_tree(self,root_key='',offset=''):
+        """Print the tree content."""
+        itm = self._root
+        if root_key:
+            itm = self.get_data(root_key)
+        tstr = os.linesep 
+        try:    #if isinstance(itm,dict):
+            for k in itm.keys():
+                x_str = self.print_tree(root_key+'.'+k,offset+'    ')
+                tstr = tstr+offset+'{}: {}'.format(k,x_str)+os.linesep
+        except:
+            try:    #elif isinstance(itm,list):
+                for i,x in enumerate(itm):
+                    x_str = self.print_tree(root_key+'.'+str(i),offset+'    ')
+                    tstr = tstr+offset+'{}: {}'.format(i,x_str)+os.linesep
+            except:
+                return '{}'.format(itm)
+        return tstr
+

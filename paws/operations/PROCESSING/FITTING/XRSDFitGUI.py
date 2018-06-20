@@ -87,37 +87,39 @@ class XRSDFitGUI(Operation):
         self.q_I_opt = None
         self.finished = False
 
-        self.fit_gui = Tk()
-        self.fit_gui.title('xrsd profile fitter')
+        # only start tkinter if we have data to work with
+        if self.q_I is not None:
+            self.fit_gui = Tk()
+            self.fit_gui.title('xrsd profile fitter')
+    
+            scrollbar = Scrollbar(self.fit_gui, orient='horizontal')
+            self.fit_gui_canvas = Canvas(self.fit_gui, width=1300, height=730) #background="green"
+            scrollbar.pack(side=tkinter.BOTTOM, fill=tkinter.X)
+            self.fit_gui_canvas.pack(side=tkinter.RIGHT,fill=tkinter.BOTH, expand=tkinter.YES)
+            scrollbar.config(command=self.fit_gui_canvas.xview)
+            self.fit_gui_canvas.config(scrollregion=(0,0,1300,730), xscrollcommand=scrollbar.set)
+            self.main_frame = Frame(self.fit_gui_canvas,bd=4,relief=tkinter.SUNKEN)#, background="green")
+            self.window = self.fit_gui_canvas.create_window(0,0,window=self.main_frame, anchor='nw')
+            self.fit_gui_canvas.bind("<Configure>", self.onCanvasConfigure)
+    
+            self.reset_all_widgets()
+    
+            # create the plots
+            self.build_plot_widgets()
+    
+            # create the widgets for population control
+            self.build_entry_widgets()
+    
+            # draw the plots...
+            self.draw_plots()
+    
+            # start the tk loop
+            self.fit_gui.protocol('WM_DELETE_WINDOW',self.finish)
+            self.fit_gui.mainloop()
 
-        scrollbar = Scrollbar(self.fit_gui, orient='horizontal')
-        self.fit_gui_canvas = Canvas(self.fit_gui, width=1300, height=730) #background="green"
-        scrollbar.pack(side=tkinter.BOTTOM, fill=tkinter.X)
-        self.fit_gui_canvas.pack(side=tkinter.RIGHT,fill=tkinter.BOTH, expand=tkinter.YES)
-        scrollbar.config(command=self.fit_gui_canvas.xview)
-        self.fit_gui_canvas.config(scrollregion=(0,0,1300,730), xscrollcommand=scrollbar.set)
-        self.main_frame = Frame(self.fit_gui_canvas,bd=4,relief=tkinter.SUNKEN)#, background="green")
-        self.window = self.fit_gui_canvas.create_window(0,0,window=self.main_frame, anchor='nw')
-        self.fit_gui_canvas.bind("<Configure>", self.onCanvasConfigure)
-
-        self.reset_all_widgets()
-
-        # create the plots
-        self.build_plot_widgets()
-
-        # create the widgets for population control
-        self.build_entry_widgets()
-
-        # draw the plots...
-        self.draw_plots()
-
-        # start the tk loop
-        self.fit_gui.protocol('WM_DELETE_WINDOW',self.finish)
-        self.fit_gui.mainloop()
-
-        # if tk loop exits without calling finish(), call it now.
-        #if not self.finished: 
-        #    self.finish()
+            # if tk loop exits without calling finish(), call it now.
+            #if not self.finished: 
+            #    self.finish()
 
     def close_gui(self):
         self.finish()
