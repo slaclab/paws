@@ -110,24 +110,31 @@ class DictTree(object):
         path = key.split('.')
         itm = self._root 
         for ik,k in enumerate(path):
+            child_found = False
             try: 
                 itm = itm[k]
+                child_found = True
             except:
                 try: 
                     itm = itm[int(k)]
+                    child_found = True
                 except:
                     longer_key = k
                     for kk in path[ik+1:]:
                         longer_key += '.'
                         try: 
                             itm = itm[longer_key]
+                            child_found = True
                         except: 
                             pass
                         longer_key += kk
                         try: 
                             itm = itm[longer_key]
+                            child_found = True
                         except: 
                             pass
+            if not child_found:
+                raise KeyError(key)
         return itm
 
     def is_key_valid(self,key):
