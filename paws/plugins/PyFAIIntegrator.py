@@ -1,7 +1,8 @@
-import numpy as np
+import os
 from collections import OrderedDict
 from threading import Condition
 
+import numpy as np
 import pyFAI
 
 from .PawsPlugin import PawsPlugin
@@ -28,19 +29,20 @@ class PyFAIIntegrator(PawsPlugin):
     def set_calib(self):
         calib = self.inputs['calib_file']
         fp,xt = os.path.splitext(calib)
-        if xt in ['poni','PONI']:
+        print(xt)
+        if xt in ['.poni','.PONI']:
             #g = pyFAI.geometry.Geometry()
             #g.read(calib)
             #p.setPyFAI(g.getPyFAI())
             with self.integrator_lock:
                 self.integrator.read(calib)
-        elif xt in ['nika','NIKA']:
+        elif xt in ['.nika','.NIKA']:
             with self.integrator_lock:
                 self.set_nika(calib)
 
     def integrate_to_1d(self,img_data,npt=1000,polz_factor=0.,unit='q_A^-1'):
         with self.integrator_lock:
-            q,I = intgtr.integrate1d(img_data,npt,
+            q,I = self.integrator.integrate1d(img_data,npt,
                 polarization_factor=polz_factor,unit=unit)
         return q,I
 
@@ -78,6 +80,16 @@ class PyFAIIntegrator(PawsPlugin):
         # going from nika to fit2D geometry. 
         tilt_deg = -1.*htilt_deg
         rot_fit2d = vtilt_deg
+        #tmpint = pyFAI.AzimuthalIntegrator(wavelength = wl_m)
+        #tmpint.setFit2D(d_mm,bcx_px,bcy_px,tilt_deg,rot_fit2d,pxsz_x_um,pxsz_y_um)
+        #pd = tmpint.getPyFAI()
+        #self.integrator.setPyFAI(**pd)
         self.integrator.set_wavelength(wl_m)
         self.integrator.setFit2D(d_mm,bcx_px,bcy_px,tilt_deg,rot_fit2d,pxsz_x_um,pxsz_y_um)
+
+    def get_plugin_content(self):
+        d = super(PyFAIIntegrator,self).get_plugin_content()
+        d['integrator'] = self.integrator 
+        return d
+
 
