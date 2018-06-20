@@ -194,6 +194,7 @@ class WfManager(object):
         if not self.op_manager.is_op_enabled(op_module):
             self.op_manager.enable_op(op_module)
         op = self.op_manager.get_data(op_module)()
+
         self.workflows[wf_name].add_operation(op_name,op)
 
     def setup_dict(self):
@@ -291,18 +292,10 @@ class WfManager(object):
         current_vparts = re.match(r'(\d+)\.(\d+)\.(\d+)',pawstools.__version__)  
         current_vparts = list(map(int,current_vparts.groups()))
         if wfm_vparts[0] < current_vparts[0] or wfm_vparts[1] < current_vparts[1]:
-            warnings.warn('WARNING: paws (version {}) '\
-            'is trying to load a state built in version {} - '\
-            'this is likely to cause things to crash, '\
-            'until the workflows and plugins are reviewed/refactored '\
-            'under the current version.'.format(pawstools.__version__,wfm_version))  
+            warnings.warn('WARNING: paws (version {}) does not match file version ({})'\
+            .format(pawstools.__version__,wfm_version))  
         if 'OP_ENABLED_FLAGS' in d.keys():
             for op_module,flag in d['OP_ENABLED_FLAGS'].items():
-                #if not op_module in operations.op_modules:
-                #    print(op_module)
-                #    print(operations.op_modules)
-                #    import pdb; pdb.set_trace()
-                #    raise Exception('Operation module {} not found'.format(op_module))
                 self.op_manager.enable_op(op_module)
         if 'WORKFLOWS' in d.keys():
             wf_dict = d['WORKFLOWS']

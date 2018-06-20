@@ -90,6 +90,8 @@ class Workflow(DictTree):
         to take the value from `item_key`.
         `input_map` can be a key (string) or a list thereof.
         """
+        # TODO: if input_map items already exist in op_connections,
+        # they should be removed, and the user should be warned
         if item_key in self.op_connections:
             try: 
                 self.op_connections[item_key].extend(input_map)
@@ -164,15 +166,17 @@ class Workflow(DictTree):
 
     def get_output(self,output_name):
         out_map = self.outputs[output_name]
-        try: 
-            return self.get_data(out_map)
-        except:
+        if len(out_map) == 1:
+            return self.get_data(out_map[0])
+        else:
             return [self.get_data(k) for k in out_map]
 
     def set_wf_item(self,wf_item_key,val):
         self.op_inputs[wf_item_key] = val
 
     def set_op_input(self,op_name,input_name,val):
+        if not input_name in self.operations[op_name].inputs:
+            raise KeyError('input name {} not valid'.format(input_name))
         self.set_wf_item(op_name+'.inputs.'+input_name,val)
 
     def set_dependency(self,op_name,dependency_ops):
@@ -225,7 +229,7 @@ class Workflow(DictTree):
                 op_rdy,op_diag = False,{op_name:''}
                 if not self.is_enabled(op_name):
                     op_rdy = False
-                    op_diag = {op_name:'Operation is disabled'}
+                    op_diag = {op_name:'disabled'}
                 elif not stack_contains(op_name,stk) and not op_name in disabled_ops:
                     #if op_name in self.op_dependencies.keys():
                     dep_ops = self.get_dependencies(op_name)
@@ -261,7 +265,7 @@ class Workflow(DictTree):
         stk,diag = self.execution_stack()
         for itm_key,val in self.op_inputs.items():
             self.set_data(itm_key,val)
-        bad_diag_keys = [k for k in diag.keys() if diag[k]]
+        bad_diag_keys = [k for k in diag.keys() if diag[k] and self.is_enabled(k)]
         for k in bad_diag_keys:
             self.message_callback('WARNING- {} is not ready: {}'.format(k,diag[k]))
         self.message_callback('workflow queue:'+os.linesep+print_stack(stk))
@@ -282,7 +286,7 @@ class Workflow(DictTree):
         for output_key,input_map in self.op_connections.items():
             for input_key in input_map:
                 if input_key.split('.')[0] == op_name:
-                    self.set_item(input_key,self.get_data(output_key))
+                    self.set_data(input_key,self.get_data(output_key))
         return self.get_data(op_name) 
                     
     def stop(self):
@@ -300,7 +304,7 @@ class Workflow(DictTree):
         self.set_op_enabled(opname,False)
 
     def set_op_enabled(self,opname,flag=True):
-        self.ops_enabled[opname] = True
+        self.ops_enabled[opname] = flag 
 
     def is_enabled(self,opname):
         return self.ops_enabled[opname] 

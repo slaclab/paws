@@ -39,11 +39,8 @@ class OpManager(DictTree):
         if not self.is_op_enabled(op_key):
             try:
                 self.enable_op(op_key)
-            except ImportError as ex:
-                msg = 'Most likely, the system '\
-                    'does not have the right dependencies '\
-                    'for Operation {}'.format(op_key)
-                raise OperationLoadError(msg) 
+            except Exception:
+                raise OperationLoadError('Error loading {}'.format(op_key)) 
         op = self.get_data(op_key)
         return op()
 
@@ -100,7 +97,10 @@ class OpManager(DictTree):
             retrieve it with `op_module` = 'CATEGORY.MyOperation'.
         """
         op_name = op_module.split('.')[-1]
-        m = importlib.import_module('.'+op_module,ops.__name__)
+        try:
+            m = importlib.import_module('.'+op_module,ops.__name__)
+        except ImportError:
+            raise OperationLoadError('Error loading {}'.format(op_module)) 
         op = getattr(m,op_name)
         optest = op()
         self.set_data(op_module,op)
