@@ -52,23 +52,24 @@ class XYDataFromBatch(Operation):
                 x_list.append(d[kx])
                 y_list.append(d[ky])
         if shiftflag or sortflag:
-            x_all = np.array(x_list)
-            y_all = np.array(y_list)
-        if shiftflag and len(x_list)>0:
+            xa = np.array(x_list)
+            ya = np.array(y_list)
+        if shiftflag:
             xmin = min(x_list)
-            x_all = x_all - xmin
-            x_list = list(x_all)
+            xa = xa - xmin
+        ix = np.arange(len(xa))
         if sortflag:
-            i_xsort = np.argsort(x_all)
-            x_list = list(x_all[i_xsort])
-            y_list = list(y_all[i_xsort])
+            ix = np.argsort(xa)
         if lidx is not None:
-            x_list = x_list[lidx:]
-            y_list = y_list[lidx:]
-            uidx = uidx-lidx
+            ix = ix[lidx:]
+            if uidx is not None:
+                uidx = uidx-lidx
         if uidx is not None:
-            x_list = x_list[:uidx]
-            y_list = y_list[:uidx]
+            ix = ix[:uidx]
+
+        if shiftflag or sortflag or uidx is not None or lidx is not None:
+            x_list = [x_list[int(ii)] for ii in ix]
+            y_list = [y_list[int(ii)] for ii in ix]
 
         self.outputs['x'] = x_list
         self.outputs['y'] = y_list
