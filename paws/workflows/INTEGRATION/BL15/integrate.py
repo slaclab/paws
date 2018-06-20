@@ -6,37 +6,44 @@ from paws import pawstools
 
 wfmgr = WfManager()
 
-wfmgr.add_workflow('read_and_integrate')
-wfmgr.load_operations('read_and_integrate',
-    read_header = 'IO.BL15.ReadHeader_SSRL15',
+wfmgr.add_workflow('integrate')
+wfmgr.load_operations('integrate',
+    read_header = 'IO.BL15.ReadHeader',
     time_temp = 'PACKAGING.BL15.TimeTempFromHeader',
     image_path = 'IO.FILESYSTEM.BuildFilePath',
     read_image = 'IO.IMAGE.FabIOOpen',
-    integrate = 'PROCESSING.INTEGRATION.ApplyIntegrator1d',
+    integrate = 'PROCESSING.INTEGRATION.Integrate1d',
     q_window = 'PACKAGING.Window',
     dezinger = 'PROCESSING.ZINGERS.EasyZingers1d',
-    output_CSV = 'IO.CSV.WriteArrayCSV'
+    output_path = 'IO.FILESYSTEM.BuildFilePath',
+    write_q_I = 'IO.NumpySave'
     )
 
 pgmgr = wfmgr.plugin_manager
 pgmgr.add_plugin('integrator','PyFAIIntegrator')
 
-wf = wfmgr.workflows['read_and_integrate']
+wf = wfmgr.workflows['integrate']
 # input: path to header file
-wf.connect_input('header_file_path','read_header.inputs.file_path')
+wf.connect_input('header_file','read_header.inputs.file_path')
 # input: path to image files directory 
+#
+# TODO: set up a CONTROL.Switch to fall back on read_header.inputs.dir_path
 wf.connect_input('sample_dir','image_path.inputs.dir_path')
-wf.connect_input('image_ext','image_path.inputs.ext')
-wf.set_op_input('image_path','ext','tif')
+#
+wf.connect_input('image_ext','image_path.inputs.extension')
+wf.set_op_input('image_path','extension','tif')
 # inputs: q-range for data windowing
 wf.connect_input('q_min','q_window.inputs.x_min')
 wf.connect_input('q_max','q_window.inputs.x_max')
-wf.set_op_input('q_min',0.)
-wf.set_op_input('q_max',1.)
+wf.set_op_input('q_window','x_min',0.)
+wf.set_op_input('q_window','x_max',1.)
 # inputs: keys for fetching time,temperature from header dictionary 
 wf.connect_input('temperature_key','time_temp.inputs.temperature_key')
 wf.connect_input('time_key','time_temp.inputs.time_key')
-# input 5: pyfai.AzimuthalIntegrator
+wf.set_op_input('time_temp','time_key','time')
+wf.set_op_input('time_temp','temperature_key','TEMP')
+# input: pyfai.AzimuthalIntegrator
+wf.connect_input('integrator','integrate.inputs.integrator')
 wf.connect_plugin('integrator','integrate.inputs.integrator')
 
 wf.connect_output('time','time_temp.outputs.time')
@@ -50,12 +57,15 @@ wf.connect('read_header.outputs.header_dict','time_temp.inputs.header_dict')
 wf.connect('read_image.outputs.image_data','integrate.inputs.image_data')
 wf.connect('integrate.outputs.q_I','q_window.inputs.x_y')
 wf.connect('q_window.outputs.x_y_window','dezinger.inputs.q_I')
-wf.connect('dezinger.outputs.q_I_dz','output_CSV.inputs.array')
-wf.connect('image_path.inputs.dir_path','output_CSV.inputs.dir_path')
-wf.connect('image_path.inputs.filename','output_CSV.inputs.filename')
-wf.set_op_input('output_CSV','headers',['q (1/angstrom)','intensity (arb)'])
-wf.set_op_input('output_CSV','filetag','_dz')
 
+wf.connect('image_path.inputs.dir_path','output_path.inputs.dir_path')
+wf.connect('image_path.inputs.filename','output_path.inputs.filename')
+wf.set_op_input('output_path','suffix','_dz')
+wf.set_op_input('output_path','extension','dat')
 
-wfmgr.save_to_wfm(os.path.join(pawstools.sourcedir,'workflows','INTEGRATION','BL15','integrate.wfm'),wfmgr)
+wf.connect('dezinger.outputs.q_I_dz','write_q_I.inputs.data')
+wf.set_op_input('write_q_I','header','q (1/angstrom), Intensity (arb)')
+wf.connect('output_path.outputs.file_path','write_q_I.inputs.file_path')
+
+wfmgr.save_to_wfm(os.path.join(pawstools.sourcedir,'workflows','INTEGRATION','BL15','integrate.wfm'))
 
