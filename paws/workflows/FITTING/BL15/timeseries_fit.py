@@ -17,8 +17,8 @@ wfmgr.load_packaged_wfm('FITTING.BL15.batch_fit')
 
 wf = wfmgr.workflows['main']
 
-wf.set_op_inputs('t_filenames','x_sort_flag',True)
-wf.set_op_inputs('t_filepaths','x_sort_flag',True)
+wf.set_op_inputs('t_filenames',x_sort_flag=True)
+wf.set_op_inputs('t_filepaths',x_sort_flag=True)
 wf.connect('t_filenames.outputs.y','batch_fit.inputs.batch_inputs.filename')
 wf.connect('t_filepaths.outputs.y','batch_fit.inputs.batch_inputs.data_filepath')
 wf.set_op_input('batch_fit','serial_params',

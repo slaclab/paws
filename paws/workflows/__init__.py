@@ -15,7 +15,7 @@ def load_workflows(path_,pkg,cat_root=''):
             subcat_root = modname
             if cat_root:
                 subcat_root = cat_root+'.'+modname
-            pkg_cats, pkg_wfs, pkg_wf_modules = load_workflows(pkg_path,pkg+'.'+modname,subcat_root)
+           pkg_cats, pkg_wfs, pkg_wf_modules = load_workflows(pkg_path,pkg+'.'+modname,subcat_root)
             pkg_wfs = [wf for wf in pkg_wfs if not wf in cat_wf_list]
             pkg_cats = [cat for cat in pkg_cats if not cat in cat_list]
             cat_wf_list = cat_wf_list + pkg_wfs
