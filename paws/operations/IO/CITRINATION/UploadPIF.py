@@ -44,7 +44,11 @@ class UploadPIF(Operation):
         pif.dump(p, open(jsp,'w'))
         if flag:
             self.message_callback('Uploading {} to dataset {}'.format(jsp,dsid))
-            r = cl_pgn.client.upload(dsid,jsp)
+            try:
+                r = cl_pgn.client.upload(dsid,jsp)
+            except:
+                r = 'An error occurred during upload- aborting'
+                self.message_callback(r)
         else:
             r = 'upload_flag is set to False- no upload occurred'
             self.message_callback(r)

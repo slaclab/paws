@@ -54,18 +54,18 @@ class XYDataFromBatch(Operation):
         if shiftflag or sortflag:
             xa = np.array(x_list)
             ya = np.array(y_list)
-        if shiftflag:
-            xmin = min(x_list)
-            xa = xa - xmin
-        ix = np.arange(len(xa))
-        if sortflag:
-            ix = np.argsort(xa)
-        if lidx is not None:
-            ix = ix[lidx:]
+            if shiftflag:
+                xmin = min(x_list)
+                xa = xa - xmin
+            ix = np.arange(len(xa))
+            if sortflag:
+                ix = np.argsort(xa)
+            if lidx is not None:
+                ix = ix[lidx:]
+                if uidx is not None:
+                    uidx = uidx-lidx
             if uidx is not None:
-                uidx = uidx-lidx
-        if uidx is not None:
-            ix = ix[:uidx]
+                ix = ix[:uidx]
 
         if shiftflag or sortflag or uidx is not None or lidx is not None:
             x_list = [x_list[int(ii)] for ii in ix]

@@ -8,13 +8,11 @@ inputs=OrderedDict(
     x_y=None,
     x_min=None,
     x_max=None)
-outputs=OrderedDict(x_y_window=None)
+outputs=OrderedDict(
+    x_y_window=None)
 
 class Window(Operation):
-    """
-    Window an n-by-2 array x_y 
-    such that x is bounded by specified limits 
-    """
+    """Slice an n-by-2 array `x_y` between x-limits `x_min` and `x_max`"""
 
     def __init__(self):
         super(Window,self).__init__(inputs,outputs)        
@@ -22,8 +20,8 @@ class Window(Operation):
         self.input_doc['x_min'] = 'inclusive minimum x value of output'
         self.input_doc['x_max'] = 'inclusive maximum x value of output'
         self.output_doc['x_y_window'] = 'n-by-2 array with x, y pairs for x_min <= x <= x_max'
-        self.input_datatype['x_min'] = 'float'
-        self.input_datatype['x_max'] = 'float'
+        self.input_datatype['x_min'] = float
+        self.input_datatype['x_max'] = float
 
     def run(self):
         x_y = self.inputs['x_y']

@@ -27,13 +27,13 @@ class MakePlot(Operation):
         fn = self.inputs['fignum']
         fig = plt.figure(fn)
         ax = fig.add_subplot(111)
-        if lx and ly:
-            ax.loglog(xy[:,0],xy[:,1])
-        elif ly:
-            ax.semilogy(xy[:,0],xy[:,1])
-        elif lx:
-            ax.semilogx(xy[:,0],xy[:,1])
-        else:
-            ax.plot(xy[:,0],xy[:,1])
-        if xy: plt.show()
-
+        if xy is not None: 
+            if lx and ly:
+                ax.loglog(xy[:,0],xy[:,1])
+            elif ly:
+                ax.semilogy(xy[:,0],xy[:,1])
+            elif lx:
+                ax.semilogx(xy[:,0],xy[:,1])
+            else:
+                ax.plot(xy[:,0],xy[:,1])
+            plt.show() 
