@@ -33,20 +33,22 @@ class Workflow(DictTree):
         self.data_callback = self.set_data
         self.stop_flag = False
 
-    def keys(self):
-        return ['inputs','outputs']
+    #def keys(self):
+    #    return ['inputs','outputs']
 
     def __setitem__(self,k,v):
-        if not k in self.keys():
-            raise KeyError('{} not in {}'.format(k,self.keys()))
+        self.set_data(k,v)
+        #if not k in self.keys():
+        #    raise KeyError('{} not in {}'.format(k,self.keys()))
 
     def __getitem__(self,k):
-        if not k in self.keys():
-            raise KeyError('{} not in {}'.format(k,self.keys()))
-        if k == 'inputs':
-            return self.inputs
-        if k == 'outputs':
-            return self.outputs
+        return self.get_data(k)
+        #if not k in self.keys():
+        #    raise KeyError('{} not in {}'.format(k,self.keys()))
+        #if k == 'inputs':
+        #    return self.inputs
+        #if k == 'outputs':
+        #    return self.outputs
 
     def tagged_print(self,msg):
         print('[{}] {}'.format(type(self).__name__,msg))
@@ -83,6 +85,16 @@ class Workflow(DictTree):
         for input_name,val in kwargs.items():
             self.set_op_input(op_name,input_name,val)
 
+    def verify_keys(self,keys):
+        for k in keys:
+            kparts = k.split('.')
+            if len(kparts) > 3: kparts = kparts[:3]
+            k_check = kparts.pop(0)
+            for subk in kparts:
+                k_check += '.' + subk
+            if not k_check in self.keys():
+                raise KeyError('Workflow item key {} does not exist'.format(k_check))
+
     def connect(self,item_key,input_map):
         """Connect `item_key` data to one or more inputs.
 
@@ -90,44 +102,48 @@ class Workflow(DictTree):
         to take the value from `item_key`.
         `input_map` can be a key (string) or a list thereof.
         """
-        # TODO: if input_map items already exist in op_connections,
-        # they should be removed, and the user should be warned
+        if not isinstance(input_map,list): input_map = [input_map]
+        self.verify_keys([item_key])
+        self.verify_keys(input_map)
         if item_key in self.op_connections:
-            try: 
-                self.op_connections[item_key].extend(input_map)
-            except:
-                self.op_connections[item_key].append(input_map)
+            self.op_connections[item_key].extend(input_map)
         else:
-            if not isinstance(input_map,list): input_map = [input_map]
             self.op_connections[item_key] = input_map
+
+    # TODO: consider moving these connection methods to WfManager
+    # so that they can be checked against the available plugins/workflows
     
     def connect_plugin(self,plugin_item_key,input_map):
+        if not isinstance(input_map,list): input_map = [input_map]
+        self.verify_keys(input_map)
         if plugin_item_key in self.plugin_connections:
-            try: 
-                self.plugin_connections[plugin_item_key].extend(input_map)
-            except:
-                self.plugin_connections[plugin_item_key].append(input_map)
+            self.plugin_connections[plugin_item_key].extend(input_map)
         else:
-            if not isinstance(input_map,list): input_map = [input_map]
             self.plugin_connections[plugin_item_key] = input_map 
 
     def connect_workflow(self,wf_name,input_map):
+        if not isinstance(input_map,list): input_map = [input_map]
+        self.verify_keys(input_map)
         if wf_name in self.workflow_connections:
-            try: 
-                self.workflow_connections[wf_name].extend(input_map)
-            except:
-                self.workflow_connections[wf_name].append(input_map)
+            self.workflow_connections[wf_name].extend(input_map)
         else:
-            if not isinstance(input_map,list): input_map = [input_map]
             self.workflow_connections[wf_name] = input_map
 
     def connect_input(self,input_name,targets):
         if not isinstance(targets,list): targets = [targets]
-        self.inputs[input_name] = targets
+        self.verify_keys(targets)
+        if input_name in self.inputs:
+            self.inputs[input_name].extend(targets)
+        else:
+            self.inputs[input_name] = targets
 
     def connect_output(self,output_name,targets):
         if not isinstance(targets,list): targets = [targets]
-        self.outputs[output_name] = targets
+        self.verify_keys(targets)
+        if output_name in self.outputs:
+            self.outputs[output_name].extend(targets)
+        else:
+            self.outputs[output_name] = targets
 
     def break_connection(self,io_key):
         if io_key in self.op_connections:
@@ -154,15 +170,11 @@ class Workflow(DictTree):
     def set_input(self,input_name,val):
         """Set a value for Workflow items in self.inputs[`input_name`]"""
         r = self.inputs[input_name]
-        try:
-            # Set the value for this Workflow
-            self.set_data(k,val)
-            # Update the wf_item map so self.build_clone() maintains the value 
+        for k in r:
+            # Set the value for this Workflow? No, the address may not yet exist.
+            #self.set_data(k,val)
+            # Update the wf_item map so the value is loaded at runtime 
             self.set_wf_item(k,val)
-        except:
-            for k in r:
-                self.set_data(k,val)
-                self.set_wf_item(k,val)
 
     def get_output(self,output_name):
         out_map = self.outputs[output_name]
@@ -175,8 +187,11 @@ class Workflow(DictTree):
         self.op_inputs[wf_item_key] = val
 
     def set_op_input(self,op_name,input_name,val):
-        if not input_name in self.operations[op_name].inputs:
-            raise KeyError('input name {} not valid'.format(input_name))
+        if not op_name in self.operations:
+            raise KeyError('operation name {} does not exist'.format(op_name))
+        #if not input_name in self.operations[op_name].inputs:
+        #    raise KeyError('input name {} does not exist for operation {}'
+        #    .format(input_name,op_name))
         self.set_wf_item(op_name+'.inputs.'+input_name,val)
 
     def set_dependency(self,op_name,dependency_ops):
@@ -263,12 +278,12 @@ class Workflow(DictTree):
         """
         self.stop_flag = False
         stk,diag = self.execution_stack()
-        for itm_key,val in self.op_inputs.items():
-            self.set_data(itm_key,val)
+        #for itm_key,val in self.op_inputs.items():
+        #    self.set_data(itm_key,val)
         bad_diag_keys = [k for k in diag.keys() if diag[k] and self.is_enabled(k)]
         for k in bad_diag_keys:
             self.message_callback('WARNING- {} is not ready: {}'.format(k,diag[k]))
-        self.message_callback('workflow queue:'+os.linesep+print_stack(stk))
+        self.message_callback('workflow order:'+os.linesep+print_stack(stk))
         for lst in stk:
             if self.stop_flag:
                 self.message_callback('Workflow stopped.')
@@ -287,6 +302,9 @@ class Workflow(DictTree):
             for input_key in input_map:
                 if input_key.split('.')[0] == op_name:
                     self.set_data(input_key,self.get_data(output_key))
+        for itm_key,val in self.op_inputs.items():
+            if itm_key.split('.')[0] == op_name:
+                self.set_data(itm_key,val)
         return self.get_data(op_name) 
                     
     def stop(self):
@@ -297,17 +315,25 @@ class Workflow(DictTree):
             for op_name in lst: 
                 self.get_data(op_name).stop()
 
-    def enable_op(self,opname):
-        self.set_op_enabled(opname,True)
+    def enable_ops(self,*args):
+        for op_name in args:
+            self.enable_op(op_name)
 
-    def disable_op(self,opname):
-        self.set_op_enabled(opname,False)
+    def disable_ops(self,*args):
+        for op_name in args:
+            self.disable_op(op_name)
 
-    def set_op_enabled(self,opname,flag=True):
-        self.ops_enabled[opname] = flag 
+    def enable_op(self,op_name):
+        self.set_op_enabled(op_name,True)
 
-    def is_enabled(self,opname):
-        return self.ops_enabled[opname] 
+    def disable_op(self,op_name):
+        self.set_op_enabled(op_name,False)
+
+    def set_op_enabled(self,op_name,flag=True):
+        self.ops_enabled[op_name] = flag 
+
+    def is_enabled(self,op_name):
+        return self.ops_enabled[op_name] 
 
     def op_enabled_flags(self):
         dct = OrderedDict()

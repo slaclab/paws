@@ -14,6 +14,7 @@ from ..operations.OpManager import OpManager
 from ..plugins.PluginManager import PluginManager
 from .Workflow import Workflow
 from .. import pawstools
+from . import import_workflow_module
 
 class WfManager(object):
     """Manager for paws Workflows. 
@@ -248,19 +249,24 @@ class WfManager(object):
         #print('saving {} to {}'.format(wf_name,wfl_filename))
         pawstools.save_file(wfl_filename,self.wf_setup_dict(wf_name))
 
-    def load_packaged_wfm(self,workflow_key):
+    # TODO: unify workflow load/save architecture
+
+    def load_packaged_wfm(self,wf_key):
         # the following import saves a .wfm configuration file 
-        importlib.import_module('.'+workflow_key,pawstools.wf_module)
+        #importlib.import_module('.'+workflow_key,pawstools.wf_module)
+        import_workflow_module(wf_key)
         wfm_path = pawstools.sourcedir
         wfm_path = os.path.join(wfm_path,'workflows')
-        p = workflow_key.split('.')
+        p = wf_key.split('.')
         for mp in p:
             wfm_path = os.path.join(wfm_path,mp)
         wfm_filename = wfm_path+'.wfm'
         self.load_wfm(wfm_filename)
 
     def load_packaged_workflow(self,wf_name,wf_key):
-        importlib.import_module('.'+wf_key,pawstools.wf_module)
+        # the following import saves a .wfl configuration file 
+        #importlib.import_module('.'+wf_key,pawstools.wf_module)
+        import_workflow_module(wf_key)
         wf_path = pawstools.sourcedir
         wf_path = os.path.join(wf_path,'workflows')
         p = wf_key.split('.')
