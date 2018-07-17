@@ -2,7 +2,7 @@ from __future__ import print_function
 from collections import OrderedDict
 
 from pypif import pif
-from citrination_client import CitrinationClient 
+from citrination_client import CitrinationClient as CitCli
 
 from .PawsPlugin import PawsPlugin
 
@@ -24,7 +24,7 @@ class CitrinationClient(PawsPlugin):
         f = open(self.inputs['api_key_file'],'r')
         self.api_key = str(f.readline()).strip()
         f.close()
-        self.client = CitrinationClient(self.api_key,self.address)
+        self.client = CitCli(self.api_key,self.address)
 
     def stop(self):
         self.client = None
