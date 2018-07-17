@@ -84,10 +84,8 @@ def test_run_operations():
     return runnable_ops
 
 # TODO: automate loading of wf module list
-wfl_modules = [\
-    'FITTING.BL15.read_and_fit',
-    'IO.BL15.read_header']
-wfm_modules = ['FITTING.BL15.timeseries_fit']
+wfl_modules = []
+wfm_modules = []
 def test_load_wfms():
     #for wf_mod in workflows.wf_modules:
     for iw,wm in enumerate(wfl_modules):
