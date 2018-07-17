@@ -13,7 +13,6 @@ import numpy as np
 import tzlocal
 import datetime
 
-from ..models.TreeModel import TreeModel
 from .. import pawstools
 
 class PawsPlugin(object):
