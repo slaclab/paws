@@ -16,7 +16,7 @@ import datetime
 from ..models.TreeModel import TreeModel
 from .. import pawstools
 
-class PawsPlugin(TreeModel):
+class PawsPlugin(object):
     """Base class for building PAWS Plugins."""
 
     def __init__(self,inputs):
