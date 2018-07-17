@@ -15,7 +15,7 @@ inputs=OrderedDict(
     serial_params={})
 
 outputs=OrderedDict(
-    batch_outputs=None)
+    batch_outputs={})
         
 class Batch(Operation):
     """Batch-execute a Workflow or Operation in specific order"""
@@ -24,9 +24,9 @@ class Batch(Operation):
         super(Batch,self).__init__(inputs,outputs)
         self.input_doc['work_item'] = 'the Operation '\
             'or Workflow object to be batch-executed'
-        self.input_doc['batch_inputs'] = 'dict of arrays, '\
+        self.input_doc['batch_inputs'] = 'dict of iterables, '\
             'where the dict keys refer to `work_item` inputs, '\
-            'and values are iterables whose values are used '\
+            'and the iterablevalues are used '\
             'as inputs for each execution in the batch.'
         self.input_doc['static_inputs'] = 'similar to `batch_inputs`, '\
             'but with single values instead of iterables- '\
@@ -37,31 +37,34 @@ class Batch(Operation):
             'from the previous execution of `work_item`. '\
             'This is not applied for the first `work_item` in the batch. '
 
-        self.output_doc['batch_outputs'] = 'list of dicts, '\
-            'where each dict contains the `work_item` outputs.'
-
+        self.output_doc['batch_outputs'] = 'dict of lists, '\
+            'where each list contains the batch of outputs '\
+            'for the corresponding output key.'
+            
         self.input_datatype['batch_inputs'] = dict
         self.input_datatype['static_inputs'] = dict
         self.input_datatype['serial_params'] = dict
 
     def run(self):
-        wrkitm = self.inputs['work_item'].build_clone()
+        #wrkitm = self.inputs['work_item'].build_clone()
+        wrkitm = self.inputs['work_item']
         inps = self.inputs['batch_inputs']
+
         stat_inps = self.inputs['static_inputs']
         ser_params = self.inputs['serial_params']
+
         batch_size = len(list(inps.values())[0])
 
-        batch_outputs = [None for ib in range(batch_size)] 
-        self.outputs['batch_outputs'] = batch_outputs
-        if self.data_callback: 
-            self.data_callback('outputs.batch_outputs',copy.deepcopy(batch_outputs))
+        outs_dict = dict.fromkeys(wrkitm.outputs.keys())
+        for k in outs_dict:
+            outs_dict[k] = []
+        self.outputs['batch_outputs'] = outs_dict
+        if self.data_callback:
+            self.data_callback('outputs.batch_outputs',outs_dict)
+
         self.message_callback('STARTING BATCH')
-        out_dict = None
 
         for batch_idx in range(batch_size):
-            if self.stop_flag:
-                self.message_callback('Batch stopped.')
-                return
             inp_dict = OrderedDict.fromkeys(list(inps.keys())+list(stat_inps.keys()))
             for k in inps.keys():
                 inp_dict[k] = inps[k][batch_idx]
@@ -79,8 +82,14 @@ class Batch(Operation):
 
             wrkitm.run()
             out_dict = copy.deepcopy(wrkitm.get_outputs())
-            self.outputs['batch_outputs'][batch_idx] = out_dict
-            if self.data_callback: 
-                self.data_callback('outputs.batch_outputs.'+str(batch_idx),copy.deepcopy(out_dict))
+
+            for k,v in out_dict.items():
+                outs_dict[k].append(v)
+                if self.data_callback: 
+                    self.data_callback('outputs.batch_outputs.'+k+'.'+str(batch_idx),v)
+            if self.stop_flag:
+                self.message_callback('Batch stopped.')
+                return
+        
         self.message_callback('BATCH FINISHED')
 

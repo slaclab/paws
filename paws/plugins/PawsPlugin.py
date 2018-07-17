@@ -16,7 +16,7 @@ import datetime
 from ..models.TreeModel import TreeModel
 from .. import pawstools
 
-class PawsPlugin(TreeModel):
+class PawsPlugin(object):
     """Base class for building PAWS Plugins."""
 
     def __init__(self,inputs):
@@ -49,43 +49,52 @@ class PawsPlugin(TreeModel):
         ep = datetime.datetime.fromtimestamp(0,tz)
         t0 = datetime.datetime.now(tz)
         t0_utc = int((t0-ep).total_seconds())
-        self.history_file = '{}_{}.log'.format(type(self).__name__,t0_utc)
-        self.history_path = os.path.join(pawstools.paws_scratch_dir,self.history_file)
+        history_file = '{}_{}.log'.format(type(self).__name__,t0_utc)
+        self.history_path = None
+        self.set_history_path(os.path.join(pawstools.paws_scratch_dir,history_file))
+        self.verbose = False
 
-    def set_log_path(self,file_path):
-        dp,fn = os.path.split(file_path)
-        self.history_file = fn 
-        self.history_path = file_path 
+    def set_history_path(self,file_path):
+        if file_path == self.history_path:
+            return
+        suffix = 1
+        fp = file_path
+        pth,ext = os.path.splitext(fp)
+        while os.path.exists(fp):
+            fp = pth+'_{}'.format(suffix)+ext
+            suffix += 1
+        open(fp,'a').close()
+        self.message_callback('plugin log file: {}'.format(fp))
+        self.history_path = fp 
+
+    def set_log_dir(self,dir_path): 
+        dp,fn = os.path.split(self.history_path)
+        self.set_history_path(os.path.join(dir_path,fn))
 
     def set_log_file(self,file_name):
         dp,fn = os.path.split(self.history_path)
-        self.history_file = file_name 
-        self.history_path = os.path.join(dp,file_name)
+        self.set_history_path(os.path.join(dp,file_name))
 
-    def set_log_dir(self,dir_path): 
-        self.history_path = os.path.join(dir_path,self.history_file)
+    def set_verbose(self,verbose_flag):
+        if verbose_flag:
+            self.verbose = True
+        else:
+            self.verbose = False 
 
-    def set_item(self,item_uri,val):
-        uri_parts = item_uri.split('.')
+    def set_data(self,item_key,val):
+        key_parts = item_key.split('.')
         itm = self
-        for p in uri_parts[:-1]:
+        for p in key_parts[:-1]:
             itm = itm[p]
-        itm[uri_parts[-1]] = val
+        itm[key_parts[-1]] = val
 
     def __getitem__(self,key):
-        if key == 'inputs':
-            return self.inputs
-        elif key == 'history':
-            return self.history
-        elif key == 'running':
-            return self.running
-        elif key == 'commands':
-            return self.commands
-        else:
-            raise KeyError('[{}] {} not in valid plugin keys: {}'
-            .format(__name__,key,self.keys()))
+        return self.get_plugin_content()[key]
     def keys(self):
-        return ['inputs','history','running','commands'] 
+        return self.get_plugin_content().keys() 
+    # TODO: make plugins into DictTrees, or make them work as such
+    def __setitem__(self,key,val):
+        self.set_data(key,val)
 
     def tagged_print(self,msg):
         print('[{}] {}'.format(type(self).__name__,msg))
@@ -143,6 +152,7 @@ class PawsPlugin(TreeModel):
         new_pgn = self.clone()
         for inp_nm,val in self.inputs.items():
             new_pgn.inputs[inp_nm] = copy.deepcopy(val) 
+        new_pgn.verbose = bool(self.verbose)
         #new_pgn.data_callback = self.data_callback
         #new_pgn.message_callback = self.message_callback
         return new_pgn
@@ -151,10 +161,10 @@ class PawsPlugin(TreeModel):
         """Add a timestamp and a message to the plugin's history."""
         self.history.append((t,msg))
         self.n_events += 1
-        if np.mod(self.n_events,1000) == 0:
-            self.dump_history(900)
-            # always keep the past 100 points?
-            self.history = self.history[-100:]
+        if np.mod(self.n_events,100) == 0:
+            self.dump_history(90)
+            # always keep the past 10 points?
+            self.history = self.history[-10:]
 
     def dump_history(self,n_events=None):
         dump_file = open(self.history_path,'a')
@@ -175,5 +185,5 @@ class PawsPlugin(TreeModel):
                     l.notify_all()
 
     def get_plugin_content(self):
-        return {}
+        return OrderedDict(inputs=self.inputs) 
 

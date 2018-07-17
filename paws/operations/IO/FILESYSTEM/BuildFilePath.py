@@ -46,4 +46,5 @@ class BuildFilePath(Operation):
         self.outputs['filename'] = pf+fn+sf
         full_filename = self.outputs['filename']+ext
         self.outputs['file_path'] = os.path.join(p,full_filename)
+        self.message_callback('file path: {}'.format(self.outputs['file_path']))
 

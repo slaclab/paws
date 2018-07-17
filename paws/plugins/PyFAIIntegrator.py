@@ -20,6 +20,7 @@ class PyFAIIntegrator(PawsPlugin):
         self.input_doc['calib_file'] = 'file defining a dict of calibration parameters, '\
             'in one of the formats outlined in the package documentation'
         self.integrator_lock = Condition()
+        self.integrator = None
 
     def start(self):
         with self.integrator_lock:
@@ -29,7 +30,7 @@ class PyFAIIntegrator(PawsPlugin):
     def set_calib(self):
         calib = self.inputs['calib_file']
         fp,xt = os.path.splitext(calib)
-        print(xt)
+        #print(xt)
         if xt in ['.poni','.PONI']:
             #g = pyFAI.geometry.Geometry()
             #g.read(calib)

@@ -11,7 +11,7 @@ inputs=OrderedDict(
     work_item=None,
     inputs={},
     condition=None,
-    run_condition=None)
+    run_condition=True)
 
 outputs=OrderedDict(
     outputs=None)

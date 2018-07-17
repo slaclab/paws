@@ -3,6 +3,8 @@ import os
 import pkgutil
 import importlib
 
+from .. import pawstools
+
 def load_workflows(path_,pkg,cat_root=''):
     cat_list = []
     cat_wf_list = []
@@ -33,6 +35,10 @@ def load_workflows(path_,pkg,cat_root=''):
     return cat_list, cat_wf_list, wf_modules
 
 cat_list, cat_wf_list, wf_modules = load_workflows(__path__,__name__)
+
+def import_workflow_module(wf_module_key):
+    importlib.import_module('.'+wf_module_key,pawstools.wf_module)
+
 
 #print(cat_list)
 #print(cat_wfl_list)

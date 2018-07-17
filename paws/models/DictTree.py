@@ -58,14 +58,12 @@ class DictTree(object):
             itm = self.get_data(root_key)
         itm_keys = []
         try:
-            # implements keys()? 
             itm_keys = itm.keys()
         except:
-            try:
-                # is an iterable?
+            if isinstance(itm,list): 
                 itm_keys = [str(i) for i in range(len(itm))] 
-            except:
-                # give it no child keys
+            else:
+                # no itm_keys
                 pass
         prefix = root_key
         if root_key: prefix += '.'

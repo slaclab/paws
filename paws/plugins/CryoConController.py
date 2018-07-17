@@ -10,9 +10,8 @@ from .. import pawstools
 inputs = OrderedDict(
     host=None,
     port=None,
-    loop_idx=1,
-    timer=None,
-    verbose=False)
+    channels={},
+    timer=None)
 
 class CryoConController(PawsPlugin):
 
@@ -21,13 +20,14 @@ class CryoConController(PawsPlugin):
         self.thread_blocking = True
         self.input_doc['host'] = 'string representing host name or IP address'
         self.input_doc['port'] = 'integer port number where SpecInfoServer listens' 
-        self.input_doc['loop_idx'] = 'Control loop selection (1, 2, 3, 4)' 
-        self.input_doc['channel_str'] = 'Channel selection (A, B, C, D)' 
+        self.input_doc['channels'] = 'dict mapping channel selection (strings "A"-"D") '\
+            'to control loop indices (integers 1-4 or None): all channels will be read, '\
+            'and any with integer control loops will be controlled. '
         self.input_doc['timer'] = 'Timer plugin for triggering client activities' 
-        self.input_doc['verbose'] = 'If True, plugin uses its message_callback' 
+        self.socket_lock = Condition()
         self.sock = None
         self.state_lock = Condition()
-        self.state = dict(T_read = None)
+        self.state = {} 
 
     def description(self):
         desc = 'CryoConController Plugin: '\
@@ -37,53 +37,69 @@ class CryoConController(PawsPlugin):
         return desc
 
     def start(self):
-        self.channel_str = self.inputs['channel_str']
-        self.loop_idx = self.inputs['loop_idx']
+        self.channels = self.inputs['channels']
         self.run_clone()
 
     def run(self):
         # executed by self.thread_clone in its own thread
         hst = self.inputs['host'] 
         prt = self.inputs['port'] 
-        self.sock = socket.create_connection((hst,prt)) 
-        self.channel_str = self.inputs['channel_str']
-        self.loop_idx = self.inputs['loop_idx']
-        vb = self.inputs['verbose']
+        with self.socket_lock:
+            self.sock = socket.create_connection((hst,prt)) 
+        self.channels = self.inputs['channels']
         tmr = self.inputs['timer'] 
         self.run_cmd('*idn?')
         keep_going = True
+
+        self.update_status()
+
         while keep_going: 
             with tmr.dt_lock:
                 tmr.dt_lock.wait()
-            while self.commands.qsize() > 0:
-                with self.command_lock:
-                    cmd = self.commands.get()
-                    self.commands.task_done()
-                self.run_cmd(cmd)
-            with self.state_lock:
-                self.read_status()
-            with self.proxy.state_lock:
-                self.proxy.state = copy.deepcopy(self.state)
-            #if vb: self.message_callback(self.print_status())
+            #while self.commands.qsize() > 0:
+            #    with self.command_lock:
+            #        cmd = self.commands.get()
+            #        self.commands.task_done()
+            #
+            #    self.run_cmd(cmd)
+            self.update_status()
             with tmr.running_lock:
                 if not tmr.running:
                     with self.proxy.running_lock:
                         self.proxy.stop()
             with self.proxy.running_lock:
                 keep_going = bool(self.proxy.running)
+        if self.verbose: self.message_callback('FINISHED')
         self.run_cmd('stop')
-        self.sock.close()
-        if vb: self.message_callback('CryoConController FINISHED')
+        with self.socket_lock:
+            self.sock.close()
+
+    def read_status(self):
+        for chan in self.channels.keys():
+            resp = self.run_cmd('input {}:temp?'.format(chan))
+            with self.state_lock:
+                self.state['T_read_{}'.format(chan)] = float(resp)
+
+    def update_status(self):
+        with self.state_lock:
+            self.read_status()
+        with self.proxy.state_lock:
+            self.proxy.state = copy.deepcopy(self.state)
+        #if self.verbose: self.message_callback('T_read: {}'.format(self.state['T_read']))
 
     def run_cmd(self,cmd):
         with self.inputs['timer'].dt_lock:
             t_now = float(self.inputs['timer'].dt_utc())
-        self.send_line(cmd)
-        resp = self.receive_line()
-        if self.inputs['verbose']: self.message_callback('{}: {}'.format(t_now,cmd+' '+resp))
+        with self.socket_lock:
+            self.send_line(cmd)
+            resp = self.receive_line()
+        if self.verbose: self.message_callback('{}: {}'.format(t_now,cmd+' '+resp))
         with self.proxy.history_lock:
             self.proxy.add_to_history(t_now,cmd+' '+resp)
         return resp
+
+    def send_line(self, line):
+        self.sock.sendall(bytearray((line+'\n').encode('utf-8')))
 
     def receive_line(self):
         bfr = bytearray(b' ' * 1024) 
@@ -91,39 +107,42 @@ class CryoConController(PawsPlugin):
         bfr = bfr.strip().decode()
         return bfr
 
-    def set_units(self,unit_str):
-        with self.thread_clone.command_lock:
-            cmd = 'input {}:units {}'.format(self.channel_str,unit_str)
-            self.thread_clone.commands.put(cmd)
+    def set_units(self,channel,unit_str):
+        cmd = 'input {}:units {}'.format(channel,unit_str)
+        self.thread_clone.run_cmd(cmd)
+        #with self.thread_clone.command_lock:
+        #    self.thread_clone.commands.put(cmd)
 
-    def loop_setup(self,control_type='PID'):
-        with self.thread_clone.command_lock:
-            cmd = 'loop {}:source {};type {}'.format(self.loop_idx,self.channel_str,control_type)
-            self.thread_clone.commands.put(cmd)
+    def loop_setup(self,channel,control_type='PID'):
+        cmd = 'loop {}:source {};type {}'.format(self.channels[channel],channel,control_type)
+        self.thread_clone.run_cmd(cmd)
+        #with self.thread_clone.command_lock:
+        #    self.thread_clone.commands.put(cmd)
 
-    def read_status(self):
-        resp = self.run_cmd('input {}:temp?'.format(self.channel_str))
-        with self.state_lock:
-            self.state['T_read'] = float(resp)
+    def set_temperature(self,channel,T_set):
+        cmd = 'loop {}:setpt {}'.format(self.channels[channel],T_set)
+        self.thread_clone.run_cmd(cmd)
+        with self.thread_clone.state_lock:
+            self.thread_clone.state['T_set_{}'.format(channel)] = T_set 
+        #with self.thread_clone.command_lock:
+        #    self.thread_clone.commands.put(cmd)
 
-    def set_temperature(self,T_set):
-        with self.thread_clone.command_lock:
-            cmd = 'loop {}:setpt {}'.format(self.loop_idx,T_set)
-            self.thread_clone.commands.put(cmd)
-
-    def set_ramp_rate(self,T_ramp):
-        with self.thread_clone.command_lock:
-            cmd = 'loop {}:rate {}'.format(self.loop_idx,T_ramp)
-            self.thread_clone.commands.put(cmd)
+    def set_ramp_rate(self,channel,T_ramp):
+        cmd = 'loop {}:rate {}'.format(self.channels[channel],T_ramp)
+        self.thread_clone.run_cmd(cmd)
+        with self.thread_clone.state_lock:
+            self.thread_clone.state['T_ramp_{}'.format(channel)] = T_ramp 
+        #with self.thread_clone.command_lock:
+        #    self.thread_clone.commands.put(cmd)
 
     def start_control(self):
-        with self.thread_clone.command_lock:
-            self.thread_clone.commands.put('control')
+        self.thread_clone.run_cmd('control')
+        #with self.thread_clone.command_lock:
+        #    self.thread_clone.commands.put('control')
  
     def stop_control(self):
-        with self.thread_clone.command_lock:
-            self.thread_clone.commands.put('stop')
+        with self.thread_clone.running_lock:
+            self.thread_clone.run_cmd('stop')
+        #with self.thread_clone.command_lock:
+        #    self.thread_clone.commands.put('stop')
  
-    def send_line(self, line):
-        self.sock.sendall(bytearray((line+'\n').encode('utf-8')))
-
