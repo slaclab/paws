@@ -13,7 +13,7 @@ wfmgr.load_operations('main',
     batch_fit='EXECUTION.Batch'
     )
 
-wfmgr.load_packaged_workflow('read_header','IO.BL15.read_header')
+wfmgr.load_packaged_workflow('read','IO.BL15.read')
 wfmgr.load_packaged_workflow('read_and_fit','FITTING.BL15.read_and_fit')
 
 wf = wfmgr.workflows['main']
@@ -35,14 +35,15 @@ wf.connect_input('param_constraints','batch_fit.inputs.static_inputs.param_const
 wf.connect_input('lower_index',['t_filenames.inputs.lower_index','t_filepaths.inputs.lower_index'])
 wf.connect_input('upper_index',['t_filenames.inputs.upper_index','t_filepaths.inputs.upper_index'])
 
-wf.connect_workflow('read_header','header_batch.inputs.work_item')
-wf.connect('header_files.outputs.file_list','header_batch.inputs.batch_inputs.header_filepath')
+wf.connect_workflow('read','header_batch.inputs.work_item')
+wf.connect('header_files.outputs.file_list','header_batch.inputs.batch_inputs.header_file')
 
 wf.connect('header_batch.outputs.batch_outputs',[\
     't_filenames.inputs.batch_outputs',\
     't_filepaths.inputs.batch_outputs'])
+# TODO: toggle time ordering as a workflow input
 wf.set_op_inputs('t_filenames',x_key='time',y_key='filename',x_sort_flag=False,x_shift_flag=True)
-wf.set_op_inputs('t_filepaths',x_key='time',y_key='data_filepath',x_sort_flag=False,x_shift_flag=True)
+wf.set_op_inputs('t_filepaths',x_key='time',y_key='header_file',x_sort_flag=False,x_shift_flag=True)
 
 wf.connect_workflow('read_and_fit','batch_fit.inputs.work_item')
 wf.connect('t_filenames.outputs.y','batch_fit.inputs.batch_inputs.filename')
