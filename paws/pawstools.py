@@ -8,7 +8,6 @@ import yaml
 
 from . import operations
 from . import workflows
-wf_module = workflows.__name__
 
 p = os.path.abspath(__file__)
 # p = (pawsroot)/paws/pawstools.py
