@@ -22,6 +22,9 @@ class PluginManager(DictTree):
     def tagged_print(self,msg):
         print('[{}] {}'.format(type(self).__name__,msg))
 
+    def set_verbose(self,plugin_name,flag=True):
+        self.plugins[plugin_name].set_verbose(flag)
+
     def set_log_dir(self,dir_path):
         for nm,pg in self.plugins.items():
             pg.set_log_dir(dir_path)
@@ -168,21 +171,21 @@ class PluginManager(DictTree):
         """Return number of plugins currently loaded."""
         return len(self.plugins) 
 
-    def build_tree(self,x):
-        """Return a dict describing a tree-like structure of this object.
-
-        This is a reimplemention of TreeModel.build_tree() 
-        to define this object's child tree structure.
-        For a PluginManager, a dict is provided for each PawsPlugin,
-        where the dict contains the results of calling
-        self.build_tree(plugin.inputs)
-        """
-        if isinstance(x,PawsPlugin):
-            d = OrderedDict()
-            d['inputs'] = self.build_tree(x.inputs)
-            d.update(x.get_plugin_content())
-        else:
-            return super(PluginManager,self).build_tree(x) 
-        return d
+    #def build_tree(self,x):
+    #    """Return a dict describing a tree-like structure of this object.
+    #
+    #    This is a reimplemention of TreeModel.build_tree() 
+    #    to define this object's child tree structure.
+    #    For a PluginManager, a dict is provided for each PawsPlugin,
+    #    where the dict contains the results of calling
+    #    self.build_tree(plugin.inputs)
+    #    """
+    #    if isinstance(x,PawsPlugin):
+    #        d = OrderedDict()
+    #        d['inputs'] = self.build_tree(x.inputs)
+    #        d.update(x.get_plugin_content())
+    #    else:
+    #        return super(PluginManager,self).build_tree(x) 
+    #    return d
 
 
