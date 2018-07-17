@@ -8,12 +8,7 @@ wfmgr.add_workflow('run_reactor')
 wfmgr.load_operations('run_reactor',
 
     set_recipe='DAQ.PLUGINS.SetFlowReactor',
-    mar_expose='DAQ.PLUGINS.MarCCD_SISExpose',
 
-    mar_image_path='IO.FILESYSTEM.BuildFilePath',
-    collect_image='IO.FILESYSTEM.SSHCopy',
-
-    local_image_path='IO.FILESYSTEM.BuildFilePath',
     header_file='IO.FILESYSTEM.BuildFilePath',
     recipe_file='IO.FILESYSTEM.BuildFilePath',
 
@@ -106,5 +101,5 @@ wf.set_dependency('get_reaction_data','mar_expose')
 wf.connect_plugin('flow_reactor','stop_reactor.inputs.flow_reactor')
 wf.set_dependency('stop_reactor',['save_recipe','save_header'])
 
-wfmgr.save_to_wfm(os.path.join(pawstools.sourcedir,'workflows','DAQ','BL15','run_flow_reactor.wfm'))
+wfmgr.save_to_wfm(os.path.join(pawstools.sourcedir,'workflows','DAQ','BL15','set_flow_reactor.wfm'))
 
