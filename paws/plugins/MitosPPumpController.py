@@ -3,16 +3,17 @@ from collections import OrderedDict
 import copy
 import os
 from threading import Condition
-
 import serial
+
+import numpy as np
+from scipy.optimize import minimize as scipimin
 
 from .PawsPlugin import PawsPlugin
 
 inputs = OrderedDict(
     serial_device=None,
     timer=None,
-    flowrate_table=None,
-    verbose=False)
+    flowrate_table=None)
 
 class MitosPPumpController(PawsPlugin):
     """PAWS Plugin for controlling a Mitos P-pump.
@@ -58,6 +59,7 @@ class MitosPPumpController(PawsPlugin):
                             2:'TARE', \
                             3:'ERROR', \
                             4:'LEAK TEST'}
+        self.serial_lock = Condition()
         self.ser = None
         self.state_lock = Condition()
         self.state = OrderedDict(
@@ -69,12 +71,40 @@ class MitosPPumpController(PawsPlugin):
             flow_rate = None, 
             target_flow_rate = None)
         self.thread_blocking = True
+        self.flow_conversion_power = 1.
+
+    def calibrate(self):
+        frtab = self.inputs['flowrate_table']
+        if frtab is not None:
+            self.flow_setpts = frtab[:,0]
+            self.flow_meas = frtab[:,1]
+            fit_obj = lambda a: np.sum([(fset**a-fmeas)**2 for fset,fmeas in zip(self.flow_setpts,self.flow_meas)])
+            res = scipimin( fit_obj,1. )
+            self.flow_conversion_power = res.x[0]
+
+    def get_setpt(self,rate):
+        if rate == 0.: return 0.
+        abs_rate = abs(rate)**(1./self.flow_conversion_power)
+        if rate < 0:
+            return -1*abs_rate
+        else:
+            return abs_rate
+
+    def get_true_flowrate(self,setpt):
+        if setpt == 0.: return 0.
+        abs_setpt = abs(setpt)**self.flow_conversion_power 
+        if setpt < 0:
+            return -1*abs_setpt
+        else:
+            return abs_setpt
 
     def start(self):
+        self.calibrate()
         self.run_clone()
+        with self.thread_clone.running_lock:
+            self.thread_clone.running_lock.wait()
        
     def run(self):
-        vb = self.inputs['verbose']
         # this method is run by self.thread_clone 
         self.ser = serial.Serial(
             self.inputs['serial_device'], 
@@ -85,15 +115,13 @@ class MitosPPumpController(PawsPlugin):
         tmr = self.inputs['timer']
         keep_going = True
         # check for control...
-        with self.state_lock:
-            self.read_status()
-        with self.proxy.state_lock:
-            self.proxy.state = copy.deepcopy(self.state)
+        self.update_status()
         if not self.state['state_code'] == 1:
             # attempt to enter remote control mode 
             resp = self.run_cmd('A1')
             if not resp == "#A0":
                 msg = "Pump failed to enter REMOTE control mode"
+                self.message_callback(msg)
                 with self.proxy.history_lock:
                     with tmr.dt_lock:
                         t_now = float(tmr.dt_utc())
@@ -106,19 +134,16 @@ class MitosPPumpController(PawsPlugin):
         # clear the pump...
         self.run_cmd('C')
 
+        self.run_notify()
         while keep_going:
             with tmr.dt_lock:
                 tmr.dt_lock.wait()
-            while self.commands.qsize() > 0: 
-                with self.command_lock:
-                    cmd = self.commands.get()
-                    self.commands.task_done()
-                self.run_cmd(cmd)
-            with self.state_lock:
-                self.read_status()
-            with self.proxy.state_lock:
-                self.proxy.state = copy.deepcopy(self.state)
-            if vb: self.message_callback(self.print_status())
+            #while self.commands.qsize() > 0: 
+            #    with self.command_lock:
+            #        cmd = self.commands.get()
+            #        self.commands.task_done()
+            #    self.run_cmd(cmd)
+            self.update_status()
             with tmr.running_lock:
                 if not tmr.running:
                     with self.proxy.running_lock:
@@ -128,17 +153,24 @@ class MitosPPumpController(PawsPlugin):
 
         # relinquish control
         self.run_cmd('A0') 
-
+        if self.verbose: self.message_callback('FINISHED')
         with self.proxy.history_lock:
             self.proxy.dump_history()
         self.ser.close()
-        if vb: self.message_callback('MitosPPumpController FINISHED')
+
+    def update_status(self):
+        with self.state_lock:
+            self.read_status()
+        with self.proxy.state_lock:
+            self.proxy.state = copy.deepcopy(self.state)
+        if self.verbose: self.message_callback(self.print_status())
 
     def run_cmd(self,cmd):
         with self.inputs['timer'].dt_lock:
             t_now = float(self.inputs['timer'].dt_utc())
-        self.send_line(cmd)
-        resp = self.receive_line()
+        with self.serial_lock:
+            self.send_line(cmd)
+            resp = self.receive_line()
         with self.proxy.history_lock:
             self.proxy.add_to_history(t_now,cmd+' '+resp)
         return resp
@@ -221,26 +253,24 @@ class MitosPPumpController(PawsPlugin):
 
         Parameters
         ----------
-        rate : integer
+        rate : float 
             The flow rate set point, in microlitres per minute.
-            The pump controller expects and integer value in
-            picolitres per second.
-            The rate is rounded to the nearest integer value
-            after converting it to picolitres per second.
         """
+        # TODO: think of an elegant way to handle setpts below the resolution of the pump controls
+        if rate < 0.1:
+            rate = 0.
+        if self.verbose: self.message_callback('requested flowrate: {}'.format(rate))
         setpt = self.get_setpt(rate) 
+        if self.verbose: self.message_callback('calibrated setpoint for requested flowrate: {}'.format(setpt))
         pl_s_rate = int(round(float(setpt)*1.E6/60.))
-        with self.thread_clone.command_lock:
-            self.thread_clone.commands.put("F{}".format(pl_s_rate)) 
-
-    def get_setpt(self,rate):
-        tbl = self.inputs['flowrate_table']
-        setpt = np.interp(rate,tbl[0],tbl[1])
-        return setpt
+        if self.verbose: self.message_callback('calibrated setpoint in pL/sec: {}'.format(pl_s_rate))
+        self.thread_clone.run_cmd('F{}'.format(pl_s_rate))
+        #with self.thread_clone.command_lock:
+        #    self.thread_clone.commands.put("F{}".format(pl_s_rate)) 
 
     def set_pressure(self,pressure):
         """Set the pump pressure to the provided value.
-
+    
         Parameters
         ----------
         pressure : integer
@@ -248,20 +278,23 @@ class MitosPPumpController(PawsPlugin):
             A value of 1000 sends the 'P1000' command,
             which sets target pressure to 1000 mbar. 
         """
-        with self.thread_clone.command_lock:
-            self.thread_clone.commands.put("P{}".format(pressure)) 
+        self.thread_clone.run_cmd('P{}'.format(pressure))
+        #with self.thread_clone.command_lock:
+        #    self.thread_clone.commands.put("P{}".format(pressure)) 
 
     def tare(self):
         """Tare the P-pump."""
-        if self.inputs['verbose']: self.message_callback('taring pump')
-        with self.thread_clone.command_lock:
-            self.thread_clone.commands.put("R0")
+        if self.verbose: self.message_callback('taring pump')
+        self.thread_clone.run_cmd('R0')
+        #with self.thread_clone.command_lock:
+        #    self.thread_clone.commands.put("R0")
 
     def set_idle(self):
         """Set the P-pump to idle."""
-        if self.inputs['verbose']: self.message_callback('setting pump to idle')
-        with self.thread_clone.command_lock:
-            self.thread_clone.commands.put("P0")
+        if self.verbose: self.message_callback('setting pump to idle')
+        self.thread_clone.run_cmd('P0')
+        #with self.thread_clone.command_lock:
+        #    self.thread_clone.commands.put("P0")
 
     def dispense_volume(self, vol):
         """Control the pump to dispense a specified volume.
