@@ -11,8 +11,7 @@ import numpy as np
 
 inputs = OrderedDict(
     dt=1.,
-    t_max=None,
-    verbose=False)
+    t_max=None)
 
 class Timer(PawsPlugin):
     """A Paws plugin for marking the passage of time"""
@@ -38,8 +37,7 @@ class Timer(PawsPlugin):
 
     def run(self):
         # self.thread_clone runs this method in its own thread.
-        vb = self.inputs['verbose']
-        if vb: self.message_callback('timer STARTED')
+        if self.verbose: self.message_callback('timer STARTED')
         with self.proxy.dt_lock:
             dt = self.inputs['dt'] 
             t_max = self.inputs['t_max']
@@ -51,7 +49,7 @@ class Timer(PawsPlugin):
             self.proxy.dt_notify()
             #dt_err = np.mod(dt_now,dt)
         while dt_now < t_max and keep_going:
-            if vb: self.message_callback('tick: {}/{}'.format(dt_now,t_max))
+            if self.verbose: self.message_callback('tick: {}/{}'.format(dt_now,t_max))
             # attempt to nail the next dt point:
             t_rem = dt-np.mod(self.dt_utc(),dt)
             #time.sleep(t_rem-dt_err)
@@ -65,19 +63,26 @@ class Timer(PawsPlugin):
             # acquire proxy running_lock, check if we are still running
             with self.proxy.running_lock:
                 keep_going = bool(self.proxy.running)
-                if vb and not keep_going: self.message_callback('timer STOPPED')
+                if self.verbose and not keep_going: self.message_callback('timer STOPPED')
         with self.proxy.running_lock:
             self.proxy.stop()
         # now that the plugin is stopped, notify any other plugins that are waiting on dt_lock
         with self.proxy.dt_lock:
             self.proxy.dt_notify()
-        if vb: self.message_callback('Timer FINISHED')
+        if self.verbose: self.message_callback('Timer FINISHED')
 
     def dt_notify(self):
         if int(self.py_version) == 2:
             self.dt_lock.notifyAll()
         else:
             self.dt_lock.notify_all()
+
+    def t_utc(self):
+        t = datetime.datetime.now(self.tz)
+        return float((t-self.ep).total_seconds())
+
+    def time_as_string(self):
+        return str(datetime.datetime.now(self.tz))
 
     def dt_utc(self):
         t = datetime.datetime.now(self.tz)
