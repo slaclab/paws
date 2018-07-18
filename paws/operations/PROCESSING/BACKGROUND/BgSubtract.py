@@ -56,4 +56,15 @@ class BgSubtract(Operation):
         self.outputs['q_I_bgsub'] = q_I_bgsub 
         self.outputs['dI'] = dI_out
         self.outputs['bg_factor'] = bg_factor
+
+        #from matplotlib import pyplot as plt
+        #plt.figure()
+        #plt.semilogy(q_I[:,0],I)
+        #plt.semilogy(q_I[:,0],I_bg)
+        #plt.semilogy(q_I[:,0],I_out)
+        #plt.legend(['signal','background','sample'])
+        #plt.xlabel('q',size=18)
+        #plt.ylabel('I(q)',size=18)
+        #plt.show()
  
+

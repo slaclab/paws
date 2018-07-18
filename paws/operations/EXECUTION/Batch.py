@@ -64,8 +64,12 @@ class Batch(Operation):
 
         self.message_callback('STARTING BATCH')
 
+        out_dict = None
         for batch_idx in range(batch_size):
-            inp_dict = OrderedDict.fromkeys(list(inps.keys())+list(stat_inps.keys()))
+            inp_dict = OrderedDict()
+            if any(ser_params) and out_dict is not None:
+                for inp_name,out_name in ser_params.items():
+                    inp_dict[inp_name] = out_dict[out_name]
             for k in inps.keys():
                 inp_dict[k] = inps[k][batch_idx]
             for k in stat_inps.keys():
@@ -74,12 +78,6 @@ class Batch(Operation):
                 wrkitm.set_input(inp_name,inp_value)
  
             self.message_callback('BATCH RUN {} / {}'.format(batch_idx,batch_size-1))
-            #wrki = wrkitms[idx]
-
-            if any(ser_params) and out_dict is not None:
-                for inp_name,out_name in ser_params.items():
-                    wrkitm.set_input(inp_name,out_dict[out_name])
-
             wrkitm.run()
             out_dict = copy.deepcopy(wrkitm.get_outputs())
 

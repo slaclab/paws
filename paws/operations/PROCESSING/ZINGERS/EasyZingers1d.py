@@ -118,12 +118,15 @@ class EasyZingers1d(Operation):
         self.outputs['zmask'] = zmask
 
         if show_zingers:
+        #if any(idx_z):
             from matplotlib import pyplot as plt
             plt.figure(1)
             plt.semilogy(q,I)
             plt.semilogy(q,I_dz,'g')
             for i in idx_z:
                 plt.semilogy(q[i],I[i],'ro')
+            plt.xlabel('q',size=18)
+            plt.ylabel('I(q)',size=18)
             plt.show()
             
 
