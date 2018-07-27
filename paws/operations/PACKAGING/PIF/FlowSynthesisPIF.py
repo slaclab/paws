@@ -28,8 +28,8 @@ class FlowSynthesisPIF(Operation):
             '(pif uid = experiment_id+"_"+t_utc)'
         self.input_doc['header_file'] = 'path to sample header file'
         self.input_doc['recipe_file'] = 'path to sample recipe file'
-        self.input_doc['q_I_file'] = 'path to sample scattering data file'
-        self.input_doc['populations_file'] = 'path to sample populations file'
+        self.input_doc['q_I_file'] = 'path to scattering data file'
+        self.input_doc['populations_file'] = 'path to population definitions file'
         self.output_doc['pif'] = 'pif object representing the synthesis experiment'
 
     def run(self):
