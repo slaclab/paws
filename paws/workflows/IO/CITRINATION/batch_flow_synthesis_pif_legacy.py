@@ -54,5 +54,5 @@ wf.connect('collect_pifs.outputs.data_list','upload_pif.inputs.pif')
 wf.connect('output_file.outputs.file_path','upload_pif.inputs.json_path')
 wf.connect_plugin('citrination_client','upload_pif.inputs.citrination_client')
 
-wfmgr.save_to_wfm(os.path.join(pawstools.sourcedir,'workflows','CITRINATION','BL15','batch_flow_synthesis_pif.wfm'))
+wfmgr.save_to_wfm(os.path.join(pawstools.sourcedir,'workflows','IO','CITRINATION','batch_flow_synthesis_pif_legacy.wfm'))
 

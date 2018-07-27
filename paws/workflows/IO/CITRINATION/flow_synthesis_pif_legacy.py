@@ -65,5 +65,5 @@ wf.connect('read_populations.outputs.populations','make_pif.inputs.populations')
 wf.connect('output_file.outputs.file_path','save_pif.inputs.file_path')
 wf.connect('make_pif.outputs.pif','save_pif.inputs.pif')
 
-wfmgr.save_to_wfl('make_pif',os.path.join(pawstools.sourcedir,'workflows','CITRINATION','BL15','flow_synthesis_pif.wfl'))
+wfmgr.save_to_wfl('make_pif',os.path.join(pawstools.sourcedir,'workflows','CITRINATION','BL15','flow_synthesis_pif_legacy.wfl'))
 

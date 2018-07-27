@@ -36,5 +36,5 @@ wf.connect('pif_file.outputs.file_path','upload_pif.inputs.json_path')
 wf.connect_input('keep_json','upload_pif.inputs.keep_json')
 wf.connect_input('upload_flag','upload_pif.inputs.upload_flag')
 
-wfmgr.save_to_wfm(os.path.join(pawstools.sourcedir,'workflows','CITRINATION','flow_synthesis_pif.wfm'))
+wfmgr.save_to_wfm(os.path.join(pawstools.sourcedir,'workflows','IO','CITRINATION','flow_synthesis_pif.wfm'))
 
