@@ -33,6 +33,7 @@ wf.connect_input('q_I_suffix','batch_read.inputs.static_inputs.q_I_suffix')
 wf.connect_input('populations_dir','batch_read.inputs.static_inputs.populations_dir') 
 #wf.connect_input('image_dir','batch_read.inputs.static_inputs.image_dir') 
 # inputs: initial conditions, bounds, constraints, for fitting
+wf.connect_input('source_wavelength','batch_fit.inputs.static_inputs.source_wavelength')
 wf.connect_input('populations','batch_fit.inputs.static_inputs.populations')
 wf.connect_input('fixed_params','batch_fit.inputs.static_inputs.fixed_params')
 wf.connect_input('param_bounds','batch_fit.inputs.static_inputs.param_bounds')
