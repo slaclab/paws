@@ -56,7 +56,7 @@ class FlowSynthesisPIF(Operation):
         if t_utc is not None:
             uid_full = uid_full+'_'+str(int(t_utc))
         src_wl = hdr['source_wavelength']
-        csys = piftools.make_pif(uid_full,expt_id,t_utc,q_I,None,src_wl,pops)
+        csys = piftools.make_pif(uid_full,expt_id,t_utc,q_I,None,src_wl,pops,fp,pb,pc)
         csys.properties.append(piftools.scalar_property(
             'T_set',rcp['T_set'],'temperature setpoint','EXPERIMENTAL','degrees C'))
         csys.properties.append(piftools.scalar_property(
