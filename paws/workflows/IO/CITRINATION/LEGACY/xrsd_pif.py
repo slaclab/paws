@@ -5,7 +5,7 @@ from paws.workflows.WfManager import WfManager
 
 wfmgr = WfManager()
 
-wfmgr.load_packaged_workflow('read','IO.BL15.read_legacy')
+wfmgr.load_packaged_workflow('read','IO.BL15.LEGACY.read')
 wfmgr.add_workflow('xrsd_pif')
 wfmgr.load_operations('xrsd_pif',
     read='EXECUTION.Run',
@@ -45,5 +45,5 @@ wf.connect('make_pif.outputs.pif','upload_pif.inputs.pif')
 wf.connect_plugin('citrination_client','upload_pif.inputs.citrination_client')
 wf.connect('pif_file.outputs.file_path','upload_pif.inputs.json_path')
 
-wfmgr.save_to_wfm(os.path.join(pawstools.sourcedir,'workflows','IO','CITRINATION','xrsd_pif.wfm'))
+wfmgr.save_to_wfm(os.path.join(pawstools.sourcedir,'workflows','IO','CITRINATION','LEGACY','xrsd_pif.wfm'))
 
