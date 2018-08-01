@@ -14,8 +14,7 @@ wfmgr.load_operations('main',
     batch_fit='EXECUTION.Batch'
     )
 
-#wfmgr.load_packaged_workflow('read','IO.BL15.read')
-wfmgr.load_packaged_workflow('read','IO.BL15.read_legacy')
+wfmgr.load_packaged_workflow('read','IO.BL15.read')
 wfmgr.load_packaged_workflow('read_and_fit','FITTING.BL15.read_and_fit')
 read_wf = wfmgr.workflows['read']
 read_wf.disable_op('read_image')
@@ -31,6 +30,7 @@ wf.connect_input('image_dir','batch_read.inputs.static_inputs.image_dir')
 wf.connect_input('q_I_dir','batch_read.inputs.static_inputs.q_I_dir')
 wf.connect_input('q_I_suffix','batch_read.inputs.static_inputs.q_I_suffix')
 wf.connect_input('populations_dir','batch_read.inputs.static_inputs.populations_dir') 
+wf.connect_input('populations_suffix','batch_read.inputs.static_inputs.populations_suffix')
 #wf.connect_input('image_dir','batch_read.inputs.static_inputs.image_dir') 
 # inputs: initial conditions, bounds, constraints, for fitting
 wf.connect_input('source_wavelength','batch_fit.inputs.static_inputs.source_wavelength')

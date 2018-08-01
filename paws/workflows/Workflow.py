@@ -88,6 +88,8 @@ class Workflow(DictTree):
     def verify_keys(self,keys):
         for k in keys:
             kparts = k.split('.')
+            # check only the first three parts of the key:
+            # things should be documented to that depth
             if len(kparts) > 3: kparts = kparts[:3]
             k_check = kparts.pop(0)
             for subk in kparts:
@@ -184,6 +186,7 @@ class Workflow(DictTree):
             return [self.get_data(k) for k in out_map]
 
     def set_wf_item(self,wf_item_key,val):
+        self.verify_keys([wf_item_key])
         self.op_inputs[wf_item_key] = val
 
     def set_op_input(self,op_name,input_name,val):

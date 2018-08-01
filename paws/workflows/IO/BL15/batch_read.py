@@ -20,6 +20,8 @@ wf.connect_input('header_dir','header_files.inputs.dir_path')
 # input: header files regex 
 wf.connect_input('header_regex','header_files.inputs.regex') 
 wf.connect_input('q_I_suffix','batch.inputs.static_inputs.q_I_suffix') 
+wf.connect_input('populations_dir','batch.inputs.static_inputs.populations_dir') 
+wf.connect_input('populations_suffix','batch.inputs.static_inputs.populations_suffix') 
 wf.connect_input('q_I_ext','batch.inputs.static_inputs.q_I_ext')
 wf.connect_input('image_dir','batch.inputs.static_inputs.image_dir')
 wf.connect_input('q_I_dir','batch.inputs.static_inputs.q_I_dir')

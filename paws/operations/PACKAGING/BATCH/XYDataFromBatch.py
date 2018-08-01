@@ -19,7 +19,7 @@ outputs = OrderedDict(
 
 class XYDataFromBatch(Operation):
     """
-    Harvest two arrays from a batch output (a list of dicts). 
+    Harvest two arrays from a batch output (dict of lists). 
     Takes a batch output, a key for x values, and a key for y values.
     """
 
@@ -48,7 +48,7 @@ class XYDataFromBatch(Operation):
 
         x_list = b_out[kx] 
         y_list = b_out[ky] 
-        if shiftflag or sortflag:
+        if shiftflag or sortflag or uidx is not None or lidx is not None:
             xa = np.array(x_list)
             ya = np.array(y_list)
             if shiftflag:
@@ -70,5 +70,6 @@ class XYDataFromBatch(Operation):
 
         self.outputs['x'] = x_list
         self.outputs['y'] = y_list
+
         self.outputs['x_y'] = zip(x_list,y_list)
 
