@@ -6,7 +6,9 @@ import yaml
 
 from ...Operation import Operation
 
-inputs=OrderedDict(file_path=None)
+inputs=OrderedDict(
+    file_path=None,
+    output_keymap={})
 outputs=OrderedDict(
     data=None,
     dir_path=None,
@@ -18,6 +20,11 @@ class LoadYAML(Operation):
     def __init__(self):
         super(LoadYAML, self).__init__(inputs, outputs)
         self.input_doc['file_path'] = 'path to YAML-formatted data file'
+        self.input_doc['output_keymap'] = 'dict of key-map pairs: '\
+            'each key is added to the output `data` dict, '\
+            'and each map is a list of keys '\
+            'for extracting an embedded value from `data` '\
+            '(i.e., for k,v in output_keymap.items(): data[k] = data[v[0]][v[1]][...])'
         self.output_doc['data'] = 'the result of yaml.load(file_path)' 
         self.output_doc['dir_path'] = 'directory path'
         self.output_doc['filename'] = 'filename with path and extension stripped'
@@ -32,5 +39,11 @@ class LoadYAML(Operation):
         f = open(p,'r')
         ds = yaml.load(f)
         f.close()
+
+        for k,ks in self.inputs['output_keymap'].items():
+            v = ds[ks[0]] 
+            for kk in ks[1:]:
+                v = v[kk]
+            ds[k] = v
         self.outputs['data'] = ds 
 

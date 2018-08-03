@@ -1,12 +1,19 @@
 from __future__ import print_function
 from collections import OrderedDict
 import os
+import datetime
+import time
+
+import tzlocal
 
 from ...Operation import Operation
 
-inputs=OrderedDict(file_path=None)
+inputs=OrderedDict(
+    file_path=None,
+    temperature_key='TEMP')
+
 outputs=OrderedDict(
-    header_dict=None,
+    data=None,
     dir_path=None,
     filename=None)
 
@@ -18,7 +25,7 @@ class ReadHeader(Operation):
     def __init__(self):
         super(ReadHeader, self).__init__(inputs, outputs)
         self.input_doc['file_path'] = 'path to a .txt header file produced by beamline 1-5 at SSRL.'
-        self.output_doc['header_dict'] = 'the header file as a python dictionary'
+        self.output_doc['data'] = 'the header data, packaged as a python dictionary'
         self.output_doc['dir_path'] = 'directory path'
         self.output_doc['filename'] = 'filename with path and extension stripped'
 
@@ -38,11 +45,20 @@ class ReadHeader(Operation):
                     u_str = kvs[0].split('User:')[1].strip()
                     t_str = kvs[1].split('time:')[1].strip()
                     d['User'] = u_str
-                    d['time'] = t_str
+                    d['date_time'] = t_str
+                    tz = tzlocal.get_localzone()
+                    # use strptime to create a naive datetime
+                    dt = datetime.datetime.strptime(t_str.strip(),"%a %b %d %H:%M:%S %Y")
+                    # add timezone information to datetime
+                    dt_aware = datetime.datetime(dt.year,dt.month,dt.day,dt.hour,dt.minute,dt.second,dt.microsecond,tz)
+                    # interpret the time in UTC 
+                    t_utc = time.mktime(dt_aware.timetuple())
+                    d['t_utc'] = float(t_utc)
                 # and filter out the redundant temperature line
                 elif not (len(kvs)==1 and kvs[0].strip()[-1]=='C'):
                     for kv in kvs:
                         kv_arr = kv.split('=')
                         d[kv_arr[0].strip()] = float(kv_arr[1].strip())
-        self.outputs['header_dict'] = d
+        d['temperature'] = d[self.inputs['temperature_key']]
+        self.outputs['data'] = d
 

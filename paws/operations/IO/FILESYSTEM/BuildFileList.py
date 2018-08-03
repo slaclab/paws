@@ -29,7 +29,9 @@ class BuildFileList(Operation):
         dirpath = self.inputs['dir_path']
         rx = self.inputs['regex']
         frx = self.inputs['filter_regex']
-        fl = glob.glob(os.path.join(dirpath,rx))
+        globex = os.path.join(dirpath,rx)
+        self.message_callback('seeking files matching {}'.format(globex))
+        fl = glob.glob(globex)
         if frx is not None:
             fl = list(filter(re.compile(frx).match,fl))
         fnamel = [os.path.split(p)[-1] for p in fl] 

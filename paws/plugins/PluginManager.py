@@ -80,6 +80,10 @@ class PluginManager(DictTree):
         mod = importlib.import_module('.'+plugin_module,pgns.__name__)
         return mod.__dict__[plugin_module]()
 
+    def set_inputs(self,plugin_name,**kwargs):
+        for input_name,val in kwargs.items():
+            self.set_input(plugin_name,input_name,val)
+
     def set_input(self,plugin_name,input_name,val):
         """Set a plugin input to the provided value.
 

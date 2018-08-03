@@ -49,8 +49,8 @@ class PyFAIIntegrator(PawsPlugin):
 
     def integrate_to_2d(self,img_data,npt_rad=1000,npt_azim=1000,polz_factor=0.,unit='q_A^-1'):
         with self.integrator_lock:
-            I_at_q_chi,q,chi = intgtr.integrate2d(img,npt_rad,npt_azim,
-                polarization_factor=polz_factor,unit=unit)
+            I_at_q_chi,q,chi = self.integrator.integrate2d(img_data,
+                npt_rad,npt_azim,polarization_factor=polz_factor,unit=unit)
         return q,chi,I_at_q_chi
 
     def set_nika(self,nika_file):

@@ -5,7 +5,7 @@ from paws.workflows.WfManager import WfManager
 
 wfmgr = WfManager()
 
-wfmgr.load_packaged_wfm('FITTING.BL15.batch_fit')
+wfmgr.load_packaged_wfm('FITTING.BL15.LEGACY.batch_fit')
 
 wf = wfmgr.workflows['main']
 
@@ -16,5 +16,5 @@ wf.set_op_input('batch_fit','serial_params',
     {'populations':'populations','param_bounds':'param_bounds',
     'fixed_params':'fixed_params','param_constraints':'param_constraints'})
 
-wfmgr.save_to_wfm(os.path.join(pawstools.sourcedir,'workflows','FITTING','BL15','timeseries_fit.wfm'))
+wfmgr.save_to_wfm(os.path.join(pawstools.sourcedir,'workflows','FITTING','BL15','LEGACY','timeseries_fit.wfm'))
 
