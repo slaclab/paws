@@ -4,7 +4,7 @@ from paws import pawstools
 from paws.workflows.WfManager import WfManager 
 
 wfmgr = WfManager()
-wfmgr.load_packaged_wfm('IO.CITRINATION.flow_synthesis_pif')
+wfmgr.load_packaged_wfm('IO.BL15_CITRINATION.flow_synthesis_pif')
 wfmgr.workflows['pif'].disable_op('pif_file')
 wfmgr.workflows['pif'].disable_op('upload_pif')
 
@@ -36,5 +36,5 @@ wf.connect('pif_file.outputs.file_path','upload_pif.inputs.json_path')
 wf.connect('batch.outputs.batch_outputs.pif','upload_pif.inputs.pif')
 wf.connect_plugin('citrination_client','upload_pif.inputs.citrination_client')
 
-wfmgr.save_to_wfm(os.path.join(pawstools.sourcedir,'workflows','IO','CITRINATION','batch_flow_synthesis_pif.wfm'))
+wfmgr.save_to_wfm(os.path.join(pawstools.sourcedir,'workflows','IO','BL15_CITRINATION','batch_flow_synthesis_pif.wfm'))
 
