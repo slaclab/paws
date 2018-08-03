@@ -2,15 +2,18 @@ from collections import OrderedDict
 
 from ...Operation import Operation
 
-from xrsdkit.tools import piftools,load_fit
+from xrsdkit.tools import piftools
 
 inputs=OrderedDict(
     experiment_id=None,
     t_utc=None,
     temperature=None,
     source_wavelength=None,
-    q_I_file=None,
-    populations_file=None)
+    q_I=None,
+    populations={},
+    fixed_params={},
+    param_bounds={},
+    param_constraints={})
 outputs=OrderedDict(pif=None)
 
 class PackXRSDPIF(Operation):
@@ -22,8 +25,11 @@ class PackXRSDPIF(Operation):
         self.input_doc['t_utc'] = 'time in seconds utc'
         self.input_doc['temperature'] = 'temperature of the system in degrees Celsius'
         self.input_doc['source_wavelength'] = 'light source wavelength in Angstroms'
-        self.input_doc['q_I_file'] = 'path to scattering data file'
-        self.input_doc['populations_file'] = 'path to population definitions file'
+        self.input_doc['q_I'] = 'n-by-2 array of scattering data, intensity (arb) versus q (1/A)'
+        self.input_doc['populations'] = 'scattering populations data (dict)'
+        self.input_doc['fixed_params'] = 'scattering populations fixed params'
+        self.input_doc['param_bounds'] = 'scattering populations param bounds'
+        self.input_doc['param_constraints'] = 'scattering populations param constraints'
         self.output_doc['pif'] = 'pif object representing the input data'
 
     def run(self):
@@ -31,19 +37,18 @@ class PackXRSDPIF(Operation):
         t_utc = self.inputs['t_utc']
         temp_C = self.inputs['temperature']
         src_wl = self.inputs['source_wavelength']
-        popsf = self.inputs['populations_file']
-        q_If = self.inputs['q_I_file']
+        pops = self.inputs['populations']
+        fp = self.inputs['fixed_params']
+        pb = self.inputs['param_bounds']
+        pc = self.inputs['param_constraints']
+        q_I = self.inputs['q_I']
         uid_full = 'tmp'
         if expt_id is not None:
             uid_full = expt_id 
         if t_utc is not None:
             uid_full = uid_full+'_'+str(int(t_utc))
-        self.message_callback('loading scattering data: {}'.format(q_If))
-        q_I = np.loadtxt(open(q_If,'r'))
-        self.message_callback('loading populations: {}'.format(popsf))
-        pops,fp,pb,pc,rpt = load_fit(popsf)
 
-        csys = piftools.make_pif(uid_full,expt_id,t_utc,q_I,temp_C,src_wl,pops)
+        csys = piftools.make_pif(uid_full,expt_id,t_utc,q_I,temp_C,src_wl,pops,fp,pb,pc)
 
         self.outputs['pif'] = csys
 
