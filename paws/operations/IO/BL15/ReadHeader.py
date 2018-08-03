@@ -13,7 +13,7 @@ inputs=OrderedDict(
     temperature_key='TEMP')
 
 outputs=OrderedDict(
-    header_dict=None,
+    data=None,
     dir_path=None,
     filename=None)
 
@@ -25,7 +25,7 @@ class ReadHeader(Operation):
     def __init__(self):
         super(ReadHeader, self).__init__(inputs, outputs)
         self.input_doc['file_path'] = 'path to a .txt header file produced by beamline 1-5 at SSRL.'
-        self.output_doc['header_dict'] = 'the header file as a python dictionary'
+        self.output_doc['data'] = 'the header data, packaged as a python dictionary'
         self.output_doc['dir_path'] = 'directory path'
         self.output_doc['filename'] = 'filename with path and extension stripped'
 
@@ -60,5 +60,5 @@ class ReadHeader(Operation):
                         kv_arr = kv.split('=')
                         d[kv_arr[0].strip()] = float(kv_arr[1].strip())
         d['temperature'] = d[self.inputs['temperature_key']]
-        self.outputs['header_dict'] = d
+        self.outputs['data'] = d
 

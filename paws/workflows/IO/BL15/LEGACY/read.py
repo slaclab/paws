@@ -11,8 +11,7 @@ wfmgr.load_operations('read',
     read_header='IO.BL15.ReadHeader')
 # correct the relevant workflow outputs, add an input for temperature_key
 wf = wfmgr.workflows['read']
-wf.break_output('header_data')
-wf.connect_output('header_data','read_header.outputs.header_dict')
+wf.break_input('header_keymap')
 wf.connect_input('temperature_key','read_header.inputs.temperature_key')
 
 wfmgr.save_to_wfl('read',os.path.join(pawstools.sourcedir,'workflows','IO','BL15','LEGACY','read.wfl'))

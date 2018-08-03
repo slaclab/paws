@@ -9,7 +9,6 @@ wfmgr = WfManager()
 wfmgr.add_workflow('integrate')
 wfmgr.load_operations('integrate',
     read_header = 'IO.BL15.ReadHeader',
-    time_temp = 'PACKAGING.BL15.TimeTempFromHeader',
     image_path = 'IO.FILESYSTEM.BuildFilePath',
     read_image = 'IO.IMAGE.FabIOOpen',
     integrate = 'PROCESSING.INTEGRATION.Integrate1d',
@@ -37,23 +36,19 @@ wf.connect_input('q_min','q_window.inputs.x_min')
 wf.connect_input('q_max','q_window.inputs.x_max')
 wf.set_op_input('q_window','x_min',0.)
 wf.set_op_input('q_window','x_max',1.)
-# inputs: keys for fetching time,temperature from header dictionary 
-wf.connect_input('temperature_key','time_temp.inputs.temperature_key')
-wf.connect_input('time_key','time_temp.inputs.time_key')
-wf.set_op_input('time_temp','time_key','time')
-wf.set_op_input('time_temp','temperature_key','TEMP')
+# input: key for fetching temperature from header dictionary 
+wf.connect_input('temperature_key','read_header.inputs.temperature_key')
 # input: pyfai.AzimuthalIntegrator
 wf.connect_input('integrator','integrate.inputs.integrator')
 wf.connect_plugin('integrator','integrate.inputs.integrator')
 
-wf.connect_output('time','time_temp.outputs.time')
-wf.connect_output('temperature','time_temp.outputs.temperature')
+wf.connect_output('time','read_header.outputs.data.t_utc')
+wf.connect_output('temperature','read_header.outputs.data.temperature')
 wf.connect_output('q_I','integrate.outputs.q_I')
 wf.connect_output('q_I_dz','dezinger.outputs.q_I_dz')
 
 wf.connect('read_header.outputs.filename','image_path.inputs.filename')
 wf.connect('image_path.outputs.file_path','read_image.inputs.file_path')
-wf.connect('read_header.outputs.header_dict','time_temp.inputs.header_dict')
 wf.connect('read_image.outputs.image_data','integrate.inputs.image_data')
 wf.connect('integrate.outputs.q_I','q_window.inputs.x_y')
 wf.connect('q_window.outputs.x_y_window','dezinger.inputs.q_I')

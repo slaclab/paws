@@ -27,7 +27,7 @@ wf.connect_input('header_keymap','read_header.inputs.output_keymap')
 wf.connect_output('header_data','read_header.outputs.data') 
 wf.connect_output('filename','read_header.outputs.filename')
 wf.connect_output('header_file','read_header.inputs.file_path')
-wf.connect_output('time','read_header.outputs.data.time')
+wf.connect_output('time','read_header.outputs.data.t_utc')
 
 wf.connect('read_header.outputs.filename',[\
     'image_file.inputs.filename',\
