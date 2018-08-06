@@ -37,7 +37,7 @@ class UploadPIF(Operation):
         jsp = self.inputs['json_path']
         if not os.path.splitext(jsp)[1] in ['.json','.JSON']:
             jsp = jsp+'.json'
-
+        jsfnm = os.path.split(jsp)[1]
         json_flag = self.inputs['keep_json']
         flag = self.inputs['upload_flag']
         self.message_callback('PIF dump file: {}'.format(jsp))
@@ -45,7 +45,7 @@ class UploadPIF(Operation):
         if flag:
             self.message_callback('Uploading {} to dataset {}'.format(jsp,dsid))
             try:
-                r = cl_pgn.client.upload(dsid,jsp)
+                r = cl_pgn.client.upload(dsid,jsp,jsfnm)
             except:
                 r = 'An error occurred during upload- aborting'
                 self.message_callback(r)
