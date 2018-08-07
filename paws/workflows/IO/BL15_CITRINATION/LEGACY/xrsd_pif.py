@@ -11,6 +11,10 @@ wfmgr.load_operations('read_to_pif',
     output_file='IO.FILESYSTEM.BuildFilePath',
     upload_pif='IO.CITRINATION.UploadPIF'
     ) 
+
+pgmgr = wfmgr.plugin_manager
+pgmgr.add_plugin('citrination_client','CitrinationClient')
+
 wf = wfmgr.workflows['read_to_pif']
 wf.disable_op('read_image')
 wf.enable_op('read_populations')
@@ -21,11 +25,6 @@ wf.connect('read_populations.outputs.populations','make_pif.inputs.populations')
 wf.connect('read_populations.outputs.fixed_params','make_pif.inputs.fixed_params')
 wf.connect('read_populations.outputs.param_bounds','make_pif.inputs.param_bounds')
 wf.connect('read_populations.outputs.param_constraints','make_pif.inputs.param_constraints')
-wf.connect_output('pif','make_pif.outputs.pif')
-
-pgmgr = wfmgr.plugin_manager
-pgmgr.add_plugin('citrination_client','CitrinationClient')
-
 wf.connect('read_header.outputs.data.temperature','make_pif.inputs.temperature')
 wf.connect('read_header.outputs.data.t_utc','make_pif.inputs.t_utc')
 wf.connect_output('pif','make_pif.outputs.pif')

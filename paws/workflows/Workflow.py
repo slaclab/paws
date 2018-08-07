@@ -134,18 +134,20 @@ class Workflow(DictTree):
     def connect_input(self,input_name,targets):
         if not isinstance(targets,list): targets = [targets]
         self.verify_keys(targets)
-        if input_name in self.inputs:
-            self.inputs[input_name].extend(targets)
-        else:
-            self.inputs[input_name] = targets
+        if not input_name in self.inputs:
+            self.inputs[input_name] = []
+        for tgt in targets:
+            if not tgt in self.inputs[input_name]:
+                self.inputs[input_name].append(tgt)
 
     def connect_output(self,output_name,targets):
         if not isinstance(targets,list): targets = [targets]
         self.verify_keys(targets)
-        if output_name in self.outputs:
-            self.outputs[output_name].extend(targets)
-        else:
-            self.outputs[output_name] = targets
+        if not output_name in self.outputs:
+            self.outputs[output_name] = [] 
+        for tgt in targets:
+            if not tgt in self.outputs[output_name]:
+                self.outputs[output_name].append(tgt)
 
     def break_connection(self,io_key):
         if io_key in self.op_connections:
