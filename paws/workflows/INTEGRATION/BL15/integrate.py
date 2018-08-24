@@ -9,7 +9,6 @@ wfmgr = WfManager()
 wfmgr.add_workflow('integrate')
 wfmgr.load_operations('integrate',
     read_header = 'IO.YAML.LoadYAML',
-    #time_temp = 'PACKAGING.BL15.TimeTempFromHeader',
     image_path = 'IO.FILESYSTEM.BuildFilePath',
     read_image = 'IO.IMAGE.FabIOOpen',
     integrate = 'PROCESSING.INTEGRATION.Integrate1d',
@@ -30,17 +29,15 @@ wf.connect_input('header_file','read_header.inputs.file_path')
 wf.connect_output('header_dir','read_header.outputs.dir_path')
 wf.connect_output('header_data','read_header.outputs.data')
 
-#wf.connect_input('image_dir','image_path.inputs.dir_path')
+wf.connect_input('image_dir','image_path.inputs.dir_path')
 wf.connect_input('image_ext','image_path.inputs.extension')
 wf.set_op_input('image_path','extension','tif')
 wf.connect('read_header.outputs.filename','image_path.inputs.filename')
-wf.connect('read_header.outputs.dir_path','image_path.inputs.dir_path')
-wf.connect_output('image_dir','image_path.inputs.dir_path')
 wf.connect_output('image_filename','image_path.inputs.filename')
 
 wf.connect('image_path.outputs.file_path','read_image.inputs.file_path')
 
-#wf.connect_input('integrator','integrate.inputs.integrator')
+wf.connect_input('integrator','integrate.inputs.integrator')
 wf.connect_plugin('integrator','integrate.inputs.integrator')
 wf.connect('read_image.outputs.image_data','integrate.inputs.image_data')
 wf.connect_output('q_I','integrate.outputs.q_I')
@@ -54,11 +51,8 @@ wf.connect('integrate.outputs.q_I','q_window.inputs.x_y')
 wf.connect('q_window.outputs.x_y_window','dezinger.inputs.q_I')
 wf.connect_output('q_I_dz','dezinger.outputs.q_I_dz')
 
-wf.connect('image_path.inputs.dir_path',[\
-    'output_path.inputs.dir_path',
-    'output_path_dz.inputs.dir_path']
-    )
-wf.connect('image_path.inputs.filename',[\
+wf.connect_input('output_dir',['output_path.inputs.dir_path','output_path_dz.inputs.dir_path'])
+wf.connect('read_header.outputs.filename',[\
     'output_path.inputs.filename',
     'output_path_dz.inputs.filename']
     )
