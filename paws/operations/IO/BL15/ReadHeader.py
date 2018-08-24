@@ -59,6 +59,11 @@ class ReadHeader(Operation):
                     for kv in kvs:
                         kv_arr = kv.split('=')
                         d[kv_arr[0].strip()] = float(kv_arr[1].strip())
-        d['temperature'] = d[self.inputs['temperature_key']]
+        # add 'temperature' to the output data,
+        # to make a consistent interface with the non-legacy header reader
+        if self.inputs['temperature_key'] in d:
+            d['temperature'] = d[self.inputs['temperature_key']]
+        else:
+            d['temperature'] = None
         self.outputs['data'] = d
 

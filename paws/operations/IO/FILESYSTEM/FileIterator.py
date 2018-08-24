@@ -7,7 +7,7 @@ from ... import optools
 
 inputs=OrderedDict(
     dir_path=None,
-    regex='*.tif',
+    regex='*',
     new_files_only=False)
 outputs=OrderedDict(file_iterator=None)
 

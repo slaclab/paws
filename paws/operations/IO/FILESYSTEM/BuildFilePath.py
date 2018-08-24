@@ -26,7 +26,7 @@ class BuildFilePath(Operation):
         super(BuildFilePath, self).__init__(inputs, outputs)
         self.input_doc['dir_path'] = 'filesystem path pointing to the directory containing the file- a trailing slash is optional'
         self.input_doc['prefix'] = 'any text to prepend to filename (prefix comes after dir_path, before filename)'
-        self.input_doc['filename'] = 'name of the file: if an extension is included, it gets stripped.'
+        self.input_doc['filename'] = 'name of the file, with no path or extension included'
         self.input_doc['suffix'] = 'any text to append to filename (comes after filename, before ext)'
         self.input_doc['extension'] = 'extension for the file- the . is optional'
         self.output_doc['filename'] = 'filename will be <prefix><filename><suffix>' 
@@ -36,7 +36,9 @@ class BuildFilePath(Operation):
         p = self.inputs['dir_path']
         fn = self.inputs['filename']
         # strip the extension, if any?
-        fn = os.path.splitext(fn)[0]
+        # NOTE: this butchers filenames that include a '.',
+        # so the input filename should be already stripped
+        #fn = os.path.splitext(fn)[0]
         ext = self.inputs['extension']
         if bool(ext):
             if not ext[0] == '.':

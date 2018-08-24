@@ -7,7 +7,7 @@ from ...Operation import Operation
 
 inputs=OrderedDict(
     dir_path=None,
-    regex='*.tif',
+    regex='*',
     filter_regex=None)
 outputs=OrderedDict(
     file_list=None,
