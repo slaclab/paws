@@ -6,10 +6,8 @@ from paws import pawstools
 
 wfmgr = WfManager()
 
-wfmgr.load_packaged_workflow('bg_read','IO.BL15.read_legacy')
-wfmgr.workflows['bg_read'].disable_ops('read_image','read_q_I')
-wfmgr.load_packaged_workflow('sample_read','IO.BL15.read_legacy')
-wfmgr.workflows['sample_read'].disable_ops('read_image','read_q_I')
+wfmgr.load_packaged_workflow('bg_read','IO.BL15.LEGACY.read')
+wfmgr.load_packaged_workflow('sample_read','IO.BL15.LEGACY.read')
 wfmgr.load_packaged_workflow('bg_subtract','BACKGROUND.bg_subtract')
 wfmgr.add_workflow('main')
 wfmgr.load_operations('main',
@@ -30,10 +28,6 @@ wf.set_op_input('bg_header_files','regex','*.txt')
 wf.connect_input('sample_header_dir','sample_header_files.inputs.dir_path')
 wf.set_op_input('sample_header_files','regex','*.txt')
 
-wf.connect_input('time_key',[
-    'batch_bg_read.inputs.static_inputs.time_key',
-    'batch_sample_read.inputs.static_inputs.time_key']
-    )
 wf.connect_input('temperature_key',[
     'batch_bg_read.inputs.static_inputs.temperature_key',
     'batch_sample_read.inputs.static_inputs.temperature_key']
@@ -49,6 +43,9 @@ wf.connect_input('sample_q_I_suffix','batch_sample_read.inputs.static_inputs.q_I
 wf.connect_workflow('sample_read','batch_sample_read.inputs.work_item')
 wf.connect('sample_header_files.outputs.file_list','batch_sample_read.inputs.batch_inputs.header_file')
 
+wf.connect_input('output_dir','batch_bgsub.inputs.static_inputs.output_dir')
+wf.connect_input('output_suffix','batch_bgsub.inputs.static_inputs.output_suffix')
+
 wf.disable_op('choose_bg_file')
 wf.connect('choose_bg_file','choose_bg_files.inputs.work_item')
 wf.connect('batch_sample_read.outputs.batch_outputs.temperature','choose_bg_files.inputs.batch_inputs.x_value')
@@ -59,5 +56,5 @@ wf.connect_workflow('bg_subtract','batch_bgsub.inputs.work_item')
 wf.connect('batch_sample_read.outputs.batch_outputs.q_I_file','batch_bgsub.inputs.batch_inputs.q_I_file')
 wf.connect('choose_bg_files.outputs.batch_outputs.nearest_y','batch_bgsub.inputs.batch_inputs.q_I_bg_file')
 
-wfmgr.save_to_wfm(os.path.join(pawstools.sourcedir,'workflows','BACKGROUND','batch_T_dependent_bgsub.wfm'))
+wfmgr.save_to_wfm(os.path.join(pawstools.sourcedir,'workflows','BACKGROUND','BL15','LEGACY','batch_T_dependent_bgsub.wfm'))
 

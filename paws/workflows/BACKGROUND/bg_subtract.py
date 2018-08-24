@@ -32,6 +32,7 @@ wf.connect_output('q_I_bgsub','subtract_bg.outputs.q_I_bgsub')
 
 wf.connect_input('output_dir','output_file.inputs.dir_path')
 wf.connect_input('output_filename','output_file.inputs.filename')
+wf.connect_input('output_suffix','output_file.inputs.suffix')
 wf.connect('read_q_I.outputs.filename','output_file.inputs.filename')
 wf.connect('read_q_I.outputs.dir_path','output_file.inputs.dir_path')
 wf.set_op_input('output_file','suffix','_bgsub')
