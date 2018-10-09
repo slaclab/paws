@@ -10,13 +10,13 @@ wfmgr.load_operations('read_and_fit',
     read_xrsd='IO.NumpyLoad',
     check_pops_file='IO.FILESYSTEM.CheckFilePath',
     conditional_read='EXECUTION.Conditional',
-    read_xrsdfit='IO.YAML.LoadXRSDFit',
+    read_xrsdfit='IO.YAML.LoadXRSDSystem',
     populations_switch='CONTROL.Switch', 
     fixed_params_switch='CONTROL.Switch', 
     param_bounds_switch='CONTROL.Switch', 
     param_constraints_switch='CONTROL.Switch', 
     fit='PROCESSING.FITTING.XRSDFit',
-    save_fit='IO.YAML.SaveXRSDFit'
+    save_fit='IO.YAML.SaveXRSDSystem'
     )
 
 wf = wfmgr.workflows['read_and_fit']
