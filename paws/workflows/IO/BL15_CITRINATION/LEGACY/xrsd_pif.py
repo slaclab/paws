@@ -17,8 +17,8 @@ pgmgr.add_plugin('citrination_client','CitrinationClient')
 
 wf = wfmgr.workflows['read_to_pif']
 wf.disable_op('read_image')
-wf.enable_ops('read_q_I','read_populations')
-wf.connect('read_populations.outputs.data','make_pif.inputs.sys')
+wf.enable_ops('read_q_I','read_system')
+wf.connect('read_system.outputs.system','make_pif.inputs.sys')
 wf.connect('read_q_I.outputs.data','make_pif.inputs.q_I')
 wf.connect_input('experiment_id','make_pif.inputs.experiment_id')
 wf.connect('read_header.outputs.data.t_utc','make_pif.inputs.t_utc')

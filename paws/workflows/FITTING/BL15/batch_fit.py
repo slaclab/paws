@@ -8,7 +8,7 @@ wfmgr.add_workflow('main')
 wfmgr.load_operations('main',
     header_files='IO.FILESYSTEM.BuildFileList',
     batch_read='EXECUTION.Batch',
-    t_populations_files='PACKAGING.BATCH.XYDataFromBatch',
+    t_system_files='PACKAGING.BATCH.XYDataFromBatch',
     t_q_I_files='PACKAGING.BATCH.XYDataFromBatch',
     t_filenames='PACKAGING.BATCH.XYDataFromBatch',
     batch_fit='EXECUTION.Batch'
@@ -29,12 +29,12 @@ wf.connect_input('header_regex','header_files.inputs.regex')
 wf.connect_input('image_dir','batch_read.inputs.static_inputs.image_dir')
 wf.connect_input('q_I_dir','batch_read.inputs.static_inputs.q_I_dir')
 wf.connect_input('q_I_suffix','batch_read.inputs.static_inputs.q_I_suffix')
-wf.connect_input('populations_dir','batch_read.inputs.static_inputs.populations_dir') 
-wf.connect_input('populations_suffix','batch_read.inputs.static_inputs.populations_suffix')
+wf.connect_input('system_dir','batch_read.inputs.static_inputs.system_dir') 
+wf.connect_input('system_suffix','batch_read.inputs.static_inputs.system_suffix')
 #wf.connect_input('image_dir','batch_read.inputs.static_inputs.image_dir') 
 # inputs: initial conditions, bounds, constraints, for fitting
 wf.connect_input('source_wavelength','batch_fit.inputs.static_inputs.source_wavelength')
-wf.connect_input('populations','batch_fit.inputs.static_inputs.populations')
+wf.connect_input('system','batch_fit.inputs.static_inputs.system')
 wf.connect_input('fixed_params','batch_fit.inputs.static_inputs.fixed_params')
 wf.connect_input('param_bounds','batch_fit.inputs.static_inputs.param_bounds')
 wf.connect_input('param_constraints','batch_fit.inputs.static_inputs.param_constraints')
@@ -48,14 +48,14 @@ wf.connect('header_files.outputs.file_list','batch_read.inputs.batch_inputs.head
 wf.connect('batch_read.outputs.batch_outputs',[\
     't_filenames.inputs.batch_outputs',\
     't_q_I_files.inputs.batch_outputs',
-    't_populations_files.inputs.batch_outputs'])
-wf.set_op_inputs('t_populations_files',x_key='time',y_key='populations_file',x_sort_flag=False,x_shift_flag=True)
+    't_system_files.inputs.batch_outputs'])
+wf.set_op_inputs('t_system_files',x_key='time',y_key='system_file',x_sort_flag=False,x_shift_flag=True)
 wf.set_op_inputs('t_filenames',x_key='time',y_key='filename',x_sort_flag=False,x_shift_flag=True)
 wf.set_op_inputs('t_q_I_files',x_key='time',y_key='q_I_file',x_sort_flag=False,x_shift_flag=True)
 
 wf.connect_workflow('read_and_fit','batch_fit.inputs.work_item')
 wf.connect('t_q_I_files.outputs.y','batch_fit.inputs.batch_inputs.q_I_file')
-wf.connect('t_populations_files.outputs.y','batch_fit.inputs.batch_inputs.populations_file')
+wf.connect('t_system_files.outputs.y','batch_fit.inputs.batch_inputs.system_file')
 
 wfmgr.save_to_wfm(os.path.join(pawstools.sourcedir,'workflows','FITTING','BL15','batch_fit.wfm'))
 

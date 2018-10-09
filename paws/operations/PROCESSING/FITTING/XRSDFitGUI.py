@@ -41,7 +41,7 @@ class XRSDFitGUI(Operation):
         self.input_doc['q_range'] = 'lower and upper q-limits for the fit objective'
         self.input_doc['good_fit_prior'] = 'initial setting for the good fit indicator'
         self.output_doc['system'] = 'xrsdkit.system.System with optimized parameters'
-        self.output_doc['q_I_opt'] = 'computed intensity for the optimized populations'
+        self.output_doc['q_I_opt'] = 'computed intensity for the optimized system'
         self.output_doc['good_fit_flag'] = 'flag indicating user satisfaction with the fit'
 
     def run(self):

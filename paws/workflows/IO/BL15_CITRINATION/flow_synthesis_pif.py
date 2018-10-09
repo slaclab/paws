@@ -11,7 +11,7 @@ wfmgr.load_operations('read',
     )
 read_wf = wfmgr.workflows['read']
 read_wf.disable_op('read_image')
-read_wf.enable_op('read_populations')
+read_wf.enable_op('read_system')
 
 read_wf.connect_input('recipe_dir','recipe_file.inputs.dir_path')
 read_wf.connect_input('recipe_suffix','recipe_file.inputs.suffix')
@@ -42,7 +42,7 @@ wf.connect_input('experiment_id','make_pif.inputs.experiment_id')
 wf.connect('read.outputs.outputs.recipe','make_pif.inputs.recipe')
 wf.connect('read.outputs.outputs.header_data','make_pif.inputs.header_data')
 wf.connect('read.outputs.outputs.q_I','make_pif.inputs.q_I')
-wf.connect('read.outputs.outputs.populations','make_pif.inputs.populations')
+wf.connect('read.outputs.outputs.system','make_pif.inputs.system')
 wf.connect_output('pif','make_pif.outputs.pif')
 
 wf.connect_input('output_dir','pif_file.inputs.dir_path')

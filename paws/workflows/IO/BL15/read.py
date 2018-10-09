@@ -14,10 +14,10 @@ wfmgr.load_operations('read',
     read_header='IO.YAML.LoadYAML',
     image_file='IO.FILESYSTEM.BuildFilePath',
     q_I_file='IO.FILESYSTEM.BuildFilePath',
-    populations_file='IO.FILESYSTEM.BuildFilePath',
+    system_file='IO.FILESYSTEM.BuildFilePath',
     read_image='IO.IMAGE.FabIOOpen',
     read_q_I='IO.NumpyLoad',
-    read_populations='IO.YAML.LoadYAML'
+    read_system='IO.YAML.LoadXRSDSystem'
     )
 
 wf = wfmgr.workflows['read']
@@ -33,7 +33,7 @@ wf.connect_output('temperature','read_header.outputs.data.temperature')
 wf.connect('read_header.outputs.filename',[\
     'image_file.inputs.filename',\
     'q_I_file.inputs.filename',\
-    'populations_file.inputs.filename'])
+    'system_file.inputs.filename'])
 
 wf.connect_input('image_dir','image_file.inputs.dir_path')
 wf.set_op_input('image_file','extension','tif')
@@ -45,11 +45,11 @@ wf.connect_input('q_I_ext','q_I_file.inputs.extension')
 wf.connect_output('q_I_file','q_I_file.outputs.file_path')
 wf.set_op_input('q_I_file','extension','dat')
 
-wf.connect_input('populations_dir','populations_file.inputs.dir_path')
-wf.connect_input('populations_suffix','populations_file.inputs.suffix')
-wf.connect_input('populations_ext','populations_file.inputs.extension')
-wf.connect_output('populations_file','populations_file.outputs.file_path')
-wf.set_op_input('populations_file','extension','yml')
+wf.connect_input('system_dir','system_file.inputs.dir_path')
+wf.connect_input('system_suffix','system_file.inputs.suffix')
+wf.connect_input('system_ext','system_file.inputs.extension')
+wf.connect_output('system_file','system_file.outputs.file_path')
+wf.set_op_input('system_file','extension','yml')
 
 wf.connect('image_file.outputs.file_path','read_image.inputs.file_path')
 wf.connect_output('image_data','read_image.outputs.image_data')
@@ -59,9 +59,9 @@ wf.connect('q_I_file.outputs.file_path','read_q_I.inputs.file_path')
 wf.connect_output('q_I','read_q_I.outputs.data')
 wf.disable_op('read_q_I')
 
-wf.connect('populations_file.outputs.file_path','read_populations.inputs.file_path')
-wf.connect_output('populations','read_populations.outputs.data')
-wf.disable_op('read_populations')
+wf.connect('system_file.outputs.file_path','read_system.inputs.file_path')
+wf.connect_output('system','read_system.outputs.data')
+wf.disable_op('read_system')
 
 wfmgr.save_to_wfl('read',os.path.join(pawstools.sourcedir,'workflows','IO','BL15','read.wfl'))
 

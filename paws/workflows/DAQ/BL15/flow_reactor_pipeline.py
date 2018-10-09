@@ -165,7 +165,7 @@ wf.connect_input('output_dir','bg_subtract.inputs.static_inputs.output_dir')
 wf.connect_workflow('fit_xrsd','fit.inputs.work_item')
 wf.connect('bg_subtract.outputs.batch_outputs.q_I_bgsub','fit.inputs.batch_inputs.q_I')
 wf.connect('bg_subtract.outputs.batch_outputs.q_I_filename','fit.inputs.batch_inputs.output_filename')
-wf.connect_input('populations','fit.inputs.static_inputs.populations')
+wf.connect_input('system','fit.inputs.static_inputs.system')
 wf.connect_input('fixed_params','fit.inputs.static_inputs.fixed_params')
 wf.connect_input('param_bounds','fit.inputs.static_inputs.param_bounds')
 wf.connect_input('param_constraints','fit.inputs.static_inputs.param_constraints')
@@ -177,7 +177,7 @@ wf.connect('header_file.outputs.file_path','make_pif.inputs.header_file')
 wf.connect('rxn_recipe_file.outputs.file_path','make_pif.inputs.recipe_file')
 #wf.connect('integrate_rxn.outputs.batch_outputs.q_I_file.-1','make_pif.inputs.q_I_file')
 wf.connect('bg_subtract.outputs.batch_outputs.q_I_file.-1','make_pif.inputs.q_I_file')
-wf.connect('fit.outputs.batch_outputs.output_file.-1','make_pif.inputs.populations_file')
+wf.connect('fit.outputs.batch_outputs.output_file.-1','make_pif.inputs.system_file')
 
 wf.connect('make_pif.outputs.pif','upload_pif.inputs.pif')
 wf.connect_plugin('citrination_client','upload_pif.inputs.citrination_client')
@@ -191,7 +191,7 @@ wf.set_op_inputs('upload_pif',keep_json=True,upload_flag=False)
 #    'get_bg_file.inputs.key',
 #    'get_rxn_file.inputs.key',
 #    'get_header_file.inputs.key',
-#    'get_populations_file.inputs.key']
+#    'get_system_file.inputs.key']
 #    )
 
 wfmgr.save_to_wfm(os.path.join(pawstools.sourcedir,'workflows','DAQ','BL15','flow_reactor_pipeline.wfm'))

@@ -22,7 +22,7 @@ outputs = OrderedDict(
 class XRSDFit(Operation):
     """Fit scattering equation parameters to measured data.
 
-    Optimizes the parameters of one or several populations of scatterers
+    Optimizes the parameters of a material system (xrsdkit.system.System) 
     against a measured intensity profile (I(q) vs. q).
     """
 
@@ -35,7 +35,7 @@ class XRSDFit(Operation):
         self.input_doc['logI_weighted'] = 'flag for evaluating the fit objective on log(I)'
         self.input_doc['q_range'] = 'lower and upper q-limits for the fit objective'
         self.output_doc['system'] = 'xrsdkit.system.System with optimized parameters'
-        self.output_doc['q_I_opt'] = 'computed intensity for the optimized populations'
+        self.output_doc['q_I_opt'] = 'computed intensity for the optimized system'
 
     def run(self):
         q_I = self.inputs['q_I']

@@ -21,7 +21,7 @@ wfmgr.load_operations('main',
     run_integrate = 'EXECUTION.Run',
     select_bg = 'PACKAGING.NearestYValue',
     run_bgsub = 'EXECUTION.Run',
-    populations_file = 'IO.FILESYSTEM.BuildFilePath',
+    system_file = 'IO.FILESYSTEM.BuildFilePath',
     run_fit = 'EXECUTION.Run',
     make_pif = 'PACKAGING.PIF.FlowSynthesisPIF',
     pif_file = 'IO.FILESYSTEM.BuildFilePath',
@@ -34,7 +34,7 @@ wf.connect_input('delay_volume','run_recipe.inputs.inputs.delay_volume')
 wf.connect_input('delay_time','run_recipe.inputs.inputs.delay_time')
 wf.connect_input('filename_root',[\
     'run_recipe.inputs.inputs.filename_root',
-    'populations_file.inputs.filename',
+    'system_file.inputs.filename',
     'pif_file.inputs.filename']
     )
 wf.connect_input('exposure_time','run_recipe.inputs.inputs.exposure_time')
@@ -44,7 +44,7 @@ wf.connect_input('source_wavelength',[\
     )
 wf.connect_input('output_dir',[\
     'run_recipe.inputs.inputs.output_dir',
-    'populations_file.inputs.dir_path',
+    'system_file.inputs.dir_path',
     'pif_file.inputs.dir_path']
     )
 
@@ -63,25 +63,21 @@ wf.connect_workflow('bg_subtract','run_bgsub.inputs.work_item')
 wf.connect('select_bg.outputs.nearest_y','run_bgsub.inputs.inputs.bg_file')
 wf.connect('run_integrate.outputs.outputs.q_I_dz_file','run_bgsub.inputs.inputs.data_file')
 
-wf.set_op_input('populations_file','suffix','_populations')
-wf.set_op_input('populations_file','extension','yml')
+wf.set_op_input('system_file','suffix','_sys')
+wf.set_op_input('system_file','extension','yml')
 
 wf.connect_workflow('fit','run_fit.inputs.work_item')
-wf.connect('populations_file.outputs.file_path','run_fit.inputs.inputs.populations_file')
+wf.connect('system_file.outputs.file_path','run_fit.inputs.inputs.system_file')
 
 wf.connect('run_bgsub.outputs.outputs.q_I_file','run_fit.inputs.inputs.data_filepath')
 
-wf.connect_input('populations','run_fit.inputs.inputs.populations')
-wf.connect_input('param_bounds','run_fit.inputs.inputs.param_bounds')
-wf.connect_input('fixed_params','run_fit.inputs.inputs.fixed_params')
-wf.connect_input('param_constraints','run_fit.inputs.inputs.param_constraints')
-wf.connect_input('q_range','run_fit.inputs.inputs.q_range')
+wf.connect_input('system','run_fit.inputs.inputs.system')
 
 wf.connect_input('experiment_id','make_pif.inputs.experiment_id')
 wf.connect('run_recipe.outputs.outputs.header_file','make_pif.inputs.header_file')
 wf.connect('run_recipe.outputs.outputs.recipe_file','make_pif.inputs.recipe_file')
 wf.connect('run_bgsub.outputs.outputs.q_I_file','make_pif.inputs.q_I_file')
-wf.connect('run_fit.outputs.outputs.populations_file','make_pif.inputs.populations_file')
+wf.connect('run_fit.outputs.outputs.system_file','make_pif.inputs.system_file')
 
 wf.set_op_inputs('pif_file',suffix='_pif',extension='json')
 
