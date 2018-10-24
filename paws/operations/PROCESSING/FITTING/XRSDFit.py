@@ -2,8 +2,7 @@ from __future__ import print_function
 from collections import OrderedDict
 
 import numpy as np
-from xrsdkit.fitting.xrsd_fitter import XRSDFitter
-from xrsdkit.scattering import compute_intensity
+from xrsdkit import system as xrsdsys
 
 from ...Operation import Operation
 

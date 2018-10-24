@@ -5,7 +5,6 @@ from paws.workflows.WfManager import WfManager
 
 # NOTE: this workflow is for reading samples
 # that were saved with the new YAML-based header files
-# TODO: add sample time (t_utc?) to the workflow outputs
 
 wfmgr = WfManager()
 
@@ -53,15 +52,15 @@ wf.set_op_input('system_file','extension','yml')
 
 wf.connect('image_file.outputs.file_path','read_image.inputs.file_path')
 wf.connect_output('image_data','read_image.outputs.image_data')
-wf.disable_op('read_image')
+#wf.disable_op('read_image')
 
 wf.connect('q_I_file.outputs.file_path','read_q_I.inputs.file_path')
 wf.connect_output('q_I','read_q_I.outputs.data')
-wf.disable_op('read_q_I')
+#wf.disable_op('read_q_I')
 
 wf.connect('system_file.outputs.file_path','read_system.inputs.file_path')
-wf.connect_output('system','read_system.outputs.data')
-wf.disable_op('read_system')
+wf.connect_output('system','read_system.outputs.system')
+#wf.disable_op('read_system')
 
 wfmgr.save_to_wfl('read',os.path.join(pawstools.sourcedir,'workflows','IO','BL15','read.wfl'))
 

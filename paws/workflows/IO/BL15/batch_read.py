@@ -31,9 +31,11 @@ wf.connect('header_files.outputs.file_list','batch.inputs.batch_inputs.header_fi
 wf.connect_output('header_files','batch.outputs.batch_outputs.header_file')
 wf.connect_output('image_files','batch.outputs.batch_outputs.image_file')
 wf.connect_output('q_I_files','batch.outputs.batch_outputs.q_I_file')
+wf.connect_output('system_files','batch.outputs.batch_outputs.system_file')
 wf.connect_output('header_data','batch.outputs.batch_outputs.header_data')
 wf.connect_output('image_data','batch.outputs.batch_outputs.image_data')
-wf.connect_output('q_I_data','batch.outputs.batch_outputs.q_I_data')
+wf.connect_output('q_I','batch.outputs.batch_outputs.q_I')
+wf.connect_output('systems','batch.outputs.batch_outputs.system')
 
 wfmgr.save_to_wfm(os.path.join(pawstools.sourcedir,'workflows','IO','BL15','batch_read.wfm'))
 

@@ -1,17 +1,8 @@
 from collections import OrderedDict
-from functools import partial
-import copy
 
-import xrsdkit
+from xrsdkit.visualization.gui import run_fit_gui
 import numpy as np
-import matplotlib
-matplotlib.use("TkAgg")
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
-from matplotlib.figure import Figure
-import tkinter
-from tkinter import Tk, Frame, Canvas, Button, Label, Entry, \
-OptionMenu, Scrollbar, Checkbutton, \
-StringVar, DoubleVar, BooleanVar, IntVar
+
 from ...Operation import Operation
 
 inputs = OrderedDict(
@@ -53,8 +44,8 @@ class XRSDFitGUI(Operation):
         q_range = self.inputs['q_range']
         good_fit_prior = self.inputs['good_fit_prior']
 
-        sys_opt, good_fit_flag = xrsdkit.visualization.run_fit_gui(
-        sys,q_I,src_wl,q_range,err_wtd,logI_wtd,good_fit_prior) 
+        sys_opt, good_fit_flag = run_fit_gui(
+        sys,q_I[:,0],q_I[:,1],src_wl,None,err_wtd,logI_wtd,q_range,good_fit_prior) 
 
         I_opt = sys_opt.compute_intensity(q_I[:,0],src_wl) 
         q_I_opt = np.array([q_I[:,0],I_opt]).T
