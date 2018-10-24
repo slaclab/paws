@@ -6,9 +6,9 @@ from paws import pawstools
 
 wfmgr = WfManager()
 
-wfmgr.add_workflow('run_flow_reactor')
+wf = wfmgr.add_workflow('flow_reactor_pipeline')
 
-wfmgr.load_operations('run_flow_reactor',
+wfmgr.load_operations('flow_reactor_pipeline',
     header_file = 'IO.FILESYSTEM.BuildFilePath',
     set_bg_recipe = 'DAQ.PLUGINS.SetFlowReactor',
     bg_recipe_file = 'IO.FILESYSTEM.BuildFilePath',
@@ -51,8 +51,6 @@ pgmgr.connect('timer',[
     'mar_ssh_client.inputs.timer']
     )
 pgmgr.connect('cryocon','flow_reactor.inputs.cryocon')
-
-wf = wfmgr.workflows['run_flow_reactor']
 
 wf.set_dependency('set_bg_recipe','bg_recipe_file')
 wf.set_dependency('expose_bg','set_bg_recipe')
@@ -166,9 +164,6 @@ wf.connect_workflow('fit_xrsd','fit.inputs.work_item')
 wf.connect('bg_subtract.outputs.batch_outputs.q_I_bgsub','fit.inputs.batch_inputs.q_I')
 wf.connect('bg_subtract.outputs.batch_outputs.q_I_filename','fit.inputs.batch_inputs.output_filename')
 wf.connect_input('system','fit.inputs.static_inputs.system')
-wf.connect_input('fixed_params','fit.inputs.static_inputs.fixed_params')
-wf.connect_input('param_bounds','fit.inputs.static_inputs.param_bounds')
-wf.connect_input('param_constraints','fit.inputs.static_inputs.param_constraints')
 wf.connect_input('q_range','fit.inputs.static_inputs.q_range')
 wf.connect_input('output_dir','fit.inputs.static_inputs.output_dir')
 
@@ -186,13 +181,6 @@ wf.connect('pif_file.outputs.file_path','upload_pif.inputs.json_path')
 wf.connect_input('keep_pif_flag','upload_pif.inputs.keep_json')
 wf.connect_input('upload_pif_flag','upload_pif.inputs.upload_flag')
 wf.set_op_inputs('upload_pif',keep_json=True,upload_flag=False)
-
-#wf.connect_input('exposure_count',[
-#    'get_bg_file.inputs.key',
-#    'get_rxn_file.inputs.key',
-#    'get_header_file.inputs.key',
-#    'get_system_file.inputs.key']
-#    )
 
 wfmgr.save_to_wfm(os.path.join(pawstools.sourcedir,'workflows','DAQ','BL15','flow_reactor_pipeline.wfm'))
 

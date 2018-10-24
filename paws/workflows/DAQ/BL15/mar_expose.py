@@ -4,7 +4,7 @@ from paws.workflows.WfManager import WfManager
 from paws import pawstools
 
 wfmgr = WfManager()
-wfmgr.add_workflow('run_exposure')
+wf = wfmgr.add_workflow('run_exposure')
 wfmgr.load_operations('run_exposure',
     mar_expose='DAQ.PLUGINS.MarCCD_SISExpose',
     mar_image_file='IO.FILESYSTEM.BuildFilePath',
@@ -22,8 +22,6 @@ pgmgr.add_plugins(
 pgmgr.connect('timer',[
     'spec_infoclient.inputs.timer',
     'mar_ssh_client.inputs.timer'])
-
-wf = wfmgr.workflows['run_exposure']
 
 wf.connect_input('exposure_time','mar_expose.inputs.exposure_time')
 wf.connect_plugin('spec_infoclient','mar_expose.inputs.spec_infoclient')
