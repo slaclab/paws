@@ -171,6 +171,10 @@ class Workflow(DictTree):
             d[out_name] = self.get_output(out_name)
         return d
 
+    def set_inputs(self,**kwargs):
+        for input_name,val in kwargs.items():
+            self.set_input(input_name,val)
+
     def set_input(self,input_name,val):
         """Set a value for Workflow items in self.inputs[`input_name`]"""
         r = self.inputs[input_name]
