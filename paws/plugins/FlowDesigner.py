@@ -46,7 +46,7 @@ class FlowDesigner(PawsPlugin):
         return desc
 
     def start(self):
-        pass
+        super(FlowDesigner,self).start() 
 
     #def set_target(self,property_name):
     #    self.target = property_name

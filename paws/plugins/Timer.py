@@ -28,12 +28,12 @@ class Timer(PawsPlugin):
         self.t0_utc = None 
         self.thread_blocking = True
 
-    def start(self):
+    def start(self,threaded=True):
         self.tz = tzlocal.get_localzone()
         self.ep = datetime.datetime.fromtimestamp(0,self.tz)
         self.t0 = datetime.datetime.now(self.tz)
         self.t0_utc = (self.t0-self.ep).total_seconds()
-        self.run_clone() 
+        super(Timer,self).start(threaded)
 
     def run(self):
         # self.thread_clone runs this method in its own thread.

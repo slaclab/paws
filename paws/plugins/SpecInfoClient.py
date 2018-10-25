@@ -29,8 +29,8 @@ class SpecInfoClient(PawsPlugin):
             'where SpecInfoServer should be listening.'
         return desc
 
-    def start(self):
-        self.run_clone()
+    def start(self,threaded=True):
+        super(SpecInfoClient,self).start(threaded)
 
     def run(self):
         hst = self.inputs['host'] 
@@ -82,6 +82,7 @@ class SpecInfoClient(PawsPlugin):
         return bfr
     
     def take_control(self):
+        tmr = self.inputs['timer'] 
         resp = self.run_cmd('!rqc')
         while not resp == 'client in control.':
             with tmr.dt_lock:

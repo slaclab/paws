@@ -32,8 +32,8 @@ class FlowReactor(PawsPlugin):
             'to set recipes for a flow reactor.'
         return desc
 
-    def start(self):
-        self.run_clone() 
+    def start(self,threaded=True):
+        super(FlowReactor,self).start(threaded)
 
     def run(self):
         tmr = self.inputs['timer'] 

@@ -35,8 +35,8 @@ class SSHClient(PawsPlugin):
         self.copy_lock = Condition()
         self.transport_lock = Condition()
 
-    def start(self):
-        self.run_clone()
+    def start(self,threaded=True):
+        super(SSHClient,self).start(threaded)
         # block until notification that the clone is running 
         with self.thread_clone.running_lock:
             self.thread_clone.running_lock.wait()

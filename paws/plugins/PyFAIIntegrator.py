@@ -23,6 +23,7 @@ class PyFAIIntegrator(PawsPlugin):
         self.integrator = None
 
     def start(self):
+        super(PyFAIIntegrator,self).start()
         with self.integrator_lock:
             self.integrator = pyFAI.AzimuthalIntegrator()
         self.set_calib()

@@ -46,8 +46,8 @@ class MarCCDClient(PawsPlugin):
         return 'MarCCDClient Plugin: '\
             'TCP/IP Client used to communicate with MarCCD server'
 
-    def start(self):
-        self.run_clone()
+    def start(self,threaded=True):
+        super(MarCCDClient,self).start(threaded) 
 
     def run(self):
         hst = self.inputs['host'] 

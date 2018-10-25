@@ -20,6 +20,7 @@ class CitrinationClient(PawsPlugin):
         self.client=None
 
     def start(self):
+        super(CitrinationClient,self).start()
         self.address = self.inputs['address'] 
         f = open(self.inputs['api_key_file'],'r')
         self.api_key = str(f.readline()).strip()

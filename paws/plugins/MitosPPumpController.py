@@ -98,9 +98,9 @@ class MitosPPumpController(PawsPlugin):
         else:
             return abs_setpt
 
-    def start(self):
+    def start(self,threaded=True):
         self.calibrate()
-        self.run_clone()
+        super(MitosPPumpController,self).start(threaded)
         with self.thread_clone.running_lock:
             self.thread_clone.running_lock.wait()
        

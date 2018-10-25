@@ -36,9 +36,9 @@ class CryoConController(PawsPlugin):
             'which should match the network configuration of the CryoCon device.'
         return desc
 
-    def start(self):
+    def start(self,threaded=True):
         self.channels = self.inputs['channels']
-        self.run_clone()
+        super(CryoConController,self).start(threaded)
 
     def run(self):
         # executed by self.thread_clone in its own thread
