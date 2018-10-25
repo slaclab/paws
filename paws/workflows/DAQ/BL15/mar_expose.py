@@ -6,7 +6,7 @@ from paws import pawstools
 wfmgr = WfManager()
 wf = wfmgr.add_workflow('run_exposure')
 wfmgr.load_operations('run_exposure',
-    mar_expose='DAQ.PLUGINS.MarCCD_SISExpose',
+    mar_expose='DAQ.BL15.MarCCD_SISExpose',
     mar_image_file='IO.FILESYSTEM.BuildFilePath',
     local_image_file='IO.FILESYSTEM.BuildFilePath',
     collect_image='IO.FILESYSTEM.SSHCopy',
