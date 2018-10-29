@@ -15,7 +15,8 @@ inputs = OrderedDict(
     q_range=[0.,float('inf')]) 
 
 outputs = OrderedDict(
-    system={},
+    system=None,
+    system_dict=None,
     q_I_opt=None)
 
 class XRSDFit(Operation):
@@ -53,5 +54,6 @@ class XRSDFit(Operation):
         q_I_opt = np.array([q_I[:,0],I_opt]).T
 
         self.outputs['system'] = sys_opt 
+        self.outputs['system_dict'] = sys_opt.to_dict()
         self.outputs['q_I_opt'] = q_I_opt
 

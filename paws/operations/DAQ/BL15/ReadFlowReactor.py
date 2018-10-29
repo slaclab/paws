@@ -18,8 +18,8 @@ class ReadFlowReactor(Operation):
     def __init__(self):
         super(ReadFlowReactor,self).__init__(inputs,outputs)
         self.input_doc['flow_reactor'] = 'FlowReactor plugin'
-        self.output_doc['header'] = 'dict '
-        self.output_doc['recipe'] = 'formatted FlowReactor recipe'
+        self.output_doc['recipe'] = 'FlowReactor recipe data'
+        self.output_doc['header'] = 'dict of data related to the recipe'
 
     def run(self):
         fr = self.inputs['flow_reactor'] 

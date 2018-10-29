@@ -27,6 +27,9 @@ wfmgr.load_operations('flow_reactor_pipeline',
     save_header = 'IO.YAML.SaveYAML',
     pif_file = 'IO.FILESYSTEM.BuildFilePath',
     make_pif = 'PACKAGING.PIF.FlowSynthesisPIF',
+    check_intensity = 'PROCESSING.BASIC.Compare',
+    check_fit_objective = 'PROCESSING.BASIC.Compare',
+    conditional_upload = 'EXECUTION.MultiConditional',
     upload_pif = 'IO.CITRINATION.UploadPIF'
     )
 
@@ -64,7 +67,10 @@ wf.set_dependency('save_header','fit')
 wf.set_dependency('make_pif','save_header')
 
 wf.connect_input('bg_recipe','set_bg_recipe.inputs.recipe')
-wf.connect_input('rxn_recipe','set_rxn_recipe.inputs.recipe')
+wf.connect_input('rxn_recipe',[
+    'set_rxn_recipe.inputs.recipe',
+    'make_pif.inputs.recipe_setpoints']
+    )
 wf.connect_plugin('flow_reactor',[
     'set_bg_recipe.inputs.flow_reactor',
     'set_rxn_recipe.inputs.flow_reactor',
@@ -93,7 +99,10 @@ wf.connect_input('output_dir',[
     )
 
 wf.connect('read_rxn_recipe.outputs.header','save_header.inputs.data.flow_reactor_header')
-wf.connect('read_rxn_recipe.outputs.recipe','save_rxn_recipe.inputs.data')
+wf.connect('read_rxn_recipe.outputs.recipe',[
+    'save_rxn_recipe.inputs.data',
+    'make_pif.inputs.recipe_readouts']
+    )
 wf.connect('read_bg_recipe.outputs.recipe','save_bg_recipe.inputs.data')
 wf.set_op_inputs('bg_recipe_file',suffix='_bg_recipe',extension='yml')
 wf.set_op_inputs('rxn_recipe_file',suffix='_recipe',extension='yml')
@@ -167,20 +176,40 @@ wf.connect_input('system','fit.inputs.static_inputs.system')
 wf.connect_input('q_range','fit.inputs.static_inputs.q_range')
 wf.connect_input('output_dir','fit.inputs.static_inputs.output_dir')
 
+wf.connect('read_rxn_recipe.outputs.header.t_utc','make_pif.inputs.t_utc')
 wf.connect_input('experiment_id','make_pif.inputs.experiment_id')
-wf.connect('header_file.outputs.file_path','make_pif.inputs.header_file')
-wf.connect('rxn_recipe_file.outputs.file_path','make_pif.inputs.recipe_file')
-#wf.connect('integrate_rxn.outputs.batch_outputs.q_I_file.-1','make_pif.inputs.q_I_file')
-wf.connect('bg_subtract.outputs.batch_outputs.q_I_file.-1','make_pif.inputs.q_I_file')
-wf.connect('fit.outputs.batch_outputs.output_file.-1','make_pif.inputs.system_file')
+wf.connect_input('design_goals','make_pif.inputs.design_goals')
 
-wf.connect('make_pif.outputs.pif','upload_pif.inputs.pif')
-wf.connect_plugin('citrination_client','upload_pif.inputs.citrination_client')
-wf.connect_input('dataset_id','upload_pif.inputs.dsid')
-wf.connect('pif_file.outputs.file_path','upload_pif.inputs.json_path')
-wf.connect_input('keep_pif_flag','upload_pif.inputs.keep_json')
-wf.connect_input('upload_pif_flag','upload_pif.inputs.upload_flag')
-wf.set_op_inputs('upload_pif',keep_json=True,upload_flag=False)
+wf.connect_input('bg_subtract.outputs.batch_outputs.q_I_bgsub.-1','make_pif.inputs.q_I')
+wf.connect_input('fit.outputs.batch_outputs.system_opt.-1','make_pif.inputs.system')
+
+#wf.connect('header_file.outputs.file_path','make_pif.inputs.header_file')
+#wf.connect('rxn_recipe_file.outputs.file_path','make_pif.inputs.recipe_file')
+#wf.connect('integrate_rxn.outputs.batch_outputs.q_I_file.-1','make_pif.inputs.q_I_file')
+#wf.connect('bg_subtract.outputs.batch_outputs.q_I_file.-1','make_pif.inputs.q_I_file')
+#wf.connect('fit.outputs.batch_outputs.output_file.-1','make_pif.inputs.system_file')
+
+wf.connect('fit.outputs.batch_outputs.system_opt_dict.-1.particle.parameters.I0.value',
+    'check_intensity.inputs.data')
+wf.connect('fit.outputs.batch_outputs.system_opt_dict.-1.fit_report.final_objective',
+    'check_fit_objective.inputs.data')
+wf.set_op_input('check_intensity','comparison_value',min_particle_I0)
+wf.set_op_input('check_fit_objective','comparison_value',max_fit_obj)
+
+wf.connect('upload_pif','conditional_upload.inputs.work_item')
+wf.disable_op('upload_pif')
+wf.connect('check_intensity.outputs.is_greater','conditional_upload.inputs.conditions.0')
+wf.connect('check_fit_objective.outputs.is_lesser','conditional_upload.inputs.conditions.1')
+wf.set_op_input('conditional_upload.inputs.run_conditions',[True,True])
+
+wf.connect('make_pif.outputs.pif','conditional_upload.inputs.inputs.pif')
+wf.connect_plugin('citrination_client','conditional_upload.inputs.inputs.citrination_client')
+wf.connect_input('dataset_id','conditional_upload.inputs.inputs.dsid')
+wf.connect('pif_file.outputs.file_path','conditional_upload.inputs.inputs.json_path')
+wf.connect_input('upload_pif_flag','conditional_upload.inputs.inputs.upload_flag')
+wf.connect_input('keep_pif_json','conditional_upload.inputs.inputs.keep_json')
+wf.set_input('upload_pif_flag',False)
+wf.set_input('keep_pif_json',True)
 
 wfmgr.save_to_wfm(os.path.join(pawstools.sourcedir,'workflows','DAQ','BL15','flow_reactor_pipeline.wfm'))
 

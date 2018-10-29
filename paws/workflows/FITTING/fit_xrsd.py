@@ -23,6 +23,7 @@ wf.connect_input('source_wavelength','fit.inputs.source_wavelength')
 wf.connect_input('q_range','fit.inputs.q_range')
 wf.connect_input('system','fit.inputs.system')
 wf.connect_output('system_opt','fit.outputs.system')
+wf.connect_output('system_opt_dict','fit.outputs.system_dict')
 
 wf.connect_input('output_dir','output_file.inputs.dir_path')
 wf.connect_input('output_filename','output_file.inputs.filename')
