@@ -9,17 +9,21 @@ from threading import Condition
 import tzlocal
 import numpy as np
 
-inputs = OrderedDict(
+content = OrderedDict(
     dt=1.,
-    t_max=None)
+    t_max=None,
+    dt_now=None,
+    utc_now=None)
 
 class Timer(PawsPlugin):
     """A Paws plugin for marking the passage of time"""
 
     def __init__(self):
-        super(Timer,self).__init__(inputs)
-        self.input_doc['dt'] = 'Wait time between signals, in seconds'
-        self.input_doc['t_max'] = 'Time in seconds after which the timer stops'
+        super(Timer,self).__init__(content)
+        self.content_doc['dt'] = 'Wait time between signals, in seconds'
+        self.content_doc['t_max'] = 'Seconds after which the timer stops itself'
+        self.content_doc['dt_now'] = 'Seconds from Timer.start() to the most recent Timer.dt_now()'
+        self.content_doc['utc_now'] = 'Time in seconds utc at the most recent Timer.dt_now()'
         # A lock for the "tick" trigger 
         self.dt_lock = Condition()
         self.t0 = None 
@@ -39,8 +43,8 @@ class Timer(PawsPlugin):
         # self.thread_clone runs this method in its own thread.
         if self.verbose: self.message_callback('timer STARTED')
         with self.proxy.dt_lock:
-            dt = self.inputs['dt'] 
-            t_max = self.inputs['t_max']
+            dt = self.content['dt'] 
+            t_max = self.content['t_max']
             keep_going = True
             # set zero-time point 
             self.t0 = copy.deepcopy(self.proxy.t0)
@@ -85,8 +89,11 @@ class Timer(PawsPlugin):
         return str(datetime.datetime.now(self.tz))
 
     def dt_utc(self):
-        t = datetime.datetime.now(self.tz)
-        return float((t-self.ep).total_seconds()-self.t0_utc)
+        tnow = self.t_utc()
+        dt = float(tnow-self.t0_utc)
+        self.content['utc_now'] = tnow
+        self.content['dt_now'] = dt
+        return dt
 
     def description(self):
         desc = str('Timer Plugin for Paws: '\

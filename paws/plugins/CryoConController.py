@@ -7,7 +7,7 @@ from threading import Condition
 from .PawsPlugin import PawsPlugin
 from .. import pawstools
 
-inputs = OrderedDict(
+content = OrderedDict(
     host=None,
     port=None,
     channels={},
@@ -16,14 +16,14 @@ inputs = OrderedDict(
 class CryoConController(PawsPlugin):
 
     def __init__(self):
-        super(CryoConController,self).__init__(inputs)
+        super(CryoConController,self).__init__(content)
         self.thread_blocking = True
-        self.input_doc['host'] = 'string representing host name or IP address'
-        self.input_doc['port'] = 'integer port number where SpecInfoServer listens' 
-        self.input_doc['channels'] = 'dict mapping channel selection (strings "A"-"D") '\
+        self.content_doc['host'] = 'string representing host name or IP address'
+        self.content_doc['port'] = 'integer port number where SpecInfoServer listens' 
+        self.content_doc['channels'] = 'dict mapping channel selection (strings "A"-"D") '\
             'to control loop indices (integers 1-4 or None): all channels will be read, '\
             'and any with integer control loops will be controlled. '
-        self.input_doc['timer'] = 'Timer plugin for triggering client activities' 
+        self.content_doc['timer'] = 'Timer plugin for triggering client activities' 
         self.socket_lock = Condition()
         self.sock = None
         self.state_lock = Condition()
@@ -37,17 +37,15 @@ class CryoConController(PawsPlugin):
         return desc
 
     def start(self,threaded=True):
-        self.channels = self.inputs['channels']
         super(CryoConController,self).start(threaded)
 
     def run(self):
         # executed by self.thread_clone in its own thread
-        hst = self.inputs['host'] 
-        prt = self.inputs['port'] 
+        hst = self.content['host'] 
+        prt = self.content['port'] 
         with self.socket_lock:
             self.sock = socket.create_connection((hst,prt)) 
-        self.channels = self.inputs['channels']
-        tmr = self.inputs['timer'] 
+        tmr = self.content['timer'] 
         self.run_cmd('*idn?')
         keep_going = True
 
@@ -75,7 +73,7 @@ class CryoConController(PawsPlugin):
             self.sock.close()
 
     def read_status(self):
-        for chan in self.channels.keys():
+        for chan in self.content['channels'].keys():
             resp = self.run_cmd('input {}:temp?'.format(chan))
             with self.state_lock:
                 self.state['T_read_{}'.format(chan)] = float(resp)
@@ -88,8 +86,8 @@ class CryoConController(PawsPlugin):
         #if self.verbose: self.message_callback('T_read: {}'.format(self.state['T_read']))
 
     def run_cmd(self,cmd):
-        with self.inputs['timer'].dt_lock:
-            t_now = float(self.inputs['timer'].dt_utc())
+        with self.content['timer'].dt_lock:
+            t_now = float(self.content['timer'].dt_utc())
         with self.socket_lock:
             self.send_line(cmd)
             resp = self.receive_line()
@@ -114,13 +112,13 @@ class CryoConController(PawsPlugin):
         #    self.thread_clone.commands.put(cmd)
 
     def loop_setup(self,channel,control_type='PID'):
-        cmd = 'loop {}:source {};type {}'.format(self.channels[channel],channel,control_type)
+        cmd = 'loop {}:source {};type {}'.format(self.content['channels'][channel],channel,control_type)
         self.thread_clone.run_cmd(cmd)
         #with self.thread_clone.command_lock:
         #    self.thread_clone.commands.put(cmd)
 
     def set_temperature(self,channel,T_set):
-        cmd = 'loop {}:setpt {}'.format(self.channels[channel],T_set)
+        cmd = 'loop {}:setpt {}'.format(self.content['channels'][channel],T_set)
         self.thread_clone.run_cmd(cmd)
         with self.thread_clone.state_lock:
             self.thread_clone.state['T_set_{}'.format(channel)] = T_set 
@@ -128,7 +126,7 @@ class CryoConController(PawsPlugin):
         #    self.thread_clone.commands.put(cmd)
 
     def set_ramp_rate(self,channel,T_ramp):
-        cmd = 'loop {}:rate {}'.format(self.channels[channel],T_ramp)
+        cmd = 'loop {}:rate {}'.format(self.content['channels'][channel],T_ramp)
         self.thread_clone.run_cmd(cmd)
         with self.thread_clone.state_lock:
             self.thread_clone.state['T_ramp_{}'.format(channel)] = T_ramp 

@@ -6,7 +6,7 @@ import time
 
 from .PawsPlugin import PawsPlugin
 
-inputs = OrderedDict(
+content = OrderedDict(
     host=None,
     port=None,
     timer=None)
@@ -14,10 +14,10 @@ inputs = OrderedDict(
 class SpecInfoClient(PawsPlugin):
 
     def __init__(self):
-        super(SpecInfoClient,self).__init__(inputs)
-        self.input_doc['host'] = 'string representing host name or IP address'
-        self.input_doc['port'] = 'integer port number where SpecInfoServer listens' 
-        self.input_doc['timer'] = 'Timer plugin for triggering client activities' 
+        super(SpecInfoClient,self).__init__(content)
+        self.content_doc['host'] = 'string representing host name or IP address'
+        self.content_doc['port'] = 'integer port number where SpecInfoServer listens' 
+        self.content_doc['timer'] = 'Timer plugin for triggering client activities' 
         self.socket_lock = Condition()
         self.sock = None
         self.thread_blocking = True
@@ -33,11 +33,11 @@ class SpecInfoClient(PawsPlugin):
         super(SpecInfoClient,self).start(threaded)
 
     def run(self):
-        hst = self.inputs['host'] 
-        prt = self.inputs['port'] 
+        hst = self.content['host'] 
+        prt = self.content['port'] 
         with self.socket_lock:
             self.sock = socket.create_connection((hst,prt)) 
-        tmr = self.inputs['timer'] 
+        tmr = self.content['timer'] 
 
         self.take_control()
 
@@ -60,8 +60,8 @@ class SpecInfoClient(PawsPlugin):
         self.sock.close()
 
     def run_cmd(self,cmd):
-        with self.inputs['timer'].dt_lock:
-            t_now = float(self.inputs['timer'].dt_utc())
+        with self.content['timer'].dt_lock:
+            t_now = float(self.content['timer'].dt_utc())
         resp = ''
         while resp in ['','spec is busy!']:
             with self.socket_lock:
@@ -82,7 +82,7 @@ class SpecInfoClient(PawsPlugin):
         return bfr
     
     def take_control(self):
-        tmr = self.inputs['timer'] 
+        tmr = self.content['timer'] 
         resp = self.run_cmd('!rqc')
         while not resp == 'client in control.':
             with tmr.dt_lock:

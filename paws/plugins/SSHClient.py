@@ -8,7 +8,7 @@ import paramiko
 
 from .PawsPlugin import PawsPlugin
 
-inputs = OrderedDict(
+content = OrderedDict(
     username=None,
     hostname=None,
     password=None,
@@ -22,13 +22,13 @@ class SSHClient(PawsPlugin):
     """An SSH Client PawsPlugin"""
 
     def __init__(self):
-        super(SSHClient,self).__init__(inputs)
-        self.input_doc['username'] = 'remote user name'
-        self.input_doc['hostname'] = 'remote host name'
-        self.input_doc['password'] = 'user password on remote host'
-        self.input_doc['port'] = 'port for ssh connection, default 22'
-        self.input_doc['private_key_file'] = 'path to private RSA key file'
-        self.input_doc['timer'] = 'Timer plugin to trigger activities'
+        super(SSHClient,self).__init__(content)
+        self.content_doc['username'] = 'remote user name'
+        self.content_doc['hostname'] = 'remote host name'
+        self.content_doc['password'] = 'user password on remote host'
+        self.content_doc['port'] = 'port for ssh connection, default 22'
+        self.content_doc['private_key_file'] = 'path to private RSA key file'
+        self.content_doc['timer'] = 'Timer plugin to trigger activities'
         self.sshcl = None
         self.sftpcl = None
         self.thread_blocking = True
@@ -43,12 +43,12 @@ class SSHClient(PawsPlugin):
 
     def run(self):
         # this method is run by self.thread_clone 
-        username = self.inputs['username']
-        hostname = self.inputs['hostname']
-        pw = self.inputs['password']
-        port = self.inputs['port']
-        pkey_file = self.inputs['private_key_file']
-        tmr = self.inputs['timer']
+        username = self.content['username']
+        hostname = self.content['hostname']
+        pw = self.content['password']
+        port = self.content['port']
+        pkey_file = self.content['private_key_file']
+        tmr = self.content['timer']
         with self.transport_lock:
             self.sshcl = paramiko.SSHClient()
             self.sshcl.load_system_host_keys()

@@ -7,7 +7,7 @@ import pyFAI
 
 from .PawsPlugin import PawsPlugin
 
-inputs = OrderedDict(calib_file=None) 
+content = OrderedDict(calib_file=None) 
 
 class PyFAIIntegrator(PawsPlugin):
     """Plugin for applying a PyFAI.AzimuthalIntegrator.
@@ -16,8 +16,8 @@ class PyFAIIntegrator(PawsPlugin):
     outlined in the package documentation. 
     """
     def __init__(self):
-        super(PyFAIIntegrator,self).__init__(inputs)
-        self.input_doc['calib_file'] = 'file defining a dict of calibration parameters, '\
+        super(PyFAIIntegrator,self).__init__(content)
+        self.content_doc['calib_file'] = 'file defining a dict of calibration parameters, '\
             'in one of the formats outlined in the package documentation'
         self.integrator_lock = Condition()
         self.integrator = None
@@ -29,7 +29,7 @@ class PyFAIIntegrator(PawsPlugin):
         self.set_calib()
 
     def set_calib(self):
-        calib = self.inputs['calib_file']
+        calib = self.content['calib_file']
         fp,xt = os.path.splitext(calib)
         #print(xt)
         if xt in ['.poni','.PONI']:

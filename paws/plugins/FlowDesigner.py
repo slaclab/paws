@@ -8,7 +8,7 @@ from citrination_client.models.design import Target,constraints
 
 from .PawsPlugin import PawsPlugin
 
-inputs = OrderedDict(
+content = OrderedDict(
     citrination_client=None,
     dataview_id=None,
     target=None,
@@ -20,18 +20,15 @@ inputs = OrderedDict(
 class FlowDesigner(PawsPlugin):
 
     def __init__(self):
-        super(FlowDesigner,self).__init__(inputs)
+        super(FlowDesigner,self).__init__(content)
         self.thread_blocking = False
-        self.input_doc['citrination_client'] = 'A running CitrinationClient plugin'
-        self.input_doc['dataview_id'] = 'integer id of the data view to query' 
-        self.input_doc['target'] = 'property name to minimize' 
-        self.input_doc['constraints'] = 'dict of property names and target values' 
-        self.input_doc['range_constraints'] = 'dict of property names and list of [min,max] values' 
-        self.input_doc['n_candidates'] = 'number of design candidates to request per iteration' 
-        self.input_doc['design_effort'] = 'how hard to try to meet the targets (int from 1 to 30)' 
-        self.target = self.inputs['target']
-        self.constraints = self.inputs['constraints']
-        self.range_constraints = self.inputs['range_constraints']
+        self.content_doc['citrination_client'] = 'A running CitrinationClient plugin'
+        self.content_doc['dataview_id'] = 'integer id of the data view to query' 
+        self.content_doc['target'] = 'property name to minimize' 
+        self.content_doc['constraints'] = 'dict of property names and target values' 
+        self.content_doc['range_constraints'] = 'dict of property names and list of [min,max] values' 
+        self.content_doc['n_candidates'] = 'number of design candidates to request per iteration' 
+        self.content_doc['design_effort'] = 'how hard to try to meet the targets (int from 1 to 30)' 
         self.candidates = []
         self.bg_candidates = []
         self.recipe_list = [] 
@@ -48,25 +45,16 @@ class FlowDesigner(PawsPlugin):
     def start(self):
         super(FlowDesigner,self).start() 
 
-    #def set_target(self,property_name):
-    #    self.target = property_name
-
-    #def set_constraint(self,property_name,target_value):
-    #    self.constraints[property_name] = value
-
-    #def set_range_constraint(self,property_name,min_value,max_value):
-    #    self.range_constraints[property_name] = [min_value,max_value]
-
     def get_candidate_recipes(self):
-        cc = self.inputs['citrination_client']
-        dvid = self.inputs['dataview_id']
-        tgt = Target(self.inputs['target'],'Min')
+        cc = self.content['citrination_client']
+        dvid = self.content['dataview_id']
+        tgt = Target(self.content['target'],'Min')
         straints = []
-        n_candidates = self.inputs['n_candidates'] 
-        design_effort = self.inputs['design_effort'] 
-        for prop_name, val in self.inputs['constraints'].items():
+        n_candidates = self.content['n_candidates'] 
+        design_effort = self.content['design_effort'] 
+        for prop_name, val in self.content['constraints'].items():
             straints.append(constraints.RealValueConstraint(prop_name,val))
-        for prop_name, lmts in self.inputs['range_constraints'].items():
+        for prop_name, lmts in self.content['range_constraints'].items():
             straints.append(constraints.RealRangeConstraint(prop_name,lmts[0],lmts[1]))
         #cc.submit_design_run(
             # data_view_id,

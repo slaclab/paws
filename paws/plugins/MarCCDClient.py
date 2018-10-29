@@ -6,7 +6,7 @@ from threading import Condition
 
 from .PawsPlugin import PawsPlugin
 
-inputs = OrderedDict(
+content = OrderedDict(
     host=None,
     port=None,
     timer=None,
@@ -28,11 +28,11 @@ class MarCCDClient(PawsPlugin):
     #BASE_IMAGE_SIZE = 4096
 
     def __init__(self):
-        super(MarCCDClient,self).__init__(inputs)
-        self.input_doc['host'] = 'string representing host name or IP address'
-        self.input_doc['port'] = 'integer port number where Mar server listens' 
-        self.input_doc['timer'] = 'Timer plugin for triggering client activities' 
-        self.input_doc['verbose'] = 'If True, plugin uses its message_callback' 
+        super(MarCCDClient,self).__init__(content)
+        self.content_doc['host'] = 'string representing host name or IP address'
+        self.content_doc['port'] = 'integer port number where Mar server listens' 
+        self.content_doc['timer'] = 'Timer plugin for triggering client activities' 
+        self.content_doc['verbose'] = 'If True, plugin uses its message_callback' 
         # this lock allows Operations to wait for exposure loops to finish
         self.exposure_lock = Condition()
         self.sock = None
@@ -50,12 +50,12 @@ class MarCCDClient(PawsPlugin):
         super(MarCCDClient,self).start(threaded) 
 
     def run(self):
-        hst = self.inputs['host'] 
-        prt = self.inputs['port'] 
+        hst = self.content['host'] 
+        prt = self.content['port'] 
         self.sock = socket.create_connection((hst,prt)) 
-        self.vb = self.inputs['verbose']
-        tmr = self.inputs['timer'] 
-        self.mar_root = self.inputs['mar_root_dir']
+        self.vb = self.content['verbose']
+        tmr = self.content['timer'] 
+        self.mar_root = self.content['mar_root_dir']
 
         self.set_darkfield()       
 
@@ -121,7 +121,7 @@ class MarCCDClient(PawsPlugin):
         self.wait_for_state([self.STATE_MASK_BUSY,self.STATE_MASK_DEZINGERING],False)
 
     def wait_for_idle(self,additional_delay=1.3):
-        if self.inputs['verbose']: self.message_callback('waiting for Mar server to be idle')
+        if self.content['verbose']: self.message_callback('waiting for Mar server to be idle')
         while self.state['state_code'] in [\
             self.STATE_MASK_ACQUIRING, self.STATE_MASK_READING,\
             self.STATE_MASK_CORRECTING, self.STATE_MASK_WRITING,\
@@ -153,8 +153,8 @@ class MarCCDClient(PawsPlugin):
         self.state['state_code'] = int(resp)
 
     def run_cmd(self,cmd):
-        with self.inputs['timer'].dt_lock:
-            t_now = float(self.inputs['timer'].dt_utc())
+        with self.content['timer'].dt_lock:
+            t_now = float(self.content['timer'].dt_utc())
         self.send_line(cmd)
         resp = self.receive_line()
         with self.proxy.history_lock:

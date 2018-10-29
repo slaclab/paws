@@ -24,10 +24,10 @@ from .. import pawstools
 class PawsPlugin(object):
     """Base class for building PAWS Plugins."""
 
-    def __init__(self,inputs):
+    def __init__(self,content):
         super(PawsPlugin,self).__init__()
-        self.inputs = OrderedDict(copy.deepcopy(inputs))
-        self.input_doc = OrderedDict.fromkeys(self.inputs.keys()) 
+        self.content = OrderedDict(copy.deepcopy(content))
+        self.content_doc = OrderedDict.fromkeys(self.content.keys()) 
         self.message_callback = self.tagged_print
         self.data_callback = None 
         # take the running_lock when toggling the run flag 
@@ -84,16 +84,15 @@ class PawsPlugin(object):
 
     def set_data(self,item_key,val):
         key_parts = item_key.split('.')
-        itm = self
+        itm = self.content
         for p in key_parts[:-1]:
             itm = itm[p]
         itm[key_parts[-1]] = val
 
     def __getitem__(self,key):
-        return self.get_plugin_content()[key]
+        return self.content[key]
     def keys(self):
-        return self.get_plugin_content().keys() 
-    # TODO: make plugins into DictTrees, or make them work as such
+        return self.content.keys() 
     def __setitem__(self,key,val):
         self.set_data(key,val)
 
@@ -113,12 +112,12 @@ class PawsPlugin(object):
     def start(self,threaded=False):
         """Start the plugin.
 
-        Assuming a plugin's inputs have been set,
+        Assuming a plugin's content has been properly set,
         PawsPlugin.start() should prepare the plugin for use, 
         e.g. by opening connections, reading files, etc. 
         Reimplement this in PawsPlugin subclasses as needed.
         It can be useful to call super().start() 
-        for a default log file setup and proper thread setup.
+        for a default log file and proper thread setup.
         """
         self.set_log_file()
         self.running = True 
@@ -171,8 +170,8 @@ class PawsPlugin(object):
     def build_clone(self):
         """Clone the Plugin."""
         new_pgn = self.clone()
-        for inp_nm,val in self.inputs.items():
-            new_pgn.inputs[inp_nm] = copy.deepcopy(val) 
+        for nm,val in self.content.items():
+            new_pgn.content[nm] = copy.deepcopy(val) 
         new_pgn.verbose = bool(self.verbose)
         #new_pgn.data_callback = self.data_callback
         #new_pgn.message_callback = self.message_callback
@@ -205,7 +204,4 @@ class PawsPlugin(object):
                     l.notifyAll()
                 else:
                     l.notify_all()
-
-    def get_plugin_content(self):
-        return OrderedDict(inputs=self.inputs) 
 
