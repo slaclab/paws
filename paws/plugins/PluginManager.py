@@ -3,7 +3,7 @@ from collections import OrderedDict
 from functools import partial
 import importlib
 
-from ..models.DictTree import DictTree
+from ..pawstools.DictTree import DictTree
 from .. import plugins as pgns
 
 class PluginManager(DictTree):

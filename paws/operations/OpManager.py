@@ -2,7 +2,7 @@ from __future__ import print_function
 from collections import OrderedDict
 import importlib
 
-from ..models.DictTree import DictTree 
+from ..pawstools.DictTree import DictTree 
 from .. import operations as ops
 from ..pawstools import OperationLoadError
 

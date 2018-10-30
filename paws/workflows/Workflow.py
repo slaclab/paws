@@ -5,7 +5,7 @@ from functools import partial
 import traceback
 import os
 
-from ..models.DictTree import DictTree 
+from ..pawstools import DictTree 
 from ..operations.Operation import Operation
 
 from .wftools import stack_contains, stack_size, print_stack
