@@ -33,6 +33,10 @@ class Workflow(DictTree):
         self.data_callback = self.set_data
         self.stop_flag = False
 
+    def add_operations(self,**kwargs):
+        for op_name, op in kwargs.items():
+            self.add_operation(op_name,op)
+
     def add_operation(self,op_name,op):
         """Name and add an Operation to the Workflow.
     
