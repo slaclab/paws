@@ -1,5 +1,15 @@
 import os
 
+from paws.workflows.Workflow import Workflow
+from paws.workflows.IO.BL15.Read import Read
+
+class BatchRead(Workflow):
+
+    def __init__():
+
+
+
+
 from paws import pawstools
 from paws.workflows.WfManager import WfManager 
 
