@@ -28,6 +28,10 @@ class PyFAIIntegrator(PawsPlugin):
             self.integrator = pyFAI.AzimuthalIntegrator()
         self.set_calib()
 
+    def set_calib_file(self,file_path):
+        self.content['calib_file'] = file_path
+        #self.set_calib()
+
     def set_calib(self):
         calib = self.content['calib_file']
         fp,xt = os.path.splitext(calib)
