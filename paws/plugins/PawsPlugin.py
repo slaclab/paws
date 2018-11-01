@@ -72,9 +72,9 @@ class PawsPlugin(object):
         dp,fn = os.path.split(self.log_file)
         self.set_log_file(os.path.join(dir_path,fn))
 
-    def set_log_file(self,file_name):
-        dp,fn = os.path.split(self.log_file)
-        self.set_log_file(os.path.join(dp,file_name))
+    #def set_log_file(self,file_name):
+    #    dp,fn = os.path.split(self.log_file)
+    #    self.set_log_file(os.path.join(dp,file_name))
 
     def set_verbose(self,verbose_flag):
         if verbose_flag:
