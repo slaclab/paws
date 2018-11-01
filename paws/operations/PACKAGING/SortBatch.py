@@ -3,7 +3,7 @@ import copy
 
 import numpy as np
 
-from ...Operation import Operation
+from ..Operation import Operation
 
 inputs = OrderedDict(
     batch_outputs={},
