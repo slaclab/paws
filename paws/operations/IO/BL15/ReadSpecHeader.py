@@ -17,13 +17,13 @@ outputs=OrderedDict(
     dir_path=None,
     filename=None)
 
-class ReadHeader(Operation):
+class ReadSpecHeader(Operation):
     """
     Read a .txt header from beamline 1-5 at SSRL into a dict.
     """
 
     def __init__(self):
-        super(ReadHeader, self).__init__(inputs, outputs)
+        super(ReadSpecHeader, self).__init__(inputs, outputs)
         self.input_doc['file_path'] = 'path to a .txt header file produced by beamline 1-5 at SSRL.'
         self.output_doc['data'] = 'the header data, packaged as a python dictionary'
         self.output_doc['dir_path'] = 'directory path'
@@ -61,9 +61,9 @@ class ReadHeader(Operation):
                         d[kv_arr[0].strip()] = float(kv_arr[1].strip())
         # add 'temperature' to the output data,
         # to make a consistent interface with the non-legacy header reader
-        if self.inputs['temperature_key'] in d:
-            d['temperature'] = d[self.inputs['temperature_key']]
-        else:
-            d['temperature'] = None
+        #if self.inputs['temperature_key'] in d:
+        #    d['temperature'] = d[self.inputs['temperature_key']]
+        #else:
+        #    d['temperature'] = None
         self.outputs['data'] = d
 
