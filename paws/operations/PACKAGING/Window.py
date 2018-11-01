@@ -20,8 +20,6 @@ class Window(Operation):
         self.input_doc['x_min'] = 'inclusive minimum x value of output'
         self.input_doc['x_max'] = 'inclusive maximum x value of output'
         self.output_doc['x_y_window'] = 'n-by-2 array with x, y pairs for x_min <= x <= x_max'
-        self.input_datatype['x_min'] = float
-        self.input_datatype['x_max'] = float
 
     def run(self):
         x_y = self.inputs['x_y']

@@ -1,9 +1,7 @@
 from collections import OrderedDict
 import glob
-import os
 
 from ...Operation import Operation
-from ... import optools
 
 inputs=OrderedDict(
     dir_path=None,
@@ -24,7 +22,28 @@ class FileIterator(Operation):
         dirpath = self.inputs['dir_path']
         rx = self.inputs['regex']
         process_existing_files = not self.inputs['new_files_only']
-        it = optools.FileSystemIterator(dirpath,rx,process_existing_files) 
+        it = FileSystemIterator(dirpath,rx,process_existing_files) 
         self.outputs['file_iterator'] = it
+
+class FileSystemIterator(Iterator):
+
+    def __init__(self,dirpath,regex,include_existing_files=True):
+        self.dirpath = dirpath
+        self.rx = regex
+        self.paths_done = []
+        if not include_existing_files:
+            self.paths_done = glob.glob(self.dirpath+'/'+self.rx)
+        super(FileSystemIterator,self).__init__()
+
+    def next(self):
+        batch_list = glob.glob(self.dirpath+'/'+self.rx)
+        for path in batch_list:
+            if not path in self.paths_done:
+                self.paths_done.append(path)
+                return path
+        return None
+
+    def __next__(self):
+        return self.next()
 
 

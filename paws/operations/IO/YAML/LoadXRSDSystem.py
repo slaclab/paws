@@ -5,7 +5,10 @@ from xrsdkit.system import load_from_yaml
 from ...Operation import Operation
 
 inputs=OrderedDict(file_path=None)
-outputs=OrderedDict(system={})
+outputs=OrderedDict(
+    system=None,
+    system_dict={}
+    )
 
 class LoadXRSDSystem(Operation):
     """Load xrsdkit.system.System object from a YAML file."""
@@ -19,4 +22,5 @@ class LoadXRSDSystem(Operation):
         self.message_callback('loading from {}'.format(self.inputs['file_path']))
         sys = load_from_yaml(self.inputs['file_path'])
         self.outputs['system'] = sys
+        self.outputs['system_dict'] = sys.to_dict()
 

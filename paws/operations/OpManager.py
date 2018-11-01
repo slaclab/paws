@@ -104,10 +104,7 @@ class OpManager(DictTree):
         op = getattr(m,op_name)
         optest = op()
         self.set_data(op_module,op)
-        # TODO: handle flags
         self.ops_enabled[op_module] = True
-        #op_itm = self.get_from_uri(op_module)
-        #self.set_flagged(op_itm,'enabled',True)
 
     def is_op_enabled(self,op_module):
         """Return boolean indicating whether Operation is enabled.
@@ -119,9 +116,6 @@ class OpManager(DictTree):
             see enable_op().
         """
         return self.ops_enabled[op_module] 
-        #op_itm = self.get_from_uri(op_module)
-        # TODO: handle flags
-        #return op_itm.flags['enabled']
 
     def n_ops(self):
         return len(self.cat_op_list) 

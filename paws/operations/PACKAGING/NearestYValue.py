@@ -21,9 +21,6 @@ class NearestYValue(Operation):
         self.input_doc['y'] = 'list of y values corresponding to `x`'
         self.input_doc['x_value'] = 'x value to compare against `x`'
         self.output_doc['nearest_y'] = '`y` value whose corresponding `x` is closest to `x_value`'
-        self.input_datatype['x'] = list
-        self.input_datatype['y'] = list
-        self.input_datatype['x_value'] = float
 
     def run(self):
         x = self.inputs['x']

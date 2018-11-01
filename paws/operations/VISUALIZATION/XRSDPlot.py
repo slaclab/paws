@@ -12,7 +12,7 @@ inputs = OrderedDict(
     show_plot=False,
     system={}) 
 
-outputs = {} 
+outputs = OrderedDict() 
     
 
 class XRSDPlot(Operation):

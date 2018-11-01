@@ -1,8 +1,7 @@
 from __future__ import print_function
-import abc
-import re
 from collections import OrderedDict
 import copy
+from threading import Condition
 
 class Operation(object):
     """Class template for implementing paws operations"""
@@ -12,77 +11,68 @@ class Operation(object):
         self.outputs = OrderedDict(copy.deepcopy(outputs))
         self.input_doc = OrderedDict.fromkeys(self.inputs.keys()) 
         self.output_doc = OrderedDict.fromkeys(self.outputs.keys()) 
-
-        # input datatypes are used for typecasting,
-        # for when values are set indirectly,
-        # e.g. through a gui.
-        # if an input is not likely to be set via gui,
-        # e.g. if it is a complicated or duck-typed object, 
-        # this should be left to None,
-        # in which case gui applications should have some default behavior.
-        self.input_datatype = OrderedDict.fromkeys(self.inputs.keys())
-
         self.message_callback = self.tagged_print 
         self.data_callback = None 
+
+        # this lock and flag is used to stop long-running Operations.
+        # another process can obtain the lock and set the stop_flag,
+        # and then the long-running operation should check the flag's value
+        # to decide whether or not to stop.
+        self.stop_lock = Condition()
         self.stop_flag = False
 
     def __getitem__(self,key):
-        if key == 'inputs':
-            return self.inputs
-        elif key == 'outputs':
-            return self.outputs
-        else:
-            raise KeyError('[{}] Operation only recognizes keys {}'
-            .format(__name__,self.keys()))
+        return self.__dict__[key]
+
     def __setitem__(self,key,data):
-        if key == 'inputs':
-            self.inputs = data
-        elif key == 'outputs':
-            self.outputs = data
-        else:
-            raise KeyError('[{}] Operation only recognizes keys {}'
-            .format(__name__,self.keys()))
+        self.__dict__[key] = data
+
     def keys(self):
-        return ['inputs','outputs']
+        #return self.__dict__.keys()
+        return['inputs','outputs']
 
     def tagged_print(self,msg):
         print('[{}] {}'.format(type(self).__name__,msg))
 
-    def run(self):
+    def run_with(self,**kwargs):
+        """Run the Operation with keyword arguments substituted for the inputs.
+
+        Any keyword arguments that match the Operation.inputs keys
+        are loaded into the Operation.inputs before calling Operation.run().
+        All relevant results are stored in Operation.outputs.
         """
-        Operation.run() should use the Operation.inputs
-        and set values for all of the items in Operation.outputs.
+        self.inputs.update(kwargs)
+        return self.run() 
+
+    def run(self):
+        """Run the Operation.
+
+        All input data should be specified in Operation.inputs.
+        All relevant results should be stored in Operation.outputs.
         """
         pass
 
     def stop(self):
-        self.stop_flag = True
-
-    def get_outputs(self):
-        return self.outputs
-
-    @classmethod
-    def clone(cls):
-        return cls()
+        with self.stop_lock:
+            self.stop_flag = True
 
     def build_clone(self):
         """Clone the Operation"""
-        return self.clone()
+        new_op = self.clone()
+        new_op.inputs = copy.deepcopy(self.inputs)
+        new_op.outputs = copy.deepcopy(self.outputs)
+        return new_op
+
+    @classmethod
+    def clone(cls):
+        # NOTE: this assumes the subclass constructor 
+        # will have default arguments available
+        return cls()
 
     def set_input(self,input_name,val):
         self.inputs[input_name] = val    
 
-    def clear_outputs(self):
-        for k,v in self.outputs.items():
-            self.outputs[k] = None
-
     def description(self):
         """Provide a string describing the Operation."""
-        return str(type(self).__name__+": "+ self.doc_as_string())
-
-    def doc_as_string(self):
-        if self.__doc__:
-            return re.sub("\s\s+"," ",self.__doc__.replace('\n','')) 
-        else:
-            return "none"
+        return type(self).__name__+": an Operation for PAWS"
 
