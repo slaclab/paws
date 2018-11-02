@@ -75,21 +75,21 @@ class PluginManager(DictTree):
 
     def set_plugin_contents(self,plugin_name,**kwargs):
         for nm,val in kwargs.items():
-            self.set_plugin_content(plugin_name,nm,val)
+            self.set_plugin_item(plugin_name,nm,val)
 
-    def set_plugin_content(self,plugin_name,item_name,val):
-        """Set an item of plugin content to the provided value.
-
-        Parameters
-        ----------
-        plugin_name : str
-            Name that will be used to refer to this plugin after it is added.
-        item_name : str
-            name of the plugin content item to be set
-        val : object
-            the data to be referenced to the specified item 
-        """
-        self.set_data(plugin_name+'.'+item_name,val)
+    #def set_plugin_content(self,plugin_name,item_name,val):
+    #    """Set an item of plugin content to the provided value.
+    #
+    #    Parameters
+    #    ----------
+    #    plugin_name : str
+    #        Name that will be used to refer to this plugin after it is added.
+    #    item_name : str
+    #        name of the plugin content item to be set
+    #    val : object
+    #        the data to be referenced to the specified item 
+    #    """
+    #    self.set_data(plugin_name+'.'+item_name,val)
 
     def set_plugin_item(self,pgn_name,item_key,item_data):
         full_key = pgn_name+'.'+item_key

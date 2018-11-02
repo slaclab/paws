@@ -48,6 +48,7 @@ class PawsPlugin(object):
         self.py_version = int(sys.version[0])
         self.log_file = None
         self.verbose = False
+        self.thread_blocking = False
 
     def set_log_file(self,file_path=None):
         if not file_path:
@@ -109,7 +110,7 @@ class PawsPlugin(object):
         """
         return str(self.setup_dict()) 
 
-    def start(self,threaded=False):
+    def start(self):
         """Start the plugin.
 
         Assuming a plugin's content has been properly set,
@@ -121,7 +122,7 @@ class PawsPlugin(object):
         """
         self.set_log_file()
         self.running = True 
-        if threaded: 
+        if self.thread_blocking: 
             self.run_clone()
         else:
             self.run()
@@ -141,6 +142,7 @@ class PawsPlugin(object):
             self.running = True
         #self.thread_clone = self.build_clone()
         #self.thread_clone.proxy = self
+        self.thread_clone.log_file = self.log_file
         th = Thread(target=self.thread_clone.run)
         th.start()
 

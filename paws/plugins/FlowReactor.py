@@ -10,7 +10,6 @@ content = OrderedDict(
     timer=None,
     cryocon=None,
     ppumps={},
-    solvent_pump_name=None,
     bad_flow_tolerance=1E9)
 
 class FlowReactor(PawsPlugin):
@@ -21,12 +20,13 @@ class FlowReactor(PawsPlugin):
         self.content_doc['timer'] = 'A Timer plugin for triggering plugin activities'
         self.content_doc['cryocon'] = 'CryoConController plugin for temperature control' 
         self.content_doc['ppumps'] = 'Dict of named MitosPPumpControllers' 
-        self.content_doc['solvent_pump_name'] = 'Name (string) of the pump controlling solvent flow' 
+        #self.content_doc['solvent_pump_name'] = 'Name (string) of the pump controlling solvent flow' 
         self.content_doc['bad_flow_tolerance'] = 'Number of timer ticks '\
             'to tolerate bad flow readings before stopping the reactor' 
         self.thread_blocking = True
         self.verbose = False
         self.anomaly_count = 0
+        self.solvent_name = None
 
     def description(self):
         desc = 'FlowReactor Plugin: '\
@@ -35,8 +35,8 @@ class FlowReactor(PawsPlugin):
             'to set recipes for a flow reactor.'
         return desc
 
-    def start(self,threaded=True):
-        super(FlowReactor,self).start(threaded)
+    def start(self):
+        super(FlowReactor,self).start()
 
     def run(self):
         tmr = self.content['timer'] 
@@ -92,6 +92,7 @@ class FlowReactor(PawsPlugin):
     def set_recipe(self,recipe):
         cryo = self.content['cryocon']
         tmr = self.content['timer']
+        self.solvent_name = recipe['solvent']
         for chan,loop_idx in cryo.content['channels'].items():
             if loop_idx is not None:
                 if 'T_ramp' in recipe:
@@ -107,7 +108,6 @@ class FlowReactor(PawsPlugin):
                     time.sleep(5)
                     cryo.set_temperature(chan,recipe['T_set'])
         ppcs = self.content['ppumps']
-        solv_name = self.content['solvent_pump_name']   
         if 'flowrate' in recipe:
             tot_frt = recipe['flowrate']
             solv_frt = tot_frt 
@@ -117,8 +117,8 @@ class FlowReactor(PawsPlugin):
                     solv_frt = solv_frt - rg_frt
                     if self.verbose: self.message_callback('setting {} to {}/min'.format(rg_name,rg_frt))
                     ppcs[rg_name].set_flowrate(rg_frt)
-            if self.verbose: self.message_callback('setting {} to {}/min'.format(solv_name,solv_frt))
-            ppcs[solv_name].set_flowrate(solv_frt)
+            if self.verbose: self.message_callback('setting {} to {}/min'.format(self.solvent_name,solv_frt))
+            ppcs[self.solvent_name].set_flowrate(solv_frt)
         if self.verbose: self.message_callback(self.prettyprint_recipe(recipe))
         with tmr.dt_lock:
             t_now = float(tmr.dt_utc())
@@ -158,7 +158,7 @@ class FlowReactor(PawsPlugin):
         cryo = self.content['cryocon']
         if cryo:
             with cryo.state_lock:
-                for chan,idx in cryo.channels.items():
+                for chan,idx in cryo['channels'].items():
                     T_set_key = 'T_set_{}'.format(chan)
                     T_read_key = 'T_read_{}'.format(chan)
                     T_set = None
@@ -172,8 +172,8 @@ class FlowReactor(PawsPlugin):
         if any(ppcs):
             for nm, ppc in ppcs.items():
                 with ppc.state_lock:
-                    setpt_pls = copy.copy(ppc.state['target_flow_rate'])
-                    frt_pls = copy.copy(ppc.state['flow_rate'])
+                    setpt_pls = copy.copy(ppc['state']['target_flow_rate'])
+                    frt_pls = copy.copy(ppc['state']['flow_rate'])
                 if frt_pls is not None:
                     frt_ulm = frt_pls*60/1.E6
                     truefrt_ulm = ppc.get_true_flowrate(frt_ulm)

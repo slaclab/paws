@@ -29,8 +29,8 @@ class SpecInfoClient(PawsPlugin):
             'where SpecInfoServer should be listening.'
         return desc
 
-    def start(self,threaded=True):
-        super(SpecInfoClient,self).start(threaded)
+    def start(self):
+        super(SpecInfoClient,self).start()
 
     def run(self):
         hst = self.content['host'] 

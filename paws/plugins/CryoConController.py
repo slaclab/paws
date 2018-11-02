@@ -36,8 +36,8 @@ class CryoConController(PawsPlugin):
             'which should match the network configuration of the CryoCon device.'
         return desc
 
-    def start(self,threaded=True):
-        super(CryoConController,self).start(threaded)
+    def start(self):
+        super(CryoConController,self).start()
 
     def run(self):
         # executed by self.thread_clone in its own thread
