@@ -150,8 +150,8 @@ class DictTree(object):
                 sk.extend(next_keys)
         return sk
 
-    @staticmethod    
-    def parent_key(self,key):
+    @ staticmethod
+    def parent_key(key):
         # TODO: handle the possibility of subkeys containing periods
         if '.' in key:
             return key[:key.rfind('.')]
