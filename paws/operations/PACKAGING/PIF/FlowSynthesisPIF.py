@@ -12,9 +12,9 @@ from ...Operation import Operation
 inputs=OrderedDict(
     experiment_id=None,
     t_utc=None,
-    recipe_setpoints={},
-    recipe_readouts={},
-    design_goals={}
+    recipe={},
+    header_data={},
+    design_goals={},
     q_I=None,
     system=None)
 outputs=OrderedDict(
@@ -28,9 +28,9 @@ class FlowSynthesisPIF(Operation):
         self.input_doc['experiment_id'] = 'string experiment id '\
             '(pif uid = experiment_id+"_"+t_utc)'
         self.input_doc['t_utc'] = 'timestamp in seconds UTC'
-        self.input_doc['recipe_setpoints'] = 'setpoints for the synthesis recipe'
-        self.input_doc['recipe_readouts'] = 'readout values '\
-            'corresponding to each of the `recipe_setpoints`'
+        self.input_doc['recipe'] = 'setpoints for the synthesis recipe'
+        self.input_doc['header_data'] = 'FlowReactor header containing '\
+            'readout values for recipe parameters'
         self.input_doc['design_goals'] = 'dict describing the recipe objectives'
         self.input_doc['q_I'] = 'n-by-2 array of scattering vectors and intensities'
         self.input_doc['system'] = 'xrsdkit.system.System describing '\
@@ -40,8 +40,8 @@ class FlowSynthesisPIF(Operation):
     def run(self):
         expt_id = self.inputs['experiment_id']
         t_utc = self.inputs['t_utc']
-        rcp_set = self.inputs['recipe_setpoints']
-        rcp_read = self.inputs['recipe_readouts']
+        rcp_set = self.inputs['recipe']
+        hdr = self.inputs['header_data']
         design_goals = self.inputs['design_goals']
         q_I = self.inputs['q_I']
         sys = self.inputs['system']
@@ -51,21 +51,29 @@ class FlowSynthesisPIF(Operation):
             uid_full = expt_id 
         if t_utc is not None:
             uid_full = uid_full+'_'+str(int(t_utc))
-        T_read = rcp_read['temperature']
+        T_read = hdr['T_read_A']
 
         csys = piftools.make_pif(uid_full,sys,q_I,expt_id,t_utc,T_read,src_wl)
 
         for nm,val in rcp_set.items():
-            csys.properties.append(piftools.scalar_property(
-            '{}_set'.format(nm),val,'{} setpoint'.format(nm),'EXPERIMENTAL'))
-        for nm,val in rcp_read.items():
-            csys.properties.append(piftools.scalar_property(
-            '{}_read'.format(nm),val,'{} readout'.format(nm),'EXPERIMENTAL'))
+            prop = pifobj.Property(nm,val)
+            prop.tags = ['recipe setpoint']
+            prop.dataType = 'EXPERIMENTAL'
+            csys.properties.append(prop)
+
+        for nm,val in hdr.items():
+            prop = pifobj.Property(nm,val)
+            prop.tags = ['flow reactor readout']
+            prop.dataType = 'EXPERIMENTAL'
+            csys.properties.append(prop)
+
         for prop_nm,val in design_goals.items():
             # TODO: formulate this property based on the type of goal at hand
-            csys.properties.append(piftools.scalar_property(
-            '{} design goal'.format(prop_nm),str(val),'{} readout'.format(nm),'EXPERIMENTAL'))
+            prop = pifobj.Property(prop_nm,val)
+            prop.tags = ['design objective']
+            prop.dataType = 'MACHINE_LEARNING'
+            csys.properties.append(prop)
 
-        
         self.outputs['pif'] = csys
+        return self.outputs
 

@@ -45,7 +45,10 @@ class XRSDFit(Operation):
         logIwtd = self.inputs['logI_weighted']
         qrng = self.inputs['q_range']
 
+        self.message_callback('fitting pattern')
         sys_opt = xrsdsys.fit(sys,q_I[:,0],q_I[:,1],src_wl,None,errwtd,logIwtd,qrng)
+        self.message_callback('done (objective: {} --> {})'.format(
+            sys_opt.fit_report['initial_objective'],sys_opt.fit_report['final_objective']))
 
         # TODO: update report to new xrsdkit API
         #self.message_callback(xrf.print_report(pops,fit_pops,rpt))
@@ -56,4 +59,5 @@ class XRSDFit(Operation):
         self.outputs['system'] = sys_opt 
         self.outputs['system_dict'] = sys_opt.to_dict()
         self.outputs['q_I_opt'] = q_I_opt
+        return self.outputs
 

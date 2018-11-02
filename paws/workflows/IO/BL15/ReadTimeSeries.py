@@ -5,7 +5,7 @@ from collections import OrderedDict
 from paws.workflows.Workflow import Workflow 
 
 from paws.workflows.IO.BL15 import ReadBatch
-from paws.operations.PACKAGING.BATCH.SortBatch import SortBatch
+from paws.operations.PACKAGING.SortBatch import SortBatch
 
 inputs = copy.deepcopy(ReadBatch.inputs)
 inputs.update(

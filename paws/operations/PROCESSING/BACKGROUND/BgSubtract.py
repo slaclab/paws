@@ -31,14 +31,11 @@ class BgSubtract(Operation):
         self.output_doc['q_I_bgsub'] = 'n-by-2 array of q values and background-subtracted intensity: I-(bg_factor*I_bg)'
         self.output_doc['dI'] = 'error estimate of background-subtracted intensity'
         self.output_doc['bg_factor'] = 'the factor the background was multiplied by '\
-        ' before subraction to ensure positive values for output intensity'
+            'before subraction to ensure positive values for output intensity'
 
     def run(self):
         q_I = self.inputs['q_I']
         q_I_bg = self.inputs['q_I_bg']
-        #if not all(q_I[:,0] == q_I_bg[:,0]):
-        #    msg = 'SPECTRUM AND BACKGROUND ON DIFFERENT q DOMAINS'
-        #    raise ValueError(msg)
         I = q_I[:,1]
         I_bg = q_I_bg[:,1]
         bad_data = (I < 0) | (I_bg <= 0) | np.isnan(I) | np.isnan(I_bg)
@@ -56,15 +53,5 @@ class BgSubtract(Operation):
         self.outputs['q_I_bgsub'] = q_I_bgsub 
         self.outputs['dI'] = dI_out
         self.outputs['bg_factor'] = bg_factor
-
-        #from matplotlib import pyplot as plt
-        #plt.figure()
-        #plt.semilogy(q_I[:,0],I)
-        #plt.semilogy(q_I[:,0],I_bg)
-        #plt.semilogy(q_I[:,0],I_out)
-        #plt.legend(['signal','background','sample'])
-        #plt.xlabel('q',size=18)
-        #plt.ylabel('I(q)',size=18)
-        #plt.show()
- 
+        return self.outputs
 

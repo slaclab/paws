@@ -26,18 +26,20 @@ class ReadFlowReactor(Operation):
         flag,statstr,hdr = fr.check_status()
         rcp = {}
         rcp['T_set'] = float(hdr['T_set_A'])
-        flowrate_keys = [k for k in hdr.keys() if 'flowrate' in k]
-        fr_tot = np.sum([hdr[k] for k in flowrate_keys])
+        #rcp['T_read'] = float(hdr['T_read_A'])
+        setpt_keys = [k for k in hdr.keys() if 'setpoint' in k]
+        fr_tot = np.sum([hdr[k] for k in setpt_keys])
         rcp['flowrate'] = float(fr_tot)
-        rcp['solvent'] = fr.inputs['solvent_pump_name'] 
+        rcp['solvent'] = fr.solvent_name
         rcp['reagent_volume_fractions'] = {}
-        for k in flowrate_keys:
-            if not fr.inputs['solvent_pump_name'] in k:
-                rg_name = k[:k.find('_flowrate')]
+        for k in setpt_keys:
+            if not fr.solvent_name in k:
+                rg_name = k[:k.find('_setpoint')]
                 fr_rg = float(hdr[k])
                 rcp['reagent_volume_fractions'][rg_name] = float(fr_rg/fr_tot)
-
+        #self.message_callback('measured recipe: {}'.format(rcp))
+        #self.message_callback('header data: {}'.format(hdr))
         self.outputs['recipe'] = rcp
         self.outputs['header'] = hdr 
-
+        return self.outputs
 

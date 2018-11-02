@@ -7,27 +7,30 @@ from paws.workflows.IO.BL15 import Read
 from paws.operations.IO.FILESYSTEM.BuildFileList import BuildFileList
 
 inputs = OrderedDict(
-    header_dir = None,
+    header_dir = '',
     header_regex = '*.yml',
-    time_key = None,
-    image_dir = None,
+    header_filter_regex = '.*',
+    time_key = 't_utc',
+    image_dir = '',
+    image_suffix = '',
     image_ext = '.tif',
-    q_I_dir = None,
+    q_I_dir = '',
     q_I_suffix = '',
     q_I_ext = '.dat',
-    system_dir = None,
+    system_dir = '',
     system_suffix = '',
     system_ext = '.yml'
     )
 
 outputs = copy.deepcopy(Read.outputs)
+for k in Read.outputs.keys(): outputs[k] = []
 outputs.update(
+    filenames = [],
     header_files = [],
     image_files = [],
     q_I_files = [],
     system_files = []
     )
-for k in Read.outputs.keys(): outputs[k] = []
     
 
 class ReadBatch(Workflow):
@@ -47,6 +50,7 @@ class ReadBatch(Workflow):
         filename_list = [os.path.splitext(os.path.split(hf)[1])[0] for hf in header_file_list]
         q_I_suffix = self.inputs['q_I_suffix']
         sys_suffix = self.inputs['system_suffix']
+        img_sfx = self.inputs['image_suffix']
         img_ext = self.inputs['image_ext']
         q_I_ext = self.inputs['q_I_ext']
         sys_ext = self.inputs['system_ext']
@@ -54,7 +58,7 @@ class ReadBatch(Workflow):
         if not q_I_ext[0] == '.': q_I_ext='.'+q_I_ext
         if not sys_ext[0] == '.': sys_ext='.'+sys_ext
         img_dir = self.inputs['image_dir']
-        image_file_list = [os.path.join(img_dir,fn+img_ext) for fn in filename_list]
+        image_file_list = [os.path.join(img_dir,fn+img_sfx+img_ext) for fn in filename_list]
         self.outputs['image_files'] = image_file_list
         q_I_dir = self.inputs['q_I_dir']
         q_I_file_list = [os.path.join(q_I_dir,fn+q_I_suffix+q_I_ext) for fn in filename_list]
@@ -67,7 +71,7 @@ class ReadBatch(Workflow):
         self.message_callback('STARTING BATCH ({})'.format(n_hdrs))
         for ihdr, hdr_fn, img_fn, q_I_fn, sys_fn in zip(range(n_hdrs),
         header_file_list,image_file_list,q_I_file_list,system_file_list):
-            self.message_callback('RUNNING {} / {}'.format(ihdr,n_hdrs))
+            self.message_callback('RUNNING {} / {}'.format(ihdr+1,n_hdrs))
             outs = self.operations['read'].run_with(
                 header_file = hdr_fn,
                 time_key = self.inputs['time_key'],
@@ -77,5 +81,6 @@ class ReadBatch(Workflow):
                 )        
             for out_key, out_data in outs.items():
                 self.outputs[out_key].append(out_data)
+            self.outputs['filenames'].append(os.path.splitext(os.path.split(hdr_fn)[1])[0])
         return self.outputs
 

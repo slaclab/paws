@@ -11,11 +11,13 @@ from paws.plugins.PluginManager import PluginManager
 
 inputs = OrderedDict(
     image_file = None,
+    image_data = None,
     calib_file = None,
     integrator = None,
     q_min = 0.,
     q_max = float('inf'),
     output_dir = None,
+    output_filename = None
     )
 
 outputs = OrderedDict(
@@ -38,7 +40,10 @@ class Integrate(Workflow):
             )
 
     def run(self):
-        self.operations['read_image'].run_with(file_path=self.inputs['image_file'])
+        img_data = self.inputs['image_data'] 
+        if self.inputs['image_file']:
+            self.operations['read_image'].run_with(file_path=self.inputs['image_file'])
+            img_data = self.operations['read_image'].outputs['image_data']
         intgtr = self.inputs['integrator']
         if self.inputs['calib_file'] is not None:
             intgtr.set_calib_file(self.inputs['calib_file'])
@@ -46,7 +51,7 @@ class Integrate(Workflow):
             intgtr.start()
         self.operations['integrate'].run_with(
             integrator = intgtr,
-            image_data = self.operations['read_image'].outputs['image_data']
+            image_data = img_data 
             )
         all_q_I = self.operations['integrate'].outputs['q_I']
         q_min = self.inputs['q_min']
@@ -54,7 +59,7 @@ class Integrate(Workflow):
         idx_keep = ((all_q_I[:,0] >= q_min) & (all_q_I[:,0] <= q_max))
         q_I = all_q_I[idx_keep,:] 
         self.outputs['q_I'] = q_I 
-        fn = os.path.splitext(os.path.split(self.inputs['image_file'])[1])[0]
+        fn = self.inputs['output_filename'] 
         q_I_file = os.path.join(self.inputs['output_dir'],fn+'.dat')
         self.outputs['q_I_file'] = q_I_file
         if self.ops_enabled['write_q_I']:
@@ -69,7 +74,7 @@ class Integrate(Workflow):
             q_I_dz = self.operations['dezinger'].outputs['q_I_dz']
             self.outputs['q_I_dz'] = q_I_dz
             q_I_dz_file = os.path.join(self.inputs['output_dir'],fn+'_dz.dat')
-            self.outputs['q_I_dz_file'] = q_I_file
+            self.outputs['q_I_dz_file'] = q_I_dz_file
             if self.ops_enabled['write_q_I_dz']:
                 self.operations['write_q_I_dz'].run_with(
                     data = q_I_dz,

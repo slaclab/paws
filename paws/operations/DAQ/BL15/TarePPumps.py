@@ -4,9 +4,8 @@ import time
 
 from ...Operation import Operation
 
-inputs=OrderedDict(
-    ppump_controllers={})
-outputs={}
+inputs=OrderedDict(ppump_controllers={})
+outputs=OrderedDict()
         
 class TarePPumps(Operation):
     """Tare an array of P-pump controllers."""

@@ -29,10 +29,12 @@ class Read(Workflow):
 
     def __init__(self):
         super(Read,self).__init__(inputs,outputs)
-        self.add_operation('read_header',LoadYAML())
-        self.add_operation('read_image',FabIOOpen())
-        self.add_operation('read_q_I',NumpyLoad())
-        self.add_operation('read_system',LoadXRSDSystem())
+        self.add_operations(
+            read_header=LoadYAML(),
+            read_image=FabIOOpen(),
+            read_q_I=NumpyLoad(),
+            read_system=LoadXRSDSystem()
+            )
 
     def run(self):
         if self.ops_enabled['read_header']:
