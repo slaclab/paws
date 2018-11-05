@@ -33,6 +33,7 @@ class PyFAIIntegrator(PawsPlugin):
         #self.set_calib()
 
     def set_calib(self):
+        self.message_callback('calibrating on {}'.format(self.content['calib_file']))
         calib = self.content['calib_file']
         fp,xt = os.path.splitext(calib)
         #print(xt)
@@ -48,6 +49,7 @@ class PyFAIIntegrator(PawsPlugin):
 
     def integrate_to_1d(self,img_data,npt=1000,polz_factor=0.,unit='q_A^-1'):
         with self.integrator_lock:
+            self.message_callback('integrating image...')
             q,I = self.integrator.integrate1d(img_data,npt,
                 polarization_factor=polz_factor,unit=unit)
         return q,I

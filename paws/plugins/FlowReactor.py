@@ -10,6 +10,7 @@ content = OrderedDict(
     timer=None,
     cryocon=None,
     ppumps={},
+    volume_limits={},
     bad_flow_tolerance=1E9)
 
 class FlowReactor(PawsPlugin):
@@ -20,6 +21,7 @@ class FlowReactor(PawsPlugin):
         self.content_doc['timer'] = 'A Timer plugin for triggering plugin activities'
         self.content_doc['cryocon'] = 'CryoConController plugin for temperature control' 
         self.content_doc['ppumps'] = 'Dict of named MitosPPumpControllers' 
+        self.content_doc['volume_limits'] = 'Dict of pump volume limits (in microlitres)' 
         #self.content_doc['solvent_pump_name'] = 'Name (string) of the pump controlling solvent flow' 
         self.content_doc['bad_flow_tolerance'] = 'Number of timer ticks '\
             'to tolerate bad flow readings before stopping the reactor' 
@@ -43,11 +45,16 @@ class FlowReactor(PawsPlugin):
         ppcs = self.content['ppumps']
         cryo = self.content['cryocon']
         bftol = self.content['bad_flow_tolerance']
+        vlimits = self.content['volume_limits']
+        vdelivered = dict.fromkeys(vlimits.keys())
+        for k in vdelivered.keys(): vdelivered[k] = 0.
         with tmr.dt_lock:
             t_now = tmr.dt_utc()
         with self.proxy.history_lock:
             self.proxy.add_to_history(t_now,'START')
         keep_going = True
+        stop_flag = False
+        timer_dt_minutes = float(tmr.content['dt'])/60.
         #for nm,ppc in ppcs.items():
         #    ppc.set_flowrate(0.)
         if cryo:
@@ -66,8 +73,25 @@ class FlowReactor(PawsPlugin):
                 self.anomaly_count = 0
             else:
                 self.anomaly_count += 1
-            if self.anomaly_count >= bftol:
-                if self.verbose: self.message_callback('Anomalous flow detected: stopping FlowReactor')
+                if self.anomaly_count >= bftol:
+                    if self.verbose: self.message_callback('Anomalous flow detected: stopping FlowReactor')
+                    stop_flag = True
+                
+            if vlimits:
+                for pump_nm, lmt in vlimits.items():
+                    # get the true ul/m flowrate from statdict
+                    fr = statdict['{}_flowrate'.format(pump_nm)]
+                    # add flowrate * dt in minutes vdelivered[pump_nm]
+                    vdelivered[pump_nm] += fr*timer_dt_minutes
+                    # check if vdelivered[pump_nm] >= lmt: if so, throw the stop.
+                    #if self.verbose: self.message_callback(
+                    #    '{} volume delivered: {} / {}'.format(
+                    #    pump_nm,vdelivered[pump_nm],lmt))
+                    if vdelivered[pump_nm] >= lmt:
+                        stop_flag = True
+                        if self.verbose: self.message_callback('Volume limit reached: stopping FlowReactor')
+
+            if stop_flag:
                 with self.proxy.running_lock:
                     self.proxy.stop()
              
@@ -79,15 +103,17 @@ class FlowReactor(PawsPlugin):
                 keep_going = bool(self.proxy.running)
         with tmr.dt_lock:
             t_now = tmr.dt_utc()
+        if self.verbose: self.message_callback('Stopping FlowReactor at {}'.format(t_now))
         with self.proxy.history_lock:
             self.proxy.add_to_history(t_now,'STOP')
             self.proxy.dump_history()
         # set pumps to idle, stop cryocon loop
         for nm,ppc in ppcs.items():
+            if self.verbose: self.message_callback('Setting pump {} to idle'.format(nm))
             ppc.set_idle()
         if cryo:
+            if self.verbose: self.message_callback('Stopping CryoCon control loop')
             cryo.stop_control() 
-        if self.verbose: self.message_callback('FlowReactor FINISHED')
 
     def set_recipe(self,recipe):
         cryo = self.content['cryocon']
@@ -111,44 +137,59 @@ class FlowReactor(PawsPlugin):
         if 'flowrate' in recipe:
             tot_frt = recipe['flowrate']
             solv_frt = tot_frt 
-            if 'reagent_volume_fractions' in recipe:
-                for rg_name,rg_frac in recipe['reagent_volume_fractions'].items():
-                    rg_frt = tot_frt * rg_frac
-                    solv_frt = solv_frt - rg_frt
-                    if self.verbose: self.message_callback('setting {} to {}/min'.format(rg_name,rg_frt))
-                    ppcs[rg_name].set_flowrate(rg_frt)
-            if self.verbose: self.message_callback('setting {} to {}/min'.format(self.solvent_name,solv_frt))
-            ppcs[self.solvent_name].set_flowrate(solv_frt)
+        for itm_nm, val in recipe.items():
+            if '_fraction' in itm_nm:
+                rg_nm = itm_nm[:itm_nm.find('_fraction')]
+                rg_frt = tot_frt * val
+                solv_frt -= rg_frt
+                if self.verbose: self.message_callback('setting {} to {}/min'.format(rg_nm,rg_frt))
+                ppcs[rg_nm].set_flowrate(rg_frt)
+        if self.verbose: self.message_callback('setting solvent ({}) to {}/min'.format(self.solvent_name,solv_frt))
+        ppcs[self.solvent_name].set_flowrate(solv_frt)
         if self.verbose: self.message_callback(self.prettyprint_recipe(recipe))
         with tmr.dt_lock:
             t_now = float(tmr.dt_utc())
         with self.history_lock:
             self.add_to_history(t_now,self.print_recipe(recipe))
 
-    def prettyprint_recipe(self,rcp):
+    @staticmethod
+    def prettyprint_recipe(rcp):
         rcp_str = ''
         if 'T_set' in rcp:
             rcp_str += os.linesep+'T_set: {}'.format(rcp['T_set'])
         if 'T_ramp' in rcp: 
             rcp_str += os.linesep+'T_ramp: {}/min'.format(rcp['T_ramp'])
         if 'flowrate' in rcp:
-            rcp_str += os.linesep+'flowrate: {}/min'.format(rcp['flowrate'])
-        if 'reagent_volume_fractions' in rcp:
-            for rg_name,rg_frac in rcp['reagent_volume_fractions'].items():
-                rcp_str += os.linesep+'{} volume fraction: {}'.format(rg_name,rg_frac) 
+            tot_frt = rcp['flowrate'] 
+            rcp_str += os.linesep+'flowrate: {}/min'.format(tot_frt)
+            solv_frt = tot_frt 
+        for itm_nm, val in rcp.items():
+            if '_fraction' in itm_nm:
+                rg_nm = itm_nm[:itm_nm.find('_fraction')]
+                rcp_str += os.linesep+'{} volume fraction: {}'.format(rg_nm,val) 
+                rg_frt = tot_frt * val
+                solv_frt -= rg_frt
+        rcp_str += os.linesep+'{} (solvent) volume fraction: {}'.format(rcp['solvent'],solv_frt/tot_frt) 
         return rcp_str
 
-    def print_recipe(self,rcp):
+    @staticmethod
+    def print_recipe(rcp):
         rcp_str = ''
         if 'T_set' in rcp:
             rcp_str += 'T_set: {}, '.format(rcp['T_set'])
         if 'T_ramp' in rcp: 
             rcp_str += 'T_ramp: {}/min, '.format(rcp['T_ramp'])
         if 'flowrate' in rcp:
-            rcp_str += 'flowrate: {}/min, '.format(rcp['flowrate'])
-        if 'reagent_volume_fractions' in rcp:
-            for rg_name,rg_frac in rcp['reagent_volume_fractions'].items():
-                rcp_str += '{} volume fraction: {}, '.format(rg_name,rg_frac) 
+            tot_frt = rcp['flowrate'] 
+            rcp_str += 'flowrate: {}/min, '.format(tot_frt)
+            solv_frt = tot_frt 
+        for itm_nm, val in rcp.items():
+            if '_fraction' in itm_nm:
+                rg_nm = itm_nm[:itm_nm.find('_fraction')]
+                rcp_str += '{} volume fraction: {}'.format(rg_nm,val) 
+                rg_frt = tot_frt * val
+                solv_frt -= rg_frt
+        rcp_str += '{} (solvent) volume fraction: {}'.format(rcp['solvent'],solv_frt/tot_frt) 
         return rcp_str
 
     def check_status(self):
@@ -184,7 +225,7 @@ class FlowReactor(PawsPlugin):
                     stat_str += ' {}: {} (setpt {}), '.format(nm,truefrt_ulm,truesetpt_ulm)
                     if setpt_pls is not None:
                         if setpt_pls > 0:
-                            if abs(frt_pls-setpt_pls)/setpt_pls > 0.5:
+                            if abs(frt_pls-setpt_pls)/setpt_pls > 0.5 and truesetpt_ulm > 2.:
                                 ok_flag = False
                                 self.message_callback('ppump {} flowrate {} is far from setpoint {}'
                                 .format(nm,truefrt_ulm,truesetpt_ulm))

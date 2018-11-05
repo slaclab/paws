@@ -13,8 +13,7 @@ content = OrderedDict(
     hostname=None,
     password=None,
     port=22,
-    private_key_file=None,
-    timer=None)
+    private_key_file=None)
 
 # TODO: handle non-unix hosts
 
@@ -28,11 +27,10 @@ class SSHClient(PawsPlugin):
         self.content_doc['password'] = 'user password on remote host'
         self.content_doc['port'] = 'port for ssh connection, default 22'
         self.content_doc['private_key_file'] = 'path to private RSA key file'
-        self.content_doc['timer'] = 'Timer plugin to trigger activities'
         self.sshcl = None
         self.sftpcl = None
         self.thread_blocking = True
-        self.copy_lock = Condition()
+        #self.copy_lock = Condition()
         self.transport_lock = Condition()
 
     def start(self):
@@ -48,7 +46,6 @@ class SSHClient(PawsPlugin):
         pw = self.content['password']
         port = self.content['port']
         pkey_file = self.content['private_key_file']
-        tmr = self.content['timer']
         with self.transport_lock:
             self.sshcl = paramiko.SSHClient()
             self.sshcl.load_system_host_keys()
@@ -61,50 +58,34 @@ class SSHClient(PawsPlugin):
         if self.verbose: self.message_callback('SSH client connected to {} port {}'.format(hostname,port))
         self.run_notify()
 
-        keep_going = True
-        while keep_going:
-            with tmr.dt_lock:
-                tmr.dt_lock.wait()
-            #while self.commands.qsize() > 0: 
-            #    cmd = self.commands.get()
-            #    self.commands.task_done()
-            #    if cmd[0] == 'copy':
-            #        self.copy_files(cmd[1],cmd[2],cmd[3])
-            with tmr.running_lock:
-                if not tmr.running:
-                    with self.proxy.running_lock:
-                        self.proxy.stop()
-            with self.proxy.running_lock:
-                keep_going = bool(self.proxy.running)
-        if self.verbose: self.message_callback('FINISHED')
-        self.sshcl.close()
+    def stop(self):
+        super(SSHClient,self).stop() 
+        if self.thread_clone:
+            self.thread_clone.close_ssh()
 
-    #def request_copy(self,remote_dir,regex,local_dir,block=False):
-    #    copy_cmd = ['copy',remote_dir,regex,local_dir]
-    #    with self.thread_clone.command_lock:
-    #        self.thread_clone.commands.put(copy_cmd)
-    #    if block:
-    #        if self.verbose: self.message_callback('blocking until files are copied')
-    #        with self.thread_clone.copy_lock:
-    #            self.thread_clone.copy_lock.wait()
-    #        if self.verbose: self.message_callback('finished copy- unblocking')
+    def close_ssh(self):
+        with self.transport_lock:
+            if self.sshcl:
+                self.sshcl.close()
+                self.sshcl = None
 
     def copy_file(self,remote_path,local_path):
-        keep_trying = True
-        #n_tries = 1
-        #while keep_trying:
-        #    try:
         if self.verbose: self.message_callback('attempting to copy {}'.format(remote_path))
+        try_again = True
+        n_tries = 0
         with self.thread_clone.transport_lock:
-            self.thread_clone.sftpcl.get(remote_path,local_path)
+            while try_again:
+                try:
+                    self.thread_clone.sftpcl.get(remote_path,local_path)
+                    try_again = False
+                except:
+                    n_tries += 1
+                    if n_tries > 10:
+                        self.message_callback('failed to copy {}'.format(remote_path))
+                        try_again = False
+                    else:
+                        self.message_callback('attempt {} to copy {}'.format(n_tries,remote_path))
         if self.verbose: self.message_callback('finished copying to {}'.format(local_path))
-        #    except:
-        #        if n_tries > 10:
-        #            keep_trying = False
-        #        n_tries += 1
-        #        if not keep_trying:
-        #            raise RuntimeError('failed to copy {} to {}'.format(remote_path,local_path))
-        #self.notify_locks([self.copy_lock])
 
 #    def sync_files(self,remote_dir,regex,local_dir,overwrite=False):
 #        rrx = os.path.join(remote_dir,regex)

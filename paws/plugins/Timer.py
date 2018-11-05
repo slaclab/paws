@@ -42,16 +42,16 @@ class Timer(PawsPlugin):
     def run(self):
         # self.thread_clone runs this method in its own thread.
         if self.verbose: self.message_callback('timer STARTED')
-        with self.proxy.dt_lock:
-            dt = self.content['dt'] 
-            t_max = self.content['t_max']
-            keep_going = True
-            # set zero-time point 
-            self.t0 = copy.deepcopy(self.proxy.t0)
-            self.t0_utc = copy.deepcopy(self.proxy.t0_utc)
-            dt_now = self.dt_utc()
-            self.proxy.dt_notify()
-            #dt_err = np.mod(dt_now,dt)
+        #with self.proxy.dt_lock:
+        dt = self.content['dt'] 
+        t_max = self.content['t_max']
+        keep_going = True
+        # set zero-time point 
+        self.t0 = copy.deepcopy(self.proxy.t0)
+        self.t0_utc = copy.deepcopy(self.proxy.t0_utc)
+        dt_now = self.dt_utc()
+        self.proxy.dt_notify()
+        #dt_err = np.mod(dt_now,dt)
         while dt_now < t_max and keep_going:
             if self.verbose: self.message_callback('tick: {}/{}'.format(dt_now,t_max))
             # attempt to nail the next dt point:
@@ -59,27 +59,33 @@ class Timer(PawsPlugin):
             #time.sleep(t_rem-dt_err)
             time.sleep(t_rem)
             # acquire proxy dt lock, take time point, dt_notify, release
-            with self.proxy.dt_lock:
-                dt_now = self.dt_utc()
-                self.proxy.dt_notify()
+            #with self.proxy.dt_lock:
+            dt_now = self.dt_utc()
+            self.proxy.dt_notify()
             #dt_err = np.mod(dt_now,dt)
             # TODO: implement feedback to hone the timer
             # acquire proxy running_lock, check if we are still running
             with self.proxy.running_lock:
                 keep_going = bool(self.proxy.running)
                 if self.verbose and not keep_going: self.message_callback('timer STOPPED')
+        # take a few extra ticks for listening plugins to stop themselves?
+        if self.verbose: self.message_callback('Ticking a few more times before stopping')
+        for itick in range(3):
+            time.sleep(dt)
+            self.proxy.dt_notify()
         with self.proxy.running_lock:
             self.proxy.stop()
         # now that the plugin is stopped, notify any other plugins that are waiting on dt_lock
-        with self.proxy.dt_lock:
-            self.proxy.dt_notify()
+        #with self.proxy.dt_lock:
+        self.proxy.dt_notify()
         if self.verbose: self.message_callback('Timer FINISHED')
 
     def dt_notify(self):
-        if int(self.py_version) == 2:
-            self.dt_lock.notifyAll()
-        else:
-            self.dt_lock.notify_all()
+        with self.dt_lock:
+            if int(self.py_version) == 2:
+                self.dt_lock.notifyAll()
+            else:
+                self.dt_lock.notify_all()
 
     def t_utc(self):
         t = datetime.datetime.now(self.tz)

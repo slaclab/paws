@@ -18,8 +18,8 @@ class CryoConController(PawsPlugin):
     def __init__(self):
         super(CryoConController,self).__init__(content)
         self.thread_blocking = True
-        self.content_doc['host'] = 'string representing host name or IP address'
-        self.content_doc['port'] = 'integer port number where SpecInfoServer listens' 
+        self.content_doc['host'] = 'string representing host name or IP address assigned to the CryoCon'
+        self.content_doc['port'] = 'integer port number for CryoCon connection' 
         self.content_doc['channels'] = 'dict mapping channel selection (strings "A"-"D") '\
             'to control loop indices (integers 1-4 or None): all channels will be read, '\
             'and any with integer control loops will be controlled. '

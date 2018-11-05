@@ -49,14 +49,26 @@ class PawsPlugin(object):
         self.log_file = None
         self.verbose = False
         self.thread_blocking = False
+        self.tz = tzlocal.get_localzone()
+        self.ep = datetime.datetime.fromtimestamp(0,self.tz)
+        t0 = datetime.datetime.now(self.tz)
+        self.t0_utc = int((t0-self.ep).total_seconds())
+
+    def t_utc(self):
+        t_now = datetime.datetime.now(self.tz)
+        t_utc = (t_now-self.ep).total_seconds()
+        return t_utc
+
+    def dt_utc(self):
+        t_utc_now = self.t_utc()
+        return t_utc_now-self.t0_utc
+
+    def get_date_time(self):
+        return str(datetime.datetime.now(self.tz))
 
     def set_log_file(self,file_path=None):
+        log_file = '{}_{}.log'.format(type(self).__name__,int(self.t0_utc*1000))
         if not file_path:
-            tz = tzlocal.get_localzone()
-            ep = datetime.datetime.fromtimestamp(0,tz)
-            t0 = datetime.datetime.now(tz)
-            t0_utc = int((t0-ep).total_seconds())
-            log_file = '{}_{}.log'.format(type(self).__name__,t0_utc)
             file_path = os.path.join(pawstools.paws_scratch_dir,log_file)
         if file_path == self.log_file:
             return
@@ -160,10 +172,10 @@ class PawsPlugin(object):
         for instance closing connections used by the plugin.
         Reimplement this in PawsPlugin subclasses as needed.
         """
-        self.running = False 
+        with self.running_lock:
+            self.running = False 
         if self.thread_clone:
-            with self.thread_clone.running_lock:
-                self.thread_clone.stop()
+            self.thread_clone.stop()
 
     @classmethod
     def clone(cls):
