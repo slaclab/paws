@@ -41,6 +41,9 @@ class ReadBatch(Workflow):
         self.add_operation('read',Read.Read())
 
     def run(self):
+        # initialize outputs in case of re-use!
+        # TODO: think of elegant ways to handle re-use transparently.
+        for k in outputs.keys(): self.outputs[k] = []
         self.operations['header_files'].run_with(
             dir_path = self.inputs['header_dir'],
             regex = self.inputs['header_regex']
@@ -48,23 +51,30 @@ class ReadBatch(Workflow):
         header_file_list = self.operations['header_files'].outputs['file_list']
         self.outputs['header_files'] = header_file_list
         filename_list = [os.path.splitext(os.path.split(hf)[1])[0] for hf in header_file_list]
+        self.outputs['filenames'] = filename_list 
+        q_I_dir = self.inputs['q_I_dir']
         q_I_suffix = self.inputs['q_I_suffix']
-        sys_suffix = self.inputs['system_suffix']
+        q_I_ext = self.inputs['q_I_ext']
+        img_dir = self.inputs['image_dir']
         img_sfx = self.inputs['image_suffix']
         img_ext = self.inputs['image_ext']
-        q_I_ext = self.inputs['q_I_ext']
+        sys_dir = self.inputs['system_dir']
+        sys_suffix = self.inputs['system_suffix']
         sys_ext = self.inputs['system_ext']
         if not img_ext[0] == '.': img_ext='.'+img_ext
         if not q_I_ext[0] == '.': q_I_ext='.'+q_I_ext
         if not sys_ext[0] == '.': sys_ext='.'+sys_ext
-        img_dir = self.inputs['image_dir']
-        image_file_list = [os.path.join(img_dir,fn+img_sfx+img_ext) for fn in filename_list]
+        image_file_list = [None for fn in filename_list]
+        if img_dir and img_ext:
+            image_file_list = [os.path.join(img_dir,fn+img_sfx+img_ext) for fn in filename_list]
         self.outputs['image_files'] = image_file_list
-        q_I_dir = self.inputs['q_I_dir']
-        q_I_file_list = [os.path.join(q_I_dir,fn+q_I_suffix+q_I_ext) for fn in filename_list]
+        q_I_file_list = [None for fn in filename_list]
+        if q_I_dir and q_I_ext:
+            q_I_file_list = [os.path.join(q_I_dir,fn+q_I_suffix+q_I_ext) for fn in filename_list]
         self.outputs['q_I_files'] = q_I_file_list
-        sys_dir = self.inputs['system_dir']
-        system_file_list = [os.path.join(sys_dir,fn+sys_suffix+sys_ext) for fn in filename_list]
+        system_file_list = [None for fn in filename_list]
+        if sys_dir and sys_ext:
+            system_file_list = [os.path.join(sys_dir,fn+sys_suffix+sys_ext) for fn in filename_list]
         self.outputs['system_files'] = system_file_list
 
         n_hdrs = len(filename_list)
@@ -81,6 +91,5 @@ class ReadBatch(Workflow):
                 )        
             for out_key, out_data in outs.items():
                 self.outputs[out_key].append(out_data)
-            self.outputs['filenames'].append(os.path.splitext(os.path.split(hdr_fn)[1])[0])
         return self.outputs
 
