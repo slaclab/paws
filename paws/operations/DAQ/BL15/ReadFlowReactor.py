@@ -31,12 +31,11 @@ class ReadFlowReactor(Operation):
         fr_tot = np.sum([hdr[k] for k in setpt_keys])
         rcp['flowrate'] = float(fr_tot)
         rcp['solvent'] = fr.solvent_name
-        rcp['reagent_volume_fractions'] = {}
         for k in setpt_keys:
-            if not fr.solvent_name in k:
+            if not k == fr.solvent_name+'_setpoint' in k:
                 rg_name = k[:k.find('_setpoint')]
                 fr_rg = float(hdr[k])
-                rcp['reagent_volume_fractions'][rg_name] = float(fr_rg/fr_tot)
+                rcp[rg_name+'_fraction'] = float(fr_rg/fr_tot)
         #self.message_callback('measured recipe: {}'.format(rcp))
         #self.message_callback('header data: {}'.format(hdr))
         self.outputs['recipe'] = rcp

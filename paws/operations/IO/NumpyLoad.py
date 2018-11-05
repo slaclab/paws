@@ -36,4 +36,5 @@ class NumpyLoad(Operation):
         self.outputs['dir_path'], fn = os.path.split(p)
         self.outputs['filename'], self.outputs['extension'] = os.path.splitext(fn) 
         self.outputs['data'] = np.loadtxt(p, dtype=dtp, delimiter=dlm)
+        return self.outputs
 

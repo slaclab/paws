@@ -12,7 +12,6 @@ from ...Operation import Operation
 inputs=OrderedDict(
     experiment_id=None,
     t_utc=None,
-    recipe={},
     header_data={},
     design_goals={},
     q_I=None,
@@ -28,9 +27,7 @@ class FlowSynthesisPIF(Operation):
         self.input_doc['experiment_id'] = 'string experiment id '\
             '(pif uid = experiment_id+"_"+t_utc)'
         self.input_doc['t_utc'] = 'timestamp in seconds UTC'
-        self.input_doc['recipe'] = 'setpoints for the synthesis recipe'
-        self.input_doc['header_data'] = 'FlowReactor header containing '\
-            'readout values for recipe parameters'
+        self.input_doc['header_data'] = 'Header containing acquisition and recipe data'
         self.input_doc['design_goals'] = 'dict describing the recipe objectives'
         self.input_doc['q_I'] = 'n-by-2 array of scattering vectors and intensities'
         self.input_doc['system'] = 'xrsdkit.system.System describing '\
@@ -40,7 +37,6 @@ class FlowSynthesisPIF(Operation):
     def run(self):
         expt_id = self.inputs['experiment_id']
         t_utc = self.inputs['t_utc']
-        rcp_set = self.inputs['recipe']
         hdr = self.inputs['header_data']
         design_goals = self.inputs['design_goals']
         q_I = self.inputs['q_I']
@@ -55,24 +51,30 @@ class FlowSynthesisPIF(Operation):
 
         csys = piftools.make_pif(uid_full,sys,q_I,expt_id,t_utc,T_read,src_wl)
 
-        for nm,val in rcp_set.items():
-            prop = pifobj.Property(nm,val)
-            prop.tags = ['recipe setpoint']
-            prop.dataType = 'EXPERIMENTAL'
-            csys.properties.append(prop)
+        #for nm,val in rcp_set.items():
+        #    prop = pifobj.Property(nm,val)
+        #    prop.tags = ['recipe setpoint']
+        #    prop.dataType = 'EXPERIMENTAL'
+        #    csys.properties.append(prop)
 
         for nm,val in hdr.items():
             prop = pifobj.Property(nm,val)
-            prop.tags = ['flow reactor readout']
+            prop.tags = ['flow reactor header data']
             prop.dataType = 'EXPERIMENTAL'
             csys.properties.append(prop)
 
-        for prop_nm,val in design_goals.items():
-            # TODO: formulate this property based on the type of goal at hand
-            prop = pifobj.Property(prop_nm,val)
-            prop.tags = ['design objective']
-            prop.dataType = 'MACHINE_LEARNING'
-            csys.properties.append(prop)
+        if design_goals:
+            ptarg = pifobj.Property('design target',design_goals['target'])
+            ptarg.tags = ['design goal: {}'.format(design_goals['target_goal'])]
+            csys.properties.append(ptarg)
+            for dc_tag, dc_val in design_goals['constraints'].items():
+                pcon = pifobj.Property('constraint: {}'.format(dc_tag),dc_val)
+                pcon.tags = ['design value constraint']
+                csys.properties.append(pcon)
+            for dc_tag, dc_range in design_goals['range_constraints'].items(): 
+                prcon = pifobj.Property('range constraint: {}'.format(dc_tag),dc_range)
+                prcon.tags = ['design range constraint']
+                csys.properties.append(prcon)
 
         self.outputs['pif'] = csys
         return self.outputs

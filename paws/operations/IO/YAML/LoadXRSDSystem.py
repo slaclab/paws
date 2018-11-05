@@ -23,4 +23,5 @@ class LoadXRSDSystem(Operation):
         sys = load_from_yaml(self.inputs['file_path'])
         self.outputs['system'] = sys
         self.outputs['system_dict'] = sys.to_dict()
+        return self.outputs
 

@@ -44,7 +44,8 @@ class SortBatch(Operation):
         lidx = self.inputs['lower_index']
         uidx = self.inputs['upper_index']
 
-        x_list = b_out[kx] 
+        x_list = b_out[kx]
+        n_batch_outputs = len(x_list) 
         self.message_callback('sorting on key: "{}"'.format(kx))
         if shiftflag or sortflag or uidx is not None or lidx is not None:
             xa = np.array(x_list)
@@ -68,10 +69,14 @@ class SortBatch(Operation):
 
         s_out = self.outputs['sorted_outputs']
         for y_key in b_out.keys():
-            self.message_callback('sorting {}'.format(y_key))
             y_list = copy.deepcopy(b_out[y_key])
+
             if shiftflag or sortflag or uidx is not None or lidx is not None:
-                y_list = [y_list[int(ii)] for ii in ix]
+                # only sort y_list if it contains a full batch of outputs
+                if len(y_list) == n_batch_outputs:
+                    self.message_callback('sorting {}'.format(y_key))
+                    y_list = [y_list[int(ii)] for ii in ix]
+        
             s_out[y_key] = y_list
 
         return self.outputs
