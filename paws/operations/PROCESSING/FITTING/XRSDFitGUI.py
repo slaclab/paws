@@ -15,7 +15,8 @@ inputs = OrderedDict(
     good_fit_prior=False)
 
 outputs = OrderedDict(
-    system={},
+    system=None,
+    system_dict=None,
     q_I_opt = None,
     good_fit_flag=False) 
 
@@ -32,6 +33,7 @@ class XRSDFitGUI(Operation):
         self.input_doc['q_range'] = 'lower and upper q-limits for the fit objective'
         self.input_doc['good_fit_prior'] = 'initial setting for the good fit indicator'
         self.output_doc['system'] = 'xrsdkit.system.System with optimized parameters'
+        self.output_doc['system_dict'] = 'output `system`.to_dict()'
         self.output_doc['q_I_opt'] = 'computed intensity for the optimized system'
         self.output_doc['good_fit_flag'] = 'flag indicating user satisfaction with the fit'
 
@@ -51,7 +53,8 @@ class XRSDFitGUI(Operation):
         q_I_opt = np.array([q_I[:,0],I_opt]).T
 
         self.outputs['system'] = sys_opt
+        self.outputs['system_dict'] = sys_opt.to_dict()
         self.outputs['q_I_opt'] = q_I_opt
         self.outputs['good_fit_flag'] = good_fit_flag 
-
+        return self.outputs
 

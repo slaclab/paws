@@ -52,7 +52,7 @@ class PawsPlugin(object):
         self.tz = tzlocal.get_localzone()
         self.ep = datetime.datetime.fromtimestamp(0,self.tz)
         t0 = datetime.datetime.now(self.tz)
-        self.t0_utc = int((t0-self.ep).total_seconds())
+        self.t0_utc = (t0-self.ep).total_seconds()
 
     def t_utc(self):
         t_now = datetime.datetime.now(self.tz)

@@ -11,6 +11,7 @@ from ...Operation import Operation
 
 inputs=OrderedDict(
     experiment_id=None,
+    source_wavelength=None,
     t_utc=None,
     header_data={},
     design_goals={},
@@ -26,6 +27,7 @@ class FlowSynthesisPIF(Operation):
         super(FlowSynthesisPIF,self).__init__(inputs,outputs)
         self.input_doc['experiment_id'] = 'string experiment id '\
             '(pif uid = experiment_id+"_"+t_utc)'
+        self.input_doc['source_wavelength'] = 'Light source wavelength in Angstroms'
         self.input_doc['t_utc'] = 'timestamp in seconds UTC'
         self.input_doc['header_data'] = 'Header containing acquisition and recipe data'
         self.input_doc['design_goals'] = 'dict describing the recipe objectives'
@@ -49,6 +51,7 @@ class FlowSynthesisPIF(Operation):
             uid_full = uid_full+'_'+str(int(t_utc))
         T_read = hdr['T_read_A']
 
+        self.message_callback('building PIF (uid: {})'.format(uid_full))
         csys = piftools.make_pif(uid_full,sys,q_I,expt_id,t_utc,T_read,src_wl)
 
         #for nm,val in rcp_set.items():
