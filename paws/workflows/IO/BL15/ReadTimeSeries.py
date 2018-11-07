@@ -1,4 +1,3 @@
-import os
 import copy
 from collections import OrderedDict
 
@@ -23,7 +22,8 @@ class ReadTimeSeries(Workflow):
         self.add_operation('sort',SortBatch())
 
     def run(self):
-        b_outs = self.operations['read_batch'].run_with(**self.inputs) 
+        read_inputs = OrderedDict([(k,self.inputs[k]) for k in ReadBatch.inputs.keys()])
+        b_outs = self.operations['read_batch'].run_with(**read_inputs) 
         self.operations['sort'].run_with(
             batch_outputs = b_outs,
             x_key='time',

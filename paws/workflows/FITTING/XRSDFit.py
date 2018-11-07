@@ -4,8 +4,8 @@ from collections import OrderedDict
 from paws.workflows.Workflow import Workflow 
 from paws.operations.IO.NumpyLoad import NumpyLoad 
 from paws.operations.IO.YAML.LoadXRSDSystem import LoadXRSDSystem
-from paws.operations.IO.FITTING.XRSDFit import XRSDFit 
 from paws.operations.IO.YAML.SaveXRSDSystem import SaveXRSDSystem
+from paws.operations.PROCESSING.FITTING.XRSDFit import XRSDFit as XRSDFit_op
 
 inputs = OrderedDict(
     q_I_file = None,
@@ -33,7 +33,7 @@ class XRSDFit(Workflow):
         self.add_operations(
             read_q_I = NumpyLoad(),
             read_system = LoadXRSDSystem(),
-            fit = XRSDFit(),
+            fit = XRSDFit_op(),
             save_system = SaveXRSDSystem()
         )
 

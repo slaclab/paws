@@ -9,7 +9,8 @@ from paws.operations.IO.FILESYSTEM.BuildFileList import BuildFileList
 inputs = OrderedDict(
     header_dir = '',
     header_regex = '*.yml',
-    header_filter_regex = '.*',
+    header_suffix = '',
+    #header_filter_regex = '.*',
     time_key = 't_utc',
     image_dir = '',
     image_suffix = '',
@@ -41,9 +42,8 @@ class ReadBatch(Workflow):
         self.add_operation('read',Read.Read())
 
     def run(self):
-        # initialize outputs in case of re-use!
-        # TODO: think of elegant ways to handle re-use transparently.
-        for k in outputs.keys(): self.outputs[k] = []
+        # initialize outputs in case of Workflow re-use!
+        self.outputs = copy.deepcopy(outputs)
         self.operations['header_files'].run_with(
             dir_path = self.inputs['header_dir'],
             regex = self.inputs['header_regex']
@@ -51,6 +51,9 @@ class ReadBatch(Workflow):
         header_file_list = self.operations['header_files'].outputs['file_list']
         self.outputs['header_files'] = header_file_list
         filename_list = [os.path.splitext(os.path.split(hf)[1])[0] for hf in header_file_list]
+        hdr_fn_sfx = self.inputs['header_suffix']
+        if hdr_fn_sfx: filename_list = [fn[:fn.rfind(hdr_fn_sfx)] for fn in filename_list]
+
         self.outputs['filenames'] = filename_list 
         q_I_dir = self.inputs['q_I_dir']
         q_I_suffix = self.inputs['q_I_suffix']

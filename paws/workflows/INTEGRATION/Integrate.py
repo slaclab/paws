@@ -6,7 +6,6 @@ from paws.operations.IO.IMAGE.FabIOOpen import FabIOOpen
 from paws.operations.PROCESSING.INTEGRATION.Integrate1d import Integrate1d
 from paws.operations.PROCESSING.ZINGERS.EasyZingers1d import EasyZingers1d
 from paws.operations.IO.NumpySave import NumpySave
-from paws.plugins.PluginManager import PluginManager
 
 inputs = OrderedDict(
     image_file = None,
