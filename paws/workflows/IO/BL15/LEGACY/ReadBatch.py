@@ -17,7 +17,7 @@ class ReadBatch(Workflow):
 
     def __init__(self):
         super(ReadBatch,self).__init__(inputs,outputs)
-        self.batch_read_wf = ReadBatch2.ReadBatch()
+        self.batch_read_wf = ReadBatch_new.ReadBatch()
         # swap out the read wf 
         self.batch_read_wf.add_operation('read',Read())
 

@@ -74,7 +74,7 @@ class Read(Workflow):
 
         q_I = self.operations['read_q_I'].outputs['data']
         dI = None
-        if q_I_data.shape[1] > 2:
+        if q_I.shape[1] > 2:
             q_I = q_I[:,:2]
             dI = q_I[:,2]
 

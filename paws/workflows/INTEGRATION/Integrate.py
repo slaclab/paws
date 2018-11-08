@@ -14,6 +14,8 @@ inputs = OrderedDict(
     integrator = None,
     q_min = 0.,
     q_max = float('inf'),
+    n_points = 1000.,
+    polz_factor = 0.,
     output_dir = None,
     output_filename = None
     )
@@ -39,9 +41,12 @@ class Integrate(Workflow):
 
     def run(self):
         img_data = self.inputs['image_data'] 
+        fn = self.inputs['output_filename'] 
         if self.inputs['image_file']:
             self.operations['read_image'].run_with(file_path=self.inputs['image_file'])
             img_data = self.operations['read_image'].outputs['image_data']
+            if not fn: 
+                fn = os.path.splitext(os.path.split(self.inputs['image_file'])[1])[0]
         intgtr = self.inputs['integrator']
         if self.inputs['calib_file'] is not None:
             intgtr.set_calib_file(self.inputs['calib_file'])
@@ -49,7 +54,9 @@ class Integrate(Workflow):
             intgtr.start()
         self.operations['integrate'].run_with(
             integrator = intgtr,
-            image_data = img_data 
+            image_data = img_data,
+            npt = self.inputs['n_points'],
+            polz_factor = self.inputs['polz_factor']
             )
         all_q_I = self.operations['integrate'].outputs['q_I']
         q_min = self.inputs['q_min']
@@ -57,7 +64,6 @@ class Integrate(Workflow):
         idx_keep = ((all_q_I[:,0] >= q_min) & (all_q_I[:,0] <= q_max))
         q_I = all_q_I[idx_keep,:] 
         self.outputs['q_I'] = q_I 
-        fn = self.inputs['output_filename'] 
         q_I_file = os.path.join(self.inputs['output_dir'],fn+'.dat')
         self.outputs['q_I_file'] = q_I_file
         if self.ops_enabled['write_q_I']:
