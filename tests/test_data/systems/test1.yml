@@ -1,0 +1,16 @@
+fit_report:
+  error_weighted: 1
+  final_objective: 0.
+  fit_snr: 1.
+  initial_objective: 0.
+  logI_weighted: 1
+  q_range: [0.0, .inf]
+  success: 1
+noise:
+  model: flat
+  parameters:
+    I0:
+      bounds: [0.0, .inf]
+      constraint_expr: null
+      fixed: 0
+      value: 0.1
