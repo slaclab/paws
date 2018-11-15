@@ -1,11 +1,11 @@
 from collections import OrderedDict
 import os
 
-from paws.workflows.Workflow import Workflow 
-from paws.operations.IO.YAML.LoadYAML import LoadYAML
-from paws.operations.IO.YAML.LoadXRSDSystem import LoadXRSDSystem
-from paws.operations.IO.IMAGE.FabIOOpen import FabIOOpen
-from paws.operations.IO.NumpyLoad import NumpyLoad
+from ...Workflow import Workflow 
+from ....operations.IO.YAML.LoadYAML import LoadYAML
+from ....operations.IO.YAML.LoadXRSDSystem import LoadXRSDSystem
+from ....operations.IO.IMAGE.FabIOOpen import FabIOOpen
+from ....operations.IO.NumpyLoad import NumpyLoad
 
 # NOTE: this workflow is for reading samples
 # that were saved with YAML headers
@@ -41,28 +41,28 @@ class Read(Workflow):
     def run(self):
 
         if self.ops_enabled['read_header']:
-            if os.path.exists(self.inputs['header_file']):
+            if (self.inputs['header_file']) and (os.path.exists(self.inputs['header_file'])):
                 self.operations['read_header'].run_with(
                 file_path=self.inputs['header_file'])
             else:
                 self.message_callback('header file not found: {}'.format(self.inputs['header_file']))
 
         if self.ops_enabled['read_image']:
-            if os.path.exists(self.inputs['image_file']):
+            if (self.inputs['image_file']) and (os.path.exists(self.inputs['image_file'])):
                 self.operations['read_image'].run_with(
                 file_path=self.inputs['image_file'])
             else:
                 self.message_callback('image file not found: {}'.format(self.inputs['image_file']))
 
         if self.ops_enabled['read_q_I']:
-            if os.path.exists(self.inputs['q_I_file']):
+            if (self.inputs['q_I_file']) and (os.path.exists(self.inputs['q_I_file'])):
                 self.operations['read_q_I'].run_with(
                 file_path=self.inputs['q_I_file'])
             else:
                 self.message_callback('q_I file not found: {}'.format(self.inputs['q_I_file']))
 
         if self.ops_enabled['read_system']:
-            if os.path.exists(self.inputs['system_file']):
+            if (self.inputs['system_file']) and (os.path.exists(self.inputs['system_file'])):
                 self.operations['read_system'].run_with(
                 file_path=self.inputs['system_file'])
             else:
@@ -72,11 +72,13 @@ class Read(Workflow):
         if hdata and self.inputs['time_key']:
            self.outputs['time'] = hdata[self.inputs['time_key']] 
 
-        q_I = self.operations['read_q_I'].outputs['data']
+        q_I = None
         dI = None
-        if q_I.shape[1] > 2:
-            q_I = q_I[:,:2]
-            dI = q_I[:,2]
+        if self.ops_enabled['read_q_I']:
+            q_I = self.operations['read_q_I'].outputs['data']
+            if (q_I is not None) and (q_I.shape[1] > 2):
+                q_I = q_I[:,:2]
+                dI = q_I[:,2]
 
         self.outputs.update(
             header_data = hdata, 

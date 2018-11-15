@@ -6,7 +6,7 @@ import numpy as np
 
 from ...Workflow import Workflow 
 from ...IO.BL15 import ReadTimeSeries 
-from ..IntegrateBatch import IntegrateBatch
+from .. import IntegrateBatch
 
 inputs = copy.deepcopy(ReadTimeSeries.inputs)
 inputs.update(
@@ -24,7 +24,7 @@ class IntegrateTimeSeries(Workflow):
         super(IntegrateTimeSeries,self).__init__(inputs,outputs)
         self.add_operations(
             read = ReadTimeSeries.ReadTimeSeries(),
-            integrate = IntegrateBatch()
+            integrate = IntegrateBatch.IntegrateBatch()
             )
 
     def run(self):
@@ -38,7 +38,7 @@ class IntegrateTimeSeries(Workflow):
             q_min = self.inputs['q_min'],
             q_max = self.inputs['q_max'],
             output_dir = self.inputs['output_dir'],
-            output_filenames = read_outputs[]
+            output_filenames = read_outputs['filenames']
             )
 
         return self.outputs

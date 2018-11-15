@@ -2,9 +2,9 @@ import os
 import copy
 from collections import OrderedDict
 
-from paws.workflows.Workflow import Workflow 
-from paws.workflows.IO.BL15 import Read
-from paws.operations.IO.FILESYSTEM.BuildFileList import BuildFileList
+from ...Workflow import Workflow 
+from . import Read
+from ....operations.IO.FILESYSTEM.BuildFileList import BuildFileList
 
 inputs = OrderedDict(
     header_dir = '',

@@ -25,10 +25,13 @@ class ReadTimeSeries(Workflow):
         read_inputs = OrderedDict([(k,self.inputs[k]) for k in ReadBatch.inputs.keys()])
         b_outs = self.operations['read_batch'].run_with(**read_inputs) 
         self.operations['sort'].run_with(
-            batch_outputs = b_outs,
+            batch_outputs=b_outs,
             x_key='time',
             x_sort_flag=True,
-            x_shift_flag=True)
+            x_shift_flag=True,
+            lower_index=self.inputs['lower_index'],
+            upper_index=self.inputs['upper_index']
+            )
         self.outputs.update(self.operations['sort'].outputs['sorted_outputs'])
         return self.outputs
 

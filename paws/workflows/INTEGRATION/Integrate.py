@@ -1,11 +1,11 @@
 import os
 from collections import OrderedDict
 
-from paws.workflows.Workflow import Workflow 
-from paws.operations.IO.IMAGE.FabIOOpen import FabIOOpen
-from paws.operations.PROCESSING.INTEGRATION.Integrate1d import Integrate1d
-from paws.operations.PROCESSING.ZINGERS.EasyZingers1d import EasyZingers1d
-from paws.operations.IO.NumpySave import NumpySave
+from ..Workflow import Workflow 
+from ...operations.IO.IMAGE.FabIOOpen import FabIOOpen
+from ...operations.PROCESSING.INTEGRATION.Integrate1d import Integrate1d
+from ...operations.PROCESSING.ZINGERS.EasyZingers1d import EasyZingers1d
+from ...operations.IO.NumpySave import NumpySave
 
 inputs = OrderedDict(
     image_file = None,

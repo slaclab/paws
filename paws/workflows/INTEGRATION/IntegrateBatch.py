@@ -27,14 +27,14 @@ class IntegrateBatch(Workflow):
         super(IntegrateBatch,self).__init__(inputs,outputs)
         self.add_operations(
             image_files=BuildFileList(),
-            integrate=Integrate()
+            integrate=Integrate.Integrate()
             )
 
     def run(self):
         self.outputs = copy.deepcopy(outputs)
         img_files = self.inputs['image_files']
         img_data = self.inputs['image_data']
-        outfns = self.inputs['output_filenames']
+        out_fns = self.inputs['output_filenames']
         if self.inputs['image_dir'] and self.inputs['image_regex']:
             file_outputs = self.operations['image_files'].run_with(
                 dir_path = self.inputs['image_dir'],
@@ -47,9 +47,13 @@ class IntegrateBatch(Workflow):
             q_max = self.inputs['q_max'],
             output_dir = self.inputs['output_dir']
             )
-        if not any(img_data):
+        if not img_data:
+            # assume img_files were provided
             img_data = [None for fn in img_files]
-        if not any(out_fns):
+        elif not img_files:
+            # assume img_data were provided
+            img_files = [None for dd in img_data]
+        if not out_fns:
             out_fns = [None for fn in img_files]  
         for fn,fd,outfn in zip(img_files,img_data,out_fns):
             if not outfn:
