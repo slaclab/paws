@@ -25,7 +25,10 @@ class TimeSeriesXRSDFit(Workflow):
         read_inputs = OrderedDict([(k,self.inputs[k]) for k in ReadTimeSeries.inputs.keys()])
         self.operations['read_timeseries'].operations['read_batch'].operations['read'].disable_op('read_image')
         ts_data = self.operations['read_timeseries'].run_with(**read_inputs) 
-        for outfile,q_I,sys in zip(ts_data['system_files'],ts_data['q_I'],ts_data['system']):
+        nb = len(ts_data['system_files'])
+        self.message_callback('STARTING BATCH ({})'.format(nb))
+        for ib,outfile,q_I,sys in zip(range(nb),ts_data['system_files'],ts_data['q_I'],ts_data['system']):
+            self.message_callback('RUNNING {} / {}'.format(ib+1,nb))
             if not sys:
                 sys = self.inputs['system']    
             self.operations['fit'].run_with(

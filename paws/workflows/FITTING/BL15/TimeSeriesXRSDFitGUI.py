@@ -1,7 +1,7 @@
 import copy
 
 from paws.workflows.FITTING.BL15 import TimeSeriesXRSDFit
-from paws.operations.PROCESSING.FITTING import XRSDFitGUI
+from paws.workflows.FITTING import XRSDFitGUI
 
 inputs = copy.deepcopy(TimeSeriesXRSDFit.inputs)
 inputs.update(copy.deepcopy(XRSDFitGUI.inputs))
