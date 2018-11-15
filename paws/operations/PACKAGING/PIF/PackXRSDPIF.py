@@ -6,7 +6,7 @@ from xrsdkit.tools import piftools
 from xrsdkit.system import System
 
 inputs=OrderedDict(
-    sys=None,
+    system=None,
     q_I=None,
     experiment_id=None,
     t_utc=None,
@@ -20,7 +20,7 @@ class PackXRSDPIF(Operation):
 
     def __init__(self):
         super(PackXRSDPIF,self).__init__(inputs,outputs)
-        self.input_doc['sys'] = 'xrsdkit.system.System object describing scattering material, '\
+        self.input_doc['system'] = 'xrsdkit.system.System object describing scattering material, '\
             'or a dict containing the System data, in which case the dict is used '\
             'to build the system by calling the xrsdkit.system.System constructor'
         self.input_doc['q_I'] = 'n-by-2 array of scattering data, intensity (arb) versus q (1/A)'
@@ -31,7 +31,7 @@ class PackXRSDPIF(Operation):
         self.output_doc['pif'] = 'pif object representing the input data'
 
     def run(self):
-        sys = self.inputs['sys']
+        sys = self.inputs['system']
         if isinstance(sys,dict):
             sys = System(sys)
         q_I = self.inputs['q_I']
@@ -44,8 +44,7 @@ class PackXRSDPIF(Operation):
             uid_full = expt_id 
         if t_utc is not None:
             uid_full = uid_full+'_'+str(int(t_utc))
-
         csys = piftools.make_pif(uid_full,sys,q_I,expt_id,t_utc,temp_C,src_wl)
-
         self.outputs['pif'] = csys
+        return self.outputs
 
