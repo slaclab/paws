@@ -66,4 +66,5 @@ class ReadSpecHeader(Operation):
         #else:
         #    d['temperature'] = None
         self.outputs['data'] = d
+        return self.outputs
 

@@ -35,4 +35,5 @@ class FabIOOpen(Operation):
         self.message_callback('reading {}'.format(p))
         self.outputs['FabioImage'] = fabio.open(p)
         self.outputs['image_data'] = self.outputs['FabioImage'].data
+        return self.outputs
 
