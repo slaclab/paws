@@ -19,7 +19,7 @@ inputs = OrderedDict(
     data_dir = None,
     q_I_suffix = None,
     system_suffix = None,
-    design_goals = {},
+    #design_goals = {},
     dataset_id = None,
     upload_pif = False,
     keep_pif_json = True
@@ -63,7 +63,7 @@ class TimeSeriesFlowReactorPIF(Workflow):
                 source_wavelength = src_wl,
                 t_utc = t_utc,
                 header_data = hdr_data,
-                design_goals = self.inputs['design_goals'],
+                #design_goals = self.inputs['design_goals'],
                 q_I = q_I, 
                 system = sys 
                 )
