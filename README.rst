@@ -8,20 +8,22 @@ Introduction
 `paws` stands for the Platform for Automated Workflows by SSRL.
 It was conceived to serve as a lean and modular
 workflow manager for scientific data.
-Its core modules are pure Python,
-but the library of `paws` Operations 
-may introduce dependencies on any kind of package.
 
 `paws` interfaces with an ever-growing number of packages 
-and provides for users to add their own operations,
-by writing Python modules following a simple template.
+and provides for users to add their own Operations,
+by writing isolated Python modules following a simple template.
 
-After a `paws` workflow has been constructed, 
-it can be easily moved between machines, 
-so that it can be used equally well 
-for scripting on personal computers,
-for processing behind graphical applications,
-or for remote execution on clusters or data centers.
+The essential ingredients of `paws` are Operations, Workflows, and Plugins.
+A `paws` Operation is meant to take some inputs and produce some outputs-
+it is essentially  a function, wrapped in a class, wrapped in a Python module.
+The class and module layers are used for certain conveniences 
+in the implementation of `paws` Workflows.
+A `paws` Plugin is an object that should persist over time
+to repeatedly execute one or more activities,
+for example to monitor an experimental apparatus,
+or to expose functionalities of a complex object for Operations to use.
+A `paws` Workflow contains the logic necessary for stitching together Operations and Plugins,
+and despite the distinction in name, it implements the same interface as an Operation.
 
 Disclaimer: `paws` is neither the first nor the most sophisticated
 way to build and manage data processing workflows.
@@ -30,10 +32,6 @@ for modularity and extensibility,
 for rapid development and deployment 
 of stand-alone applications for a wide variety of experimental control
 and data processing tasks.
-
-A separate package, `qtpaws`, provides a `Qt`-based GUI for `paws`.
-`qtpaws` provides interfaces to the pure Python API,
-along with interactive viewing of results in real time.
 
 
 Documentation
@@ -58,7 +56,10 @@ TODO: write new examples
 Installation
 ------------
 
-The full `paws` package is available on PyPI and Anaconda.
+NOTE: all deployments are currently outdated or under heavy development.
+Please contact the development team if you are interested in this package.
+
+`paws` is available on PyPI and Anaconda.
 Deployments to PyPI are performed regularly.
 Currently, we only deploy relatively stable versions to Anaconda.
 
@@ -69,7 +70,7 @@ To install from Anaconda, use `conda`:
 `conda install -c ssrl-paws pypaws` 
 
 All of the dependencies of the `paws` Operations 
-are not declared as dependencies of `paws`.
+are not necessarily declared as dependencies of `paws`.
 This keeps the Python environment relatively lean
 and avoids obnoxious installation overhead,
 but it means that users will have to prepare their
