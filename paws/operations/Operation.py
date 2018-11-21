@@ -41,6 +41,9 @@ class Operation(object):
         are loaded into the Operation.inputs before calling Operation.run().
         All relevant results are stored in Operation.outputs.
         """
+        for k in kwargs.keys():
+            if not k in self.inputs:
+                raise ValueError('Input {} is not valid for Operation {}'.format(k,type(self).__name__))
         self.inputs.update(kwargs)
         return self.run() 
 

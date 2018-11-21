@@ -137,6 +137,9 @@ class Workflow(DictTree):
         are loaded into the Workflow.inputs before calling Workflow.run().
         All relevant results are stored in Workflow.outputs.
         """
+        for k in kwargs.keys():
+            if not k in self.inputs:
+                raise ValueError('Input {} is not valid for Workflow {}'.format(k,type(self).__name__))
         self.inputs.update(kwargs)
         return self.run() 
 
