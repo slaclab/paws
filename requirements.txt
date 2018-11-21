@@ -15,6 +15,5 @@ pyserial
 pytz
 tzlocal
 xrsdkit
-tifffile
 serial
 paramiko
