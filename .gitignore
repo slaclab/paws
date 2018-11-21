@@ -16,6 +16,7 @@ doc/html
 *.swp
 *.swo
 *.json
+*.wfm
 *.wfl
 *.cfg
 *.idea

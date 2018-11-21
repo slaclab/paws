@@ -7,33 +7,31 @@ Introduction
 
 `paws` stands for the Platform for Automated Workflows by SSRL.
 It was conceived to serve as a lean and modular
-workflow manager for spectral data.
+workflow manager for scientific data.
 
-`paws` interfaces fluidly
-with an ever-growing number of packages 
-and provide easy ways for users 
-to add their own operations,
-as Python modules following a simple template.
+`paws` interfaces with an ever-growing number of packages 
+and provides for users to add their own Operations,
+by writing isolated Python modules following a simple template.
 
-After a `paws` workflow has been constructed, 
-it can be easily moved between machines, processes, or threads,
-so that it can be used equally well 
-for scripting on personal computers,
-for processing behind graphical applications,
-or for remote execution on clusters or data centers.
+The essential ingredients of `paws` are Operations, Workflows, and Plugins.
+A `paws` Operation is meant to take some inputs and produce some outputs-
+it is essentially  a function, wrapped in a class, wrapped in a Python module.
+The class and module layers are used for certain conveniences 
+in the implementation of `paws` Workflows.
+A `paws` Plugin is an object that should persist over time
+to repeatedly execute one or more activities,
+for example to monitor an experimental apparatus,
+or to expose functionalities of a complex object for Operations to use.
+A `paws` Workflow contains the logic necessary for stitching together Operations and Plugins,
+and despite the distinction in name, it implements the same interface as an Operation.
 
 Disclaimer: `paws` is neither the first nor the most sophisticated
 way to build and manage data processing workflows.
-It was built to provide a certain degree of modularity
-that was required at the time of development
-but was not so easy to find in the community.
-
-The core modules of `paws` 
-are pure Python and depend only on PyYAML.
-
-A separate package, `qtpaws`, provides a `Qt`-based GUI for `paws`.
-`qtpaws` tries to provide the same functionalities as the pure Python API,
-along with interactive viewing of the workflow results in real time.
+Its development was driven by a need
+for modularity and extensibility,
+for rapid development and deployment 
+of stand-alone applications for a wide variety of experimental control
+and data processing tasks.
 
 
 Documentation
@@ -52,27 +50,35 @@ API Examples
 The following are examples that explore 
 the capabilities of the `paws` API.
 
-TODO: write new examples to reflect the new API.
+TODO: write new examples
 
 
 Installation
 ------------
 
-The full `paws` package is available on PyPI.
-To install in an existing Python environment, invoke `pip`:
-`pip install pypaws`
+NOTE: all deployments are currently outdated or under heavy development.
+Please contact the development team if you are interested in this package.
+
+`paws` is available on PyPI and Anaconda.
+Deployments to PyPI are performed regularly.
+Currently, we only deploy relatively stable versions to Anaconda.
+
+To install from PyPI, invoke `pip`:
+`pip install pypaws`.
+
+To install from Anaconda, use `conda`:
+`conda install -c ssrl-paws pypaws` 
 
 All of the dependencies of the `paws` Operations 
-are not declared as dependencies of `paws`.
+are not necessarily declared as dependencies of `paws`.
 This keeps the Python environment relatively lean
-and avoids installation overhead,
+and avoids obnoxious installation overhead,
 but it means that users will have to prepare their
 environments for the Operations they want to use.
 
 The documentation of `paws` includes instructions
 for installing the dependencies of each Operation.
 NOTE: this is currently false. 
-TODO: add this to the docs. 
 
 
 Attribution
@@ -85,8 +91,8 @@ a citation would be appreciated.
 Before citing `paws`, it is of primary importance that you cite 
 the authors of the original work that produced your results: 
 this is almost certainly separate from the authors of `paws`.
-Citations for your specific operations might be found
-by in the `paws` documentation.
+Citations for your specific Operations should be found
+in the `paws` documentation.
 If you have trouble finding proper citations,
 please contact us at `paws-developers@slac.stanford.edu`,
 and we will do our best to help.
@@ -98,6 +104,9 @@ Contribution
 Contribution to `paws` is encouraged and appreciated.
 Get in touch with the `paws` development team
 at `paws-developers@slac.stanford.edu`.
+If you are able to develop without assistance,
+feel free to submit a pull request against the `dev` branch at
+https://github.com/slaclab/paws.
 
 
 License

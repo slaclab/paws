@@ -1,0 +1,11 @@
+# General info
+User: Santa, time: Sat Dec 25 00:22:01 1667 
+
+# Temperature
+1.6C
+
+# Counters
+TEMP=1.6, CTEMP=0 
+
+# Motors
+samplex=0, sampley=-3.5, samplez=1.8 
