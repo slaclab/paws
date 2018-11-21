@@ -27,11 +27,15 @@ class TimeSeriesXRSDFit(Workflow):
         ts_data = self.operations['read_timeseries'].run_with(**read_inputs) 
         nb = len(ts_data['system_files'])
         self.message_callback('STARTING BATCH ({})'.format(nb))
+        previous_sys = None
         for ib,outfile,q_I,sys in zip(range(nb),ts_data['system_files'],ts_data['q_I'],ts_data['system']):
             self.message_callback('RUNNING {} / {}'.format(ib+1,nb))
             if not sys:
-                sys = self.inputs['system']    
-            self.operations['fit'].run_with(
+                if previous_sys:
+                    sys = previous_sys
+                else:
+                    sys = self.inputs['system']    
+            fit_outputs = self.operations['fit'].run_with(
                 system = sys,
                 q_I = q_I,
                 source_wavelength = self.inputs['source_wavelength'],
@@ -40,4 +44,4 @@ class TimeSeriesXRSDFit(Workflow):
                 q_range = self.inputs['q_range'],
                 output_file = outfile
                 )
-
+            previous_sys = fit_outputs['system_opt']

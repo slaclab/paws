@@ -8,7 +8,7 @@ from ...Operation import Operation
 inputs = OrderedDict(
     q_I=None,
     source_wavelength=None,
-    system={},
+    system=None,
     error_weighted=True,
     logI_weighted=True,
     q_range=[0.,float('inf')],
@@ -45,6 +45,11 @@ class XRSDFitGUI(Operation):
         logI_wtd = self.inputs['logI_weighted']
         q_range = self.inputs['q_range']
         good_fit_prior = self.inputs['good_fit_prior']
+        if sys is not None:
+            if sys.fit_report:
+                err_wtd = sys.fit_report['error_weighted']
+                logI_wtd = sys.fit_report['logI_weighted']
+                q_range = sys.fit_report['q_range']
 
         sys_opt, good_fit_flag = run_fit_gui(
         sys,q_I[:,0],q_I[:,1],src_wl,None,err_wtd,logI_wtd,q_range,good_fit_prior) 

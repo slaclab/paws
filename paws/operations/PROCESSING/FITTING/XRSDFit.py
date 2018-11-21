@@ -9,7 +9,7 @@ from ...Operation import Operation
 inputs = OrderedDict(
     q_I=None,
     source_wavelength=None,
-    system={},
+    system=None,
     error_weighted=True,
     logI_weighted=True,
     q_range=[0.,float('inf')]) 
@@ -41,12 +41,17 @@ class XRSDFit(Operation):
         q_I = self.inputs['q_I']
         src_wl = self.inputs['source_wavelength']        
         sys = self.inputs['system']
-        errwtd = self.inputs['error_weighted']
-        logIwtd = self.inputs['logI_weighted']
-        qrng = self.inputs['q_range']
+        err_wtd = self.inputs['error_weighted']
+        logI_wtd = self.inputs['logI_weighted']
+        q_range = self.inputs['q_range']
+        if sys is not None:
+            if sys.fit_report:
+                err_wtd = sys.fit_report['error_weighted']
+                logI_wtd = sys.fit_report['logI_weighted']
+                q_range = sys.fit_report['q_range']
 
         self.message_callback('fitting pattern')
-        sys_opt = xrsdsys.fit(sys,q_I[:,0],q_I[:,1],src_wl,None,errwtd,logIwtd,qrng)
+        sys_opt = xrsdsys.fit(sys,q_I[:,0],q_I[:,1],src_wl,None,err_wtd,logI_wtd,q_range)
         self.message_callback('done (objective: {} --> {})'.format(
             sys_opt.fit_report['initial_objective'],sys_opt.fit_report['final_objective']))
 
