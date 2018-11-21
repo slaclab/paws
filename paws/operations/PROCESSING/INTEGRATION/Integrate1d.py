@@ -39,10 +39,6 @@ class Integrate1d(Operation):
         self.output_doc['q'] = 'Scattering vector magnitude q in 1/Angstrom'
         self.output_doc['I'] = 'Integrated intensity at q'
         self.output_doc['q_I'] = 'q and I together as n-by-2 numpy array'
-        self.input_datatype['unit'] = str
-        self.input_datatype['integrate_args'] = dict
-        self.input_datatype['npt'] = int
-        self.input_datatype['polz_factor'] = float
 
     def run(self):
         img = self.inputs['image_data']

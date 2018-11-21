@@ -6,18 +6,16 @@ import time
 
 from .PawsPlugin import PawsPlugin
 
-inputs = OrderedDict(
+content = OrderedDict(
     host=None,
-    port=None,
-    timer=None)
+    port=None)
 
 class SpecInfoClient(PawsPlugin):
 
     def __init__(self):
-        super(SpecInfoClient,self).__init__(inputs)
-        self.input_doc['host'] = 'string representing host name or IP address'
-        self.input_doc['port'] = 'integer port number where SpecInfoServer listens' 
-        self.input_doc['timer'] = 'Timer plugin for triggering client activities' 
+        super(SpecInfoClient,self).__init__(content)
+        self.content_doc['host'] = 'string representing host name or IP address'
+        self.content_doc['port'] = 'integer port number where SpecInfoServer listens' 
         self.socket_lock = Condition()
         self.sock = None
         self.thread_blocking = True
@@ -30,45 +28,32 @@ class SpecInfoClient(PawsPlugin):
         return desc
 
     def start(self):
-        self.run_clone()
+        super(SpecInfoClient,self).start()
 
     def run(self):
-        hst = self.inputs['host'] 
-        prt = self.inputs['port'] 
+        hst = self.content['host'] 
+        prt = self.content['port'] 
         with self.socket_lock:
             self.sock = socket.create_connection((hst,prt)) 
-        tmr = self.inputs['timer'] 
 
         self.take_control()
 
-        keep_going = True
-        while keep_going: 
-            with tmr.dt_lock:
-                tmr.dt_lock.wait()
-            with tmr.running_lock:
-                if not tmr.running:
-                    with self.proxy.running_lock:
-                        self.proxy.stop()
-            with self.proxy.running_lock:
-                keep_going = bool(self.proxy.running)
-        if self.verbose: self.message_callback('FINISHED')
-        with tmr.dt_lock:
-            t_now = float(tmr.dt_utc())
-        with self.proxy.history_lock:
-            self.proxy.add_to_history(t_now,'STOP')
-            self.proxy.dump_history()
+    def stop(self):
+        super(SpecInfoClient,self).stop() 
+        if self.thread_clone:
+            self.thread_clone.close_socket()
+
+    def close_socket(self):
         self.sock.close()
 
     def run_cmd(self,cmd):
-        with self.inputs['timer'].dt_lock:
-            t_now = float(self.inputs['timer'].dt_utc())
         resp = ''
         while resp in ['','spec is busy!']:
             with self.socket_lock:
                 self.send_line(cmd)
                 resp = self.receive_line()
         with self.proxy.history_lock:
-            self.proxy.add_to_history(t_now,cmd+' '+resp)
+            self.proxy.add_to_history(self.get_date_time(),cmd+' '+resp)
         if self.verbose: self.message_callback(cmd+' '+resp)
         return resp
 
@@ -84,9 +69,7 @@ class SpecInfoClient(PawsPlugin):
     def take_control(self):
         resp = self.run_cmd('!rqc')
         while not resp == 'client in control.':
-            with tmr.dt_lock:
-                tmr.dt_lock.wait()
-                t_now = float(tmr.dt_utc())
+            time.sleep(0.1)
             resp = self.run_cmd('!rqc')
 
     def mar_expose(self,filename,exposure_time):

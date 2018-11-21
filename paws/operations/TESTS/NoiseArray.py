@@ -18,4 +18,5 @@ class NoiseArray(Operation):
     def run(self):
         s = self.inputs['size']
         self.outputs['array'] = np.random.rand(s,s) 
+        return self.outputs
 

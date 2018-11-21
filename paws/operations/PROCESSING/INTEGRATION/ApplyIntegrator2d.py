@@ -47,11 +47,6 @@ class ApplyIntegrator2d(Operation):
         self.output_doc['q'] = 'Scattering vector magnitude q array in 1/Angstrom.'
         self.output_doc['chi'] = 'Azimuthal angle array.'
         self.output_doc['I_at_q_chi'] = '2d array of integrated intensity at q,chi.'
-        self.input_datatype['unit'] = 'str'
-        self.input_datatype['integrate_args'] = 'dict'
-        self.input_datatype['npt_rad'] = 'int'
-        self.input_datatype['npt_azim'] = 'int'
-        self.input_datatype['polz_factor'] = 'float'
 
     def run(self):
         img = self.inputs['image_data']

@@ -31,9 +31,6 @@ class OpenRaw(Operation):
         self.output_doc['PIL_Image'] = 'The result of PIL.Image.frombytes()'
         self.output_doc['dir_path'] = 'Path to the directory the image came from'
         self.output_doc['filename'] = 'The image filename, no path, no extension'
-        self.input_datatype['file_path'] = 'str'
-        self.input_datatype['image_mode'] = 'str'
-        self.input_datatype['image_size'] = 'list'
         
     def run(self):
         p = self.inputs['file_path']

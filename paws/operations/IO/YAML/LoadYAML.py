@@ -47,3 +47,5 @@ class LoadYAML(Operation):
             ds[k] = v
         self.outputs['data'] = ds 
 
+        return self.outputs
+

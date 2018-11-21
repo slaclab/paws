@@ -7,7 +7,7 @@ import pyFAI
 
 from .PawsPlugin import PawsPlugin
 
-inputs = OrderedDict(calib_file=None) 
+content = OrderedDict(calib_file=None) 
 
 class PyFAIIntegrator(PawsPlugin):
     """Plugin for applying a PyFAI.AzimuthalIntegrator.
@@ -16,19 +16,25 @@ class PyFAIIntegrator(PawsPlugin):
     outlined in the package documentation. 
     """
     def __init__(self):
-        super(PyFAIIntegrator,self).__init__(inputs)
-        self.input_doc['calib_file'] = 'file defining a dict of calibration parameters, '\
+        super(PyFAIIntegrator,self).__init__(content)
+        self.content_doc['calib_file'] = 'file defining a dict of calibration parameters, '\
             'in one of the formats outlined in the package documentation'
         self.integrator_lock = Condition()
         self.integrator = None
 
     def start(self):
+        super(PyFAIIntegrator,self).start()
         with self.integrator_lock:
             self.integrator = pyFAI.AzimuthalIntegrator()
         self.set_calib()
 
+    def set_calib_file(self,file_path):
+        self.content['calib_file'] = file_path
+        #self.set_calib()
+
     def set_calib(self):
-        calib = self.inputs['calib_file']
+        self.message_callback('calibrating on {}'.format(self.content['calib_file']))
+        calib = self.content['calib_file']
         fp,xt = os.path.splitext(calib)
         #print(xt)
         if xt in ['.poni','.PONI']:
@@ -43,6 +49,7 @@ class PyFAIIntegrator(PawsPlugin):
 
     def integrate_to_1d(self,img_data,npt=1000,polz_factor=0.,unit='q_A^-1'):
         with self.integrator_lock:
+            self.message_callback('integrating image...')
             q,I = self.integrator.integrate1d(img_data,npt,
                 polarization_factor=polz_factor,unit=unit)
         return q,I

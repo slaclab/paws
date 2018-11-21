@@ -3,7 +3,7 @@ from collections import OrderedDict
 from ..Operation import Operation
 
 inputs = OrderedDict(n_primes=10)
-outputs = OrderedDict(primes_list=None)
+outputs = OrderedDict(primes_list=[])
 
 class ListPrimes(Operation):
     """Makes a list of prime numbers in increasing order"""
@@ -15,7 +15,7 @@ class ListPrimes(Operation):
     
     def run(self):
         np = self.inputs['n_primes']
-        pl = []
+        pl = self.outputs['primes_list'] 
         npfound = 0
         x = 2
         while npfound < np:
@@ -24,5 +24,5 @@ class ListPrimes(Operation):
                 npfound += 1 
                 pl.append(x)
             x += 1
-        self.outputs['primes_list'] = pl
+        return self.outputs
 

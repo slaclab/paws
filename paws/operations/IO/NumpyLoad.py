@@ -25,13 +25,16 @@ class NumpyLoad(Operation):
         self.input_doc['delimiter'] = 'delimiter (str) placed between values'
         self.output_doc['data'] = 'result of loading file contents'
         self.output_doc['dir_path'] = 'directory of the input file' 
-        self.output_doc['filename'] = 'name of the input file' 
+        self.output_doc['filename'] = 'name of the input file, no path, no extension' 
+        self.output_doc['extension'] = 'extension of the input file path' 
 
     def run(self):
         p = self.inputs['file_path']
         self.message_callback('reading {}'.format(p))
         dlm = self.inputs['delimiter']
         dtp = eval(self.inputs['dtype']) 
-        self.outputs['dir_path'],self.outputs['filename']  = os.path.split(p)
+        self.outputs['dir_path'], fn = os.path.split(p)
+        self.outputs['filename'], self.outputs['extension'] = os.path.splitext(fn) 
         self.outputs['data'] = np.loadtxt(p, dtype=dtp, delimiter=dlm)
+        return self.outputs
 

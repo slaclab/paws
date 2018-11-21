@@ -1,0 +1,8 @@
+sample_to_CCD_mm=100
+pixel_size_x_mm=1
+pixel_size_y_mm=1
+beam_center_x_pix=5
+beam_center_y_pix=5
+horizontal_tilt_deg=0
+vertical_tilt_deg=0
+wavelength_A=0.8

@@ -2,7 +2,7 @@ from collections import OrderedDict
 
 from ..Operation import Operation
 
-inputs = OrderedDict(data={})
+inputs = OrderedDict(data=None)
 outputs = OrderedDict()
 
 class Print(Operation):
@@ -14,4 +14,5 @@ class Print(Operation):
         
     def run(self):
         self.message_callback(self.inputs['data'])
+        return self.outputs
 

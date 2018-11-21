@@ -1,0 +1,11 @@
+# General info
+User: Grinch, time: Sun Dec 26 00:23:01 1667 
+
+# Temperature
+1056.6C
+
+# Counters
+TEMP=1056.6, CTEMP=0
+
+# Motors
+samplex=0, sampley=-3.5, samplez=1.8

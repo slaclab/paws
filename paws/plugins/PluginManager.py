@@ -3,16 +3,13 @@ from collections import OrderedDict
 from functools import partial
 import importlib
 
-from ..models.DictTree import DictTree
+from ..pawstools import DictTree
 from .. import plugins as pgns
-from .. import pawstools
-from .PawsPlugin import PawsPlugin
 
 class PluginManager(DictTree):
     """Tree for storing, browsing, and managing PawsPlugins"""
 
     def __init__(self):
-        #flag_dict = OrderedDict(selected=False,running=False)
         super(PluginManager,self).__init__()
         self.plugins = self._root
         self.plugins_running = OrderedDict()
@@ -56,10 +53,6 @@ class PluginManager(DictTree):
         for pgn_nm,pgn_mod in kwargs.items():
             self.add_plugin(pgn_nm,pgn_mod)
 
-    def set_plugin_item(self,pgn_name,item_key,item_data):
-        full_key = pgn_name+'.'+item_key
-        self.set_data(full_key,item_data)
-
     def get_plugin(self,plugin_module): 
         """Import, instantiate, return a PawsPlugin from its module.
 
@@ -80,39 +73,43 @@ class PluginManager(DictTree):
         mod = importlib.import_module('.'+plugin_module,pgns.__name__)
         return mod.__dict__[plugin_module]()
 
-    def set_inputs(self,plugin_name,**kwargs):
-        for input_name,val in kwargs.items():
-            self.set_input(plugin_name,input_name,val)
+    def set_plugin_contents(self,plugin_name,**kwargs):
+        for nm,val in kwargs.items():
+            self.set_plugin_item(plugin_name,nm,val)
 
-    def set_input(self,plugin_name,input_name,val):
-        """Set a plugin input to the provided value.
+    #def set_plugin_content(self,plugin_name,item_name,val):
+    #    """Set an item of plugin content to the provided value.
+    #
+    #    Parameters
+    #    ----------
+    #    plugin_name : str
+    #        Name that will be used to refer to this plugin after it is added.
+    #    item_name : str
+    #        name of the plugin content item to be set
+    #    val : object
+    #        the data to be referenced to the specified item 
+    #    """
+    #    self.set_data(plugin_name+'.'+item_name,val)
 
-        Parameters
-        ----------
-        plugin_name : str
-            Name that will be used to refer to this plugin after it is added.
-        input_name : str
-            name of the input to be set
-        val : object
-            the data to be used as plugin input
-        """
-        self.set_data(plugin_name+'.inputs.'+input_name,val)
+    def set_plugin_item(self,pgn_name,item_key,item_data):
+        full_key = pgn_name+'.'+item_key
+        self.set_data(full_key,item_data)
 
-    def connect(self,item_key,input_map):
-        """Connect the data at `item_key` to one or more inputs.
+    def connect(self,item_key,content_map):
+        """Connect the data at `item_key` to one or more plugin content items.
 
-        Sets up Plugin inputs listed in `input_map`
+        Sets up Plugin content listed in `content_map`
         to take the value at `item_key`.
-        `input_map` can be a TreeItem key (string) or a list thereof.
+        `content_map` can be a DictTree key (string) or a list thereof.
         """
         if item_key in self.connections:
-            if isinstance(input_map,list):
-                self.connections[item_key].extend(input_map)
+            if isinstance(content_map,list):
+                self.connections[item_key].extend(content_map)
             else:
-                self.connections[item_key].append(input_map)
+                self.connections[item_key].append(content_map)
         else:
-            if not isinstance(input_map,list): input_map = [input_map]
-            self.connections[item_key] = input_map
+            if not isinstance(content_map,list): content_map = [content_map]
+            self.connections[item_key] = content_map
 
     def start_plugins(self,plugin_name_list):
         for pn in plugin_name_list:
@@ -131,12 +128,12 @@ class PluginManager(DictTree):
             pgn_clone = self.plugins[plugin_name].build_clone()
             pgn.thread_clone = pgn_clone 
             pgn.thread_clone.proxy = pgn
-        for item_key,input_map in self.connections.items():
-            for input_key in input_map:
-                if input_key.split('.')[0] == plugin_name:
-                    self.set_data(input_key,self.get_data(item_key))
+        for item_key,content_map in self.connections.items():
+            for content_key in content_map:
+                if content_key.split('.')[0] == plugin_name:
+                    self.set_data(content_key,self.get_data(item_key))
                     if pgn.thread_blocking:
-                        pgn_item_key = input_key[input_key.find(plugin_name)+len(plugin_name)+1:]
+                        pgn_item_key = content_key[content_key.find(plugin_name)+len(plugin_name)+1:]
                         pgn_clone.set_data(pgn_item_key,self.get_data(item_key))
         return pgn
 
@@ -150,7 +147,7 @@ class PluginManager(DictTree):
         for pg_name,pg in self.plugins.items():
             pg_dict[pg_name] = OrderedDict()
             pg_dict[pg_name]['MODULE'] = pg.__module__[pg.__module__.find('plugins.')+8:] 
-            pg_dict[pg_name]['INPUTS'] = pg.inputs
+            pg_dict[pg_name]['CONTENT'] = pg.content
         pg_dict['CONNECTIONS'] = self.connections 
         return pg_dict
 
@@ -164,32 +161,15 @@ class PluginManager(DictTree):
         pg_dict : dict 
             Dict specifying plugin setup
         """
-        for item_key,input_map in pg_dict.pop('CONNECTIONS').items():
-            self.connect(item_key,input_map)
+        for item_key,content_map in pg_dict.pop('CONNECTIONS').items():
+            self.connect(item_key,content_map)
         for pg_name in pg_dict.keys():
             self.add_plugin(pg_name,pg_dict[pg_name]['MODULE'])
-            for inp_name, val in pg_dict[pg_name]['INPUTS'].items():
-                self.set_input(pg_name,inp_name,val)
+            for item_name, val in pg_dict[pg_name]['CONTENT'].items():
+                self.set_plugin_content(pg_name,item_name,val)
 
     def n_plugins(self):
         """Return number of plugins currently loaded."""
         return len(self.plugins) 
-
-    #def build_tree(self,x):
-    #    """Return a dict describing a tree-like structure of this object.
-    #
-    #    This is a reimplemention of TreeModel.build_tree() 
-    #    to define this object's child tree structure.
-    #    For a PluginManager, a dict is provided for each PawsPlugin,
-    #    where the dict contains the results of calling
-    #    self.build_tree(plugin.inputs)
-    #    """
-    #    if isinstance(x,PawsPlugin):
-    #        d = OrderedDict()
-    #        d['inputs'] = self.build_tree(x.inputs)
-    #        d.update(x.get_plugin_content())
-    #    else:
-    #        return super(PluginManager,self).build_tree(x) 
-    #    return d
 
 

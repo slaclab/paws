@@ -37,12 +37,6 @@ class FabIOWrite(Operation):
         self.input_doc['ext'] = 'file extension (overwrites base filename extension)'
         self.input_doc['overwrite'] = 'allow overwrite of already existing files'
         self.output_doc['file_path'] = 'path to the file that will be written: dir_path+filename+filetag+ext'
-        self.input_datatype['header'] = 'dict'
-        self.input_datatype['dir_path'] = 'str'
-        self.input_datatype['filename'] = 'str'
-        self.input_datatype['filetag'] = 'str'
-        self.input_datatype['ext'] = 'str'
-        self.input_datatype['overwrite'] = 'bool'
 
     def run(self):
         """

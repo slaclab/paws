@@ -10,10 +10,11 @@ from scipy.optimize import minimize as scipimin
 
 from .PawsPlugin import PawsPlugin
 
-inputs = OrderedDict(
+content = OrderedDict(
     serial_device=None,
     timer=None,
-    flowrate_table=None)
+    flowrate_table=None,
+    state={})
 
 class MitosPPumpController(PawsPlugin):
     """PAWS Plugin for controlling a Mitos P-pump.
@@ -25,20 +26,20 @@ class MitosPPumpController(PawsPlugin):
     The pump controller acts as a proxy for controlling a clone of itself.
     The clone operates in its own thread, exchanging information 
     with the original pump controller in a threadsafe way,
-    at each tick of the input timer.
+    at each tick of the timer.
 
     When the pump is in CONTROL mode,
     a command must be sent every 30 seconds,
     or the pump will automatically exit CONTROL mode.
     """
     def __init__(self):
-        super(MitosPPumpController,self).__init__(inputs)
-        self.input_doc['serial_device'] = 'string serial device indicator '\
+        super(MitosPPumpController,self).__init__(content)
+        self.content_doc['serial_device'] = 'string serial device indicator '\
             '(e.g. "COM2") or filesystem path (e.g. "/dev/ttyUSB0")'
-        self.input_doc['timer'] = 'Timer PawsPlugin, used to initiate '\
+        self.content_doc['timer'] = 'Timer PawsPlugin, used to initiate '\
             'thread-safe data exchanges between the pump controller '\
             'and its operational clone.'
-        self.input_doc['flowrate_table'] = 'table mapping flowrates '\
+        self.content_doc['flowrate_table'] = 'table mapping flowrates '\
             'to Mitos instrument setpoints (with flow meter calibrated for water). '\
             'This table should be formatted as a list '\
             'containing a list of flowrates and a list of setpoints: '\
@@ -62,7 +63,7 @@ class MitosPPumpController(PawsPlugin):
         self.serial_lock = Condition()
         self.ser = None
         self.state_lock = Condition()
-        self.state = OrderedDict(
+        self.content['state'] = OrderedDict(
             error_code = None,
             state_code = None, 
             chamber_pressure = None, 
@@ -74,7 +75,7 @@ class MitosPPumpController(PawsPlugin):
         self.flow_conversion_power = 1.
 
     def calibrate(self):
-        frtab = self.inputs['flowrate_table']
+        frtab = self.content['flowrate_table']
         if frtab is not None:
             self.flow_setpts = frtab[:,0]
             self.flow_meas = frtab[:,1]
@@ -100,23 +101,23 @@ class MitosPPumpController(PawsPlugin):
 
     def start(self):
         self.calibrate()
-        self.run_clone()
+        super(MitosPPumpController,self).start()
         with self.thread_clone.running_lock:
             self.thread_clone.running_lock.wait()
        
     def run(self):
         # this method is run by self.thread_clone 
         self.ser = serial.Serial(
-            self.inputs['serial_device'], 
+            self.content['serial_device'], 
             57600, timeout=1, 
             parity = serial.PARITY_NONE, 
             bytesize = serial.EIGHTBITS, 
             xonxoff = 0, rtscts = 0)
-        tmr = self.inputs['timer']
+        tmr = self.content['timer']
         keep_going = True
         # check for control...
         self.update_status()
-        if not self.state['state_code'] == 1:
+        if not self.content['state']['state_code'] == 1:
             # attempt to enter remote control mode 
             resp = self.run_cmd('A1')
             if not resp == "#A0":
@@ -162,12 +163,12 @@ class MitosPPumpController(PawsPlugin):
         with self.state_lock:
             self.read_status()
         with self.proxy.state_lock:
-            self.proxy.state = copy.deepcopy(self.state)
+            self.proxy.content['state'] = copy.deepcopy(self.content['state'])
         if self.verbose: self.message_callback(self.print_status())
 
     def run_cmd(self,cmd):
-        with self.inputs['timer'].dt_lock:
-            t_now = float(self.inputs['timer'].dt_utc())
+        with self.content['timer'].dt_lock:
+            t_now = float(self.content['timer'].dt_utc())
         with self.serial_lock:
             self.send_line(cmd)
             resp = self.receive_line()
@@ -225,26 +226,28 @@ class MitosPPumpController(PawsPlugin):
             resp = self.run_cmd('s')
             s = resp.split(',')
         with self.state_lock:
-            self.state['error_code'] = int(s[0][2:])
-            self.state['state_code'] = int(s[1])
-            self.state['chamber_pressure'] = float(s[3])
-            self.state['supply_pressure'] = float(s[4])
-            self.state['target_pressure'] = float(s[5])
-            self.state['flow_rate'] = float(s[6])
-            self.state['target_flow_rate'] = float(s[7])
+            st = self.content['state']
+            st['error_code'] = int(s[0][2:])
+            st['state_code'] = int(s[1])
+            st['chamber_pressure'] = float(s[3])
+            st['supply_pressure'] = float(s[4])
+            st['target_pressure'] = float(s[5])
+            st['flow_rate'] = float(s[6])
+            st['target_flow_rate'] = float(s[7])
 
     def print_status(self):
         with self.state_lock:
+            st = self.content['state']
             msg = os.linesep+'----------- PUMP STATUS -----------'+os.linesep
-            msg += 'Error code: {} ({})'.format(self.state['error_code'],
-                self.ErrorsDict[self.state['error_code']])+os.linesep
-            msg += 'State code: {} ({})'.format(self.state['state_code'],
-                self.StateDict[self.state['state_code']])+os.linesep
-            msg += 'Chamber pressure: \t{}'.format(self.state['chamber_pressure'])+os.linesep 
-            msg += 'Supply pressure: \t{}'.format(self.state['supply_pressure'])+os.linesep 
-            msg += 'Target pressure: \t{}'.format(self.state['target_pressure'])+os.linesep 
-            msg += 'Current flow rate: \t{}'.format(self.state['flow_rate'])+os.linesep 
-            msg += 'Target flow rate: \t{}'.format(self.state['target_flow_rate'])+os.linesep 
+            msg += 'Error code: {} ({})'.format(st['error_code'],
+                self.ErrorsDict[st['error_code']])+os.linesep
+            msg += 'State code: {} ({})'.format(st['state_code'],
+                self.StateDict[st['state_code']])+os.linesep
+            msg += 'Chamber pressure: \t{}'.format(st['chamber_pressure'])+os.linesep 
+            msg += 'Supply pressure: \t{}'.format(st['supply_pressure'])+os.linesep 
+            msg += 'Target pressure: \t{}'.format(st['target_pressure'])+os.linesep 
+            msg += 'Current flow rate: \t{}'.format(st['flow_rate'])+os.linesep 
+            msg += 'Target flow rate: \t{}'.format(st['target_flow_rate'])+os.linesep 
             msg += '-----------------------------------'
         return msg
 
@@ -305,10 +308,4 @@ class MitosPPumpController(PawsPlugin):
             The volume to dispense 
         """
         pass
-
-    def get_plugin_content(self):
-        d = super(MitosPPumpController,self).get_plugin_content()
-        with self.state_lock:
-            d['state'] = copy.deepcopy(self.state)
-        return d
 
