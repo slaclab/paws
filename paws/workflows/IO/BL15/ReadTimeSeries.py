@@ -9,7 +9,8 @@ from paws.operations.PACKAGING.SortBatch import SortBatch
 inputs = copy.deepcopy(ReadBatch.inputs)
 inputs.update(
     lower_index = None,
-    upper_index = None
+    upper_index = None,
+    index_step = 1
     )
 
 outputs = copy.deepcopy(ReadBatch.outputs)
@@ -30,7 +31,8 @@ class ReadTimeSeries(Workflow):
             x_sort_flag=True,
             x_shift_flag=True,
             lower_index=self.inputs['lower_index'],
-            upper_index=self.inputs['upper_index']
+            upper_index=self.inputs['upper_index'],
+            index_step=self.inputs['index_step']
             )
         self.outputs.update(self.operations['sort'].outputs['sorted_outputs'])
         return self.outputs
