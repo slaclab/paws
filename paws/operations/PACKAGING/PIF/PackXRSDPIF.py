@@ -7,8 +7,9 @@ from xrsdkit.system import System
 
 inputs=OrderedDict(
     system=None,
+    q_I_file=None,
     q_I=None,
-    experiment_id=None,
+    #experiment_id=None,
     t_utc=None,
     temperature=None,
     source_wavelength=None,
@@ -23,8 +24,9 @@ class PackXRSDPIF(Operation):
         self.input_doc['system'] = 'xrsdkit.system.System object describing scattering material, '\
             'or a dict containing the System data, in which case the dict is used '\
             'to build the system by calling the xrsdkit.system.System constructor'
+        self.input_doc['q_I_file'] = 'path to q_I data file (within the Citrination dataset)'
         self.input_doc['q_I'] = 'n-by-2 array of scattering data, intensity (arb) versus q (1/A)'
-        self.input_doc['experiment_id'] = 'string experiment id, used as a pif ID attribute'
+        #self.input_doc['experiment_id'] = 'string experiment id, used as a pif ID attribute'
         self.input_doc['t_utc'] = 'time in seconds utc'
         self.input_doc['temperature'] = 'temperature of the system in degrees Celsius'
         self.input_doc['source_wavelength'] = 'light source wavelength in Angstroms'
@@ -35,16 +37,16 @@ class PackXRSDPIF(Operation):
         if isinstance(sys,dict):
             sys = System(sys)
         q_I = self.inputs['q_I']
-        expt_id = self.inputs['experiment_id']
         t_utc = self.inputs['t_utc']
         temp_C = self.inputs['temperature']
         src_wl = self.inputs['source_wavelength']
-        uid_full = 'tmp'
-        if expt_id is not None:
-            uid_full = expt_id 
-        if t_utc is not None:
-            uid_full = uid_full+'_'+str(int(t_utc))
-        csys = piftools.make_pif(uid_full,sys,q_I,expt_id,t_utc,temp_C,src_wl)
+        expt_id = 'tmp'
+        if sys.sample_metadata['experiment_id']:
+            expt_id = sys.sample_metadata['experiment_id']
+        sample_id = 'tmp'
+        if sys.sample_metadata['sample_id']:
+            sample_id = sys.sample_metadata['sample_id']
+        csys = piftools.make_pif(sample_id,sys,self.inputs['q_I_file'],q_I,sys.sample_metadata['experiment_id'],t_utc,temp_C,src_wl)
         self.outputs['pif'] = csys
         return self.outputs
 
