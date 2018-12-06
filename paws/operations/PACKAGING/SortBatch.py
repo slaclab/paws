@@ -11,7 +11,8 @@ inputs = OrderedDict(
     x_sort_flag=True,
     x_shift_flag=False, 
     lower_index=None,
-    upper_index=None) 
+    upper_index=None,
+    index_step=1) 
 outputs = OrderedDict(
     x_list = None,
     x_array = None,
@@ -31,6 +32,7 @@ class SortBatch(Operation):
         self.input_doc['x_shift_flag'] = 'if True, shift x data so that its minimum value is zero' 
         self.input_doc['lower_index'] = 'optional list slice lower limit, inclusive'
         self.input_doc['upper_index'] = 'optional list slice upper limit, exclusive'
+        self.input_doc['index_step'] = 'optional number of indices to skip between sorted outputs'
         self.output_doc['x_list'] = 'list of values of x (sorted)'
         self.output_doc['x_array'] = 'array of values of x (sorted)'
         self.output_doc['sorted_outputs'] = 'dict similar to inputs, but sorted on `x_key`'
@@ -41,6 +43,7 @@ class SortBatch(Operation):
         kx = self.inputs['x_key']
         sortflag = self.inputs['x_shift_flag']
         shiftflag = self.inputs['x_shift_flag']
+        skipidx = self.inputs['index_step']
         lidx = self.inputs['lower_index']
         uidx = self.inputs['upper_index']
 
@@ -63,6 +66,9 @@ class SortBatch(Operation):
             if uidx is not None:
                 ix = ix[:uidx]
                 xa = xa[:uidx]
+            if skipidx > 1:
+                ix = ix[::skipidx]
+                xa = xa[::skipidx]
             self.outputs['x_array'] = xa
             self.outputs['x_list'] = [x_list[int(ii)] for ii in ix]
 

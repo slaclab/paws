@@ -16,6 +16,9 @@ inputs = OrderedDict(
     error_weighted = True,
     logI_weighted = True,
     q_range = [0.,float('inf')], 
+    experiment_id = None,
+    sample_id = None,
+    data_file_path = None,
     output_file = None
     )
 
@@ -58,9 +61,15 @@ class XRSDFit(Workflow):
         self.outputs['system_opt_dict'] = fit_outputs['system_dict']
         self.outputs['q_I_opt'] = fit_outputs['q_I_opt']
         self.outputs['fit_report'] = fit_outputs['system'].fit_report
+        fit_sys = fit_outputs['system']
+        fit_sys.sample_metadata.update(dict(
+            experiment_id = self.inputs['experiment_id'],
+            sample_id = self.inputs['sample_id'],
+            data_file = self.inputs['data_file_path']
+            ))
         if self.inputs['output_file']:
             self.operations['save_system'].run_with(
-                system = fit_outputs['system'],
+                system = fit_sys, 
                 file_path = self.inputs['output_file']
                 )
         return self.outputs       
