@@ -1,6 +1,6 @@
 from collections import OrderedDict
 
-from xrsdkit.system import load_from_yaml
+from xrsdkit.tools.ymltools import load_sys_from_yaml
 
 from ...Operation import Operation
 
@@ -20,8 +20,8 @@ class LoadXRSDSystem(Operation):
 
     def run(self):
         self.message_callback('loading from {}'.format(self.inputs['file_path']))
-        sys = load_from_yaml(self.inputs['file_path'])
+        sys, sys_dict = load_sys_from_yaml(self.inputs['file_path'])
         self.outputs['system'] = sys
-        self.outputs['system_dict'] = sys.to_dict()
+        self.outputs['system_dict'] = sys_dict
         return self.outputs
 

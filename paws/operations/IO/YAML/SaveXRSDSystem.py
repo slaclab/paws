@@ -1,6 +1,6 @@
 from collections import OrderedDict
 
-from xrsdkit.system import save_to_yaml
+from xrsdkit.tools.ymltools import save_sys_to_yaml
 
 from ...Operation import Operation
 
@@ -20,5 +20,5 @@ class SaveXRSDSystem(Operation):
 
     def run(self):
         self.message_callback('writing to {}'.format(self.inputs['file_path']))
-        save_to_yaml(self.inputs['file_path'],self.inputs['system'])
+        save_sys_to_yaml(self.inputs['file_path'],self.inputs['system'])
 
