@@ -1,6 +1,8 @@
 import os
 from collections import OrderedDict
 
+from xrsdkit import system as xrsdsys
+
 from paws.workflows.Workflow import Workflow 
 from paws.operations.IO.NumpyLoad import NumpyLoad 
 from paws.operations.IO.YAML.LoadXRSDSystem import LoadXRSDSystem
@@ -49,6 +51,9 @@ class XRSDFit(Workflow):
         if self.inputs['system_file']:
             read_outputs = self.operations['read_system'].run_with(file_path=self.inputs['system_file'])
             sys = read_outputs['system']
+        if not sys: sys = xrsdsys.System()
+        sys.sample_metadata['experiment_id'] = self.inputs['experiment_id']
+        sys.sample_metadata['sample_id'] = self.inputs['sample_id']
         fit_outputs = self.operations['fit'].run_with(
             q_I = q_I,
             source_wavelength = self.inputs['source_wavelength'],
