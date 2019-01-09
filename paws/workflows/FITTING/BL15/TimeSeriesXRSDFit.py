@@ -47,7 +47,6 @@ class TimeSeriesXRSDFit(Workflow):
             fit_outputs = self.operations['fit'].run_with(
                 system = sys,
                 q_I = q_I,
-                source_wavelength = self.inputs['source_wavelength'],
                 error_weighted = self.inputs['error_weighted'],
                 logI_weighted = self.inputs['logI_weighted'],
                 q_range = self.inputs['q_range'],

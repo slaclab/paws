@@ -14,7 +14,6 @@ inputs = OrderedDict(
     system_file = None,
     q_I = None,
     system = None,
-    source_wavelength = None,
     error_weighted = True,
     logI_weighted = True,
     q_range = [0.,float('inf')], 
@@ -56,7 +55,6 @@ class XRSDFit(Workflow):
         sys.sample_metadata['sample_id'] = self.inputs['sample_id']
         fit_outputs = self.operations['fit'].run_with(
             q_I = q_I,
-            source_wavelength = self.inputs['source_wavelength'],
             system = sys,
             error_weighted = self.inputs['error_weighted'],
             logI_weighted = self.inputs['logI_weighted'],

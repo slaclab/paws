@@ -7,16 +7,17 @@ from ...Operation import Operation
 
 inputs = OrderedDict(
     q_I=None,
-    source_wavelength=None,
     system=None,
     error_weighted=True,
     logI_weighted=True,
-    q_range=[0.,float('inf')])
+    q_range=[0.,float('inf')]
+    )
 
 outputs = OrderedDict(
     system=None,
     system_dict=None,
-    q_I_opt = None) 
+    q_I_opt = None
+    ) 
 
 class XRSDFitGUI(Operation):
     """Interactively fit a XRSD spectrum."""
@@ -24,7 +25,6 @@ class XRSDFitGUI(Operation):
     def __init__(self):
         super(XRSDFitGUI, self).__init__(inputs, outputs)
         self.input_doc['q_I'] = 'n-by-2 array of q(1/Angstrom) versus I(arb).'
-        self.input_doc['source_wavelength'] = 'wavelength of light source, in Angstroms'
         self.input_doc['system'] = 'material system description, as a xrsdkit.system.System'
         self.input_doc['error_weighted'] = 'flag for using I(q) error estimates to weight fit objective'
         self.input_doc['logI_weighted'] = 'flag for evaluating the fit objective on log(I)'
@@ -35,7 +35,6 @@ class XRSDFitGUI(Operation):
 
     def run(self):
         q_I = self.inputs['q_I']
-        src_wl = self.inputs['source_wavelength']
         sys = self.inputs['system']
         err_wtd = self.inputs['error_weighted']
         logI_wtd = self.inputs['logI_weighted']
@@ -47,9 +46,9 @@ class XRSDFitGUI(Operation):
                 q_range = sys.fit_report['q_range']
 
         sys_opt = run_fit_gui(
-        sys,q_I[:,0],q_I[:,1],src_wl,None,err_wtd,logI_wtd,q_range) 
+        sys,q_I[:,0],q_I[:,1],None,err_wtd,logI_wtd,q_range) 
 
-        I_opt = sys_opt.compute_intensity(q_I[:,0],src_wl) 
+        I_opt = sys_opt.compute_intensity(q_I[:,0]) 
         q_I_opt = np.array([q_I[:,0],I_opt]).T
 
         self.outputs['system'] = sys_opt
