@@ -3,13 +3,13 @@ import copy
 from collections import OrderedDict
 
 import numpy as np
+import yaml
 
 from ...Workflow import Workflow 
 from ...IO.BL15.ReadTimeSeries import ReadTimeSeries 
 from ...INTEGRATION.Integrate import Integrate 
 from ....operations.DAQ.BL15.SetFlowReactor import SetFlowReactor
 from ....operations.DAQ.BL15.ReadFlowReactor import ReadFlowReactor
-from ....operations.IO.YAML.SaveYAML import SaveYAML
 from ....operations.IO.YAML.SaveXRSDSystem import SaveXRSDSystem
 from ....operations.DAQ.BL15.MarCCD_SISExpose import MarCCD_SISExpose
 from ....operations.IO.FILESYSTEM.SSHCopy import SSHCopy
@@ -47,8 +47,6 @@ class RunFlowReactor(Workflow):
         self.add_operations(
             set_recipe = SetFlowReactor(),          #
             read_flow_reactor = ReadFlowReactor(),  #
-            save_recipe = SaveYAML(),               #
-            save_header = SaveYAML(),               #
             expose_mar = MarCCD_SISExpose(),        #
             collect_file = SSHCopy()                #
             )
@@ -79,10 +77,7 @@ class RunFlowReactor(Workflow):
             bg_hdr = OrderedDict(exposure_time=exp_tm,source_wavelength=src_wl) 
             bg_hdr.update(self.inputs['bg_recipe']),
             bg_hdr.update(fr_stat['header'])
-            self.operations['save_header'].run_with(
-                file_path = bg_header_file,
-                data = bg_hdr
-                )
+            yaml.dump(bg_hdr,open(bg_header_file,'w'))
         # SET REACTION RECIPE, DELAY
         self.operations['set_recipe'].run_with(
             flow_reactor = freac,
@@ -104,10 +99,7 @@ class RunFlowReactor(Workflow):
             rxn_hdr = OrderedDict(exposure_time=exp_tm,source_wavelength=src_wl)
             rxn_hdr.update(self.inputs['rxn_recipe']),
             rxn_hdr.update(fr_stat['header'])
-            self.operations['save_header'].run_with(
-                file_path = rxn_header_file,
-                data = rxn_hdr
-                )
+            yaml.dump(rxn_hdr,open(rxn_header_file,'w'))
         # COLLECT BACKGROUND IMAGES
         for ibg in range(nbgx):
             fn = rxn_id+'_bg{}_0001.tif'.format(ibg)
