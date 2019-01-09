@@ -32,12 +32,12 @@ class CitrinationClient(PawsPlugin):
     def stop(self):
         self.client = None
 
-    def upload_pif(self,pif,dataset_id,json_path,keep_json,upload):
+    def upload_pif(self,pif_object,dataset_id,json_path,keep_json=True,upload=True):
         """Upload a PIF to Citrination.
 
         Parameters
         ----------
-        pif : object
+        pif_object : object
             A pypif.obj.System object or an array/list thereof
         dataset_id : int
             Integer dataset id where the pif(s) will be uploaded 
@@ -57,7 +57,7 @@ class CitrinationClient(PawsPlugin):
             json_path = json_path+'.json'
         jsfnm = os.path.split(json_path)[1]
         self.message_callback('PIF dump file: {}'.format(json_path))
-        pif.dump(p, open(json_path,'w'))
+        pif.dump(pif_object, open(json_path,'w'))
         if upload:
             self.message_callback('Uploading {} to dataset {}'.format(json_path,dataset_id))
             try:
