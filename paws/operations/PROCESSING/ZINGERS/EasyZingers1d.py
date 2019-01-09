@@ -7,9 +7,12 @@ from ...Operation import Operation
 inputs = OrderedDict(
     q_I=None,
     sharpness_limit=40,
-    window_width=10,
-    show_zingers=False)
-outputs = OrderedDict(q_I_dz=None,zmask=None)
+    window_width=10
+    )
+outputs = OrderedDict(
+    q_I_dz=None,
+    zmask=None
+    )
 
 class EasyZingers1d(Operation):
     """Operation for quickly removing zingers from 1d spectral data.
@@ -56,9 +59,6 @@ class EasyZingers1d(Operation):
         self.input_doc['window_width'] = 'number of points '\
             'on either side of a given pixel '\
             'used to evaluate sharpness of the pixel'
-        self.input_doc['show_zingers'] = 'flag for whether or not to pause '\
-            'when a zinger is detected, and make a plot showing '\
-            'the zinger and the approximate corrected intensities.'
         self.output_doc['q_I_dz'] = 'same as input q_I but with zingers removed'
         self.output_doc['zmask'] = 'array of booleans, same shape as q, true if there is a zinger at q, else false'
 
@@ -66,7 +66,6 @@ class EasyZingers1d(Operation):
         q_I = self.inputs['q_I']
         I_ratio_limit = self.inputs['sharpness_limit'] 
         w = self.inputs['window_width'] 
-        show_zingers = bool(self.inputs['show_zingers'])
         q = q_I[:,0]
         I = q_I[:,1]
         I_dz = np.array(I)
@@ -116,17 +115,4 @@ class EasyZingers1d(Operation):
             I_dz[iq] = newIvals[i]
         self.outputs['q_I_dz'] = np.array([q,I_dz]).T
         self.outputs['zmask'] = zmask
-
-        if show_zingers:
-        #if any(idx_z):
-            from matplotlib import pyplot as plt
-            plt.figure(1)
-            plt.semilogy(q,I)
-            plt.semilogy(q,I_dz,'g')
-            for i in idx_z:
-                plt.semilogy(q[i],I[i],'ro')
-            plt.xlabel('q',size=18)
-            plt.ylabel('I(q)',size=18)
-            plt.show()
-            
 

@@ -61,10 +61,10 @@ class ReadSpecHeader(Operation):
                         d[kv_arr[0].strip()] = float(kv_arr[1].strip())
         # add 'temperature' to the output data,
         # to make a consistent interface with the non-legacy header reader
-        #if self.inputs['temperature_key'] in d:
-        #    d['temperature'] = d[self.inputs['temperature_key']]
-        #else:
-        #    d['temperature'] = None
+        if self.inputs['temperature_key'] in d:
+            d['temperature'] = d[self.inputs['temperature_key']]
+        else:
+            d['temperature'] = None
         self.outputs['data'] = d
         return self.outputs
 
