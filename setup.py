@@ -49,6 +49,7 @@ setup(
         
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
     ],
 
     keywords='data analysis workflow',
@@ -62,7 +63,12 @@ setup(
     # your project is installed. For an analysis of "install_requires" vs pip's
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=['pyyaml'],
+    install_requires=[\
+        'pyyaml','numpy','scipy',\
+        'fabio','pyfai','xrsdkit',\
+        'tzlocal','pyserial','serial','paramiko',\
+        'pypif','citrination_client'\
+        ],
     python_requires='>=2.7',
 
     # List additional groups of dependencies here (e.g. development

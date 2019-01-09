@@ -15,6 +15,7 @@ content = OrderedDict(
     target_goal='Min',
     constraints={},
     range_constraints={},
+    categorical_constraints={},
     n_candidates=2,
     design_effort=2)
 
@@ -27,8 +28,9 @@ class FlowDesigner(PawsPlugin):
         self.content_doc['dataview_id'] = 'integer id of the data view to query' 
         self.content_doc['target'] = 'property name to optimize' 
         self.content_doc['target_goal'] = 'Min or Max, depending on target optimization goals' 
-        self.content_doc['constraints'] = 'dict of property names and target values' 
-        self.content_doc['range_constraints'] = 'dict of property names and list of [min,max] values' 
+        self.content_doc['constraints'] = 'dict of property names and real constraint values' 
+        self.content_doc['range_constraints'] = 'dict of property names and list of values ([min,max])' 
+        self.content_doc['categorical_constraints'] = 'dict of property names and categorical constraint values' 
         self.content_doc['n_candidates'] = 'number of design candidates to request per iteration' 
         self.content_doc['design_effort'] = 'how hard to try to meet the targets (int from 1 to 30)' 
         self.best_materials = []
@@ -49,6 +51,7 @@ class FlowDesigner(PawsPlugin):
         self.content['target_goal']=design_goal['target_goal']
         self.content['constraints']=design_goal['constraints']
         self.content['range_constraints']=design_goal['range_constraints']
+        self.content['categorical_constraints']=design_goal['categorical_constraints']
 
     def get_candidate_recipes(self):
         cc = self.content['citrination_client']
@@ -61,31 +64,34 @@ class FlowDesigner(PawsPlugin):
             straints.append(constraints.RealValueConstraint(prop_name,val))
         for prop_name, lmts in self.content['range_constraints'].items():
             straints.append(constraints.RealRangeConstraint(prop_name,lmts[0],lmts[1]))
+        for prop_name, cats in self.content['categorical_constraints'].items():
+            straints.append(constraints.CategoricalConstraint(prop_name,cats))
         #DOC: cc.submit_design_run(
         #       data_view_id,
         #       num_candidates (int in [1,20]),
         #       effort (int in [1,30]),
         #       target=None, constraints=[],
         #       sampler='Default') 
-        msg = 'Designing for: \nTarget: {} \nConstraints: {} \nRange constraints: {}'.format(
-            self.content['target'],self.content['constraints'],self.content['range_constraints'])
+        msg = 'Designing for: \nTarget: {} \nConstraints: {} \nRange constraints: {} \nCategorical constraints: {}'.format(
+            self.content['target'],self.content['constraints'],
+            self.content['range_constraints'],self.content['categorical_constraints']
+            )
         self.message_callback(msg)
-        try_again = True
-        while try_again:
-            try:
-                des = cc.client.submit_design_run(dvid,n_candidates,design_effort,tgt,straints) 
-                fin = False
-                while not fin:
-                    time.sleep(2)
-                    stat = cc.client.get_design_run_status(dvid, des.uuid)
-                    self.message_callback('design finished: {}'.format(stat.finished()))
-                    self.message_callback('design status: {}/100'.format(stat.progress))
-                    if int(stat.progress) == 100:
-                        fin = True
-                desres = cc.client.get_design_run_results(dvid,des.uuid)
-                try_again = False 
-            except:
-                pass
+        #try_again = True
+        #while try_again:
+        #    try:
+        des = cc.client.submit_design_run(dvid,n_candidates,design_effort,tgt,straints) 
+        fin = False
+        while not fin:
+            time.sleep(2)
+            stat = cc.client.get_design_run_status(dvid, des.uuid)
+            self.message_callback('design finished: {} ({}/100)'.format(stat.finished(),stat.progress))
+            if int(stat.progress) == 100:
+                fin = True
+        desres = cc.client.get_design_run_results(dvid,des.uuid)
+        #        try_again = False 
+        #    except:
+        #        pass
         self.best_materials = desres.best_materials
         self.next_experiments = desres.next_experiments
 

@@ -2,9 +2,10 @@ from collections import OrderedDict
 import copy
 import os
 
+from xrsdkit.tools import ymltools as xrsdyml
+
 from ...Workflow import Workflow 
 from ....operations.IO.YAML.LoadYAML import LoadYAML
-from ....operations.IO.YAML.LoadXRSDSystem import LoadXRSDSystem
 from ....operations.IO.IMAGE.FabIOOpen import FabIOOpen
 from ....operations.IO.NumpyLoad import NumpyLoad
 
@@ -36,7 +37,6 @@ class Read(Workflow):
             read_header=LoadYAML(),
             read_image=FabIOOpen(),
             read_q_I=NumpyLoad(),
-            read_system=LoadXRSDSystem()
             )
 
     def run(self):
@@ -75,13 +75,10 @@ class Read(Workflow):
             else:
                 self.message_callback('q_I file not found: {}'.format(self.inputs['q_I_file']))
 
-        if self.ops_enabled['read_system']:
-            if (self.inputs['system_file']) and (os.path.exists(self.inputs['system_file'])):
-                sys_outs = self.operations['read_system'].run_with(
-                file_path=self.inputs['system_file'])
-                self.outputs['system'] = sys_outs['system']
-            else:
-                self.message_callback('xrsd system file not found: {}'.format(self.inputs['system_file']))
+        if (self.inputs['system_file']) and (os.path.exists(self.inputs['system_file'])):
+            self.outputs['system'] = xrsdyml.load_sys_from_yaml(self.inputs['system_file'])
+        else:
+            self.message_callback('xrsd system file not found: {}'.format(self.inputs['system_file']))
 
         return self.outputs
 
