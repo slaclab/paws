@@ -2,10 +2,10 @@ import os
 from collections import OrderedDict
 
 from xrsdkit import system as xrsdsys
+from xrsdkit.tools import ymltools as xrsdyml
 
 from paws.workflows.Workflow import Workflow 
 from paws.operations.IO.NumpyLoad import NumpyLoad 
-from paws.operations.IO.YAML.LoadXRSDSystem import LoadXRSDSystem
 from paws.operations.IO.YAML.SaveXRSDSystem import SaveXRSDSystem
 from paws.operations.PROCESSING.FITTING.XRSDFit import XRSDFit as XRSDFit_op
 
@@ -36,7 +36,6 @@ class XRSDFit(Workflow):
         super(XRSDFit,self).__init__(inputs,outputs)
         self.add_operations(
             read_q_I = NumpyLoad(),
-            read_system = LoadXRSDSystem(),
             fit = XRSDFit_op(),
             save_system = SaveXRSDSystem()
         )
@@ -48,8 +47,7 @@ class XRSDFit(Workflow):
             q_I = read_outputs['data']
         sys = self.inputs['system']
         if self.inputs['system_file']:
-            read_outputs = self.operations['read_system'].run_with(file_path=self.inputs['system_file'])
-            sys = read_outputs['system']
+            sys = xrsdyml.load_sys_from_yaml(self.inputs['system_file'])
         if not sys: sys = xrsdsys.System()
         sys.sample_metadata['experiment_id'] = self.inputs['experiment_id']
         sys.sample_metadata['sample_id'] = self.inputs['sample_id']
