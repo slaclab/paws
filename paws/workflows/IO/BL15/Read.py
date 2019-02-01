@@ -14,7 +14,6 @@ from ....operations.IO.NumpyLoad import NumpyLoad
 
 inputs = OrderedDict(
     header_file = None,
-    time_key = 't_utc',
     image_file = None,
     q_I_file = None,
     system_file = None
@@ -48,8 +47,7 @@ class Read(Workflow):
                 file_path=self.inputs['header_file'])
                 hdata = hdr_outs['data']
                 self.outputs['header_data'] = hdata
-                if hdata and self.inputs['time_key']:
-                    self.outputs['time'] = hdata[self.inputs['time_key']] 
+                self.outputs['time'] = hdata['time']
             else:
                 self.message_callback('header file not found: {}'.format(self.inputs['header_file']))
 

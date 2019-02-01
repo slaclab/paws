@@ -11,7 +11,6 @@ inputs = OrderedDict(
     header_regex = '*.yml',
     header_suffix = '',
     #header_filter_regex = '.*',
-    time_key = 't_utc',
     image_dir = '',
     image_suffix = '',
     image_ext = '.tif',
@@ -87,7 +86,6 @@ class ReadBatch(Workflow):
             self.message_callback('RUNNING {} / {}'.format(ihdr+1,n_hdrs))
             outs = self.operations['read'].run_with(
                 header_file = hdr_fn,
-                time_key = self.inputs['time_key'],
                 image_file = img_fn,
                 q_I_file = q_I_fn,
                 system_file = sys_fn
