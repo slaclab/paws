@@ -23,20 +23,23 @@ class Timer(PawsPlugin):
         self.content_doc['dt'] = 'Wait time between signals, in seconds'
         self.content_doc['t_max'] = 'Seconds after which the timer stops itself'
         self.content_doc['dt_now'] = 'Seconds from Timer.start() to the most recent Timer.dt_now()'
-        self.content_doc['utc_now'] = 'Time in seconds utc at the most recent Timer.dt_now()'
+        self.content_doc['t_now'] = 'Time in seconds since the Unix epoch at the most recent Timer.dt_now()'
         # A lock for the "tick" trigger 
         self.dt_lock = Condition()
         self.t0 = None 
         self.tz = tzlocal.get_localzone()
         self.ep = datetime.datetime.fromtimestamp(0,self.tz)
-        self.t0_utc = None 
+        self.t0_epoch = None 
         self.thread_blocking = True
 
     def start(self):
         self.tz = tzlocal.get_localzone()
+        # self.ep: datetime object representing the epoch
         self.ep = datetime.datetime.fromtimestamp(0,self.tz)
+        # self.t0: t0 as a datetime object
         self.t0 = datetime.datetime.now(self.tz)
-        self.t0_utc = (self.t0-self.ep).total_seconds()
+        # self.t0_epoch: t0 in seconds since the epoch
+        self.t0_epoch = (self.t0-self.ep).total_seconds()
         super(Timer,self).start()
 
     def run(self):
@@ -46,25 +49,21 @@ class Timer(PawsPlugin):
         dt = self.content['dt'] 
         t_max = self.content['t_max']
         keep_going = True
-        # set zero-time point 
+        # set zero-time points 
         self.t0 = copy.deepcopy(self.proxy.t0)
-        self.t0_utc = copy.deepcopy(self.proxy.t0_utc)
-        dt_now = self.dt_utc()
+        self.t0_epoch = copy.deepcopy(self.proxy.t0_epoch)
+        t_now = self.get_elapsed_time()
+        # initial tick notification:
         self.proxy.dt_notify()
-        #dt_err = np.mod(dt_now,dt)
-        while dt_now < t_max and keep_going:
-            if self.verbose: self.message_callback('tick: {}/{}'.format(dt_now,t_max))
+        while t_elapsed < t_max and keep_going:
+            if self.verbose: self.message_callback('tick: {}/{}'.format(t_elapsed,t_max))
             # attempt to nail the next dt point:
-            t_rem = dt-np.mod(self.dt_utc(),dt)
-            #time.sleep(t_rem-dt_err)
+            t_rem = dt-np.mod(self.get_elapsed_time(),dt)
             time.sleep(t_rem)
-            # acquire proxy dt lock, take time point, dt_notify, release
-            #with self.proxy.dt_lock:
-            dt_now = self.dt_utc()
+            # get_elapsed_time to update time stamps
+            t_elapsed = self.get_elapsed_time()
+            # tick notification
             self.proxy.dt_notify()
-            #dt_err = np.mod(dt_now,dt)
-            # TODO: implement feedback to hone the timer
-            # acquire proxy running_lock, check if we are still running
             with self.proxy.running_lock:
                 keep_going = bool(self.proxy.running)
                 if self.verbose and not keep_going: self.message_callback('timer STOPPED')
@@ -87,19 +86,24 @@ class Timer(PawsPlugin):
             else:
                 self.dt_lock.notify_all()
 
-    def t_utc(self):
+    def t_epoch(self):
+        """Get time in seconds since the epoch"""
         t = datetime.datetime.now(self.tz)
         return float((t-self.ep).total_seconds())
 
     def time_as_string(self):
+        """Get string representing current time"""
         return str(datetime.datetime.now(self.tz))
 
-    def dt_utc(self):
-        tnow = self.t_utc()
-        dt = float(tnow-self.t0_utc)
-        self.content['utc_now'] = tnow
-        self.content['dt_now'] = dt
-        return dt
+    def get_elapsed_time(self):
+        """Get time in seconds since timer started"""
+        # time in seconds since epoch
+        tnow = self.t_epoch()
+        # minus t0_epoch = elapsed timer time
+        t_elapsed = float(tnow-self.t0_epoch)
+        self.content['t_now'] = tnow
+        self.content['t_elapsed'] = t_elapsed 
+        return t_elapsed 
 
     def description(self):
         desc = str('Timer Plugin for Paws: '\
