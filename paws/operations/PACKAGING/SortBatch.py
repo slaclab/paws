@@ -68,16 +68,15 @@ class SortBatch(Operation):
                 ix = ix[::skipidx]
                 xa = xa[::skipidx]
             self.outputs['x_array_sorted'] = xa
-            self.outputs['x_sorted'] = [x_list[int(ii)] for ii in ix]
+            self.outputs['x_sorted'] = [xvals[int(ii)] for ii in ix]
 
-        self.message_callback('sorting {} on key: "{}"'.format(list(b_out.keys()),kx))
         s_out = self.outputs['sorted_outputs']
         for y_key in b_out.keys():
             y_list = copy.deepcopy(b_out[y_key])
             if shiftflag or sortflag or uidx is not None or lidx is not None:
                 # only sort y_list if it contains a full batch of outputs
-                if len(y_list) == n_batch_outputs:
-                    y_list = [y_list[int(ii)] for ii in ix]
+                #if len(y_list) == n_batch_outputs:
+                y_list = [y_list[int(ii)] for ii in ix]
             s_out[y_key] = y_list
 
         return self.outputs
