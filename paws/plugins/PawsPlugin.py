@@ -17,58 +17,70 @@ from .. import pawstools
 
 # TODO: clones pass history back to proxy,
 # proxy keeps the log file.
-# log files are created at start().
-
-# TODO: ensure plugins run clean either as clones or standalone
+# log files are created at __init__().
 
 class PawsPlugin(object):
     """Base class for building PAWS Plugins."""
 
-    def __init__(self,content):
+    def __init__(self,thread_blocking=False,verbose=False,log_file=None):
+        """Create a PawsPlugin.
+
+        Parameters
+        ----------
+        thread_blocking : bool
+            indicates whether or not this plugin runs continually in its thread-
+            if thread_blocking is True, the start() method 
+            clones the plugin and asks the clone to run() in its own thread
+        verbose : bool
+            if verbose, various status messages are fed to self.message_callback()
+        log_file : str
+            path to a file used for logging time-stamped plugin activities
+        """
         super(PawsPlugin,self).__init__()
-        self.content = OrderedDict(copy.deepcopy(content))
-        self.content_doc = OrderedDict.fromkeys(self.content.keys()) 
         self.message_callback = self.tagged_print
-        self.data_callback = None 
-        # take the running_lock when toggling the run flag 
-        self.running_lock = Condition()
+        self.thread_blocking = thread_blocking 
+        # py_version is used to determine notify() syntax 
+        self.py_version = int(sys.version[0])
         self.running = False
-        # use command_lock to add or pop commands from the queue
-        self.command_lock = Condition()
-        self.commands = queue.Queue() 
-        # use history lock to edit the history
-        self.history_lock = Condition()
+        # thread-blocking plugins acquire running_lock before modifying self.running 
+        self.running_lock = Condition()
         self.history = []
         self.n_events = 0
-        # proxy is the thread_clone's ref to this object, 
-        # i.e. self.thread_clone.proxy is self.
-        self.thread_clone = None
-        self.proxy = None
-        # keep track of py version for convenience
-        self.py_version = int(sys.version[0])
-        self.log_file = None
-        self.verbose = False
-        self.thread_blocking = False
+        # plugins acquire history_lock before modifying self.history
+        self.history_lock = Condition()
+        # timestamps are used for logging
         self.tz = tzlocal.get_localzone()
         self.ep = datetime.datetime.fromtimestamp(0,self.tz)
-        t0 = datetime.datetime.now(self.tz)
-        self.t0_utc = (t0-self.ep).total_seconds()
+        self.t0 = datetime.datetime.now(self.tz)
+        self.t0_epoch = (self.t0-self.ep).total_seconds()
+        # set verbosity and log file
+        self.verbose = verbose
+        self.log_file = None
+        if log_file: self.set_log_file(log_file)
+        # thread_clone is a functional clone of this object,
+        # which is meant to run() in its own thread, 
+        # which it may block freely without stalling the main thread
+        self.thread_clone = None
+        # proxy is the thread_clone's ref to this object, 
+        # i.e., self.thread_clone.proxy is self.
+        self.proxy = None
 
-    def t_utc(self):
+    def get_elapsed_time(self):
         t_now = datetime.datetime.now(self.tz)
-        t_utc = (t_now-self.ep).total_seconds()
-        return t_utc
+        t_elapsed = (t_now-self.t0).total_seconds()
+        return t_elapsed
 
-    def dt_utc(self):
-        t_utc_now = self.t_utc()
-        return t_utc_now-self.t0_utc
+    def get_epoch_time(self):
+        t_now = datetime.datetime.now(self.tz)
+        t_epoch = (t_now-self.ep).total_seconds()
+        return t_epoch
 
     def get_date_time(self):
         return str(datetime.datetime.now(self.tz))
 
     def set_log_file(self,file_path=None):
-        log_file = '{}_{}.log'.format(type(self).__name__,int(self.t0_utc*1000))
         if not file_path:
+            log_file = '{}_{}.log'.format(type(self).__name__,int(self.t0_utc*1000))
             file_path = os.path.join(pawstools.paws_scratch_dir,log_file)
         if file_path == self.log_file:
             return
@@ -78,36 +90,8 @@ class PawsPlugin(object):
             file_path = pth+'_{}'.format(suffix)+ext
             suffix += 1
         open(file_path,'a').close()
-        self.message_callback('plugin log file: {}'.format(file_path))
+        if self.verbose: self.message_callback('plugin log file: {}'.format(file_path))
         self.log_file = file_path 
-
-    def set_log_dir(self,dir_path): 
-        dp,fn = os.path.split(self.log_file)
-        self.set_log_file(os.path.join(dir_path,fn))
-
-    #def set_log_file(self,file_name):
-    #    dp,fn = os.path.split(self.log_file)
-    #    self.set_log_file(os.path.join(dp,file_name))
-
-    def set_verbose(self,verbose_flag):
-        if verbose_flag:
-            self.verbose = True
-        else:
-            self.verbose = False 
-
-    def set_data(self,item_key,val):
-        key_parts = item_key.split('.')
-        itm = self.content
-        for p in key_parts[:-1]:
-            itm = itm[p]
-        itm[key_parts[-1]] = val
-
-    def __getitem__(self,key):
-        return self.content[key]
-    def keys(self):
-        return self.content.keys() 
-    def __setitem__(self,key,val):
-        self.set_data(key,val)
 
     def tagged_print(self,msg):
         print('[{}] {}'.format(type(self).__name__,msg))
@@ -125,38 +109,38 @@ class PawsPlugin(object):
     def start(self):
         """Start the plugin.
 
-        Assuming a plugin's content has been properly set,
-        PawsPlugin.start() should prepare the plugin for use, 
-        e.g. by opening connections, reading files, etc. 
+        Assuming a plugin's attributes have been properly set,
+        PawsPlugin.start() should prepare the plugin and its thread_clone, 
+        e.g. by setting attributes, opening connections, reading files, etc. 
         Reimplement this in PawsPlugin subclasses as needed.
-        It can be useful to call super().start() 
-        for a default log file and proper thread setup.
         """
-        self.set_log_file()
         self.running = True 
         if self.thread_blocking: 
             self.run_clone()
         else:
             self.run()
+        msg = '{} plugin started'.format(type(self).__name__)
+        self.add_to_history(msg)
 
     def run(self):
-        """Use the plugin in a continuing thread.
-    
-        Plugins with some continuous function should implement run().
-        During start(), plugins that must run continually may be cloned, 
-        and the continuous functionality is carried out by clone.run(), 
-        with thread locks used to share data with the original plugin.
-        """
+        """Run the plugin. Any meaningful plugin activities should happen here."""
         pass
 
     def run_clone(self):
-        with self.running_lock:
-            self.running = True
-        #self.thread_clone = self.build_clone()
-        #self.thread_clone.proxy = self
-        self.thread_clone.log_file = self.log_file
+        self.thread_clone = self.build_clone()
+        self.thread_clone.proxy = self
+        #self.proxy = self
         th = Thread(target=self.thread_clone.run)
         th.start()
+        self.running = True
+
+    @classmethod
+    def clone(cls):
+        return cls()
+
+    def build_clone(self):
+        """Thread blocking plugins must implement build_clone()."""
+        raise NotImplementedError('Thread-blocking plugins must implement build_clone().') 
 
     def run_notify(self):
         with self.running_lock:
@@ -176,46 +160,37 @@ class PawsPlugin(object):
             self.running = False 
         if self.thread_clone:
             self.thread_clone.stop()
+        if self.log_file:
+            self.dump_history()
 
-    @classmethod
-    def clone(cls):
-        return cls()
-
-    def build_clone(self):
-        """Clone the Plugin."""
-        new_pgn = self.clone()
-        for nm,val in self.content.items():
-            new_pgn.content[nm] = copy.deepcopy(val) 
-        new_pgn.verbose = bool(self.verbose)
-        #new_pgn.data_callback = self.data_callback
-        #new_pgn.message_callback = self.message_callback
-        return new_pgn
-
-    # TODO: refactor: optional timestamp, if None get current utc
-    def add_to_history(self,t,msg):
+    def add_to_history(self,msg):
         """Add a timestamp and a message to the plugin's history."""
-        self.history.append((t,msg))
-        self.n_events += 1
-        if np.mod(self.n_events,100) == 0:
-            self.dump_history(90)
-            # always keep the past 10 points?
-            self.history = self.history[-10:]
+        with self.history_lock:
+            dt = self.get_date_time()
+            self.history.append((dt,msg))
+            self.n_events += 1
+            if np.mod(self.n_events,100) == 0:
+                self.dump_history(90)
+                # always keep the past 10 points?
+                self.history = self.history[-10:]
 
     def dump_history(self,n_events=None):
-        dump_file = open(self.log_file,'a')
-        h = self.history
-        if n_events is not None: h = self.history[:n_events]
-        for t,msg in h:
-            dump_file.write('{}: {}'.format(t,msg)+os.linesep)
-        dump_file.close()
+        with self.history_lock:
+            if self.log_file:
+                dump_file = open(self.log_file,'a')
+                h = self.history
+                if n_events is not None: h = self.history[:n_events]
+                for t,msg in h:
+                    dump_file.write('{}: {}'.format(t,msg)+os.linesep)
+                dump_file.close()
 
-    def notify_locks(self,locks):
-        if not isinstance(locks,list):
-            locks = [locks]
-        for l in locks:
-            with l:
-                if int(self.py_version) == 2:
-                    l.notifyAll()
-                else:
-                    l.notify_all()
+    #def notify_locks(self,locks):
+    #    if not isinstance(locks,list):
+    #        locks = [locks]
+    #    for l in locks:
+    #        with l:
+    #            if int(self.py_version) == 2:
+    #                l.notifyAll()
+    #            else:
+    #                l.notify_all()
 

@@ -6,42 +6,42 @@ import time
 
 from .PawsPlugin import PawsPlugin
 
-content = OrderedDict(
-    host=None,
-    port=None)
-
 class SpecInfoClient(PawsPlugin):
 
-    def __init__(self):
-        super(SpecInfoClient,self).__init__(content)
-        self.content_doc['host'] = 'string representing host name or IP address'
-        self.content_doc['port'] = 'integer port number where SpecInfoServer listens' 
+    def __init__(self,host,port,verbose=False,log_file=None):
+        """Create a SpecInfoClient plugin.
+            
+        This is a TCP Client used to communicate with SpecInfoServer.
+        Startup requires a host name and a port number,
+        where SpecInfoServer should be listening.
+
+        Parameters
+        ----------
+        host : str
+            string representing host name or IP address
+        port : int
+            integer port number where SpecInfoServer listens
+        verbose : bool
+        log_file : str
+        """
+        super(SpecInfoClient,self).__init__(thread_blocking=False,verbose=verbose,log_file=log_file)
+        self.host = host
+        self.port = port
         self.socket_lock = Condition()
         self.sock = None
-        self.thread_blocking = True
-
-    def description(self):
-        desc = 'SpecInfoClient Plugin: '\
-            'This is a TCP Client used to communicate with SpecInfoServer. '\
-            'Startup requires a host name and a port number, '\
-            'where SpecInfoServer should be listening.'
-        return desc
 
     def start(self):
         super(SpecInfoClient,self).start()
 
     def run(self):
-        hst = self.content['host'] 
-        prt = self.content['port'] 
         with self.socket_lock:
-            self.sock = socket.create_connection((hst,prt)) 
-
+            self.sock = socket.create_connection((self.host,self.port)) 
         self.take_control()
 
-    def stop(self):
-        super(SpecInfoClient,self).stop() 
-        if self.thread_clone:
-            self.thread_clone.close_socket()
+    #def stop(self):
+    #    super(SpecInfoClient,self).stop() 
+    #    if self.thread_clone:
+    #        self.thread_clone.close_socket()
 
     def close_socket(self):
         self.sock.close()
@@ -52,8 +52,7 @@ class SpecInfoClient(PawsPlugin):
             with self.socket_lock:
                 self.send_line(cmd)
                 resp = self.receive_line()
-        with self.proxy.history_lock:
-            self.proxy.add_to_history(self.get_date_time(),cmd+' '+resp)
+        self.add_to_history(cmd+' '+resp)
         if self.verbose: self.message_callback(cmd+' '+resp)
         return resp
 
@@ -73,8 +72,8 @@ class SpecInfoClient(PawsPlugin):
             resp = self.run_cmd('!rqc')
 
     def mar_expose(self,filename,exposure_time):
-        self.thread_clone.run_cmd('!cmd mar netroot {}'.format(filename))
-        self.thread_clone.run_cmd('!cmd mar collect {}'.format(exposure_time))
+        self.run_cmd('!cmd mar netroot {}'.format(filename))
+        self.run_cmd('!cmd mar collect {}'.format(exposure_time))
         sleep_time = exposure_time+5
         self.message_callback('waiting {} seconds for {}-second exposure'.format(sleep_time,exposure_time))
         time.sleep(sleep_time)

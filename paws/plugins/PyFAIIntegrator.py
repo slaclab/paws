@@ -7,18 +7,17 @@ import pyFAI
 
 from .PawsPlugin import PawsPlugin
 
-content = OrderedDict(calib_file=None) 
-
 class PyFAIIntegrator(PawsPlugin):
     """Plugin for applying a PyFAI.AzimuthalIntegrator.
 
     Input calibration file should be in one of the formats
     outlined in the package documentation. 
     """
-    def __init__(self):
-        super(PyFAIIntegrator,self).__init__(content)
-        self.content_doc['calib_file'] = 'file defining a dict of calibration parameters, '\
-            'in one of the formats outlined in the package documentation'
+    def __init__(self,calib_file,q_min=0.,q_max=1.,verbose=False,log_file=None):
+        super(PyFAIIntegrator,self).__init__(thread_blocking=False,verbose=verbose,log_file=log_file)
+        self.calib_file = calib_file
+        self.q_min = q_min
+        self.q_max = q_max
         self.integrator_lock = Condition()
         self.integrator = None
 
@@ -28,30 +27,23 @@ class PyFAIIntegrator(PawsPlugin):
             self.integrator = pyFAI.AzimuthalIntegrator()
         self.set_calib()
 
-    def set_calib_file(self,file_path):
-        self.content['calib_file'] = file_path
-        #self.set_calib()
-
     def set_calib(self):
-        self.message_callback('calibrating on {}'.format(self.content['calib_file']))
-        calib = self.content['calib_file']
-        fp,xt = os.path.splitext(calib)
-        #print(xt)
+        self.message_callback('calibrating on {}'.format(self.calib_file))
+        fp,xt = os.path.splitext(self.calib_file)
         if xt in ['.poni','.PONI']:
             #g = pyFAI.geometry.Geometry()
             #g.read(calib)
             #p.setPyFAI(g.getPyFAI())
             with self.integrator_lock:
-                self.integrator.read(calib)
+                self.integrator.read(self.calib_file)
         elif xt in ['.nika','.NIKA']:
             with self.integrator_lock:
-                self.set_nika(calib)
+                self.set_nika(self.calib_file)
 
     def integrate_to_1d(self,img_data,npt=1000,polz_factor=0.,unit='q_A^-1'):
         with self.integrator_lock:
-            self.message_callback('integrating image...')
             q,I = self.integrator.integrate1d(img_data,npt,
-                polarization_factor=polz_factor,unit=unit)
+                polarization_factor=polz_factor,unit=unit,radial_range=(self.q_min,self.q_max))
         return q,I
 
     def integrate_to_2d(self,img_data,npt_rad=1000,npt_azim=1000,polz_factor=0.,unit='q_A^-1'):
@@ -94,10 +86,3 @@ class PyFAIIntegrator(PawsPlugin):
         #self.integrator.setPyFAI(**pd)
         self.integrator.set_wavelength(wl_m)
         self.integrator.setFit2D(d_mm,bcx_px,bcy_px,tilt_deg,rot_fit2d,pxsz_x_um,pxsz_y_um)
-
-    def get_plugin_content(self):
-        d = super(PyFAIIntegrator,self).get_plugin_content()
-        d['integrator'] = self.integrator 
-        return d
-
-

@@ -7,62 +7,64 @@ from threading import Condition
 from .PawsPlugin import PawsPlugin
 from .. import pawstools
 
-content = OrderedDict(
-    host=None,
-    port=None,
-    channels={},
-    timer=None)
-
 class CryoConController(PawsPlugin):
 
-    def __init__(self):
-        super(CryoConController,self).__init__(content)
-        self.thread_blocking = True
-        self.content_doc['host'] = 'string representing host name or IP address assigned to the CryoCon'
-        self.content_doc['port'] = 'integer port number for CryoCon connection' 
-        self.content_doc['channels'] = 'dict mapping channel selection (strings "A"-"D") '\
-            'to control loop indices (integers 1-4 or None): all channels will be read, '\
-            'and any with integer control loops will be controlled. '
-        self.content_doc['timer'] = 'Timer plugin for triggering client activities' 
+    def __init__(self,timer,host,port,channels,verbose=False,log_file=None):
+        """Create a CryoConController.
+
+        Parameters
+        ----------
+        timer : paws.plugins.Timer.Timer
+            Timer plugin for triggering activities
+            and initiating thread-safe data exchanges 
+        host : str
+            host name or IP address assigned to the CryoCon
+        port : int
+            integer port number for CryoCon connection 
+        channels : dict
+            dict mapping channel selection (strings "A"-"D")
+            to control loop indices (integers 1-4 or None). 
+            All channels will be read at each timer signal,
+            and any channels assigned to control loops will be controlled.
+        verbose : bool
+        log_file : str
+        """
+        super(CryoConController,self).__init__(thread_blocking=True,verbose=verbose,log_file=log_file)
+        self.timer = timer
+        self.host = host
+        self.port = port
+        self.channels = channels
         self.socket_lock = Condition()
         self.sock = None
         self.state_lock = Condition()
         self.state = {} 
 
-    def description(self):
-        desc = 'CryoConController Plugin: '\
-            'This is a TCP Client used to communicate with a CryoCon. '\
-            'Startup requires a host name and a port number, '\
-            'which should match the network configuration of the CryoCon device.'
-        return desc
+    @classmethod
+    def clone(cls,timer,host,port,channels,verbose,log_file):
+        return cls(timer,host,port,channels,verbose,log_file)
+
+    def build_clone(self):
+        cln = self.clone(self.timer,self.host,self.port,self.channels,self.verbose,self.log_file)
+        return cln
 
     def start(self):
         super(CryoConController,self).start()
 
     def run(self):
         # executed by self.thread_clone in its own thread
-        hst = self.content['host'] 
-        prt = self.content['port'] 
         with self.socket_lock:
-            self.sock = socket.create_connection((hst,prt)) 
-        tmr = self.content['timer'] 
+            self.sock = socket.create_connection((self.host,self.port)) 
         self.run_cmd('*idn?')
         keep_going = True
 
         self.update_status()
 
         while keep_going: 
-            with tmr.dt_lock:
-                tmr.dt_lock.wait()
-            #while self.commands.qsize() > 0:
-            #    with self.command_lock:
-            #        cmd = self.commands.get()
-            #        self.commands.task_done()
-            #
-            #    self.run_cmd(cmd)
+            with self.timer.dt_lock:
+                self.timer.dt_lock.wait()
             self.update_status()
-            with tmr.running_lock:
-                if not tmr.running:
+            with self.timer.running_lock:
+                if not self.timer.running:
                     with self.proxy.running_lock:
                         self.proxy.stop()
             with self.proxy.running_lock:
@@ -73,7 +75,7 @@ class CryoConController(PawsPlugin):
             self.sock.close()
 
     def read_status(self):
-        for chan in self.content['channels'].keys():
+        for chan in self.channels.keys():
             resp = self.run_cmd('input {}:temp?'.format(chan))
             with self.state_lock:
                 self.state['T_read_{}'.format(chan)] = float(resp)
@@ -86,14 +88,12 @@ class CryoConController(PawsPlugin):
         #if self.verbose: self.message_callback('T_read: {}'.format(self.state['T_read']))
 
     def run_cmd(self,cmd):
-        with self.content['timer'].dt_lock:
-            t_now = float(self.content['timer'].dt_utc())
         with self.socket_lock:
             self.send_line(cmd)
             resp = self.receive_line()
-        if self.verbose: self.message_callback('{}: {}'.format(t_now,cmd+' '+resp))
-        with self.proxy.history_lock:
-            self.proxy.add_to_history(t_now,cmd+' '+resp)
+        if self.verbose: self.message_callback('{}: {}'.format(cmd,resp))
+        #with self.proxy.history_lock:
+        self.proxy.add_to_history(cmd+' '+resp)
         return resp
 
     def send_line(self, line):
@@ -112,13 +112,13 @@ class CryoConController(PawsPlugin):
         #    self.thread_clone.commands.put(cmd)
 
     def loop_setup(self,channel,control_type='PID'):
-        cmd = 'loop {}:source {};type {}'.format(self.content['channels'][channel],channel,control_type)
+        cmd = 'loop {}:source {};type {}'.format(self.channels[channel],channel,control_type)
         self.thread_clone.run_cmd(cmd)
         #with self.thread_clone.command_lock:
         #    self.thread_clone.commands.put(cmd)
 
     def set_temperature(self,channel,T_set):
-        cmd = 'loop {}:setpt {}'.format(self.content['channels'][channel],T_set)
+        cmd = 'loop {}:setpt {}'.format(self.channels[channel],T_set)
         self.thread_clone.run_cmd(cmd)
         with self.thread_clone.state_lock:
             self.thread_clone.state['T_set_{}'.format(channel)] = T_set 
@@ -126,7 +126,7 @@ class CryoConController(PawsPlugin):
         #    self.thread_clone.commands.put(cmd)
 
     def set_ramp_rate(self,channel,T_ramp):
-        cmd = 'loop {}:rate {}'.format(self.content['channels'][channel],T_ramp)
+        cmd = 'loop {}:rate {}'.format(self.channels[channel],T_ramp)
         self.thread_clone.run_cmd(cmd)
         with self.thread_clone.state_lock:
             self.thread_clone.state['T_ramp_{}'.format(channel)] = T_ramp 
