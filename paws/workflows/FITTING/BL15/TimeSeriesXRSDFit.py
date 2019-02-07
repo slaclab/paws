@@ -19,13 +19,13 @@ class TimeSeriesXRSDFit(Workflow):
 
     def __init__(self):
         super(TimeSeriesXRSDFit,self).__init__(inputs,outputs)
-        self.add_operation('read_timeseries',ReadTimeSeries.ReadTimeSeries())
-        self.add_operation('fit',XRSDFit.XRSDFit())
+        self.timeseries_reader = ReadTimeSeries.ReadTimeSeries()
+        self.fitter = XRSDFit.XRSDFit()
 
     def run(self):
         read_inputs = OrderedDict([(k,self.inputs[k]) for k in ReadTimeSeries.inputs.keys()])
-        self.operations['read_timeseries'].operations['read_batch'].operations['read'].disable_op('read_image')
-        ts_data = self.operations['read_timeseries'].run_with(**read_inputs) 
+        self.timeseries_reader.batch_reader.operations['read'].disable_op('read_image')
+        ts_data = self.timeseries_reader.run_with(**read_inputs) 
         nb = len(ts_data['system_files'])
         self.message_callback('STARTING BATCH ({})'.format(nb))
         previous_sys = None
@@ -44,7 +44,7 @@ class TimeSeriesXRSDFit(Workflow):
                     samp_id = str(self.inputs['experiment_id'])+'_'+str(int(hdr['t_utc']))
             data_fp = None
             if q_I_file: data_fp = os.path.split(q_I_file)[1]
-            fit_outputs = self.operations['fit'].run_with(
+            fit_outputs = self.fitter.run_with(
                 system = sys,
                 q_I = q_I,
                 error_weighted = self.inputs['error_weighted'],

@@ -74,6 +74,7 @@ class Read(Workflow):
                 self.message_callback('q_I file not found: {}'.format(self.inputs['q_I_file']))
 
         if (self.inputs['system_file']) and (os.path.exists(self.inputs['system_file'])):
+            self.message_callback('loading {}'.format(self.inputs['system_file']))
             self.outputs['system'] = xrsdyml.load_sys_from_yaml(self.inputs['system_file'])
         else:
             self.message_callback('xrsd system file not found: {}'.format(self.inputs['system_file']))
