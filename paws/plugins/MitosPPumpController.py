@@ -104,6 +104,10 @@ class MitosPPumpController(PawsPlugin):
             fit_obj = lambda a: np.sum([(fset**a-fmeas)**2 for fset,fmeas in zip(flow_setpts,flow_meas)])
             res = scipimin( fit_obj,1. )
             self.flow_conversion_power = res.x[0]
+            if self.verbose: self.message_callback(
+                'finished calibrating- power law flowrate conversion: {}'.format(
+                self.flow_conversion_power)
+                )
 
     def get_setpt(self,rate):
         if rate == 0.: return 0.

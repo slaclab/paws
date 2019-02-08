@@ -120,7 +120,7 @@ class BayesianFlowDesigner(PawsPlugin):
             self.message_callback('seeking candidates- '
             + '\nconstraints: {} '.format(self.constraints)
             + '\nrange_constraints: {}'.format(self.range_constraints)
-            + '\n categorical constraints: {}'.format(self.categorical_constraints))
+            + '\ncategorical constraints: {}'.format(self.categorical_constraints))
         xplr_acq_factors = {}
         xploit_acq_factors = {}
         estimators = {}
