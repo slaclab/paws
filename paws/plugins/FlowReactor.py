@@ -137,16 +137,19 @@ class FlowReactor(PawsPlugin):
             self.cryo.stop_control() 
             #self.cryo.stop()
         # set pumps to idle
-        for nm,ppc in self.ppumps.items():
+        self.vent_pumps()
+        #ppc.stop()
+        #with self.proxy.history_lock:
+        self.proxy.add_to_history('STOP')
+        self.proxy.dump_history()
+
+    def vent_pumps(self):
+        for nm,ppc in self.thread_clone.ppumps.items():
             if self.verbose: self.message_callback('Setting pump {} to idle'.format(nm))
             try:
                 ppc.set_idle()
             except:
                 pass
-            #ppc.stop()
-        #with self.proxy.history_lock:
-        self.proxy.add_to_history('STOP')
-        self.proxy.dump_history()
 
     def set_recipe(self,recipe):
         self.thread_clone._clone_set_recipe(recipe)
@@ -214,10 +217,11 @@ class FlowReactor(PawsPlugin):
                 stat_dict['{}_setpoint'.format(nm)] = float(truesetpt_ulm)
                 stat_str += ' {}: {} (setpt {}), '.format(nm,truefrt_ulm,truesetpt_ulm)
                 if setpt_pls:
+                    ok_flag = True
                     if setpt_pls == 0:
-                        if abs(truefrt_ulm-truesetpt_ulm) > 0.5:
+                        if abs(truefrt_ulm-truesetpt_ulm) > 1.0:
                             ok_flag = False
-                    elif abs(frt_pls-setpt_pls)/setpt_pls > 0.5 and abs(truefrt_ulm-truesetpt_ulm) > 1.0:
+                    elif abs(truefrt_ulm-truesetpt_ulm)/truesetpt_ulm > 0.5 and abs(truefrt_ulm-truesetpt_ulm) > 5.0:
                         ok_flag = False
                     if self.verbose and not ok_flag: 
                         self.message_callback(
