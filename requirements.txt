@@ -6,7 +6,6 @@ pyfai
 tzlocal
 xrsdkit
 pyserial
-serial
 paramiko
 pypif
 citrination_client
