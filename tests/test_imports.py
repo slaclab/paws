@@ -3,7 +3,7 @@ from paws import operations
 from paws import workflows
 from paws import plugins
 
-from paws.operations import PROCESSING, IO, DAQ, PACKAGING, TESTS, VISUALIZATION
+from paws.operations import PROCESSING, IO, DAQ, PACKAGING, TESTS
 
 from paws.workflows import IO, BACKGROUND, DAQ, FITTING, INTEGRATION, VISUALIZATION
 
