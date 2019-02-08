@@ -20,6 +20,7 @@ from ....operations.IO.CITRINATION.UploadPIF import UploadPIF
 
 inputs = OrderedDict(
     flow_reactor = None,        #
+    flow_designer = None,       #
     spec_infoclient = None,     #
     ssh_client = None,          #
     source_wavelength = None,   #

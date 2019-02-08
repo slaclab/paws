@@ -7,5 +7,5 @@ class TimeSeriesXRSDFitGUI(TimeSeriesXRSDFit.TimeSeriesXRSDFit):
 
     def __init__(self):
         super(TimeSeriesXRSDFitGUI,self).__init__()
-        self.add_operation('fit',XRSDFitGUI.XRSDFitGUI())
+        self.fitter = XRSDFitGUI.XRSDFitGUI()
 
