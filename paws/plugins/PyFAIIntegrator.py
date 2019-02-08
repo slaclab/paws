@@ -3,7 +3,7 @@ from collections import OrderedDict
 from threading import Condition
 
 import numpy as np
-import pyFAI
+import pyFAI.azimuthalIntegrator as pfaz
 
 from .PawsPlugin import PawsPlugin
 
@@ -24,7 +24,7 @@ class PyFAIIntegrator(PawsPlugin):
     def start(self):
         super(PyFAIIntegrator,self).start()
         with self.integrator_lock:
-            self.integrator = pyFAI.AzimuthalIntegrator()
+            self.integrator = pfaz.AzimuthalIntegrator()
         self.set_calib()
 
     def set_calib(self):
