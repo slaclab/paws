@@ -115,4 +115,5 @@ class EasyZingers1d(Operation):
             I_dz[iq] = newIvals[i]
         self.outputs['q_I_dz'] = np.array([q,I_dz]).T
         self.outputs['zmask'] = zmask
+        return self.outputs
 

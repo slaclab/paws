@@ -19,21 +19,21 @@ class ReadTimeSeries(Workflow):
 
     def __init__(self):
         super(ReadTimeSeries,self).__init__(inputs,outputs)
-        self.add_operation('read_batch',ReadBatch.ReadBatch())
-        self.add_operation('sort',SortBatch())
+        self.batch_reader = ReadBatch.ReadBatch()
 
     def run(self):
         read_inputs = OrderedDict([(k,self.inputs[k]) for k in ReadBatch.inputs.keys()])
-        b_outs = self.operations['read_batch'].run_with(**read_inputs) 
-        self.operations['sort'].run_with(
-            batch_outputs=b_outs,
-            x_key='time',
+        batch_outputs = self.batch_reader.run_with(**read_inputs) 
+        sort = SortBatch()
+        sort.run_with(
+            batch_outputs=batch_outputs,
+            x_values=batch_outputs['time'],
             x_sort_flag=True,
             x_shift_flag=True,
             lower_index=self.inputs['lower_index'],
             upper_index=self.inputs['upper_index'],
             index_step=self.inputs['index_step']
             )
-        self.outputs.update(self.operations['sort'].outputs['sorted_outputs'])
+        self.outputs.update(sort.outputs['sorted_outputs'])
         return self.outputs
 

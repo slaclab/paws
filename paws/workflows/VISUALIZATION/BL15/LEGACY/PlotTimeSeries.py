@@ -7,6 +7,3 @@ class PlotTimeSeries(PlotTimeSeries_new.PlotTimeSeries):
         super(PlotTimeSeries,self).__init__()
         # replace reader with LEGACY reader
         self.add_operation('read',ReadTimeSeries())
-
-
-

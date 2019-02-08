@@ -52,8 +52,8 @@ class ReadSpecHeader(Operation):
                     # add timezone information to datetime
                     dt_aware = datetime.datetime(dt.year,dt.month,dt.day,dt.hour,dt.minute,dt.second,dt.microsecond,tz)
                     # interpret the time in UTC 
-                    t_utc = time.mktime(dt_aware.timetuple())
-                    d['t_utc'] = float(t_utc)
+                    t = time.mktime(dt_aware.timetuple())
+                    d['time'] = float(t)
                 # and filter out the redundant temperature line
                 elif not (len(kvs)==1 and kvs[0].strip()[-1]=='C'):
                     for kv in kvs:
