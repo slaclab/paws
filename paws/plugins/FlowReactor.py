@@ -213,14 +213,16 @@ class FlowReactor(PawsPlugin):
                 stat_dict['{}_flowrate'.format(nm)] = float(truefrt_ulm)
                 stat_dict['{}_setpoint'.format(nm)] = float(truesetpt_ulm)
                 stat_str += ' {}: {} (setpt {}), '.format(nm,truefrt_ulm,truesetpt_ulm)
-                if setpt_pls is not None:
-                    if setpt_pls > 0:
-                        if abs(frt_pls-setpt_pls)/setpt_pls > 0.5 and truesetpt_ulm > 0.5:
+                if setpt_pls:
+                    if setpt_pls == 0:
+                        if abs(truefrt_ulm-truesetpt_ulm) > 0.5:
                             ok_flag = False
-                            if self.verbose: 
-                                self.message_callback(
-                                'ppump {} flowrate {} is far from setpoint {}'
-                                .format(nm,truefrt_ulm,truesetpt_ulm))
+                    elif abs(frt_pls-setpt_pls)/setpt_pls > 0.5 and abs(truefrt_ulm-truesetpt_ulm) > 1.0:
+                        ok_flag = False
+                    if self.verbose and not ok_flag: 
+                        self.message_callback(
+                        'ppump {} flowrate {} is far from setpoint {}'
+                        .format(nm,truefrt_ulm,truesetpt_ulm))
         #stat_dict['time'] = self.get_date_time() 
         self.proxy.add_to_history(copy.copy(stat_str))
         with self.proxy.state_lock:
