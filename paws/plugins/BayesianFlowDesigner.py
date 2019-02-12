@@ -116,11 +116,12 @@ class BayesianFlowDesigner(PawsPlugin):
         return scale_factor * PI_lo * PI_hi
 
     def get_candidate_recipes(self):
-        if self.verbose:
-            self.message_callback('seeking candidates- '
-            + '\nconstraints: {} '.format(self.constraints)
-            + '\nrange_constraints: {}'.format(self.range_constraints)
-            + '\ncategorical constraints: {}'.format(self.categorical_constraints))
+        msg = 'seeking candidates- '\
+            + '\nconstraints: {} '.format(self.constraints)\
+            + '\nrange_constraints: {}'.format(self.range_constraints)\
+            + '\ncategorical constraints: {}'.format(self.categorical_constraints)
+        self.add_to_history(msg)
+        if self.verbose: self.message_callback(msg)
         xplr_acq_factors = {}
         xploit_acq_factors = {}
         estimators = {}

@@ -136,9 +136,6 @@ class FlowReactor(PawsPlugin):
             if self.verbose: self.message_callback('Stopping CryoCon control loop')
             self.cryo.stop_control() 
             #self.cryo.stop()
-        # set pumps to idle
-        self.vent_pumps()
-        #ppc.stop()
         #with self.proxy.history_lock:
         self.proxy.add_to_history('STOP')
         self.proxy.dump_history()
@@ -146,10 +143,7 @@ class FlowReactor(PawsPlugin):
     def vent_pumps(self):
         for nm,ppc in self.thread_clone.ppumps.items():
             if self.verbose: self.message_callback('Setting pump {} to idle'.format(nm))
-            try:
-                ppc.set_idle()
-            except:
-                pass
+            ppc.set_idle()
 
     def set_recipe(self,recipe):
         self.thread_clone._clone_set_recipe(recipe)
