@@ -6,7 +6,7 @@ def load_ops_from_path(path_,pkg,cat_root=''):
     ops = []
     cats = []
     mods = pkgutil.iter_modules(path_)
-    mods = [mod for mod in mods if mod[1] not in ['__init__','Operation','OpManager','optools']]
+    mods = [mod for mod in mods if mod[1] not in ['__init__','Operation']]
     for modloader, modname, ispkg in mods:
         if ispkg:
             pkg_path = [os.path.join(path_[0],modname)]
