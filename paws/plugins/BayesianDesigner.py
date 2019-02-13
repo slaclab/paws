@@ -7,13 +7,14 @@ from scipy.stats import norm as scipynorm
 
 from .PawsPlugin import PawsPlugin
 
-class BayesianFlowDesigner(PawsPlugin):
+class BayesianDesigner(PawsPlugin):
+    """PawsPlugin for experimental design by Gaussian Process Bayesian Optimization."""
 
     def __init__(self,dataset=pd.DataFrame(),
-        x_domain={},constraints={},range_constraints={},categorical_constraints={},
+        x_domain={},targets={},constraints={},range_constraints={},categorical_constraints={},
         covariance_kernel_width=1.,MC_max_iter=1000,MC_alpha=1.,
         verbose=False,log_file=None):
-        """Create a BayesianFlowDesigner.
+        """Create a BayesianDesigner.
 
         Parameters
         ----------
@@ -21,6 +22,9 @@ class BayesianFlowDesigner(PawsPlugin):
             pandas DataFrame containing the modeling dataset 
         x_domain : dict
             dict of input column names and corresponding [min,max] lists 
+        targets : dict
+            dict of output names (keys) and target specifiers 
+            (either "minimize" or "maximize")
         constraints : dict
             dict of output names (keys) and real-valued targets (values) 
         range_constraints: dict
@@ -36,7 +40,7 @@ class BayesianFlowDesigner(PawsPlugin):
         verbose : bool
         log_file : str
         """
-        super(BayesianFlowDesigner,self).__init__(thread_blocking=False,verbose=verbose,log_file=log_file)
+        super(BayesianDesigner,self).__init__(thread_blocking=False,verbose=verbose,log_file=log_file)
         self.x_domain = x_domain
         self.constraints = constraints
         self.range_constraints = range_constraints
@@ -116,15 +120,33 @@ class BayesianFlowDesigner(PawsPlugin):
         return scale_factor * PI_lo * PI_hi
 
     def get_candidate_recipes(self):
-        msg = 'seeking candidates- '\
-            + '\nconstraints: {} '.format(self.constraints)\
-            + '\nrange_constraints: {}'.format(self.range_constraints)\
-            + '\ncategorical constraints: {}'.format(self.categorical_constraints)
-        self.add_to_history(msg)
-        if self.verbose: self.message_callback(msg)
+        if self.verbose:
+            self.message_callback('seeking candidates- '
+            + '\nconstraints: {} '.format(self.constraints)
+            + '\nrange_constraints: {}'.format(self.range_constraints)
+            + '\ncategorical constraints: {}'.format(self.categorical_constraints))
         xplr_acq_factors = {}
         xploit_acq_factors = {}
         estimators = {}
+
+        for y_key,target_spec in self.targets.items():
+            ys_vector = self.ys_df.loc[:,y_key]
+            gp_estimator = partial(self.gp_stats,ys_vector)
+            if target_spec == 'maximize':
+                ys_incumbent = np.max(ys_vector)
+                Z_trans_xploit = partial(self.Z_PI,0.,gp_estimator,ys_incumbent)
+                Z_trans_xplr = partial(self.Z_PI,1.,gp_estimator,ys_incumbent)
+            elif target_spec == 'minimize':
+                ys_incumbent = np.min(ys_vector)
+                negative_gp_estimator = partial(self.gp_stats,-1*ys_vector)
+                Z_trans_xploit = partial(self.Z_PI,0.,negative_gp_estimator,-1*ys_incumbent)
+                Z_trans_xplr = partial(self.Z_PI,1.,negative_gp_estimator,-1*ys_incumbent)
+            target_func_xplr = partial(self.PI_cdf,Z_trans_xplr)
+            target_func_xploit = partial(self.PI_cdf,Z_trans_xploit)
+            xplr_acq_factors[y_key] = target_func_xplr 
+            xploit_acq_factors[y_key] = target_func_xploit 
+            estimators[y_key] = gp_estimator
+
         for y_key,ys_con in self.ys_constraints.items():
             ys_vector = self.ys_df.loc[:,y_key]
             gp_estimator = partial(self.gp_stats,ys_vector)
