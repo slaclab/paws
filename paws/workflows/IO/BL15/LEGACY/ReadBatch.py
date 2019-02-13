@@ -8,5 +8,6 @@ class ReadBatch(ReadBatch_new.ReadBatch):
 
     def __init__(self):
         super(ReadBatch,self).__init__()
-        self.add_operation('read',Read())
+        # replace reader with legacy reader
+        self.reader = Read()
 
