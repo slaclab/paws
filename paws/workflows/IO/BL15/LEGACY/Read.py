@@ -19,10 +19,9 @@ class Read(Workflow):
         super(Read,self).__init__(inputs,outputs)
         self.read_wf = Read2.Read()
         # swap out the header reader
-        self.read_wf.add_operation('read_header',ReadSpecHeader())
+        self.read_wf.header_reader = ReadSpecHeader()
 
     def run(self):
-        self.read_wf.ops_enabled.update(self.ops_enabled) 
         self.outputs = self.read_wf.run_with(**self.inputs)
         return self.outputs
 

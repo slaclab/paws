@@ -31,23 +31,22 @@ outputs.update(
     q_I_files = [],
     system_files = []
     )
-    
 
 class ReadBatch(Workflow):
 
     def __init__(self):
         super(ReadBatch,self).__init__(inputs,outputs)
-        self.add_operation('header_files',BuildFileList())
-        self.add_operation('read',Read.Read())
+        self.list_header_files = BuildFileList()
+        self.reader = Read.Read()
 
     def run(self):
         # initialize outputs in case of Workflow re-use!
         self.outputs = copy.deepcopy(outputs)
-        self.operations['header_files'].run_with(
+        self.list_header_files.run_with(
             dir_path = self.inputs['header_dir'],
             regex = self.inputs['header_regex']
             )
-        header_file_list = self.operations['header_files'].outputs['file_list']
+        header_file_list = self.list_header_files.outputs['file_list']
         self.outputs['header_files'] = header_file_list
         filename_list = [os.path.splitext(os.path.split(hf)[1])[0] for hf in header_file_list]
         hdr_fn_sfx = self.inputs['header_suffix']
@@ -84,7 +83,7 @@ class ReadBatch(Workflow):
         for ihdr, hdr_fn, img_fn, q_I_fn, sys_fn in zip(range(n_hdrs),
         header_file_list,image_file_list,q_I_file_list,system_file_list):
             self.message_callback('RUNNING {} / {}'.format(ihdr+1,n_hdrs))
-            outs = self.operations['read'].run_with(
+            outs = self.reader.run_with(
                 header_file = hdr_fn,
                 image_file = img_fn,
                 q_I_file = q_I_fn,

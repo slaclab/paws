@@ -32,46 +32,41 @@ class Read(Workflow):
 
     def __init__(self):
         super(Read,self).__init__(inputs,outputs)
-        self.add_operations(
-            read_header=LoadYAML(),
-            read_image=FabIOOpen(),
-            read_q_I=NumpyLoad(),
-            )
+        self.header_reader = LoadYAML()
+        self.image_reader = FabIOOpen()
+        self.q_I_reader = NumpyLoad()
 
     def run(self):
         self.outputs = copy.deepcopy(outputs)
 
-        if self.ops_enabled['read_header']:
-            if (self.inputs['header_file']) and (os.path.exists(self.inputs['header_file'])):
-                hdr_outs = self.operations['read_header'].run_with(
-                file_path=self.inputs['header_file'])
-                hdata = hdr_outs['data']
-                self.outputs['header_data'] = hdata
-                self.outputs['time'] = hdata['time']
-            else:
-                self.message_callback('header file not found: {}'.format(self.inputs['header_file']))
+        if (self.inputs['header_file']) and (os.path.exists(self.inputs['header_file'])):
+            hdr_outs = self.header_reader.run_with(
+            file_path = self.inputs['header_file'])
+            hdata = hdr_outs['data']
+            self.outputs['header_data'] = hdata
+            self.outputs['time'] = hdata['time']
+        elif self.inputs['header_file']:
+            self.message_callback('header file not found: {}'.format(self.inputs['header_file']))
 
-        if self.ops_enabled['read_image']:
-            if (self.inputs['image_file']) and (os.path.exists(self.inputs['image_file'])):
-                img_outs = self.operations['read_image'].run_with(
-                file_path=self.inputs['image_file'])
-                self.outputs['image_data'] = img_outs['image_data']
-            else:
-                self.message_callback('image file not found: {}'.format(self.inputs['image_file']))
+        if (self.inputs['image_file']) and (os.path.exists(self.inputs['image_file'])):
+            img_outs = self.image_reader.run_with(
+            file_path=self.inputs['image_file'])
+            self.outputs['image_data'] = img_outs['image_data']
+        elif self.inputs['image_file']:
+            self.message_callback('image file not found: {}'.format(self.inputs['image_file']))
 
-        if self.ops_enabled['read_q_I']:
-            if (self.inputs['q_I_file']) and (os.path.exists(self.inputs['q_I_file'])):
-                q_I_outs = self.operations['read_q_I'].run_with(
-                file_path=self.inputs['q_I_file'])
-                q_I = q_I_outs['data']
-                dI = None
-                if (q_I is not None) and (q_I.shape[1] > 2):
-                    q_I = q_I[:,:2]
-                    dI = q_I[:,2]
-                self.outputs['q_I'] = q_I
-                self.outputs['dI'] = dI
-            else:
-                self.message_callback('q_I file not found: {}'.format(self.inputs['q_I_file']))
+        if (self.inputs['q_I_file']) and (os.path.exists(self.inputs['q_I_file'])):
+            q_I_outs = self.q_I_reader.run_with(
+            file_path=self.inputs['q_I_file'])
+            q_I = q_I_outs['data']
+            dI = None
+            if (q_I is not None) and (q_I.shape[1] > 2):
+                q_I = q_I[:,:2]
+                dI = q_I[:,2]
+            self.outputs['q_I'] = q_I
+            self.outputs['dI'] = dI
+        elif self.inputs['q_I_file']:
+            self.message_callback('q_I file not found: {}'.format(self.inputs['q_I_file']))
 
         if (self.inputs['system_file']) and (os.path.exists(self.inputs['system_file'])):
             self.message_callback('loading {}'.format(self.inputs['system_file']))

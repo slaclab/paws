@@ -8,12 +8,13 @@ from citrination_client.models.design import Target,constraints
 
 from .PawsPlugin import PawsPlugin
 
-class FlowDesigner(PawsPlugin):
+class CitrinationDesigner(PawsPlugin):
+    """PawsPlugin for employing Citrination's experimental design tools."""
 
     def __init__(self,citrination_client,dataset_id,dataview_id,
         target={},constraints={},range_constraints={},categorical_constraints={},
         n_candidates=1,design_effort=30,verbose=False,log_file=''):
-        """Create a FlowDesigner plugin.
+        """Create a CitrinationDesigner plugin.
 
         Parameters
         ----------
@@ -37,7 +38,7 @@ class FlowDesigner(PawsPlugin):
         design_effort : int 
             how hard to try to meet the targets (int from 1 to 30) 
         """
-        super(FlowDesigner,self).__init__(thread_blocking=False,verbose=verbose,log_file=log_file)
+        super(CitrinationDesigner,self).__init__(thread_blocking=False,verbose=verbose,log_file=log_file)
         self.citrination_client = citrination_client
         self.dataset_id = dataset_id
         self.dataview_id = dataview_id
@@ -51,7 +52,7 @@ class FlowDesigner(PawsPlugin):
         self.next_experiments = []
 
     def start(self):
-        super(FlowDesigner,self).start() 
+        super(CitrinationDesigner,self).start() 
 
     def get_candidate_recipes(self):
         straints = []
@@ -74,9 +75,6 @@ class FlowDesigner(PawsPlugin):
             self.target,self.constraints,self.range_constraints,self.categorical_constraints)
         if self.verbose: self.message_callback(msg)
         self.add_to_history(msg)
-        #try_again = True
-        #while try_again:
-        #    try:
         des = self.citrination_client.client.submit_design_run(
             self.dataview_id,
             self.n_candidates,
@@ -91,26 +89,8 @@ class FlowDesigner(PawsPlugin):
             if int(stat.progress) == 100:
                 fin = True
         desres = self.citrination_client.client.get_design_run_results(self.dataview_id,des.uuid)
-        #        try_again = False 
-        #    except:
-        #        pass
         for result in desres.best_materials:
-            rcp = dict(
-                flowrate = float(result['descriptor_values']['Property flowrate']),
-                T_set = float(result['descriptor_values']['Property T_set']),
-                TOP_fraction = float(result['descriptor_values']['Property TOP_fraction']),
-                oleylamine_fraction = float(result['descriptor_values']['Property oleylamine_fraction']),
-                ODE_extra_fraction = float(result['descriptor_values']['Property ODE_extra_fraction'])  
-                )
-            self.best_materials.append(rcp)
+            self.best_materials.append(result)
         for result in desres.next_experiments:
-            rcp = dict(
-                flowrate = float(result['descriptor_values']['Property flowrate']),
-                T_set = float(result['descriptor_values']['Property T_set']),
-                TOP_fraction = float(result['descriptor_values']['Property TOP_fraction']),
-                oleylamine_fraction = float(result['descriptor_values']['Property oleylamine_fraction']),
-                ODE_extra_fraction = float(result['descriptor_values']['Property ODE_extra_fraction'])  
-                )
-            self.next_experiments.append(rcp)
-
+            self.next_experiments.append(result)
 

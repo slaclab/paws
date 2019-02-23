@@ -8,6 +8,6 @@ class ReadTimeSeries(ReadTimeSeries_new.ReadTimeSeries):
 
     def __init__(self):
         super(ReadTimeSeries,self).__init__()
-        # swap out the read wf 
-        self.add_operation('read_batch',ReadBatch())
+        # replace batch reader with legacy version
+        self.batch_reader = ReadBatch()
 
