@@ -107,6 +107,11 @@ class DictTree(object):
     Parent items, in order to index their children,
     must be either lists, dicts, or objects implementing
     keys(), __getitem__(key) and __setitem__(key,value).
+
+    This data structure was originally developed
+    to interface with a TreeView in a Qt GUI.
+    It is no longer used in PAWS;
+    it is here because it's kind of neat.
     """
 
     def __init__(self,data={}):
