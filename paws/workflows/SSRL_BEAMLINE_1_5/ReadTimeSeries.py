@@ -1,10 +1,9 @@
 import copy
 from collections import OrderedDict
 
-from paws.workflows.Workflow import Workflow 
-
-from paws.workflows.IO.BL15 import ReadBatch
-from paws.operations.PACKAGING.SortBatch import SortBatch
+from . import ReadBatch
+from ..Workflow import Workflow 
+from ...operations.SORTING.SortBatch import SortBatch
 
 inputs = copy.deepcopy(ReadBatch.inputs)
 inputs.update(

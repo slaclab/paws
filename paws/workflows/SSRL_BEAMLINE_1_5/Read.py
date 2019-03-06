@@ -4,7 +4,7 @@ import os
 
 from xrsdkit.tools import ymltools as xrsdyml
 
-from ...Workflow import Workflow 
+from ..Workflow import Workflow 
 
 # NOTE: this workflow is for reading samples
 # that were saved with YAML headers

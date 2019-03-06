@@ -1,10 +1,10 @@
+from collections import OrderedDict
 import os
 import copy
-from collections import OrderedDict
 
-from ...Workflow import Workflow 
+from ..Workflow import Workflow 
 from . import Read
-from ....operations.IO.FILESYSTEM.BuildFileList import BuildFileList
+from ...operations.FILESYSTEM.BuildFileList import BuildFileList
 
 inputs = OrderedDict(
     header_dir = '',
