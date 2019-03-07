@@ -66,7 +66,7 @@ setup(
     install_requires=[\
         'pyyaml','numpy','scipy',\
         'fabio','pyfai','xrsdkit',\
-        'tzlocal','pyserial','serial','paramiko',\
+        'tzlocal','pyserial','paramiko',\
         'pypif','citrination_client'\
         ],
     python_requires='>=2.7',
