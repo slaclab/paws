@@ -61,6 +61,7 @@ class SSHClient(PawsPlugin):
         with self.transport_lock:
             self.sshcl = paramiko.SSHClient()
             self.sshcl.load_system_host_keys()
+            self.sshcl.set_missing_host_key_policy(paramiko.AutoAddPolicy())
             if self.private_key_file:
                 k = paramiko.RSAKey.from_private_key_file(self.private_key_file)
                 self.sshcl.connect(self.hostname, self.port, pkey=k)
