@@ -2,7 +2,7 @@ from functools import partial
 
 import pandas as pd
 import numpy as np
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from scipy.stats import norm as scipynorm
 
 from .PawsPlugin import PawsPlugin
@@ -67,7 +67,8 @@ class BayesianDesigner(PawsPlugin):
         self.ys_df = pd.DataFrame(columns=y_keys,index=df.index)
         for y_key in y_keys:
             y_array = np.array(df[y_key]).reshape(-1,1)
-            self.y_scalers[y_key] = MinMaxScaler()
+            #self.y_scalers[y_key] = MinMaxScaler()
+            self.y_scalers[y_key] = StandardScaler()
             self.y_scalers[y_key].fit(y_array)
             self.ys_df[y_key] = np.array(self.y_scalers[y_key].transform(y_array))
         self.ys_constraints = {}
@@ -86,6 +87,73 @@ class BayesianDesigner(PawsPlugin):
         self.cov_mat = np.array([[self.sq_exp_kernel(ckw,self.xs_df.loc[ix1,:],self.xs_df.loc[ix2,:]) 
                             for ix2 in range(nx)] for ix1 in range(nx)] ) 
         self.inv_cov_mat = np.linalg.inv(self.cov_mat)
+
+        # build estimators for all constrants/targets
+        self.xplr_acq_factors = {}
+        self.xploit_acq_factors = {}
+        self.estimators = {}
+
+        for y_key,target_spec in self.targets.items():
+            ys_vector = self.ys_df.loc[:,y_key]
+            gp_estimator = partial(self.gp_stats,ys_vector)
+            if target_spec == 'maximize':
+                ys_incumbent = np.max(ys_vector)
+                Z_trans_xploit = partial(self.Z_PI,0.,gp_estimator,ys_incumbent)
+                Z_trans_xplr = partial(self.Z_PI,1.,gp_estimator,ys_incumbent)
+            elif target_spec == 'minimize':
+                ys_incumbent = np.min(ys_vector)
+                negative_gp_estimator = partial(self.gp_stats,-1*ys_vector)
+                Z_trans_xploit = partial(self.Z_PI,0.,negative_gp_estimator,-1*ys_incumbent)
+                Z_trans_xplr = partial(self.Z_PI,1.,negative_gp_estimator,-1*ys_incumbent)
+            target_func_xplr = partial(self.PI_cdf,Z_trans_xplr)
+            target_func_xploit = partial(self.PI_cdf,Z_trans_xploit)
+            self.xplr_acq_factors[y_key] = target_func_xplr 
+            self.xploit_acq_factors[y_key] = target_func_xploit 
+            self.estimators[y_key] = gp_estimator
+
+        for y_key,ys_con in self.ys_constraints.items():
+            ys_vector = self.ys_df.loc[:,y_key]
+            gp_estimator = partial(self.gp_stats,ys_vector)
+            negative_gp_estimator = partial(self.gp_stats,-1*ys_vector)
+            Zlo_trans_xploit = partial(self.Z_PI,0.,gp_estimator,ys_con)
+            Zhi_trans_xploit = partial(self.Z_PI,0.,negative_gp_estimator,-1*ys_con)
+            Zlo_trans_xplr = partial(self.Z_PI,1.,gp_estimator,ys_con)
+            Zhi_trans_xplr = partial(self.Z_PI,1.,negative_gp_estimator,-1*ys_con)
+            target_func_xploit = partial(self.two_sided_cdf,Zlo_trans_xploit,Zhi_trans_xploit,4.) 
+            target_func_xplr = partial(self.two_sided_cdf,Zlo_trans_xplr,Zhi_trans_xplr,4.) 
+            self.xplr_acq_factors[y_key] = target_func_xplr 
+            self.xploit_acq_factors[y_key] = target_func_xploit 
+            self.estimators[y_key] = gp_estimator
+
+        for y_key,ys_range in self.ys_range_constraints.items():
+            ys_vector = self.ys_df.loc[:,y_key]
+            gp_estimator = partial(self.gp_stats,ys_vector)
+            negative_gp_estimator = partial(self.gp_stats,-1*ys_vector)
+            # weight range constraints by a product of two error functions, one at each boundary
+            # for the lower bound, use the bound as the incumbent_value to encourage sampling above it
+            Zlo_trans = partial(self.Z_PI,0.,gp_estimator,ys_range[0])
+            # for the higher bound, use the negative of the bound as incumbent
+            Zhi_trans = partial(self.Z_PI,0.,negative_gp_estimator,-1*ys_range[1])
+            range_func = partial(self.two_sided_cdf,Zlo_trans,Zhi_trans,1.) 
+            self.xplr_acq_factors[y_key] = range_func
+            self.xploit_acq_factors[y_key] = range_func
+            self.estimators[y_key] = gp_estimator
+
+        for y_key,y_cat in self.categorical_constraints.items():
+            y_vector = np.array(self.dataset[y_key])
+            if y_cat == 1:
+                gp_estimator = partial(self.gp_stats,y_vector)
+                y_incumbent = 0.5
+            elif y_cat == 0:
+                gp_estimator = partial(self.gp_stats,-1*y_vector)
+                y_incumbent = -0.5
+            else:
+                raise ValueError('categorical constraints must be 0 or 1')
+            Z_trans = partial(self.Z_PI,0.,gp_estimator,y_incumbent)
+            cat_func = partial(self.PI_cdf,Z_trans)
+            self.xplr_acq_factors[y_key] = cat_func
+            self.xploit_acq_factors[y_key] = cat_func
+            self.estimators[y_key] = gp_estimator
 
     def add_samples(self,*args):
         for sampl in args:
@@ -126,75 +194,10 @@ class BayesianDesigner(PawsPlugin):
             + '\nconstraints: {} '.format(self.constraints)
             + '\nrange_constraints: {}'.format(self.range_constraints)
             + '\ncategorical constraints: {}'.format(self.categorical_constraints))
-        xplr_acq_factors = {}
-        xploit_acq_factors = {}
-        estimators = {}
 
-        for y_key,target_spec in self.targets.items():
-            ys_vector = self.ys_df.loc[:,y_key]
-            gp_estimator = partial(self.gp_stats,ys_vector)
-            if target_spec == 'maximize':
-                ys_incumbent = np.max(ys_vector)
-                Z_trans_xploit = partial(self.Z_PI,0.,gp_estimator,ys_incumbent)
-                Z_trans_xplr = partial(self.Z_PI,1.,gp_estimator,ys_incumbent)
-            elif target_spec == 'minimize':
-                ys_incumbent = np.min(ys_vector)
-                negative_gp_estimator = partial(self.gp_stats,-1*ys_vector)
-                Z_trans_xploit = partial(self.Z_PI,0.,negative_gp_estimator,-1*ys_incumbent)
-                Z_trans_xplr = partial(self.Z_PI,1.,negative_gp_estimator,-1*ys_incumbent)
-            target_func_xplr = partial(self.PI_cdf,Z_trans_xplr)
-            target_func_xploit = partial(self.PI_cdf,Z_trans_xploit)
-            xplr_acq_factors[y_key] = target_func_xplr 
-            xploit_acq_factors[y_key] = target_func_xploit 
-            estimators[y_key] = gp_estimator
-
-        for y_key,ys_con in self.ys_constraints.items():
-            ys_vector = self.ys_df.loc[:,y_key]
-            gp_estimator = partial(self.gp_stats,ys_vector)
-            negative_gp_estimator = partial(self.gp_stats,-1*ys_vector)
-            Zlo_trans_xploit = partial(self.Z_PI,0.,gp_estimator,ys_con)
-            Zhi_trans_xploit = partial(self.Z_PI,0.,negative_gp_estimator,-1*ys_con)
-            Zlo_trans_xplr = partial(self.Z_PI,1.,gp_estimator,ys_con)
-            Zhi_trans_xplr = partial(self.Z_PI,1.,negative_gp_estimator,-1*ys_con)
-            target_func_xploit = partial(self.two_sided_cdf,Zlo_trans_xploit,Zhi_trans_xploit,4.) 
-            target_func_xplr = partial(self.two_sided_cdf,Zlo_trans_xplr,Zhi_trans_xplr,4.) 
-            xplr_acq_factors[y_key] = target_func_xplr 
-            xploit_acq_factors[y_key] = target_func_xploit 
-            estimators[y_key] = gp_estimator
-
-        for y_key,ys_range in self.ys_range_constraints.items():
-            ys_vector = self.ys_df.loc[:,y_key]
-            gp_estimator = partial(self.gp_stats,ys_vector)
-            negative_gp_estimator = partial(self.gp_stats,-1*ys_vector)
-            # weight range constraints by a product of two error functions, one at each boundary
-            # for the lower bound, use the bound as the incumbent_value to encourage sampling above it
-            Zlo_trans = partial(self.Z_PI,0.,gp_estimator,ys_range[0])
-            # for the higher bound, use the negative of the bound as incumbent
-            Zhi_trans = partial(self.Z_PI,0.,negative_gp_estimator,-1*ys_range[1])
-            range_func = partial(self.two_sided_cdf,Zlo_trans,Zhi_trans,1.) 
-            xplr_acq_factors[y_key] = range_func
-            xploit_acq_factors[y_key] = range_func
-            estimators[y_key] = gp_estimator
-
-        for y_key,y_cat in self.categorical_constraints.items():
-            y_vector = np.array(self.dataset[y_key])
-            if y_cat == 1:
-                gp_estimator = partial(self.gp_stats,y_vector)
-                y_incumbent = 0.5
-            elif y_cat == 0:
-                gp_estimator = partial(self.gp_stats,-1*y_vector)
-                y_incumbent = -0.5
-            else:
-                raise ValueError('categorical constraints must be 0 or 1')
-            Z_trans = partial(self.Z_PI,0.,gp_estimator,y_incumbent)
-            cat_func = partial(self.PI_cdf,Z_trans)
-            xplr_acq_factors[y_key] = cat_func
-            xploit_acq_factors[y_key] = cat_func
-            estimators[y_key] = gp_estimator
-            
         # optimize acquisition functions over x, within bounds
-        xs_xplr = self.optimize_acq(xplr_acq_factors.values())
-        xs_xploit = self.optimize_acq(xploit_acq_factors.values()) 
+        xs_xplr = self.optimize_acq(self.xplr_acq_factors.values())
+        xs_xploit = self.optimize_acq(self.xploit_acq_factors.values()) 
 
         # inverse-transform the resolved candidates, save as recipes
         x_xplr = self.x_scaler.inverse_transform(xs_xplr.reshape(1,-1))[0]
@@ -204,36 +207,77 @@ class BayesianDesigner(PawsPlugin):
         self.exploration_candidate = cand_xplr
         self.exploitation_candidate = cand_xploit 
 
+        if self.verbose:
+            pred_xplr = self.predict(cand_xplr)
+            pred_xploit = self.predict(cand_xploit)
+            msg = 'exploration candidate predictions: '
+            for y_key, pred in pred_xplr.items():
+                msg += '\n    {}: {} (var: {})'.format(y_key,pred[0],pred[1]) 
+            msg += '\n    acquisition value: {}'.format(self.compute_acq_for_recipe(self.xplr_acq_factors.values(),cand_xplr)) 
+            msg += '\nexploitation candidate predictions: '
+            for y_key, pred in pred_xploit.items():
+                msg += '\n    {}: {} (var: {})'.format(y_key,pred[0],pred[1]) 
+            msg += '\n    acquisition value: {}'.format(self.compute_acq_for_recipe(self.xploit_acq_factors.values(),cand_xploit)) 
+            self.message_callback(msg)
+
+    def predict(self,recipe_dict):
+        x = np.array([recipe_dict[xk] for xk in self.xs_df.columns])
+        xs = self.x_scaler.transform(x.reshape(1,-1))
+        predictions = dict.fromkeys(self.estimators.keys())
+        for y_key, est in self.estimators.items():
+            if y_key in self.constraints \
+            or y_key in self.range_constraints \
+            or y_key in self.targets:
+                ys_pred,ys_var = est(xs.ravel())
+                y_pred = self.y_scalers[y_key].inverse_transform(ys_pred.reshape(1,-1))
+                #y_var = ys_var*(y_pred/ys_pred)
+                y_var_lo = self.y_scalers[y_key].inverse_transform((ys_pred-ys_var/2).reshape(1,-1))
+                y_var_hi = self.y_scalers[y_key].inverse_transform((ys_pred+ys_var/2).reshape(1,-1))  
+                predictions[y_key] = (y_pred[0,0],y_var_hi[0,0]-y_var_lo[0,0])
+            elif y_key in self.categorical_constraints:
+                y_pred, y_var = est(xs.ravel())
+                predictions[y_key] = (y_pred, y_var)
+        return predictions
+
+    def compute_acq_for_recipe(self,funcs,recipe_dict):
+        x = np.array([recipe_dict[xk] for xk in self.xs_df.columns])
+        xs = self.x_scaler.transform(x.reshape(1,-1))
+        return self.compute_acq(funcs,xs.ravel()) 
+
+    @staticmethod
+    def compute_acq(funcs,xs):
+        return np.product([f(xs) for f in funcs])
+
     def optimize_acq(self,funcs):
         if self.verbose: 
             self.message_callback('starting {} MC iterations at alpha={}'.format(self.MC_max_iter,self.MC_alpha))
         # start with a random value
-        x_best = np.array([np.random.rand(1)[0] for xkey in self.x_domain.keys()])
-        obj_best = np.product([f(x_best) for f in funcs])
-        x_current = x_best
+        xs_best = np.array([np.random.rand(1)[0] for xkey in self.x_domain.keys()])
+        obj_best = self.compute_acq(funcs,xs_best)
+        xs_current = xs_best
         obj_current = obj_best
         n_acc = 0
         for iit in range(1,self.MC_max_iter+1):
             # apply a random change
-            delta_x = self.MC_alpha*np.array([np.random.rand(1)[0]-0.5 for xx in x_current])
-            x_new = x_current + delta_x 
+            delta_xs = self.MC_alpha*np.array([np.random.rand(1)[0]-0.5 for xx in xs_current])
+            xs_new = xs_current + delta_xs 
             # if it violates the domain, reject
-            if any([xn<0. or xn>1. for xn in x_new]):
+            if any([xn<0. or xn>1. for xn in xs_new]):
                 obj_new = 0.
                 #print('DOMAIN VIOLATION: REJECT')
             else:
                 # evaluate the objective
-                obj_new = np.product([f(x_new) for f in funcs])
+                obj_new = self.compute_acq(funcs,xs_new)
                 # if the objective goes up, keep it
                 if (obj_new > obj_current):
                     #print('IMPROVEMENT: {} --> {}'.format(obj_current,obj_new))
-                    x_current = x_new
+                    xs_current = xs_new
                     obj_current = obj_new
                     n_acc += 1
                     # if this is the best yet, save it
                     if (obj_new > obj_best):
                         #print('*** NEW BEST: {} --> {}'.format(obj_best,obj_new))
-                        x_best = x_new 
+                        xs_best = xs_new 
                         obj_best = obj_new 
                 else:
                     # if the objective goes down, make a stochastic decision
@@ -241,7 +285,7 @@ class BayesianDesigner(PawsPlugin):
                     #print('PROPOSAL: {} --> {}'.format(obj_current,obj_new))
                     if (obj_new/obj_current > bdry):
                         #print('ACCEPTED: {} > {}'.format(obj_new/obj_current,bdry))
-                        x_current = x_new
+                        xs_current = xs_new
                         obj_current = obj_new
                         n_acc += 1
 
@@ -252,7 +296,7 @@ class BayesianDesigner(PawsPlugin):
                     self.message_callback('iter {}/{}: acceptance ratio: {}'.format(
                     iit,self.MC_max_iter,ac_ratio))
 
-        return x_best
+        return xs_best
 
 #        # TEST
 #        #r0_vector = np.array(self.dataset['r0_sphere'])
