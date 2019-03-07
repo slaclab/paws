@@ -42,6 +42,7 @@ class BayesianDesigner(PawsPlugin):
         """
         super(BayesianDesigner,self).__init__(thread_blocking=False,verbose=verbose,log_file=log_file)
         self.x_domain = x_domain
+        self.targets = targets
         self.constraints = constraints
         self.range_constraints = range_constraints
         self.categorical_constraints = categorical_constraints
