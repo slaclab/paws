@@ -3,6 +3,9 @@ import copy
 import os
 
 from xrsdkit.tools import ymltools as xrsdyml
+import fabio
+import yaml
+import numpy as np
 
 from ..Workflow import Workflow 
 
@@ -29,7 +32,6 @@ class Read(Workflow):
 
     def __init__(self):
         super(Read,self).__init__(inputs,outputs)
-        self.image_reader = FabIOOpen()
 
     def read_header(self,filepath):
         return yaml.load(open(filepath,'r'))
@@ -39,7 +41,6 @@ class Read(Workflow):
 
         if (self.inputs['header_file']) and (os.path.exists(self.inputs['header_file'])):
             hdata = self.read_header(self.inputs['header_file'])
-            hdata = hdr_outs['data']
             self.outputs['header_data'] = hdata
             self.outputs['time'] = hdata['time']
         elif self.inputs['header_file']:
