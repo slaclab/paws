@@ -141,9 +141,20 @@ class FlowReactor(PawsPlugin):
         self.proxy.dump_history()
 
     def vent_pumps(self):
-        for nm,ppc in self.thread_clone.ppumps.items():
+        self.thread_clone._clone_vent_pumps()
+
+    def _clone_vent_pumps(self):
+        for nm,ppc in self.ppumps.items():
             if self.verbose: self.message_callback('Setting pump {} to idle'.format(nm))
             ppc.set_idle()
+
+    def set_temperature(self,T_set,T_ramp=100.):
+        self.thread_clone._clone_set_temperature(T_set,T_ramp)
+
+    def _clone_set_temperature(self,T_set,T_ramp=100.):
+        for chan,loop_idx in self.cryo.channels.items():
+            self.cryo.set_ramp_rate(chan,T_ramp)
+            self.cryo.set_temperature(chan,T_set)
 
     def set_recipe(self,recipe):
         self.thread_clone._clone_set_recipe(recipe)
