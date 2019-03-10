@@ -39,6 +39,11 @@ class FlowReactor(PawsPlugin):
             self.thread_clone.running_lock.wait()
         self.add_to_history('Started FlowReactor')
 
+    def get_state(self):
+        with self.thread_clone.state_lock:
+            stat = copy.deepcopy(self.thread_clone.state)
+        return stat
+
     @classmethod
     def clone(cls,timer,ppumps_setup,cryocon_setup={},bad_flow_tol=100,verbose=False,log_file=None):
         return cls(timer,ppumps_setup,cryocon_setup,bad_flow_tol,verbose,log_file)
@@ -170,7 +175,7 @@ class FlowReactor(PawsPlugin):
                     # NOTE: this is a little dance to circumvent a problem with the CryoCon,
                     # where it sometimes ignores the ramp rate 
                     with self.cryo.state_lock:
-                        T_current = self.cryo.state['T_read_{}'.format(chan)]
+                        T_current = float(self.cryo.state['T_read_{}'.format(chan)])
                     self.cryo.set_temperature(chan,T_current)
                     T_inter = T_current + (recipe['T_set']-T_current)*0.1
                     self.cryo.set_temperature(chan,T_inter)
@@ -211,8 +216,8 @@ class FlowReactor(PawsPlugin):
                     stat_str += 'T_{}: {}, '.format(chan,T_read)
         for nm, ppc in self.ppumps.items():
             with ppc.state_lock:
-                setpt_pls = copy.copy(ppc.state['target_flow_rate'])
-                frt_pls = copy.copy(ppc.state['flow_rate'])
+                setpt_pls = float(ppc.state['target_flow_rate'])
+                frt_pls = float(ppc.state['flow_rate'])
             if frt_pls is not None:
                 frt_ulm = frt_pls*60/1.E6
                 truefrt_ulm = ppc.get_true_flowrate(frt_ulm)
@@ -234,6 +239,7 @@ class FlowReactor(PawsPlugin):
                         .format(nm,truefrt_ulm,truesetpt_ulm))
         #stat_dict['time'] = self.get_date_time() 
         self.proxy.add_to_history(copy.copy(stat_str))
-        with self.proxy.state_lock:
-            self.proxy.state = copy.deepcopy(stat_dict)
+        self.state = stat_dict
+        #with self.proxy.state_lock:
+        #    self.proxy.state = copy.deepcopy(stat_dict)
         return ok_flag,stat_str,stat_dict
