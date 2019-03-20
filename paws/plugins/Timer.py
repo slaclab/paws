@@ -9,6 +9,8 @@ from threading import Condition
 import tzlocal
 import numpy as np
 
+# TODO: double check imports
+
 class Timer(PawsPlugin):
     """A Paws plugin for signaling the passage of time."""
 
@@ -23,24 +25,16 @@ class Timer(PawsPlugin):
         t_max : float
             Time in seconds after which the timer stops itself
         """
-        super(Timer,self).__init__(thread_blocking=True,verbose=verbose,log_file=log_file)
+        super(Timer,self).__init__(verbose=verbose,log_file=log_file)
         self.dt = dt
         self.t_max = t_max
         self.dt_lock = Condition()
-
-    @classmethod
-    def clone(cls,dt,t_max,verbose,log_file):
-        return cls(dt,t_max,verbose,log_file)
-
-    def build_clone(self):
-        cln = self.clone(self.dt,self.t_max,self.verbose,self.log_file)
-        return cln
+        self.timer_thread = None 
 
     def start(self):
         super(Timer,self).start()
 
     def run(self):
-        # self.thread_clone runs this method in its own thread.
         self.tz = tzlocal.get_localzone()
         # self.ep: datetime object representing the epoch
         self.ep = datetime.datetime.fromtimestamp(0,self.tz)
@@ -48,26 +42,33 @@ class Timer(PawsPlugin):
         self.t0 = datetime.datetime.now(self.tz)
         # self.t0_epoch: t0 in seconds since the epoch
         self.t0_epoch = (self.t0-self.ep).total_seconds()
+        # launch a process that runs self.run_timer()
+        self.timer_thread = Thread(target=self.run_timer)
+        self.running = True
+        th.start()
+
+    def run_timer(self):
+        # notify self.dt_lock every self.dt seconds
         t_elapsed = self.get_elapsed_time()
         keep_going = True
         # initial tick notification:
-        self.proxy.dt_notify()
+        self.dt_notify()
         while t_elapsed < self.t_max and keep_going:
-            if self.proxy.verbose: self.proxy.message_callback('timer tick {}/{}'.format(t_elapsed,self.t_max))
+            if self.verbose: self.message_callback('timer: {}/{}'.format(t_elapsed,self.t_max))
             # attempt to nail the next dt point:
             t_rem = self.dt-np.mod(self.get_elapsed_time(),self.dt)
             time.sleep(t_rem)
             # tick notification
-            self.proxy.dt_notify()
-            with self.proxy.running_lock:
-                keep_going = bool(self.proxy.running)
+            self.dt_notify()
+            # check if we are still running
+            with self.running_lock:
+                keep_going = bool(self.running)
                 if self.verbose and not keep_going: self.message_callback('timer STOPPED')
-        # if time ran out naturally, proxy must be told to stop()
-        with self.proxy.running_lock:
-            self.proxy.stop()
+        # if time ran out naturally, stop the timer 
+        self.stop()
         # one final tick to mobilize any plugins 
-        # that are waiting on dt_lock
-        self.proxy.dt_notify()
+        # that might have ended up waiting on dt_lock
+        self.dt_notify()
         if self.verbose: self.message_callback('Timer FINISHED')
 
     def dt_notify(self):
