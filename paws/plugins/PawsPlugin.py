@@ -91,12 +91,16 @@ class PawsPlugin(object):
         Reimplement this in PawsPlugin subclasses as needed.
         """
         self.running = True 
-        self.run()
+        self._run()
         msg = '{} plugin started'.format(type(self).__name__)
         self.add_to_history(msg)
 
-    def run(self):
-        """Run the plugin. Any meaningful plugin activities should happen here."""
+    def _run(self):
+        """Run the plugin. 
+
+        Meaningful plugin activities should happen here.
+        This should be called by self.start() for proper setup.
+        """
         pass
 
     def run_notify(self):

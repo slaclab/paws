@@ -34,7 +34,7 @@ class Timer(PawsPlugin):
     def start(self):
         super(Timer,self).start()
 
-    def run(self):
+    def _run(self):
         self.tz = tzlocal.get_localzone()
         # self.ep: datetime object representing the epoch
         self.ep = datetime.datetime.fromtimestamp(0,self.tz)
@@ -44,7 +44,6 @@ class Timer(PawsPlugin):
         self.t0_epoch = (self.t0-self.ep).total_seconds()
         # launch a process that runs self.run_timer()
         self.timer_thread = Thread(target=self.run_timer)
-        self.running = True
         th.start()
 
     def run_timer(self):
