@@ -1,7 +1,4 @@
-from __future__ import print_function
 from collections import OrderedDict
-import copy
-import os
 from threading import Condition
 import serial
 
@@ -9,8 +6,6 @@ import numpy as np
 from scipy.optimize import minimize as scipimin
 
 from .PawsPlugin import PawsPlugin
-
-# TODO: double check imports
 
 states = { 0:'IDLE', \
         1:'CONTROLLING', \
@@ -86,15 +81,16 @@ class MitosPPumpController(PawsPlugin):
         self.calibrate()
 
     def start(self):
+        with self.serial_lock:
+            self.ser = serial.Serial(
+                self.serial_device, 
+                57600, timeout=1, 
+                parity = serial.PARITY_NONE, 
+                bytesize = serial.EIGHTBITS, 
+                xonxoff = 0, rtscts = 0)
         super(MitosPPumpController,self).start()
 
     def _run(self):
-        self.ser = serial.Serial(
-            self.serial_device, 
-            57600, timeout=1, 
-            parity = serial.PARITY_NONE, 
-            bytesize = serial.EIGHTBITS, 
-            xonxoff = 0, rtscts = 0)
         self.controller_thread = Thread(target=self.run_pump)
         self.controller_thread.start()
         # block until device control is established: 
@@ -237,17 +233,15 @@ class MitosPPumpController(PawsPlugin):
     def print_status(self):
         with self.state_lock:
             st = self.state
-            msg = os.linesep+'----------- PUMP STATUS -----------'+os.linesep
-            msg += 'Error code: {} ({})'.format(st['error_code'],
-                errors[st['error_code']])+os.linesep
-            msg += 'State code: {} ({})'.format(st['state_code'],
-                states[st['state_code']])+os.linesep
-            msg += 'Chamber pressure: \t{}'.format(st['chamber_pressure'])+os.linesep 
-            msg += 'Supply pressure: \t{}'.format(st['supply_pressure'])+os.linesep 
-            msg += 'Target pressure: \t{}'.format(st['target_pressure'])+os.linesep 
-            msg += 'Current flow rate: \t{}'.format(st['flow_rate'])+os.linesep 
-            msg += 'Target flow rate: \t{}'.format(st['target_flow_rate'])+os.linesep 
-            msg += '-----------------------------------'
+            msg = '\n----------- PUMP STATUS -----------\n'
+            msg += 'Error code: {} ({})\n'.format(st['error_code'],errors[st['error_code']])
+            msg += 'State code: {} ({})\n'.format(st['state_code'],states[st['state_code']])
+            msg += 'Chamber pressure: \t{}\n'.format(st['chamber_pressure'])
+            msg += 'Supply pressure: \t{}\n'.format(st['supply_pressure'])
+            msg += 'Target pressure: \t{}\n'.format(st['target_pressure'])
+            msg += 'Current flow rate: \t{}\n'.format(st['flow_rate'])
+            msg += 'Target flow rate: \t{}\n'.format(st['target_flow_rate'])
+            msg += '-----------------------------------\n'
         return msg
 
     def set_flowrate(self,rate):

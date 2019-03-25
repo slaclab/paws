@@ -1,21 +1,17 @@
 from __future__ import print_function
-from collections import OrderedDict
 import sys
 import os
-import copy
-from threading import Thread, Condition
-if int(sys.version[0]) == 2:
-    import Queue as queue
-else:
-    import queue 
+from threading import Condition
+#if int(sys.version[0]) == 2:
+#    import Queue as queue
+#else:
+#    import queue 
 
 import numpy as np
 import tzlocal
 import datetime
 
 from .. import pawstools
-
-# TODO: double check imports, pare down as appropriate
 
 class PawsPlugin(object):
     """Base class for building PAWS Plugins."""
@@ -34,7 +30,8 @@ class PawsPlugin(object):
         self.message_callback = self.tagged_print
         # py_version is used to determine notify() syntax 
         self.py_version = int(sys.version[0])
-        # plugins with threads must acquire running_lock before modifying self.running 
+        # plugins with threads must acquire running_lock before modifying self.running;
+        # running_lock is also used sometimes for a plugin to wait for a thread to finish setup
         self.running_lock = Condition()
         self.running = False
         # plugins with threads must acquire history_lock before modifying self.history
@@ -98,8 +95,8 @@ class PawsPlugin(object):
     def _run(self):
         """Run the plugin. 
 
-        Meaningful plugin activities should happen here.
-        This should be called by self.start() for proper setup.
+        Meaningful plugin activities, such as control loops, 
+        data logging, etc., should happen here.
         """
         pass
 

@@ -1,10 +1,7 @@
-from __future__ import print_function
-from collections import OrderedDict
-import os
-import copy
 import time
 
-from citrination_client.models.design import Target,constraints 
+from citrination_client.models.design import Target
+from citrination_client.models.design import constraints as cc_constraints
 
 from .PawsPlugin import PawsPlugin
 
@@ -38,7 +35,7 @@ class CitrinationDesigner(PawsPlugin):
         design_effort : int 
             how hard to try to meet the targets (int from 1 to 30) 
         """
-        super(CitrinationDesigner,self).__init__(thread_blocking=False,verbose=verbose,log_file=log_file)
+        super(CitrinationDesigner,self).__init__(verbose=verbose,log_file=log_file)
         self.citrination_client = citrination_client
         self.dataset_id = dataset_id
         self.dataview_id = dataview_id
@@ -57,11 +54,11 @@ class CitrinationDesigner(PawsPlugin):
     def get_candidate_recipes(self):
         straints = []
         for prop_name, val in self.constraints.items():
-            straints.append(constraints.RealValueConstraint('Property '+prop_name,val))
+            straints.append(cc_constraints.RealValueConstraint('Property '+prop_name,val))
         for prop_name, lmts in self.range_constraints.items():
-            straints.append(constraints.RealRangeConstraint('Property '+prop_name,lmts[0],lmts[1]))
+            straints.append(cc_constraints.RealRangeConstraint('Property '+prop_name,lmts[0],lmts[1]))
         for prop_name, cats in self.categorical_constraints.items():
-            straints.append(constraints.CategoricalConstraint('Property '+prop_name,cats))
+            straints.append(cc_constraints.CategoricalConstraint('Property '+prop_name,cats))
         tgt_name = 'Property '+list(self.target.keys())[0]
         tgt_val = list(self.target.values())[0]
         tgt = Target(tgt_name,tgt_val)

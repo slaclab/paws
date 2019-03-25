@@ -1,8 +1,6 @@
 import os
-from collections import OrderedDict
 from threading import Condition
 
-import numpy as np
 import pyFAI.azimuthalIntegrator as pfaz
 
 from .PawsPlugin import PawsPlugin
@@ -13,8 +11,9 @@ class PyFAIIntegrator(PawsPlugin):
     Input calibration file should be in one of the formats
     outlined in the package documentation. 
     """
+
     def __init__(self,calib_file,q_min=0.,q_max=1.,verbose=False,log_file=None):
-        super(PyFAIIntegrator,self).__init__(thread_blocking=False,verbose=verbose,log_file=log_file)
+        super(PyFAIIntegrator,self).__init__(verbose=verbose,log_file=log_file)
         self.calib_file = calib_file
         self.q_min = q_min
         self.q_max = q_max
@@ -76,8 +75,10 @@ class PyFAIIntegrator(PawsPlugin):
         wl_m = wl_A*1E-10
         pxsz_x_um = pxsz_x_mm * 1000
         pxsz_y_um = pxsz_y_mm * 1000
-        # TODO: check whether these rotation angle mappings are correct,
+        # TODO: verify that these rotation angle mappings are correct,
         # going from nika to fit2D geometry. 
+        # NOTE: this has produced reasonable results for small tilts,
+        # but has not been tested for highly tilted geometries.
         tilt_deg = -1.*htilt_deg
         rot_fit2d = vtilt_deg
         #tmpint = pyFAI.AzimuthalIntegrator(wavelength = wl_m)

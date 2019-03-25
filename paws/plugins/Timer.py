@@ -1,15 +1,11 @@
-from __future__ import print_function
-from collections import OrderedDict
-from .PawsPlugin import PawsPlugin
 import datetime
-import copy
 import time
 from threading import Condition
 
 import tzlocal
 import numpy as np
 
-# TODO: double check imports
+from .PawsPlugin import PawsPlugin
 
 class Timer(PawsPlugin):
     """A Paws plugin for signaling the passage of time."""
