@@ -1,7 +1,4 @@
-from __future__ import print_function
 from collections import OrderedDict
-import copy
-import os
 from threading import Condition
 import serial
 
@@ -51,7 +48,6 @@ class MitosPPumpController(PawsPlugin):
         timer : paws.plugins.Timer.Timer
             Timer plugin for triggering pump controller activities
             and initiating thread-safe data exchanges 
-            between the pump controller and its operational clone
         serial_device : str
             String serial device indicator (e.g. "COM2") 
             or filesystem path (e.g. "/dev/ttyUSB0")
@@ -65,7 +61,7 @@ class MitosPPumpController(PawsPlugin):
         verbose : bool
         log_file : str
         """
-        super(MitosPPumpController,self).__init__(thread_blocking=True,verbose=verbose,log_file=log_file)
+        super(MitosPPumpController,self).__init__(verbose=verbose,log_file=log_file)
         self.serial_lock = Condition()
         self.ser = None
         self.state_lock = Condition()
@@ -77,25 +73,64 @@ class MitosPPumpController(PawsPlugin):
             target_pressure = None, 
             flow_rate = None, 
             target_flow_rate = None)
+        self.controller_thread = None
         self.timer = timer
         self.serial_device = serial_device
         self.flowrate_table = flowrate_table
         self.flow_conversion_power = 1.
         self.calibrate()
 
-    @classmethod
-    def clone(cls,timer,serial_device,flowrate_table=None,verbose=False,log_file=None):
-        return cls(timer,serial_device,flowrate_table,verbose,log_file)
-
-    def build_clone(self):
-        cln = self.clone(self.timer,self.serial_device,self.flowrate_table,self.verbose,self.log_file)
-        return cln
-
     def start(self):
+        with self.serial_lock:
+            self.ser = serial.Serial(
+                self.serial_device, 
+                57600, timeout=1, 
+                parity = serial.PARITY_NONE, 
+                bytesize = serial.EIGHTBITS, 
+                xonxoff = 0, rtscts = 0)
         super(MitosPPumpController,self).start()
-        # block until the clone has established control
-        with self.thread_clone.running_lock:
-            self.thread_clone.running_lock.wait()
+
+    def _run(self):
+        self.controller_thread = Thread(target=self.run_pump)
+        self.controller_thread.start()
+        # block until device control is established: 
+        with self.running_lock:
+            self.running_lock.wait()
+
+    def run_pump(self):
+        keep_going = True
+        # check for control...
+        self.update_status()
+        if not self.state['state_code'] == 1:
+            # attempt to enter remote control mode 
+            resp = self.run_cmd('A1')
+            if not resp == "#A0":
+                msg = "Pump failed to enter REMOTE control mode"
+                self.message_callback(msg)
+                self.add_to_history(msg)
+                keep_going = False
+                self.stop()
+
+        # clear the pump...
+        self.run_cmd('C')
+
+        # self._run() will be waiting for run_notify()...
+        self.run_notify()
+        while keep_going:
+            with self.timer.dt_lock:
+                self.timer.dt_lock.wait()
+            self.update_status()
+            with self.timer.running_lock:
+                if not self.timer.running:
+                    self.stop()
+            with self.running_lock:
+                keep_going = bool(self.running)
+
+        # relinquish control, close the port, stop the plugin
+        self.run_cmd('A0') 
+        if self.verbose: self.message_callback('FINISHED')
+        self.ser.close()
+        self.stop()
        
     def calibrate(self):
         if self.flowrate_table is not None:
@@ -104,10 +139,10 @@ class MitosPPumpController(PawsPlugin):
             fit_obj = lambda a: np.sum([(fset**a-fmeas)**2 for fset,fmeas in zip(flow_setpts,flow_meas)])
             res = scipimin( fit_obj,1. )
             self.flow_conversion_power = res.x[0]
-            if self.verbose: self.message_callback(
-                'finished calibrating- power law flowrate conversion: {}'.format(
+            if self.verbose: 
+                msg = 'finished calibrating- power law flowrate conversion: {}'.format(
                 self.flow_conversion_power)
-                )
+                self.message_callback(msg)
 
     def get_setpt(self,rate):
         if rate == 0.: return 0.
@@ -125,68 +160,22 @@ class MitosPPumpController(PawsPlugin):
         else:
             return abs_setpt
 
-    def run(self):
-        # this method is run by self.thread_clone 
-        self.ser = serial.Serial(
-            self.serial_device, 
-            57600, timeout=1, 
-            parity = serial.PARITY_NONE, 
-            bytesize = serial.EIGHTBITS, 
-            xonxoff = 0, rtscts = 0)
-        keep_going = True
-        # check for control...
-        self.update_status()
-        if not self.state['state_code'] == 1:
-            # attempt to enter remote control mode 
-            resp = self.run_cmd('A1')
-            if not resp == "#A0":
-                msg = "Pump failed to enter REMOTE control mode"
-                self.message_callback(msg)
-                self.proxy.add_to_history(msg)
-                keep_going = False
-                with self.proxy.running_lock:
-                    self.proxy.stop()
-
-        # clear the pump...
-        self.run_cmd('C')
-
-        # self.proxy will be waiting for run_notify()...
-        self.run_notify()
-        while keep_going:
-            with self.timer.dt_lock:
-                self.timer.dt_lock.wait()
-            self.update_status()
-            with self.timer.running_lock:
-                if not self.timer.running:
-                    with self.proxy.running_lock:
-                        self.proxy.stop()
-            with self.proxy.running_lock:
-                keep_going = bool(self.proxy.running)
-
-        # relinquish control
-        self.run_cmd('A0') 
-        if self.verbose: self.message_callback('FINISHED')
-        self.proxy.dump_history()
-        self.ser.close()
-
     def update_status(self):
         with self.state_lock:
             self.read_status()
-        with self.proxy.state_lock:
-            self.proxy.state = copy.deepcopy(self.state)
         if self.verbose: self.message_callback(self.print_status())
 
     def run_cmd(self,cmd):
         with self.serial_lock:
-            self.send_line(cmd)
-            resp = self.receive_line()
-        self.proxy.add_to_history(cmd+' '+resp)
+            self._send_line(cmd)
+            resp = self._receive_line()
+        self.add_to_history(cmd+' '+resp)
         return resp
 
-    def send_line(self,line):
+    def _send_line(self,line):
         self.ser.write("{}\r\n".format(line).encode('utf-8'))  
 
-    def receive_line(self):
+    def _receive_line(self):
         return self.ser.readline().strip().decode()
 
     def read_status(self):
@@ -244,17 +233,15 @@ class MitosPPumpController(PawsPlugin):
     def print_status(self):
         with self.state_lock:
             st = self.state
-            msg = os.linesep+'----------- PUMP STATUS -----------'+os.linesep
-            msg += 'Error code: {} ({})'.format(st['error_code'],
-                errors[st['error_code']])+os.linesep
-            msg += 'State code: {} ({})'.format(st['state_code'],
-                states[st['state_code']])+os.linesep
-            msg += 'Chamber pressure: \t{}'.format(st['chamber_pressure'])+os.linesep 
-            msg += 'Supply pressure: \t{}'.format(st['supply_pressure'])+os.linesep 
-            msg += 'Target pressure: \t{}'.format(st['target_pressure'])+os.linesep 
-            msg += 'Current flow rate: \t{}'.format(st['flow_rate'])+os.linesep 
-            msg += 'Target flow rate: \t{}'.format(st['target_flow_rate'])+os.linesep 
-            msg += '-----------------------------------'
+            msg = '\n----------- PUMP STATUS -----------\n'
+            msg += 'Error code: {} ({})\n'.format(st['error_code'],errors[st['error_code']])
+            msg += 'State code: {} ({})\n'.format(st['state_code'],states[st['state_code']])
+            msg += 'Chamber pressure: \t{}\n'.format(st['chamber_pressure'])
+            msg += 'Supply pressure: \t{}\n'.format(st['supply_pressure'])
+            msg += 'Target pressure: \t{}\n'.format(st['target_pressure'])
+            msg += 'Current flow rate: \t{}\n'.format(st['flow_rate'])
+            msg += 'Target flow rate: \t{}\n'.format(st['target_flow_rate'])
+            msg += '-----------------------------------\n'
         return msg
 
     def set_flowrate(self,rate):
@@ -271,7 +258,7 @@ class MitosPPumpController(PawsPlugin):
         if self.verbose: self.message_callback('setting flowrate: {} uL/min'.format(rate))
         setpt = self.get_setpt(rate) 
         pl_s_rate = int(round(float(setpt)*1.E6/60.))
-        self.thread_clone.run_cmd('F{}'.format(pl_s_rate))
+        self.run_cmd('F{}'.format(pl_s_rate))
 
     def set_pressure(self,pressure):
         """Set the pump pressure to the provided value.
@@ -283,17 +270,17 @@ class MitosPPumpController(PawsPlugin):
             A value of 1000 sends the 'P1000' command,
             which sets target pressure to 1000 mbar. 
         """
-        self.thread_clone.run_cmd('P{}'.format(pressure))
+        self.run_cmd('P{}'.format(pressure))
 
     def tare(self):
         """Tare the P-pump."""
         if self.verbose: self.message_callback('taring pump')
-        self.thread_clone.run_cmd('R0')
+        self.run_cmd('R0')
 
     def set_idle(self):
         """Set the P-pump to idle."""
         if self.verbose: self.message_callback('setting pump to idle')
-        self.thread_clone.run_cmd('P0')
+        self.run_cmd('P0')
 
     def dispense_volume(self, vol):
         """Control the pump to dispense a specified volume.
