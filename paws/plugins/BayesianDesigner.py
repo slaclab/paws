@@ -170,7 +170,11 @@ class BayesianDesigner(PawsPlugin):
 
     @staticmethod
     def sq_exp_kernel(width,x1,x2):
-        return np.exp(-np.linalg.norm(x2-x1)/(2*width**2))
+        return np.exp(-np.sum((x2-x1)**2)/(2*width**2))
+
+    @staticmethod
+    def inv_exp_kernel(width,x1,x2):
+        return np.exp(-np.linalg.norm(x2-x1)/(2*width))
 
     @staticmethod
     def Z_PI(explorative_strength,gp_estimator,incumbent_value,xs):
