@@ -1,6 +1,6 @@
 import copy
 import time
-from threading import Condition
+from threading import Thread, Condition
 
 import numpy as np
 
@@ -47,6 +47,7 @@ class FlowReactor(PawsPlugin):
             if 'volume_limit' in pump_cfg: 
                 self.volume_limits[pump_nm] = pump_cfg['volume_limit']
         for nm,ppc in self.ppumps.items():
+            if self.verbose: self.message_callback('starting pump controller: {}'.format(nm))
             ppc.start()
             ppc.set_idle()
         # set up internal CryoConController plugin
@@ -58,19 +59,23 @@ class FlowReactor(PawsPlugin):
                 channels=self.cryocon_setup['channels'],
                 verbose=False,log_file=None
                 )
+            if self.verbose: self.message_callback('starting cryocon controller')
             self.cryo.start()
             for chan in self.cryo.channels.keys():
                 self.cryo.set_units(chan,'C')
                 self.cryo.loop_setup(chan,'RAMPP')
                 self.cryo.set_temperature(chan,25.)
+            if self.verbose: self.message_callback('startup complete: running flow reactor')
         super(FlowReactor,self).start()
 
     def _run(self):
         self.controller_thread = Thread(target=self.run_reactor)
         self.controller_thread.start()
         # block until device control is established: 
+        #if self.verbose: self.message_callback('waiting for worker thread run notification...')
         with self.running_lock:
             self.running_lock.wait()
+        #if self.verbose: self.message_callback('worker thread run notification received!')
 
     def run_reactor(self):
         v_delivered = dict.fromkeys(self.volume_limits.keys())
@@ -203,16 +208,19 @@ class FlowReactor(PawsPlugin):
                 stat_dict['{}_setpoint'.format(nm)] = float(truesetpt_ulm)
                 stat_str += ' {}: {} (setpt {}), '.format(nm,truefrt_ulm,truesetpt_ulm)
                 if setpt_pls:
+                    # nonzero setpoint
                     ok_flag = True
-                    if setpt_pls == 0:
-                        if abs(truefrt_ulm) > 1.0:
-                            ok_flag = False
-                    elif abs(truefrt_ulm-truesetpt_ulm)/truesetpt_ulm > 0.5 and abs(truefrt_ulm-truesetpt_ulm) > 5.0:
+                    if abs(truefrt_ulm-truesetpt_ulm)/truesetpt_ulm > 0.5 \
+                    and abs(truefrt_ulm-truesetpt_ulm) > 5.0:
                         ok_flag = False
-                    if self.verbose and not ok_flag: 
-                        self.message_callback(
-                        'ppump {} flowrate {} is far from setpoint {}'
-                        .format(nm,truefrt_ulm,truesetpt_ulm))
+                else:
+                    # make sure the rate is not far from zero
+                    if abs(truefrt_ulm) > 1.0:
+                        ok_flag = False
+                if self.verbose and not ok_flag: 
+                    self.message_callback(
+                    'ppump {} flowrate {} is far from setpoint {}'
+                    .format(nm,truefrt_ulm,truesetpt_ulm))
         self.add_to_history(stat_str)
         with self.state_lock:
             self.state = copy.deepcopy(stat_dict)
