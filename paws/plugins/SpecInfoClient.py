@@ -29,12 +29,10 @@ class SpecInfoClient(PawsPlugin):
         self.sock = None
 
     def start(self):
-        super(SpecInfoClient,self).start()
-
-    def run(self):
         with self.socket_lock:
             self.sock = socket.create_connection((self.host,self.port)) 
         self.take_control()
+        super(SpecInfoClient,self).start()
 
     def close_socket(self):
         with self.socket_lock:

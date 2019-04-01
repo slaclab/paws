@@ -38,6 +38,7 @@ class SSHClient(PawsPlugin):
         self.transport_lock = Condition()
 
     def start(self):
+        if self.verbose: self.message_callback('Setting up SSH client...')
         with self.transport_lock:
             self.sshcl = paramiko.SSHClient()
             self.sshcl.load_system_host_keys()
