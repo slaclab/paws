@@ -1,5 +1,5 @@
 from collections import OrderedDict
-from threading import Condition
+from threading import Thread, Condition
 import serial
 
 import numpy as np

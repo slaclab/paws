@@ -1,6 +1,6 @@
 import socket 
 import copy
-from threading import Condition
+from threading import Thread, Condition
 
 from .PawsPlugin import PawsPlugin
 

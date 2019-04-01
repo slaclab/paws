@@ -1,6 +1,6 @@
 import datetime
 import time
-from threading import Condition
+from threading import Thread, Condition
 
 import tzlocal
 import numpy as np
@@ -40,7 +40,7 @@ class Timer(PawsPlugin):
         self.t0_epoch = (self.t0-self.ep).total_seconds()
         # launch a process that runs self.run_timer()
         self.timer_thread = Thread(target=self.run_timer)
-        th.start()
+        self.timer_thread.start()
 
     def run_timer(self):
         # notify self.dt_lock every self.dt seconds
