@@ -15,7 +15,7 @@ class BayesianDesigner(PawsPlugin):
 
     def __init__(self,
             strategy='MPI',strategic_params={'exploration_incentive':0.},
-            x_cov_noise=0.,x_domain={},targets={},constraints={},
+            noise_sd=0.,x_domain={},targets={},constraints={},
             range_constraints={},categorical_constraints={},
             covariance_kernel='sq_exp',covariance_kernel_params={'width':1.},
             MC_max_iter=1000,MC_alpha=1.,
@@ -31,12 +31,9 @@ class BayesianDesigner(PawsPlugin):
         strategic_params : dict
             parameters that affect the optimization strategy
             (currently only 'exploration_incentive' is supported)
-        x_cov_noise : float
-            if greater than zero,
-            the covariance kernel matrix is augmented by `x_cov_noise`*identity,
-            and GP predictions at training set points 
-            are used to determine incumbent values for min/max targets
-            (instead of using the training set values directly)
+        noise_sd : float
+            standard deviation of observation noise- if greater than zero,
+            the diagonal covariance elements are augmented by `noise_sd`**2.
         x_domain : dict
             dict of input column names and corresponding [min,max] lists 
         targets : dict
@@ -63,7 +60,7 @@ class BayesianDesigner(PawsPlugin):
         super(BayesianDesigner,self).__init__(verbose=verbose,log_file=log_file)
         self.strategy = strategy
         self.strat_params = strategic_params 
-        self.x_cov_noise = x_cov_noise
+        self.noise_sd = noise_sd 
         self.x_domain = x_domain
         self.targets = targets
         self.constraints = constraints
@@ -85,13 +82,13 @@ class BayesianDesigner(PawsPlugin):
         return np.exp(-np.sum((x2-x1)**2)/(2*width**2))
 
     @staticmethod
-    def _exp_kernel(x1,x2,width):
+    def _inv_exp_kernel(x1,x2,width):
         return np.exp(-np.linalg.norm(x2-x1)/(width))
 
     def cov_kernel(self,x1,x2):
         if self.covariance_kernel == 'sq_exp':
             return self._sq_exp_kernel(x1,x2,self.cov_params['width'])
-        elif self.covariance_kernel == 'exp':
+        elif self.covariance_kernel == 'inv_exp':
             return self._exp_kernel(x1,x2,self.cov_params['width'])
         else:
             raise ValueError('invalid kernel specification: {}'.format(self.covariance_kernel))
@@ -118,45 +115,34 @@ class BayesianDesigner(PawsPlugin):
             self.cov_mat = np.array([[
                     self.cov_kernel(self.xs_df.loc[ix1,:],self.xs_df.loc[ix2,:]) 
                     for ix2 in range(nx)] for ix1 in range(nx)]) 
-            if self.x_cov_noise > 0.:
-                self.cov_mat += self.x_cov_noise**2*np.eye(self.cov_mat.shape[0])
+            if self.noise_sd > 0.:
+                self.cov_mat += self.noise_sd**2*np.eye(self.cov_mat.shape[0])
             self.inv_cov_mat = np.linalg.inv(self.cov_mat)
             self._set_target_data()
             if self.verbose: self.message_callback('MODEL SETUP COMPLETE!')
     
     def _set_target_data(self):
 
-        # dicts for holding scalers, scaled values, and incumbents
+        # dicts for holding scalers, scaled values, gp model surrogates, incumbents,
+        # index filters, and index-filtered inverse covariance matrices
         self.y_scalers = {}
         self.y_arrays = {}
         self.ys_arrays = {}
         self.gp_arrays = {}
         self.gp_range_constraints = {} 
         self.gp_categorical_constraints = {} 
-        #self.gp_constraints = {} 
         self.gp_incumbents = {}
-
-        # get all training data indices 
-        # that satisfy the categorical constraints,
-        # to filtering valid training data for scalar values 
-        self.good_samples_idx = np.ones(self.dataset.shape[0],dtype=bool)
-        for y_key, y_cat in self.categorical_constraints.items():
-            y_array = np.array(self.dataset[y_key],dtype=int).ravel()
-            self.good_samples_idx[np.invert(y_array==int(y_cat))] = False
-        #for y_key,y_range in self.range_constraints.items():
-        #    y_array = np.array(self.dataset[y_key]).ravel()
-        #    ubnd = y_range[1]
-        #    if ubnd is None: ubnd = float('inf')
-        #    lbnd = y_range[0]
-        #    if lbnd is None: lbnd = -float('inf')
-        #    outlier_idx = (y_array<=lbnd) | (y_array>=ubnd) 
-        #    self.good_samples_idx[outlier_idx] = False
-        self.bad_samples_idx = np.invert(self.good_samples_idx)
-        self.inv_cov_mat_filtered = self.inv_cov_mat[self.good_samples_idx,:][:,self.good_samples_idx]
+        self.filter_flags = {}
+        self.good_idxs = {}
+        self.filtered_cov_mats = {}
+        self.filtered_inv_cov_mats = {}
 
         # model zero-centered integers (-1 and 1) for all categorical constraints
         for y_key, y_cat in self.categorical_constraints.items():
-            y_array = np.array(self.dataset[y_key],dtype=int).reshape(-1,1) 
+            y_array = np.array(self.dataset[y_key],dtype=int)
+            good_idx = np.invert(np.isnan(y_array))
+            self.good_idxs[y_key] = good_idx
+            y_array = y_array[good_idx].reshape(-1,1)  
             self.y_arrays[y_key] = y_array
             self.ys_arrays[y_key] = y_array
             self.gp_arrays[y_key] = copy.deepcopy(y_array) 
@@ -165,16 +151,20 @@ class BayesianDesigner(PawsPlugin):
             self.gp_categorical_constraints[y_key] = 1
             if not bool(y_cat):
                 self.gp_categorical_constraints[y_key] = -1
-            if self.verbose:
-                msg = 'summary for {} (categorical):'.format(y_key)
-                n_true = np.sum(y_array)
-                n_false = y_array.shape[0]-n_true
-                msg += '\ntrue: {}, false: {}, total: {}'.format(n_true,n_false,y_array.shape[0])
-                self.message_callback(msg)
+            self.filter_flags[y_key] = not self.good_idxs[y_key].all()
+            if self.filter_flags[y_key]:
+                # TODO: check if any self.good_idxs match,
+                # and if so, use the corresponding self.filtered_inv_cov_mats,
+                # instead of computing yet another inverse
+                self.filtered_cov_mats[y_key] = self.cov_mat[good_idx,:][:,good_idx]  
+                self.filtered_inv_cov_mats[y_key] = np.linalg.inv(self.filtered_cov_mats[y_key]) 
 
         # model standardized values for all range constraints
         for y_key, y_range in self.range_constraints.items():
-            y_array = np.array(self.dataset[y_key])[self.good_samples_idx].reshape(-1,1)
+            y_array = np.array(self.dataset[y_key])
+            good_idx = np.invert(np.isnan(y_array))
+            self.good_idxs[y_key] = good_idx
+            y_array = y_array[good_idx].reshape(-1,1) 
             self.y_arrays[y_key] = y_array
             self.y_scalers[y_key] = StandardScaler()
             self.y_scalers[y_key].fit(y_array)
@@ -187,19 +177,20 @@ class BayesianDesigner(PawsPlugin):
             if y_range[1] is not None:
                 self.gp_range_constraints[y_key][1] = \
                     self.y_scalers[y_key].transform(np.array(y_range[1]).reshape(-1,1))[0,0]
-            if self.verbose:
-                msg = 'summary for {} (range-constrained scalar):'.format(y_key)
-                msg += '\nconstraint range: [{}, {}]'.format(y_range[0],y_range[1])
-                msg += '\ndistribution: [{}, {}]'.format(np.mean(y_array),np.std(y_array))
-                msg += '\nrange: [{}, {}]'.format(np.min(y_array),np.max(y_array))
-                self.message_callback(msg)
+            self.filter_flags[y_key] = not self.good_idxs[y_key].all()
+            if self.filter_flags[y_key]:
+                self.filtered_cov_mats[y_key] = self.cov_mat[good_idx,:][:,good_idx]  
+                self.filtered_inv_cov_mats[y_key] = np.linalg.inv(self.filtered_cov_mats[y_key]) 
 
         # model exact value constraints 
         # by the likelihood to optimize the error
         # relative to the incumbent best sample 
         # TODO: how to use self.strategy here?
         for y_key, y_val in self.constraints.items():
-            y_array = np.array(self.dataset[y_key])[self.good_samples_idx].reshape(-1,1)
+            y_array = np.array(self.dataset[y_key])
+            good_idx = np.invert(np.isnan(y_array))
+            self.good_idxs[y_key] = good_idx
+            y_array = y_array[good_idx].reshape(-1,1)  
             self.y_arrays[y_key] = y_array
             self.y_scalers[y_key] = StandardScaler()
             self.y_scalers[y_key].fit(y_array)
@@ -208,18 +199,19 @@ class BayesianDesigner(PawsPlugin):
             self.gp_arrays[y_key] = y_scaled 
             y_diff_sqr = (y_array-y_val)**2
             self.gp_incumbents[y_key] = self.gp_arrays[y_key][np.argmin(y_diff_sqr)][0]
-            if self.verbose:
-                msg = 'summary for {} (constrained scalar):'.format(y_key)
-                msg += '\nconstraint value: {}'.format(y_val)
-                msg += '\ndistribution: [{}, {}]'.format(np.mean(y_array),np.std(y_array))
-                msg += '\nrange: [{}, {}]'.format(np.min(y_array),np.max(y_array))
+            self.filter_flags[y_key] = not self.good_idxs[y_key].all()
+            if self.filter_flags[y_key]:
+                self.filtered_cov_mats[y_key] = self.cov_mat[good_idx,:][:,good_idx]  
+                self.filtered_inv_cov_mats[y_key] = np.linalg.inv(self.filtered_cov_mats[y_key]) 
 
         # model targets by the likelihood to optimize (min or max)
         # relative to the incumbent best sample,
         # in the context of self.strategy
         for y_key, targ_spec in self.targets.items():
-            y_array = np.array(self.dataset[y_key])[self.good_samples_idx].reshape(-1,1)
-            self.y_arrays[y_key] = y_array
+            y_array = np.array(self.dataset[y_key])
+            good_idx = np.invert(np.isnan(y_array))
+            self.good_idxs[y_key] = good_idx
+            y_array = y_array[good_idx].reshape(-1,1)   
             self.y_scalers[y_key] = StandardScaler()
             self.y_scalers[y_key].fit(y_array)
             self.ys_arrays[y_key] = self.y_scalers[y_key].transform(y_array)
@@ -239,11 +231,10 @@ class BayesianDesigner(PawsPlugin):
             else:
                 raise ValueError('unsupported target for {}: {}'
                         .format(y_key,target_spec))
-            if self.verbose:
-                msg = 'summary for {} (target scalar):'.format(y_key)
-                msg += '\ntarget spec: {}'.format(targ_spec)
-                msg += '\ndistribution: [{}, {}]'.format(np.mean(y_array),np.std(y_array))
-                msg += '\nrange: [{}, {}]'.format(np.min(y_array),np.max(y_array))
+            self.filter_flags[y_key] = not self.good_idxs[y_key].all()
+            if self.filter_flags[y_key]:
+                self.filtered_cov_mats[y_key] = self.cov_mat[good_idx,:][:,good_idx]  
+                self.filtered_inv_cov_mats[y_key] = np.linalg.inv(self.filtered_cov_mats[y_key]) 
 
     def set_target(self,y_key,targ_spec):
         if not y_key in self.targets:
@@ -273,24 +264,35 @@ class BayesianDesigner(PawsPlugin):
             self.range_constraints[y_key] = y_range
             self._set_target_data()
 
-    def cov_vector(self,xs,use_good_idx=False):
-        xs_idx = np.array(self.xs_df.index)
-        if use_good_idx: xs_idx = xs_idx[self.good_samples_idx]
+    def cov_vector(self,xs,idx_filter=None):
+        if idx_filter is None:
+            xs_idx = np.array(self.xs_df.index)
+        else:
+            xs_idx = np.array(self.xs_df.index)[idx_filter]
         covv = np.array([self.cov_kernel(xs,self.xs_df.loc[ix,:]) for ix in xs_idx])
         return covv 
 
-    def _gp_var(self,cov_vector,use_good_idx=False):
-        inv_cov = self.inv_cov_mat
-        if use_good_idx:
-            inv_cov = self.inv_cov_mat_filtered 
-        # we assume the self-covariance is 1.
-        return 1.-np.dot(np.dot(cov_vector,inv_cov),cov_vector)
+    def _gp_var(self,cov_vector,inv_cov_mat):
+        self_cov = 1.
+        if self.noise_sd > 0.:
+            self_cov = 1.+self.noise_sd**2
+        return self_cov-np.dot(np.dot(cov_vector,inv_cov_mat),cov_vector)
 
-    def _gp_mean(self,cov_vector,y_vector,use_good_idx=False):
-        inv_cov = self.inv_cov_mat
-        if use_good_idx:
-            inv_cov = self.inv_cov_mat_filtered
-        return np.dot(np.dot(cov_vector,inv_cov),y_vector)
+    def _gp_mean(self,cov_vector,inv_cov_mat,y_vector):
+        return np.dot(np.dot(cov_vector,inv_cov_mat),y_vector)
+
+    def _compute_cov(self,xs,y_key=None):
+        if y_key:
+            covvec = self.cov_vector(xs,self.good_idxs[y_key])
+            gp_var = self._gp_var(covvec,self.filtered_inv_cov_mats[y_key])
+        else:
+            covvec = self.cov_vector(xs)
+            gp_var = self._gp_var(covvec,self.inv_cov_mat)
+        if gp_var <= 0.: 
+            gp_sd = 0.
+        else:
+            gp_sd = np.sqrt(gp_var)
+        return covvec,gp_var,gp_sd
 
     def predict_outputs(self,xs):
         preds = {} 
@@ -298,71 +300,88 @@ class BayesianDesigner(PawsPlugin):
         gp_scores = {} 
 
         with self.modeling_lock:
-            # use the whole dataset to evaluate categoricals
-            cov_vector = self.cov_vector(xs)
-            gp_var = self._gp_var(cov_vector)
-            if gp_var <= 0.: 
-                gp_sd = 0.
-            else:
-                gp_sd = np.sqrt(gp_var)
 
+            # get covariance and gp predictions without filters
+            covvec_all,gp_var_all,gp_sd_all = self._compute_cov(xs)
+
+            # evaluate categoricals
             for y_key,gp_cat in self.gp_categorical_constraints.items():
-                gp_mean = self._gp_mean(cov_vector,self.gp_arrays[y_key])[0]
-                gp_preds[y_key] = (gp_mean,gp_sd)
-                pred = gp_mean>0 
-                if pred:
-                    proba = 1.-scipynorm.cdf(0.,gp_mean,gp_sd)
+                if self.filter_flags[y_key]:
+                    covvec_y,gp_var_y,gp_sd_y = self._compute_cov(xs,y_key)
+                    inv_cov_y = self.filtered_inv_cov_mats[y_key]
                 else:
-                    proba = scipynorm.cdf(0.,gp_mean,gp_sd)
-                preds[y_key] = (pred,proba) 
-                gp_scores[y_key] = self.categorical_probability(gp_cat,gp_mean,gp_sd)
+                    covvec_y,gp_var_y,gp_sd_y = covvec_all,gp_var_all,gp_sd_all 
+                    inv_cov_y = self.inv_cov_mat
+                gp_mean_y = self._gp_mean(covvec_y,inv_cov_y,self.gp_arrays[y_key])[0]
+                gp_preds[y_key] = [gp_mean_y,gp_sd_y]
+                # decision boundary is zero, and the likelihood is the cdf above/below zero
+                pred = bool(gp_mean_y>0)
+                if pred:
+                    proba = float(1.-scipynorm.cdf(0.,gp_mean_y,gp_sd_y))
+                else:
+                    proba = float(scipynorm.cdf(0.,gp_mean_y,gp_sd_y))
+                preds[y_key] = [pred,proba]
+                gp_scores[y_key] = self.categorical_probability(gp_cat,gp_mean_y,gp_sd_y)
 
-            # use the categorical-filtered dataset to evaluate scalars
-            cov_vector = self.cov_vector(xs,use_good_idx=True)
-            gp_var = self._gp_var(cov_vector,use_good_idx=True)
-            if gp_var <= 0.: 
-                gp_sd = 0.
-            else:
-                gp_sd = np.sqrt(gp_var)
-
+            # evaluate targets
             for y_key, targ_spec in self.targets.items():
-                gp_mean = self._gp_mean(cov_vector,self.gp_arrays[y_key],use_good_idx=True)[0]
-                gp_preds[y_key] = (gp_mean,gp_sd)
-                ys_mean = self._gp_mean(cov_vector,self.ys_arrays[y_key],use_good_idx=True)[0]
+                if self.filter_flags[y_key]:
+                    covvec_y,gp_var_y,gp_sd_y = self._compute_cov(xs,y_key)
+                    inv_cov_y = self.filtered_inv_cov_mats[y_key]
+                else:
+                    covvec_y,gp_var_y,gp_sd_y = covvec_all,gp_var_all,gp_sd_all 
+                    inv_cov_y = self.inv_cov_mat
+                ys_mean = self._gp_mean(covvec_y,inv_cov_y,self.ys_arrays[y_key])[0]
+                gp_mean_y = self._gp_mean(covvec_y,inv_cov_y,self.gp_arrays[y_key])[0]
+                gp_preds[y_key] = [gp_mean_y,gp_sd_y]
                 mean = self.y_scalers[y_key].inverse_transform(np.array(ys_mean).reshape(-1,1))[0,0]
-                sd = gp_sd*self.y_scalers[y_key].scale_[0]
-                preds[y_key] = (mean,sd)
-                incumb = self.gp_incumbents[y_key]
+                sd = gp_sd_y*self.y_scalers[y_key].scale_[0]
+                preds[y_key] = [mean,sd]
+                gp_incumb = self.gp_incumbents[y_key]
                 expl_inc = self.strat_params['exploration_incentive']
                 gp_scores[y_key] = self.improvement_probability(
-                          targ_spec,incumb,gp_mean,gp_sd,expl_inc)
+                          targ_spec,gp_incumb,gp_mean_y,gp_sd_y,expl_inc)
 
+            # evaluate constraints
             for y_key, y_con in self.constraints.items():
-                gp_mean = self._gp_mean(cov_vector,self.gp_arrays[y_key],use_good_idx=True)[0]
-                gp_preds[y_key] = (gp_mean,gp_sd)
-                ys_mean = self._gp_mean(cov_vector,self.ys_arrays[y_key],use_good_idx=True)[0]
-                ys_con = self.y_scalers[y_key].transform(np.array(y_con).reshape(-1,1))[0,0]
+                if self.filter_flags[y_key]:
+                    covvec_y,gp_var_y,gp_sd_y = self._compute_cov(xs,y_key)
+                    inv_cov_y = self.filtered_inv_cov_mats[y_key]
+                else:
+                    covvec_y,gp_var_y,gp_sd_y = covvec_all,gp_var_all,gp_sd_all 
+                    inv_cov_y = self.inv_cov_mat
+                gp_mean_y = self._gp_mean(covvec_y,inv_cov_y,self.gp_arrays[y_key])[0]
+                gp_preds[y_key] = [gp_mean_y,gp_sd_y]
+                ys_mean = self._gp_mean(covvec_y,inv_cov_y,self.ys_arrays[y_key])[0]
                 mean = self.y_scalers[y_key].inverse_transform(np.array(ys_mean).reshape(-1,1))[0,0]
-                sd = gp_sd*self.y_scalers[y_key].scale_[0]
-                preds[y_key] = (mean,sd)
+                sd = gp_sd_y*self.y_scalers[y_key].scale_[0]
+                preds[y_key] = [mean,sd]
                 #expl_inc = self.strat_params['exploration_incentive']
                 # TODO: think about how to incorporate exploration incentive here
-                incumb = self.gp_incumbents[y_key]
-                incumb_abserr = np.abs(incumb-ys_con)
+                ys_con = self.y_scalers[y_key].transform(np.array(y_con).reshape(-1,1))[0,0]
+                gp_incumb = self.gp_incumbents[y_key]
+                incumb_abserr = np.abs(gp_incumb-ys_con)
                 gp_rc = [ys_con-incumb_abserr,ys_con+incumb_abserr]
-                range_val = self.range_probability(gp_rc,gp_mean,gp_sd)
-                max_range_val = 2*incumb_abserr/np.sqrt(2.*np.pi*gp_sd**2)
+                range_val = self.range_probability(gp_rc,gp_mean_y,gp_sd_y)
+                max_range_val = 2*incumb_abserr/np.sqrt(2.*np.pi*gp_sd_y**2)
                 acq_val = range_val/max_range_val
                 gp_scores[y_key] = acq_val
 
+            # evaluate range constraints
             for y_key,gp_rc in self.gp_range_constraints.items():
-                gp_mean = self._gp_mean(cov_vector,self.gp_arrays[y_key],use_good_idx=True)[0]
-                gp_preds[y_key] = (gp_mean,gp_sd)
-                ys_mean = self._gp_mean(cov_vector,self.ys_arrays[y_key],use_good_idx=True)[0]
+                if self.filter_flags[y_key]:
+                    covvec_y,gp_var_y,gp_sd_y = self._compute_cov(xs,y_key)
+                    inv_cov_y = self.filtered_inv_cov_mats[y_key]
+                else:
+                    covvec_y,gp_var_y,gp_sd_y = covvec_all,gp_var_all,gp_sd_all 
+                    inv_cov_y = self.inv_cov_mat
+                gp_mean_y = self._gp_mean(covvec_y,inv_cov_y,self.gp_arrays[y_key])[0]
+                gp_preds[y_key] = [gp_mean_y,gp_sd_y]
+                ys_mean = self._gp_mean(covvec_y,inv_cov_y,self.ys_arrays[y_key])[0]
                 mean = self.y_scalers[y_key].inverse_transform(np.array(ys_mean).reshape(-1,1))[0,0]
-                sd = gp_sd*self.y_scalers[y_key].scale_[0]
-                preds[y_key] = (mean,sd)
-                gp_scores[y_key] = self.range_probability(gp_rc,gp_mean,gp_sd)
+                sd = gp_sd_y*self.y_scalers[y_key].scale_[0]
+                preds[y_key] = [mean,sd]
+                gp_scores[y_key] = self.range_probability(gp_rc,gp_mean_y,gp_sd_y)
 
         return preds,gp_preds,gp_scores
 
@@ -392,37 +411,40 @@ class BayesianDesigner(PawsPlugin):
 
     def _joint_acq_func(self,xs):
         acq_vals = []
-
-        # evaluate categoricals on all data
-        cov_vector = self.cov_vector(xs)
-        gp_var = self._gp_var(cov_vector)
-        if gp_var <= 0.: return 0
-        gp_sd = np.sqrt(gp_var)
+            
+        # get covariance and gp predictions without filters
+        covvec_all,gp_var_all,gp_sd_all = self._compute_cov(xs)
 
         # compute acq. value for each categorical constraint:
         # this should be the likelihood of the prediction 
         # to project onto the specified category 
         for y_key,gp_cat in self.gp_categorical_constraints.items():
-            gp_mean = self._gp_mean(cov_vector,self.gp_arrays[y_key])
-            acq_val = self.categorical_probability(gp_cat,gp_mean,gp_sd)
+            if self.filter_flags[y_key]:
+                covvec_y,gp_var_y,gp_sd_y = self._compute_cov(xs,y_key)
+                inv_cov_y = self.filtered_inv_cov_mats[y_key]
+            else:
+                covvec_y,gp_var_y,gp_sd_y = covvec_all,gp_var_all,gp_sd_all 
+                inv_cov_y = self.inv_cov_mat
+            gp_mean_y = self._gp_mean(covvec_y,inv_cov_y,self.gp_arrays[y_key])[0]
+            acq_val = self.categorical_probability(gp_cat,gp_mean_y,gp_sd_y)
             acq_vals.append(acq_val)
-
-        # evaluate scalars on categorically-filtered data
-        cov_vector = self.cov_vector(xs,use_good_idx=True)
-        gp_var = self._gp_var(cov_vector,use_good_idx=True)
-        if gp_var <= 0.: return 0
-        gp_sd = np.sqrt(gp_var)
 
         # compute acq. value for each target:
         # this should be the likelihood of optimizing the target,
         # in the context of self.strategy 
         for y_key,target_spec in self.targets.items():
-            gp_mean = self._gp_mean(cov_vector,self.gp_arrays[y_key],use_good_idx=True)
+            if self.filter_flags[y_key]:
+                covvec_y,gp_var_y,gp_sd_y = self._compute_cov(xs,y_key)
+                inv_cov_y = self.filtered_inv_cov_mats[y_key]
+            else:
+                covvec_y,gp_var_y,gp_sd_y = covvec_all,gp_var_all,gp_sd_all 
+                inv_cov_y = self.inv_cov_mat
+            gp_mean_y = self._gp_mean(covvec_y,inv_cov_y,self.gp_arrays[y_key])[0]
             expl_inc = self.strat_params['exploration_incentive']
-            incumb = self.gp_incumbents[y_key]
+            gp_incumb = self.gp_incumbents[y_key]
             if self.strategy == 'MPI':
                 acq_val = self.improvement_probability(
-                          target_spec,incumb,gp_mean,gp_sd,expl_inc)
+                          target_spec,gp_incumb,gp_mean_y,gp_sd_y,expl_inc)
                 acq_vals.append(acq_val)
             else:
                 raise ValueError('optimization strategy {} not supported'.format(self.strategy))
@@ -431,13 +453,19 @@ class BayesianDesigner(PawsPlugin):
         # this should be the likelihood of optimizing
         # the value relative to the incumbent 
         for y_key,y_con in self.constraints.items():
-            gp_mean = self._gp_mean(cov_vector,self.gp_arrays[y_key],use_good_idx=True)
+            if self.filter_flags[y_key]:
+                covvec_y,gp_var_y,gp_sd_y = self._compute_cov(xs,y_key)
+                inv_cov_y = self.filtered_inv_cov_mats[y_key]
+            else:
+                covvec_y,gp_var_y,gp_sd_y = covvec_all,gp_var_all,gp_sd_all 
+                inv_cov_y = self.inv_cov_mat
+            gp_mean_y = self._gp_mean(covvec_y,inv_cov_y,self.gp_arrays[y_key])[0]
             ys_con = self.y_scalers[y_key].transform(np.array(y_con).reshape(-1,1))[0,0]
-            incumb = self.gp_incumbents[y_key]
-            incumb_abserr = np.abs(incumb-ys_con)
+            gp_incumb = self.gp_incumbents[y_key]
+            incumb_abserr = np.abs(gp_incumb-ys_con)
             gp_rc = [ys_con-incumb_abserr,ys_con+incumb_abserr]
-            range_val = self.range_probability(gp_rc,gp_mean,gp_sd)
-            max_range_val = 2*incumb_abserr/np.sqrt(2.*np.pi*gp_sd**2)
+            range_val = self.range_probability(gp_rc,gp_mean_y,gp_sd_y)
+            max_range_val = 2*incumb_abserr/np.sqrt(2.*np.pi*gp_sd_y**2)
             acq_val = range_val/max_range_val
             acq_vals.append(acq_val)
             
@@ -445,8 +473,14 @@ class BayesianDesigner(PawsPlugin):
         # this should be the likelihood of the prediction 
         # to fall within the range of the constraint
         for y_key,gp_rc in self.gp_range_constraints.items():
-            gp_mean = self._gp_mean(cov_vector,self.gp_arrays[y_key],use_good_idx=True)
-            acq_val = self.range_probability(gp_rc,gp_mean,gp_sd)
+            if self.filter_flags[y_key]:
+                covvec_y,gp_var_y,gp_sd_y = self._compute_cov(xs,y_key)
+                inv_cov_y = self.filtered_inv_cov_mats[y_key]
+            else:
+                covvec_y,gp_var_y,gp_sd_y = covvec_all,gp_var_all,gp_sd_all 
+                inv_cov_y = self.inv_cov_mat
+            gp_mean_y = self._gp_mean(covvec_y,inv_cov_y,self.gp_arrays[y_key])[0]
+            acq_val = self.range_probability(gp_rc,gp_mean_y,gp_sd_y)
             acq_vals.append(acq_val)
 
         return np.product(acq_vals)
@@ -596,7 +630,7 @@ class BayesianDesigner(PawsPlugin):
         gp_range = np.linspace(gp_mean-6.*gp_sd,gp_mean+6.*gp_sd,num=100)
         gp_pdf = scipynorm.pdf(gp_range,gp_mean,gp_sd)*(self.gp_arrays[y_key].shape[0])
         plt.figure()
-        plt.plot(gp_range,gp_pdf)
+        plt.plot(gp_range,gp_pdf,'r')
         kwkeys = list(kwargs.keys())
         plotkeys = []
         for kwkey in kwkeys:
