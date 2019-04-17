@@ -253,8 +253,8 @@ class MitosPPumpController(PawsPlugin):
             The flow rate set point, in microlitres per minute.
         """
         # TODO: think of an elegant way to handle setpts below the resolution of the pump controls
-        if rate < 0.1:
-            rate = 0.
+        #if rate < 0.1:
+        #    rate = 0.
         if self.verbose: self.message_callback('setting flowrate: {} uL/min'.format(rate))
         setpt = self.get_setpt(rate) 
         pl_s_rate = int(round(float(setpt)*1.E6/60.))
