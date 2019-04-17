@@ -49,7 +49,7 @@ class FlowReactor(PawsPlugin):
         for nm,ppc in self.ppumps.items():
             if self.verbose: self.message_callback('starting pump controller: {}'.format(nm))
             ppc.start()
-            ppc.set_idle()
+            ppc.set_flowrate(0.)
         # set up internal CryoConController plugin
         if self.cryocon_setup:
             self.cryo = CryoConController(
@@ -141,6 +141,11 @@ class FlowReactor(PawsPlugin):
             if self.verbose: self.message_callback('Setting pump {} to idle'.format(nm))
             ppc.set_idle()
 
+    def stop_pumps(self):
+        for nm,ppc in self.ppumps.items():
+            if self.verbose: self.message_callback('Setting pump {} to zero flow'.format(nm))
+            ppc.set_flowrate(0.)
+
     def set_temperature(self,T_set,T_ramp=100.):
         for chan,loop_idx in self.cryo.channels.items():
             self.cryo.set_ramp_rate(chan,T_ramp)
@@ -185,7 +190,6 @@ class FlowReactor(PawsPlugin):
         return rcp_str
 
     def check_status(self):
-        ok_flag = True
         stat_str = ''
         stat_dict = {}
         if self.cryo:
@@ -196,6 +200,7 @@ class FlowReactor(PawsPlugin):
                     stat_dict[T_read_key] = float(T_read)
                     stat_str += 'T_{}: {}, '.format(chan,T_read)
         for nm, ppc in self.ppumps.items():
+            ok_flag = True
             with ppc.state_lock:
                 setpt_pls = float(ppc.state['target_flow_rate'])
                 frt_pls = float(ppc.state['flow_rate'])
@@ -207,17 +212,16 @@ class FlowReactor(PawsPlugin):
                 stat_dict['{}_flowrate'.format(nm)] = float(truefrt_ulm)
                 stat_dict['{}_setpoint'.format(nm)] = float(truesetpt_ulm)
                 stat_str += ' {}: {} (setpt {}), '.format(nm,truefrt_ulm,truesetpt_ulm)
-                if setpt_pls:
-                    # nonzero setpoint
-                    ok_flag = True
-                    if abs(truefrt_ulm-truesetpt_ulm)/truesetpt_ulm > 0.5 \
-                    and abs(truefrt_ulm-truesetpt_ulm) > 5.0:
+                # TODO: these limits should be MitosPPumpController attributes
+                if truesetpt_ulm > 1.:
+                    # substantially high setpoint: make sure the true rate is within 50%
+                    if abs(truefrt_ulm-truesetpt_ulm)/truesetpt_ulm > 0.2:
                         ok_flag = False
                 else:
-                    # make sure the rate is not far from zero
-                    if abs(truefrt_ulm) > 1.0:
+                    # low setpt: make sure the true rate is not too far off 
+                    if abs(truefrt_ulm-truesetpt_ulm) > 0.5:
                         ok_flag = False
-                if self.verbose and not ok_flag: 
+                if self.verbose and not ok_flag:
                     self.message_callback(
                     'ppump {} flowrate {} is far from setpoint {}'
                     .format(nm,truefrt_ulm,truesetpt_ulm))
