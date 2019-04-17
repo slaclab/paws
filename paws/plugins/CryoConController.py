@@ -1,11 +1,8 @@
-from __future__ import print_function
-from collections import OrderedDict
 import socket 
 import copy
-from threading import Condition
+from threading import Thread, Condition
 
 from .PawsPlugin import PawsPlugin
-from .. import pawstools
 
 class CryoConController(PawsPlugin):
 
@@ -29,7 +26,7 @@ class CryoConController(PawsPlugin):
         verbose : bool
         log_file : str
         """
-        super(CryoConController,self).__init__(thread_blocking=True,verbose=verbose,log_file=log_file)
+        super(CryoConController,self).__init__(verbose=verbose,log_file=log_file)
         self.timer = timer
         self.host = host
         self.port = port
@@ -38,37 +35,34 @@ class CryoConController(PawsPlugin):
         self.sock = None
         self.state_lock = Condition()
         self.state = {} 
-
-    @classmethod
-    def clone(cls,timer,host,port,channels,verbose,log_file):
-        return cls(timer,host,port,channels,verbose,log_file)
-
-    def build_clone(self):
-        cln = self.clone(self.timer,self.host,self.port,self.channels,self.verbose,self.log_file)
-        return cln
+        self.controller_thread = None
 
     def start(self):
-        super(CryoConController,self).start()
-
-    def run(self):
-        # executed by self.thread_clone in its own thread
         with self.socket_lock:
             self.sock = socket.create_connection((self.host,self.port)) 
+        super(CryoConController,self).start()
+
+    def _run(self):
+        self.controller_thread = Thread(target=self.run_cryocon)
+        self.controller_thread.start()
+        # block until device control is established: 
+        with self.running_lock:
+            self.running_lock.wait()
+
+    def run_cryocon(self):
         self.run_cmd('*idn?')
+        self.read_status()
+        self.run_notify()
         keep_going = True
-
-        self.update_status()
-
         while keep_going: 
             with self.timer.dt_lock:
                 self.timer.dt_lock.wait()
-            self.update_status()
+            self.read_status()
             with self.timer.running_lock:
                 if not self.timer.running:
-                    with self.proxy.running_lock:
-                        self.proxy.stop()
-            with self.proxy.running_lock:
-                keep_going = bool(self.proxy.running)
+                    self.stop()
+            with self.running_lock:
+                keep_going = bool(self.running)
         if self.verbose: self.message_callback('FINISHED')
         self.run_cmd('stop')
         with self.socket_lock:
@@ -79,21 +73,14 @@ class CryoConController(PawsPlugin):
             resp = self.run_cmd('input {}:temp?'.format(chan))
             with self.state_lock:
                 self.state['T_read_{}'.format(chan)] = float(resp)
-
-    def update_status(self):
-        with self.state_lock:
-            self.read_status()
-        with self.proxy.state_lock:
-            self.proxy.state = copy.deepcopy(self.state)
-        #if self.verbose: self.message_callback('T_read: {}'.format(self.state['T_read']))
+                if self.verbose: self.message_callback('T_read_{}: {}'.format(chan,float(resp)))
 
     def run_cmd(self,cmd):
         with self.socket_lock:
             self.send_line(cmd)
             resp = self.receive_line()
         if self.verbose: self.message_callback('{}: {}'.format(cmd,resp))
-        #with self.proxy.history_lock:
-        self.proxy.add_to_history(cmd+' '+resp)
+        self.add_to_history(cmd+' '+resp)
         return resp
 
     def send_line(self, line):
@@ -107,40 +94,27 @@ class CryoConController(PawsPlugin):
 
     def set_units(self,channel,unit_str):
         cmd = 'input {}:units {}'.format(channel,unit_str)
-        self.thread_clone.run_cmd(cmd)
-        #with self.thread_clone.command_lock:
-        #    self.thread_clone.commands.put(cmd)
+        self.run_cmd(cmd)
 
     def loop_setup(self,channel,control_type='PID'):
         cmd = 'loop {}:source {};type {}'.format(self.channels[channel],channel,control_type)
-        self.thread_clone.run_cmd(cmd)
-        #with self.thread_clone.command_lock:
-        #    self.thread_clone.commands.put(cmd)
+        self.run_cmd(cmd)
 
     def set_temperature(self,channel,T_set):
         cmd = 'loop {}:setpt {}'.format(self.channels[channel],T_set)
-        self.thread_clone.run_cmd(cmd)
-        with self.thread_clone.state_lock:
-            self.thread_clone.state['T_set_{}'.format(channel)] = T_set 
-        #with self.thread_clone.command_lock:
-        #    self.thread_clone.commands.put(cmd)
+        self.run_cmd(cmd)
+        with self.state_lock:
+            self.state['T_set_{}'.format(channel)] = T_set 
 
     def set_ramp_rate(self,channel,T_ramp):
         cmd = 'loop {}:rate {}'.format(self.channels[channel],T_ramp)
-        self.thread_clone.run_cmd(cmd)
-        with self.thread_clone.state_lock:
-            self.thread_clone.state['T_ramp_{}'.format(channel)] = T_ramp 
-        #with self.thread_clone.command_lock:
-        #    self.thread_clone.commands.put(cmd)
+        self.run_cmd(cmd)
+        with self.state_lock:
+            self.state['T_ramp_{}'.format(channel)] = T_ramp 
 
     def start_control(self):
-        self.thread_clone.run_cmd('control')
-        #with self.thread_clone.command_lock:
-        #    self.thread_clone.commands.put('control')
+        self.run_cmd('control')
  
     def stop_control(self):
-        with self.thread_clone.running_lock:
-            self.thread_clone.run_cmd('stop')
-        #with self.thread_clone.command_lock:
-        #    self.thread_clone.commands.put('stop')
+        self.run_cmd('stop')
  

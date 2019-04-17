@@ -1,5 +1,3 @@
-from __future__ import print_function
-from collections import OrderedDict
 import socket 
 from threading import Condition
 import time
@@ -24,27 +22,21 @@ class SpecInfoClient(PawsPlugin):
         verbose : bool
         log_file : str
         """
-        super(SpecInfoClient,self).__init__(thread_blocking=False,verbose=verbose,log_file=log_file)
+        super(SpecInfoClient,self).__init__(verbose=verbose,log_file=log_file)
         self.host = host
         self.port = port
         self.socket_lock = Condition()
         self.sock = None
 
     def start(self):
-        super(SpecInfoClient,self).start()
-
-    def run(self):
         with self.socket_lock:
             self.sock = socket.create_connection((self.host,self.port)) 
         self.take_control()
-
-    #def stop(self):
-    #    super(SpecInfoClient,self).stop() 
-    #    if self.thread_clone:
-    #        self.thread_clone.close_socket()
+        super(SpecInfoClient,self).start()
 
     def close_socket(self):
-        self.sock.close()
+        with self.socket_lock:
+            self.sock.close()
 
     def run_cmd(self,cmd):
         resp = ''
@@ -78,66 +70,36 @@ class SpecInfoClient(PawsPlugin):
         self.message_callback('waiting {} seconds for {}-second exposure'.format(sleep_time,exposure_time))
         time.sleep(sleep_time)
 
-#    def enable_cryocon(self):
-#        with self.thread_clone.command_lock:
-#            self.thread_clone.commands.put('!cmd ctemp_enable')
-#            self.thread_clone.commands.put('!cmd ctemp_ctrl_on')
-#
-#    def set_cryocon(self,temperature,ramp=None):
-#        with self.thread_clone.command_lock:
-#            if ramp is not None:
-#                self.thread_clone.commands.put('!cmd ctemp_ramp_on')
-#                self.thread_clone.commands.put('!cmd csetramp {}'.format(ramp))
-#            self.thread_clone.commands.put('!cmd csettemp {}'.format(temperature))
-#
-#    def stop_cryocon(self):
-#        with self.thread_clone.command_lock:
-#            self.thread_clone.commands.put('!cmd ctemp_ctrl_off')
-#            self.thread_clone.commands.put('!cmd ctemp_disable')
-#
-#    def read_cryocon(self):
-#        # !cmd cmeasuretemp     -> reads temperature, saves as CYRO_DEGC
-#        # !cmd CRYO_DEGC        -> query the CRYO_DEGC variable
-#        # ?res                  -> gets result of CRYO_DEGC query
-#        # TODO: this should block until it has a result,
-#        # and then it should return that result
-#        with self.thread_clone.command_lock:
-#            self.thread_clone.commands.put('!cmd cmeasuretemp')
-#
-#    def mar_enable(self):
-#        with self.thread_clone.command_lock:
-#            self.thread_clone.commands.put('!cmd mar_enable')
-# 
-#    def mar_disable(self):
-#        with self.thread_clone.command_lock:
-#            self.thread_clone.commands.put('!cmd mar_disable')
-# 
-#    def run_loopscan(self,mroot,n_points,exp_time,block=False):
-#        # !cmd loopscan n_points exposure_time sleep_time
-#        with self.thread_clone.command_lock:
-#            self.thread_clone.commands.put('!cmd mar netroot {}'.format(mroot))
-#            self.thread_clone.commands.put('!cmd loopscan {} {}'.format(n_points,exp_time))
-#        if block:
-#            # wait for self.thread_clone.loopscan_lock
-#            if self.verbose: self.message_callback('blocking until loopscan finishes')
-#            with self.thread_clone.loopscan_lock:
-#                self.thread_clone.loopscan_lock.wait()
-#            if self.verbose: self.message_callback('loopscan finished')
-#
-#------------------------------------------------------------------------------
+    def enable_cryocon(self):
+        self.run_cmd('!cmd ctemp_enable')
+        self.run_cmd('!cmd ctemp_ctrl_on')
 
-#    p.addCommand("!cmd slacx_mar_data_path = 'my_mar_data'")
-#    p.addCommand("!cmd slacx_pd_filename = 'my_pd_filename'")
-#    p.addCommand("!cmd slacx_loopscan_npoints = 2")
-#    p.addCommand("!cmd slacx_loopscan_counting_time = 2")
-#    p.addCommand("!cmd runme")
-#    p.addCommand("?sta")
-#
-# !rqc                  -> requests control
-# !cmd mar_enable       -> enables mar det as a counter
-# !cmd pd enable        -> enables pilatus as a counter
+    def set_cryocon(self,temperature,ramp=None):
+        if ramp is not None:
+            self.run_cmd('!cmd ctemp_ramp_on')
+            self.run_cmd('!cmd csetramp {}'.format(ramp))
+        self.run_cmd('!cmd csettemp {}'.format(temperature))
 
-# Loop Scanning
-# !cmd loopscan n_points exposure_time sleep_time
+    def stop_cryocon(self):
+        self.run_cmd('!cmd ctemp_ctrl_off')
+        self.run_cmd('!cmd ctemp_disable')
 
+    def read_cryocon(self):
+        # !cmd cmeasuretemp     -> reads temperature, saves as CYRO_DEGC
+        self.run_cmd('!cmd cmeasuretemp')
+        # TODO: this should block until it has a result,
+        # and then it should return that result, via:
+        # !cmd CRYO_DEGC    -> queries the CRYO_DEGC variable
+        # ?res              -> gets result of CRYO_DEGC query
+
+    def mar_enable(self):
+        self.run_cmd('!cmd mar_enable')
+
+    def mar_disable(self):
+        self.run_cmd('!cmd mar_disable')
+
+    def run_loopscan(self,mroot,n_points,exp_time):
+        # !cmd loopscan n_points exposure_time sleep_time
+        self.run_cmd('!cmd mar netroot {}'.format(mroot))
+        self.run_cmd('!cmd loopscan {} {}'.format(n_points,exp_time))
 

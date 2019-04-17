@@ -1,10 +1,7 @@
-from __future__ import print_function
-from collections import OrderedDict
 import os
 
 from pypif import pif
 from citrination_client import CitrinationClient as CitCli
-from citrination_client import PifSystemReturningQuery, PifSystemQuery, DataQuery, DatasetQuery, IdQuery, FieldQuery, Filter
 
 from .PawsPlugin import PawsPlugin
 
@@ -23,7 +20,7 @@ class CitrinationClient(PawsPlugin):
         verbose : bool
         log_file : str
         """
-        super(CitrinationClient,self).__init__(thread_blocking=False,verbose=verbose,log_file=log_file)
+        super(CitrinationClient,self).__init__(verbose=verbose,log_file=log_file)
         self.address = address
         self.api_key_file = api_key_file
         self.client = None
@@ -78,35 +75,3 @@ class CitrinationClient(PawsPlugin):
             os.remove(json_path) 
         return resp
 
-    def download_pifs(dataset_id,experiment_id=None):
-        """Download PIFs from Citrination.
-
-        Parameters
-        ----------
-        dataset_id : int
-            Integer dataset id from where the pif(s) will be downloaded 
-        experiment_id : str 
-            Optional string for filtering pifs on their experiment_id attributes 
-        
-        Returns
-        -------
-        pifs : object
-            One or more pypif.obj.System objects
-        """
-        if experiment_id is not None:
-            query = self.dsid_query_with_expt_id(dataset_id,experiment_id)
-        else:
-            query = self.dsid_query(dataset_id)
-        all_hits = []
-        n_hits = 0
-        self.message_callback('Querying Citrination for records.')
-        current_result = self.client.search(query)
-        while current_result.hits is not None:
-            all_hits.extend(current_result.hits)
-            n_current_hits = len(current_result.hits)
-            n_hits += n_current_hits
-            query.from_index += n_current_hits 
-            current_result = self.client.search(query)
-        self.message_callback('Found {} records.'.format(n_hits))
-        pifs = [x.system for x in all_hits]
-        return pifs 
