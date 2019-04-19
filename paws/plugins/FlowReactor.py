@@ -132,10 +132,10 @@ class FlowReactor(PawsPlugin):
             if self.verbose: self.message_callback('Setting pump {} to zero flow'.format(nm))
             ppc.set_flowrate(0.)
 
-    #def set_temperature(self,T_set,T_ramp=100.):
-    #    for chan,loop_idx in self.cryo.channels.items():
-    #        self.cryo.set_ramp_rate(chan,T_ramp)
-    #        self.cryo.set_temperature(chan,T_set)
+    def set_temperature(self,T_set,T_ramp=None):
+        for chan,loop_idx in self.cryo.channels.items():
+            if T_ramp: self.cryo.set_ramp_rate(chan,T_ramp)
+            self.cryo.set_temperature(chan,T_set)
 
     def set_recipe(self,recipe):
         self.set_cryocon(recipe)
