@@ -169,6 +169,7 @@ class FlowReactor(PawsPlugin):
                     self.cryo.start()
                     self.initialize_cryo()
                     self.cryo.start_control()
+                    n_tries += 1
 
     @staticmethod
     def prettyprint_recipe(rcp):
@@ -201,10 +202,17 @@ class FlowReactor(PawsPlugin):
             stat_dict['{}_flowrate'.format(nm)] = pstate['flow_rate']
             stat_dict['{}_setpoint'.format(nm)] = pstate['target_flow_rate']
             stat_dict['{}_volume_limit_ok'.format(nm)] = pstate['volume_limit_ok']
+            stat_dict['{}_flowrate_ok'.format(nm)] = pstate['flow_rate_ok']
             stat_dict['{}_bad_flow_detected'.format(nm)] = pstate['bad_flow_detected']
+            if not pstate['flow_rate_ok']:
+                if self.verbose: self.message_callback(
+                    '{} flowrate alert: {}/{}'.format(
+                    nm,pstate['flow_rate'],pstate['target_flow_rate']))
+                if pstate['bad_flow_detected']:
+                    if self.verbose: self.message_callback(
+                        '{} flowrate fault- STOPPING'.format(nm))
+                    ok_flag = False
             if not pstate['volume_limit_ok']:
-                ok_flag = False
-            if pstate['bad_flow_detected']:
                 ok_flag = False
         self.add_to_history(stat_str)
         with self.state_lock:
