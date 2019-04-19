@@ -1,6 +1,7 @@
 from collections import OrderedDict
 from threading import Thread, Condition
 import serial
+import copy
 
 import numpy as np
 from scipy.optimize import minimize as scipimin
@@ -202,13 +203,13 @@ class MitosPPumpController(PawsPlugin):
             self.read_status()
             setpt_pls = float(self.state['target_flow_rate'])
             frt_pls = float(self.state['flow_rate'])
+        frt_ulm = frt_pls*60/1.E6
+        truefrt_ulm = self.get_true_flowrate(frt_ulm)
+        setpt_ulm = setpt_pls*60/1.E6
+        truesetpt_ulm = self.get_true_flowrate(setpt_ulm)
         # check flowrates against setpoints
         frok = True
         if frt_pls:
-            frt_ulm = frt_pls*60/1.E6
-            truefrt_ulm = self.get_true_flowrate(frt_ulm)
-            setpt_ulm = setpt_pls*60/1.E6
-            truesetpt_ulm = self.get_true_flowrate(setpt_ulm)
             #stat_dict['{}_flowrate'.format(nm)] = float(truefrt_ulm)
             #stat_dict['{}_setpoint'.format(nm)] = float(truesetpt_ulm)
             #stat_str += ' {}: {} (setpt {}), '.format(nm,truefrt_ulm,truesetpt_ulm)
