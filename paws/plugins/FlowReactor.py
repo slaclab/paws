@@ -38,6 +38,7 @@ class FlowReactor(PawsPlugin):
                 timer=self.timer,
                 serial_device=pump_cfg['device'],
                 flowrate_sensitivity=pump_cfg['flowrate_sensitivity'],
+                bad_flow_tol=pump_cfg['bad_flow_tol'],
                 volume_limit=pump_cfg['volume_limit'],
                 flowrate_table=pump_cfg['flowrate_table'],
                 verbose=False,log_file=None
