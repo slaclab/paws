@@ -89,7 +89,7 @@ class BayesianDesigner(PawsPlugin):
         if self.covariance_kernel == 'sq_exp':
             return self._sq_exp_kernel(x1,x2,self.cov_params['width'])
         elif self.covariance_kernel == 'inv_exp':
-            return self._exp_kernel(x1,x2,self.cov_params['width'])
+            return self._inv_exp_kernel(x1,x2,self.cov_params['width'])
         else:
             raise ValueError('invalid kernel specification: {}'.format(self.covariance_kernel))
 
@@ -331,9 +331,9 @@ class BayesianDesigner(PawsPlugin):
                 else:
                     covvec_y,gp_var_y,gp_sd_y = covvec_all,gp_var_all,gp_sd_all 
                     inv_cov_y = self.inv_cov_mat
-                ys_mean = self._gp_mean(covvec_y,inv_cov_y,self.ys_arrays[y_key])[0]
                 gp_mean_y = self._gp_mean(covvec_y,inv_cov_y,self.gp_arrays[y_key])[0]
                 gp_preds[y_key] = [gp_mean_y,gp_sd_y]
+                ys_mean = self._gp_mean(covvec_y,inv_cov_y,self.ys_arrays[y_key])[0]
                 mean = self.y_scalers[y_key].inverse_transform(np.array(ys_mean).reshape(-1,1))[0,0]
                 sd = gp_sd_y*self.y_scalers[y_key].scale_[0]
                 preds[y_key] = [mean,sd]
@@ -615,7 +615,7 @@ class BayesianDesigner(PawsPlugin):
                         obj_current = obj_new
                         n_acc += 1
 
-            if np.mod(iit,100) == 0:
+            if (np.mod(iit,1000)==0) or (iit<1000 and np.mod(iit,100)==0):
                 # check the acceptance ratio
                 ac_ratio = float(n_acc)/iit
                 if self.verbose:
