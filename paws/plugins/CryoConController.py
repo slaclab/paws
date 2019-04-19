@@ -106,6 +106,18 @@ class CryoConController(PawsPlugin):
         with self.state_lock:
             self.state['T_set_{}'.format(channel)] = T_set 
 
+    def hack_set_temp(self,channel,T_set):
+        # NOTE: this does a little dance, 
+        # to circumvent a problem with the CryoCon,
+        # where it sometimes ignores the ramp rate 
+        with self.state_lock:
+            T_current = float(self.state['T_read_{}'.format(chan)])
+        self.set_temperature(chan,T_current)
+        T_inter = T_current + (T_set-T_current)*0.1
+        self.set_temperature(chan,T_inter)
+        time.sleep(1)
+        self.set_temperature(chan,T_set)
+
     def set_ramp_rate(self,channel,T_ramp):
         cmd = 'loop {}:rate {}'.format(self.channels[channel],T_ramp)
         self.run_cmd(cmd)

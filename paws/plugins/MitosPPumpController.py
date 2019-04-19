@@ -40,7 +40,9 @@ class MitosPPumpController(PawsPlugin):
     a command must be sent every 30 seconds,
     or the pump will automatically exit CONTROL mode.
     """
-    def __init__(self,timer,serial_device,flowrate_table=None,verbose=False,log_file=None):
+    def __init__(self,timer,serial_device,
+            flowrate_sensitivity=1.,volume_limit=None,bad_flow_tol=100,
+            flowrate_table=None,verbose=False,log_file=None):
         """Create a MitosPPumpController.
 
         Parameters
@@ -51,10 +53,16 @@ class MitosPPumpController(PawsPlugin):
         serial_device : str
             String serial device indicator (e.g. "COM2") 
             or filesystem path (e.g. "/dev/ttyUSB0")
-        flowrate_table : array 
-            Table mapping Mitos flow control setpoints to actual flowrates 
-            (with instrument calibrated for water).
-            Should be a two-column array,
+        flowrate_sensitivity : float
+            Lower limit of flowrate sensor range, in microlitres per minute
+        volume_limit : float
+            The pump keeps track of its total delivered volume-
+            when it passes this limit, the pump will stop itself
+        bad_flow_tol : int
+            Number of consecutive flowrate errors to tolerate before stopping pump
+        flowrate_calib_file : str 
+            Path to file containing flowrate calibration information.
+            File should have two columns,
             where the first column contains instrument setpoints,
             and the second column contains the corresponding measured flowrates,
             both in units of microlitres/minute
@@ -72,11 +80,19 @@ class MitosPPumpController(PawsPlugin):
             supply_pressure = None, 
             target_pressure = None, 
             flow_rate = None, 
-            target_flow_rate = None)
+            target_flow_rate = None,
+            v_delivered = 0.,
+            flow_rate_ok = True,
+            bad_flow_detected = False,
+            volume_limit_ok = True)
         self.controller_thread = None
         self.timer = timer
+        self.timer_dt_minutes = float(self.timer.dt)/60.
         self.serial_device = serial_device
-        self.flowrate_table = flowrate_table
+        self.flowrate_sensitivity = flowrate_sensitivity
+        self.volume_limit = volume_limit
+        self.bad_flow_tol = bad_flow_tol
+        self.flowrate_table = np.loadtxt(flowrate_calib_file)
         self.flow_conversion_power = 1.
         self.calibrate()
 
@@ -110,12 +126,12 @@ class MitosPPumpController(PawsPlugin):
                 self.add_to_history(msg)
                 keep_going = False
                 self.stop()
-
         # clear the pump...
         self.run_cmd('C')
-
         # self._run() will be waiting for run_notify()...
         self.run_notify()
+        bad_flow_count = 0
+        # update status on timer ticks
         while keep_going:
             with self.timer.dt_lock:
                 self.timer.dt_lock.wait()
@@ -125,11 +141,28 @@ class MitosPPumpController(PawsPlugin):
                     self.stop()
             with self.running_lock:
                 keep_going = bool(self.running)
-
+            with self.state_lock:
+                if not self.state['volume_limit_ok']: 
+                    keep_going = False
+                    if self.verbose: self.message_callback(
+                        'pump exceeded volume limit! ({:.3f}/{:.3f})'.format(
+                        self.state['v_delivered'],self.volume_limit))
+                if self.state['flow_rate_ok']:
+                    bad_flow_count = 0
+                else:
+                    bad_flow_count += 1
+                    if self.verbose:
+                        self.message_callback(
+                        'flowrate far from setpoint: {:.3f}/{:.3f}'
+                        .format(truefrt_ulm,truesetpt_ulm))
+                    if bad_flow_count > self.bad_flow_tol:
+                        self.state['bad_flow_detected'] = True
+                        keep_going = False 
         # relinquish control, close the port, stop the plugin
         self.run_cmd('A0') 
         if self.verbose: self.message_callback('FINISHED')
-        self.ser.close()
+        with self.serial_lock:
+            self.ser.close()
         self.stop()
        
     def calibrate(self):
@@ -143,6 +176,11 @@ class MitosPPumpController(PawsPlugin):
                 msg = 'finished calibrating- power law flowrate conversion: {}'.format(
                 self.flow_conversion_power)
                 self.message_callback(msg)
+
+    def get_state(self):
+        with self.state_lock:
+            st = copy.deepcopy(self.state)
+        return st
 
     def get_setpt(self,rate):
         if rate == 0.: return 0.
@@ -163,7 +201,39 @@ class MitosPPumpController(PawsPlugin):
     def update_status(self):
         with self.state_lock:
             self.read_status()
-        if self.verbose: self.message_callback(self.print_status())
+            setpt_pls = float(self.state['target_flow_rate'])
+            frt_pls = float(self.state['flow_rate'])
+        # check flowrates against setpoints
+        frok = True
+        if frt_pls:
+            frt_ulm = frt_pls*60/1.E6
+            truefrt_ulm = self.get_true_flowrate(frt_ulm)
+            setpt_ulm = setpt_pls*60/1.E6
+            truesetpt_ulm = self.get_true_flowrate(setpt_ulm)
+            #stat_dict['{}_flowrate'.format(nm)] = float(truefrt_ulm)
+            #stat_dict['{}_setpoint'.format(nm)] = float(truesetpt_ulm)
+            #stat_str += ' {}: {} (setpt {}), '.format(nm,truefrt_ulm,truesetpt_ulm)
+            if truesetpt_ulm > self.flowrate_sensitivity:
+                # substantially high setpoint: make sure the true rate is within 20%
+                # TODO: make this error resolution an input attribute
+                if abs(truefrt_ulm-truesetpt_ulm)/truesetpt_ulm > 0.2:
+                    frok = False
+            else:
+                # low setpt: make sure the true rate is not too far off 
+                if abs(truefrt_ulm-truesetpt_ulm) > self.flowrate_sensitivity:
+                    frok = False
+        # check delivered volume, if limited       
+        vlok = True
+        if self.volume_limit: 
+            with self.state_lock:
+                # add flowrate * dt in minutes to delivered volume 
+                self.state['v_delivered'] += truefrt_ulm*self.timer_dt_minutes
+                if self.state['v_delivered'] > self.volume_limit:
+                    vlok = False
+        with self.state_lock:
+            self.state['flow_rate_ok'] = frok
+            self.state['volume_limit_ok'] = vlok
+        #if self.verbose: self.message_callback(self.print_status())
 
     def run_cmd(self,cmd):
         with self.serial_lock:
@@ -179,7 +249,7 @@ class MitosPPumpController(PawsPlugin):
         return self.ser.readline().strip().decode()
 
     def read_status(self):
-        """Read pump status, save as self.state.
+        """Read pump status, update self.state fields.
 
         The reply from the pump is formatted as 
         #sErr,Sp,Src,Pc,Ps,Pt,Qc,Qt,Ft
@@ -216,19 +286,20 @@ class MitosPPumpController(PawsPlugin):
             This consists of an upper nibble, 
             middle nibble and lower nibble.
         """
-        resp = self.run_cmd('s')
-        s = resp.split(',')
-        while '' in s or len(s) < 8:
+        with self.state_lock:
             resp = self.run_cmd('s')
             s = resp.split(',')
-        with self.state_lock:
-            self.state['error_code'] = int(s[0][2:])
-            self.state['state_code'] = int(s[1])
-            self.state['chamber_pressure'] = float(s[3])
-            self.state['supply_pressure'] = float(s[4])
-            self.state['target_pressure'] = float(s[5])
-            self.state['flow_rate'] = float(s[6])
-            self.state['target_flow_rate'] = float(s[7])
+            while '' in s or len(s) < 8:
+                resp = self.run_cmd('s')
+                s = resp.split(',')
+            with self.state_lock:
+                self.state['error_code'] = int(s[0][2:])
+                self.state['state_code'] = int(s[1])
+                self.state['chamber_pressure'] = float(s[3])
+                self.state['supply_pressure'] = float(s[4])
+                self.state['target_pressure'] = float(s[5])
+                self.state['flow_rate'] = float(s[6])
+                self.state['target_flow_rate'] = float(s[7])
 
     def print_status(self):
         with self.state_lock:
@@ -236,6 +307,8 @@ class MitosPPumpController(PawsPlugin):
             msg = '\n----------- PUMP STATUS -----------\n'
             msg += 'Error code: {} ({})\n'.format(st['error_code'],errors[st['error_code']])
             msg += 'State code: {} ({})\n'.format(st['state_code'],states[st['state_code']])
+            msg += 'Flow rate ok: \t{}\n'.format(st['flow_rate_ok'])
+            msg += 'Volume limit ok: \t{}\n'.format(st['volume_limit_ok'])
             msg += 'Chamber pressure: \t{}\n'.format(st['chamber_pressure'])
             msg += 'Supply pressure: \t{}\n'.format(st['supply_pressure'])
             msg += 'Target pressure: \t{}\n'.format(st['target_pressure'])
