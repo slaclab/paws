@@ -60,9 +60,8 @@ class MitosPPumpController(PawsPlugin):
             when it passes this limit, the pump will stop itself
         bad_flow_tol : int
             Number of consecutive flowrate errors to tolerate before stopping pump
-        flowrate_calib_file : str 
-            Path to file containing flowrate calibration information.
-            File should have two columns,
+        flowrate_table : array 
+            The array should have two columns,
             where the first column contains instrument setpoints,
             and the second column contains the corresponding measured flowrates,
             both in units of microlitres/minute
@@ -92,7 +91,7 @@ class MitosPPumpController(PawsPlugin):
         self.flowrate_sensitivity = flowrate_sensitivity
         self.volume_limit = volume_limit
         self.bad_flow_tol = bad_flow_tol
-        self.flowrate_table = np.loadtxt(flowrate_calib_file)
+        self.flowrate_table = flowrate_table 
         self.flow_conversion_power = 1.
         self.calibrate()
 

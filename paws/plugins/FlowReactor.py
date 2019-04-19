@@ -25,7 +25,6 @@ class FlowReactor(PawsPlugin):
         self.timer = timer
         self.ppumps_setup = ppumps_setup 
         self.ppumps = dict.fromkeys(self.ppumps_setup.keys())
-        self.volume_limits = dict.fromkeys(self.ppumps_setup.keys())
         self.cryocon_setup = cryocon_setup 
         self.cryo = None
         self.state_lock = Condition()
@@ -40,7 +39,7 @@ class FlowReactor(PawsPlugin):
                 serial_device=pump_cfg['device'],
                 flowrate_sensitivity=pump_cfg['flowrate_sensitivity'],
                 volume_limit=pump_cfg['volume_limit'],
-                flowrate_calib_file=pump_cfg['calibration_file'],
+                flowrate_table=pump_cfg['flowrate_table'],
                 verbose=False,log_file=None
                 )
         for nm,ppc in self.ppumps.items():
