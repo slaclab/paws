@@ -157,6 +157,7 @@ class FlowReactor(PawsPlugin):
                             self.cryo.set_ramp_rate(chan,recipe['T_ramp'])
                         if 'T_set' in recipe:
                             self.cryo.hack_set_temp(chan,recipe['T_set'])
+                keep_trying = False
             except Exception as ex:
                 # if repeated failures, raise the exception
                 if n_tries > 4:
