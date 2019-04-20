@@ -209,7 +209,7 @@ class FlowReactor(PawsPlugin):
             stat_dict['{}_flowrate_ok'.format(nm)] = pstate['flow_rate_ok']
             stat_dict['{}_bad_flow_detected'.format(nm)] = pstate['bad_flow_detected']
             if not pstate['flow_rate_ok']:
-                flowrate_alert_msg += '\n{} flowrate alert: {}/{}'.format(
+                flowrate_alert_msg += '{} flowrate alert: {}/{}\n'.format(
                     nm,pstate['flow_rate'],pstate['target_flow_rate'])
             if pstate['bad_flow_detected']:
                 if self.verbose: self.message_callback(
@@ -219,7 +219,7 @@ class FlowReactor(PawsPlugin):
                 if self.verbose: self.message_callback(
                     '{} volume limit reached- requesting stop'.format(nm))
                 ok_flag = False
-        if flowrate_alert_msg and self.verbose: self.message_callback(flowrate_alert_msg)
+        if flowrate_alert_msg and self.verbose: self.message_callback(flowrate_alert_msg.strip())
         self.add_to_history(stat_str)
         with self.state_lock:
             self.state = copy.deepcopy(stat_dict)
