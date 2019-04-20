@@ -27,33 +27,37 @@ class FlowReactor(PawsPlugin):
         self.ppumps = dict.fromkeys(self.ppumps_setup.keys())
         self.cryocon_setup = cryocon_setup 
         self.cryo = None
+        self.cryo_lock = Condition()
+        self.pumps_lock = Condition()
         self.state_lock = Condition()
         self.state = {}
         self.controller_thread = None
 
     def start(self):
         # set up internal PPumpController plugins
-        for pump_nm, pump_cfg in self.ppumps_setup.items():
-            self.ppumps[pump_nm] = MitosPPumpController(
-                timer=self.timer,
-                serial_device=pump_cfg['device'],
-                flowrate_sensitivity=pump_cfg['flowrate_sensitivity'],
-                bad_flow_tol=pump_cfg['bad_flow_tol'],
-                volume_limit=pump_cfg['volume_limit'],
-                flowrate_table=pump_cfg['flowrate_table'],
-                verbose=False,log_file=None
-                )
-        for nm,ppc in self.ppumps.items():
-            if self.verbose: self.message_callback('starting pump controller: {}'.format(nm))
-            ppc.start()
-            ppc.set_flowrate(0.)
+        with self.pumps_lock:
+            for pump_nm, pump_cfg in self.ppumps_setup.items():
+                self.ppumps[pump_nm] = MitosPPumpController(
+                    timer=self.timer,
+                    serial_device=pump_cfg['device'],
+                    flowrate_sensitivity=pump_cfg['flowrate_sensitivity'],
+                    bad_flow_tol=pump_cfg['bad_flow_tol'],
+                    volume_limit=pump_cfg['volume_limit'],
+                    flowrate_table=pump_cfg['flowrate_table'],
+                    verbose=False,log_file=None
+                    )
+            for nm,ppc in self.ppumps.items():
+                if self.verbose: self.message_callback('starting pump controller: {}'.format(nm))
+                ppc.start()
+                ppc.set_flowrate(0.)
         # set up internal CryoConController plugin
-        if self.cryocon_setup:
-            self.cryo = self.build_cryo()
-            if self.verbose: self.message_callback('starting cryocon controller')
-            self.cryo.start()
-            self.initialize_cryo()
-            if self.verbose: self.message_callback('startup complete: running flow reactor')
+        with self.cryo_lock:
+            if self.cryocon_setup:
+                self.cryo = self.build_cryo()
+                if self.verbose: self.message_callback('starting cryocon controller')
+                self.cryo.start()
+                self.initialize_cryo()
+                if self.verbose: self.message_callback('startup complete: running flow reactor')
         super(FlowReactor,self).start()
 
     def build_cryo(self):
@@ -66,10 +70,11 @@ class FlowReactor(PawsPlugin):
                 )
 
     def initialize_cryo(self):
-        for chan in self.cryo.channels.keys():
-            self.cryo.set_units(chan,'C')
-            self.cryo.loop_setup(chan,'RAMPP')
-            self.cryo.set_temperature(chan,25.)
+        with self.cryo_lock:
+            for chan in self.cryo.channels.keys():
+                self.cryo.set_units(chan,'C')
+                self.cryo.loop_setup(chan,'RAMPP')
+                self.cryo.set_temperature(chan,25.)
 
     def _run(self):
         self.controller_thread = Thread(target=self.run_reactor)
@@ -84,7 +89,8 @@ class FlowReactor(PawsPlugin):
         # main thread should be waiting for run_notify()...
         self.run_notify()
         # start temperature control loop now
-        self.cryo.start_control()
+        with self.cryo_lock:
+            self.cryo.start_control()
         while keep_going: 
             with self.timer.dt_lock:
                 self.timer.dt_lock.wait()
@@ -101,17 +107,19 @@ class FlowReactor(PawsPlugin):
                 keep_going = bool(self.running)
         if self.verbose: self.message_callback('Stopping FlowReactor')
         # try to stop cryocon
-        if self.cryo:
-            try:
-                self.cryo.stop_control() 
-            except:
-                pass
+        with self.cryo_lock:
+            if self.cryo:
+                try:
+                    self.cryo.stop_control() 
+                except:
+                    pass
         # try to stop pumps
-        for nm,ppc in self.ppumps.items():
-            try:
-                ppc.set_idle()
-            except:
-                pass    
+        with self.pumps_lock:
+            for nm,ppc in self.ppumps.items():
+                try:
+                    ppc.set_idle()
+                except:
+                    pass    
         self.add_to_history('STOP')
         self.dump_history()
 
@@ -121,32 +129,37 @@ class FlowReactor(PawsPlugin):
         return st
 
     def vent_pumps(self):
-        for nm,ppc in self.ppumps.items():
-            if self.verbose: self.message_callback('Setting pump {} to idle'.format(nm))
-            ppc.set_idle()
+        with self.pumps_lock:
+            for nm,ppc in self.ppumps.items():
+                if self.verbose: self.message_callback('Setting pump {} to idle'.format(nm))
+                ppc.set_idle()
 
     def stop_pumps(self):
-        for nm,ppc in self.ppumps.items():
-            if self.verbose: self.message_callback('Setting pump {} to zero flow'.format(nm))
-            ppc.set_flowrate(0.)
+        with self.pumps_lock:
+            for nm,ppc in self.ppumps.items():
+                if self.verbose: self.message_callback('Setting pump {} to zero flow'.format(nm))
+                ppc.set_flowrate(0.)
 
     def set_temperature(self,T_set,T_ramp=None):
-        for chan,loop_idx in self.cryo.channels.items():
-            if T_ramp: self.cryo.set_ramp_rate(chan,T_ramp)
-            self.cryo.set_temperature(chan,T_set)
+        with self.cryo_lock:
+            for chan,loop_idx in self.cryo.channels.items():
+                if T_ramp: self.cryo.set_ramp_rate(chan,T_ramp)
+                self.cryo.set_temperature(chan,T_set)
 
     def set_recipe(self,recipe):
-        self.set_cryocon(recipe)
-        for itm_nm, val in recipe.items():
-            if '_flowrate' in itm_nm:
-                pump_nm = itm_nm[:itm_nm.find('_flowrate')]
-                if self.verbose: self.message_callback('setting {} to {}/min'.format(pump_nm,val))
-                self.ppumps[pump_nm].set_flowrate(val)
+        with self.cryo_lock:
+            self._set_cryocon(recipe)
+        with self.pumps_lock:
+            for itm_nm, val in recipe.items():
+                if '_flowrate' in itm_nm:
+                    pump_nm = itm_nm[:itm_nm.find('_flowrate')]
+                    if self.verbose: self.message_callback('setting {} to {}/min'.format(pump_nm,val))
+                    self.ppumps[pump_nm].set_flowrate(val)
         rcp_str = self.prettyprint_recipe(recipe)
         if self.verbose: self.message_callback(rcp_str)
         self.add_to_history(rcp_str)
 
-    def set_cryocon(self,recipe):
+    def _set_cryocon(self,recipe):
         keep_trying = True
         n_tries = 0
         while keep_trying:
@@ -191,34 +204,36 @@ class FlowReactor(PawsPlugin):
         ok_flag = True
         stat_str = ''
         stat_dict = {}
-        if self.cryo:
-            with self.cryo.state_lock:
-                for chan,idx in self.cryo.channels.items():
-                    T_read_key = 'T_read_{}'.format(chan)
-                    T_read = float(self.cryo.state[T_read_key])
-                    stat_dict[T_read_key] = T_read
-                    stat_str += 'T_{}: {:.3f}, '.format(chan,T_read)
+        with self.cryo_lock:
+            if self.cryo:
+                with self.cryo.state_lock:
+                    for chan,idx in self.cryo.channels.items():
+                        T_read_key = 'T_read_{}'.format(chan)
+                        T_read = float(self.cryo.state[T_read_key])
+                        stat_dict[T_read_key] = T_read
+                        stat_str += 'T_{}: {:.3f}, '.format(chan,T_read)
         flowrate_alert_msg = ''
-        for nm,ppc in self.ppumps.items():
-            pstate = ppc.get_state()
-            stat_str += '{}: {:.2f} (setpt {:.2f}), '.format(
-                nm,pstate['flow_rate'],pstate['target_flow_rate'])
-            stat_dict['{}_flowrate'.format(nm)] = pstate['flow_rate']
-            stat_dict['{}_setpoint'.format(nm)] = pstate['target_flow_rate']
-            stat_dict['{}_volume_limit_ok'.format(nm)] = pstate['volume_limit_ok']
-            stat_dict['{}_flowrate_ok'.format(nm)] = pstate['flow_rate_ok']
-            stat_dict['{}_bad_flow_detected'.format(nm)] = pstate['bad_flow_detected']
-            if not pstate['flow_rate_ok']:
-                flowrate_alert_msg += '{} flowrate alert: {}/{}\n'.format(
+        with self.pumps_lock:
+            for nm,ppc in self.ppumps.items():
+                pstate = ppc.get_state()
+                stat_str += '{}: {:.2f} (setpt {:.2f}), '.format(
                     nm,pstate['flow_rate'],pstate['target_flow_rate'])
-            if pstate['bad_flow_detected']:
-                if self.verbose: self.message_callback(
-                    '{} flowrate fault- requesting stop'.format(nm))
-                ok_flag = False
-            if not pstate['volume_limit_ok']:
-                if self.verbose: self.message_callback(
-                    '{} volume limit reached- requesting stop'.format(nm))
-                ok_flag = False
+                stat_dict['{}_flowrate'.format(nm)] = pstate['flow_rate']
+                stat_dict['{}_setpoint'.format(nm)] = pstate['target_flow_rate']
+                stat_dict['{}_volume_limit_ok'.format(nm)] = pstate['volume_limit_ok']
+                stat_dict['{}_flowrate_ok'.format(nm)] = pstate['flow_rate_ok']
+                stat_dict['{}_bad_flow_detected'.format(nm)] = pstate['bad_flow_detected']
+                if not pstate['flow_rate_ok']:
+                    flowrate_alert_msg += '{} flowrate alert: {}/{}\n'.format(
+                        nm,pstate['flow_rate'],pstate['target_flow_rate'])
+                if pstate['bad_flow_detected']:
+                    if self.verbose: self.message_callback(
+                        '{} flowrate fault- requesting stop'.format(nm))
+                    ok_flag = False
+                if not pstate['volume_limit_ok']:
+                    if self.verbose: self.message_callback(
+                        '{} volume limit reached- requesting stop'.format(nm))
+                    ok_flag = False
         if flowrate_alert_msg and self.verbose: self.message_callback(flowrate_alert_msg.strip())
         self.add_to_history(stat_str)
         with self.state_lock:
