@@ -44,9 +44,9 @@ class CryoConController(PawsPlugin):
 
     def _run(self):
         self.controller_thread = Thread(target=self.run_cryocon)
-        self.controller_thread.start()
-        # block until device control is established: 
+        # start control, block until control is established
         with self.running_lock:
+            self.controller_thread.start()
             self.running_lock.wait()
 
     def run_cryocon(self):
@@ -106,7 +106,7 @@ class CryoConController(PawsPlugin):
         with self.state_lock:
             self.state['T_set_{}'.format(channel)] = T_set 
 
-    def hack_set_temp(self,channel,T_set):
+    def hack_set_temp(self,chan,T_set):
         # NOTE: this does a little dance, 
         # to circumvent a problem with the CryoCon,
         # where it sometimes ignores the ramp rate 

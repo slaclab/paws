@@ -73,12 +73,10 @@ class FlowReactor(PawsPlugin):
 
     def _run(self):
         self.controller_thread = Thread(target=self.run_reactor)
-        self.controller_thread.start()
-        # block until device control is established: 
-        #if self.verbose: self.message_callback('waiting for worker thread run notification...')
+        # start control and block until control is established 
         with self.running_lock:
+            self.controller_thread.start()
             self.running_lock.wait()
-        #if self.verbose: self.message_callback('worker thread run notification received!')
 
     def run_reactor(self):
         keep_going = True
@@ -165,6 +163,10 @@ class FlowReactor(PawsPlugin):
                     raise
                 else:
                     # try resetting the cryocon a few times
+                    if self.verbose: 
+                        msg = 'cryocon error --> attempting cryocon controller restart'
+                        msg += 'error message: {}'.format(ex)
+                        self.message_callback(msg)
                     self.cryo = self.build_cryo()
                     self.cryo.start()
                     self.initialize_cryo()
@@ -192,8 +194,8 @@ class FlowReactor(PawsPlugin):
             with self.cryo.state_lock:
                 for chan,idx in self.cryo.channels.items():
                     T_read_key = 'T_read_{}'.format(chan)
-                    T_read = copy.copy(self.cryo.state[T_read_key])
-                    stat_dict[T_read_key] = float(T_read)
+                    T_read = float(self.cryo.state[T_read_key])
+                    stat_dict[T_read_key] = T_read
                     stat_str += 'T_{}: {:.3f}, '.format(chan,T_read)
         for nm,ppc in self.ppumps.items():
             pstate = ppc.get_state()

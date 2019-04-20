@@ -108,9 +108,9 @@ class MitosPPumpController(PawsPlugin):
 
     def _run(self):
         self.controller_thread = Thread(target=self.run_pump)
-        self.controller_thread.start()
-        # block until device control is established: 
+        # start control, block until control is established
         with self.running_lock:
+            self.controller_thread.start()
             self.running_lock.wait()
 
     def run_pump(self):
