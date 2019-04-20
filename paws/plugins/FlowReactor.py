@@ -165,7 +165,7 @@ class FlowReactor(PawsPlugin):
                     # try resetting the cryocon a few times
                     if self.verbose: 
                         msg = 'cryocon error --> attempting cryocon controller restart'
-                        msg += 'error message: {}'.format(ex)
+                        msg += '\nerror message: {}'.format(ex)
                         self.message_callback(msg)
                     self.cryo = self.build_cryo()
                     self.cryo.start()
