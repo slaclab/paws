@@ -154,7 +154,7 @@ class MitosPPumpController(PawsPlugin):
                     if self.verbose:
                         self.message_callback(
                         'flowrate far from setpoint: {:.3f}/{:.3f}'
-                        .format(truefrt_ulm,truesetpt_ulm))
+                        .format(self.state['flow_rate'],self.state['target_flow_rate']))
                     if bad_flow_count > self.bad_flow_tol:
                         self.state['bad_flow_detected'] = True
                         keep_going = False 
