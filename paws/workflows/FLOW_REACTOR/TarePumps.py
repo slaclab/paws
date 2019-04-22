@@ -1,11 +1,14 @@
 import time
+from collections import OrderedDict
 
-from paws.plugins.Timer import Timer
-from paws.plugins.MitosPPumpController import MitosPPumpController
+from ...plugins.Timer import Timer
+from ...plugins.MitosPPumpController import MitosPPumpController
+from ..Workflow import Workflow
 
 inputs = OrderedDict(
-    ppumps_setup = {},
-    delay_time = 0. 
+    ppumps_setup={},
+    delay_time=0.,
+    verbose=False
     )
 
 outputs = OrderedDict()
@@ -21,7 +24,8 @@ class TarePumps(Workflow):
         timer.start()
         pumps = {}
         for pump_nm,setup in self.inputs['ppumps_setup'].items():
-            pumps[pump_nm] = MitosPPumpController(**setup)
+            pumps[pump_nm] = MitosPPumpController(
+                timer=timer,verbose=self.inputs['verbose'],**setup)
             pumps[pump_nm].start()
             self.message_callback('taring {}'.format(pump_nm))
             pumps[pump_nm].tare()
