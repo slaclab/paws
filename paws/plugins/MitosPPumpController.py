@@ -209,19 +209,15 @@ class MitosPPumpController(PawsPlugin):
         truesetpt_ulm = self.get_true_flowrate(setpt_ulm)
         # check flowrates against setpoints
         frok = True
-        if frt_pls:
-            #stat_dict['{}_flowrate'.format(nm)] = float(truefrt_ulm)
-            #stat_dict['{}_setpoint'.format(nm)] = float(truesetpt_ulm)
-            #stat_str += ' {}: {} (setpt {}), '.format(nm,truefrt_ulm,truesetpt_ulm)
-            if truesetpt_ulm > self.flowrate_sensitivity:
-                # substantially high setpoint: make sure the true rate is within 20%
-                # TODO: make this error resolution an input attribute
-                if abs(truefrt_ulm-truesetpt_ulm)/truesetpt_ulm > 0.2:
-                    frok = False
-            else:
-                # low setpt: make sure the true rate is not too far off 
-                if abs(truefrt_ulm-truesetpt_ulm) > self.flowrate_sensitivity:
-                    frok = False
+        if truesetpt_ulm > self.flowrate_sensitivity:
+            # substantially high setpoint: make sure the true rate is within 20%
+            # TODO: make this error resolution an input attribute
+            if abs(truefrt_ulm-truesetpt_ulm)/truesetpt_ulm > 0.2:
+                frok = False
+        else:
+            # low setpt: make sure the true rate is not too far off 
+            if abs(truefrt_ulm-truesetpt_ulm) > self.flowrate_sensitivity:
+                frok = False
         # check delivered volume, if limited       
         vlok = True
         if self.volume_limit: 
