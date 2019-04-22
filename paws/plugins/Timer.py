@@ -10,7 +10,7 @@ from .PawsPlugin import PawsPlugin
 class Timer(PawsPlugin):
     """A Paws plugin for signaling the passage of time."""
 
-    def __init__(self,dt=1.,t_max=10.,verbose=False,log_file=None):
+    def __init__(self,dt=1.,t_max=float('inf'),verbose=False,log_file=None):
         """Create a Timer.
 
         Parameters
