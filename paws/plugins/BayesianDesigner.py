@@ -236,32 +236,36 @@ class BayesianDesigner(PawsPlugin):
                 self.filtered_cov_mats[y_key] = self.cov_mat[good_idx,:][:,good_idx]  
                 self.filtered_inv_cov_mats[y_key] = np.linalg.inv(self.filtered_cov_mats[y_key]) 
 
-    def set_target(self,y_key,targ_spec):
-        if not y_key in self.targets:
-            raise KeyError('target key {} does not exist'.format(y_key))
+    def set_targets(self,**kwargs):
         with self.modeling_lock:
-            self.targets[y_key] = targ_spec
+            for y_key,targ_spec in kwargs.items():
+                if not y_key in self.targets:
+                    raise KeyError('target key {} does not exist'.format(y_key))
+                self.targets[y_key] = targ_spec
             self._set_target_data()
 
-    def set_constraint(self,y_key,y_val):
-        if not y_key in self.constraints:
-            raise KeyError('constraint key {} does not exist'.format(y_key))
+    def set_constraints(self,**kwargs):
         with self.modeling_lock:
-            self.constraints[y_key] = y_val
+            for y_key,y_val in kwargs.items():
+                if not y_key in self.constraints:
+                    raise KeyError('constraint key {} does not exist'.format(y_key))
+                self.constraints[y_key] = y_val
             self._set_target_data()
 
-    def set_categorical_constraint(self,y_key,y_cat):
-        if not y_key in self.categorical_constraints:
-            raise KeyError('categorical constraint key {} does not exist'.format(y_key))
+    def set_categorical_constraints(self,**kwargs):
         with self.modeling_lock:
-            self.categorical_constraints[y_key] = y_cat
+            for y_key,y_val in kwargs.items():
+                if not y_key in self.categorical_constraints:
+                    raise KeyError('categorical constraint key {} does not exist'.format(y_key))
+                self.categorical_constraints[y_key] = y_cat
             self._set_target_data()
 
-    def set_range_constraint(self,y_key,y_range):
-        if not y_key in self.range_constraints:
-            raise KeyError('range constraint key {} does not exist'.format(y_key))
+    def set_range_constraints(self,**kwargs):
         with self.modeling_lock:
-            self.range_constraints[y_key] = y_range
+            for y_key,y_val in kwargs.items():
+                if not y_key in self.range_constraints:
+                    raise KeyError('range constraint key {} does not exist'.format(y_key))
+                self.range_constraints[y_key] = y_range
             self._set_target_data()
 
     def cov_vector(self,xs,idx_filter=None):
