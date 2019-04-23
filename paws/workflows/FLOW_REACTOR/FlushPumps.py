@@ -3,6 +3,7 @@ from collections import OrderedDict
 
 from ...plugins.Timer import Timer
 from ...plugins.MitosPPumpController import MitosPPumpController
+from ..Workflow import Workflow
 
 inputs = OrderedDict(
     ppumps_setup={},

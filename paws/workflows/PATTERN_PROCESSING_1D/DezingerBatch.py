@@ -1,11 +1,12 @@
+from collections import OrderedDict
 import time
 import copy
 
 import numpy as np 
 
-from ...Workflow import Workflow
-from ....pawstools import primitives
-from ....operations.ZINGERS.EasyZingers1d import EasyZingers1d
+from ..Workflow import Workflow
+from ...pawstools import primitives
+from ...operations.ZINGERS.EasyZingers1d import EasyZingers1d
 
 inputs = OrderedDict(
     q_I_arrays=[],
@@ -42,4 +43,5 @@ class DezingerBatch(Workflow):
                 dz_path = os.path.join(self.inputs['output_dir'],dz_fn)
                 np.savetxt(dz_path,q_I_dz,delimiter=' ',header='q (1/Angstrom), I (arb)')
                 self.outputs['data_paths'].append(dz_path)
+        return self.outputs
 

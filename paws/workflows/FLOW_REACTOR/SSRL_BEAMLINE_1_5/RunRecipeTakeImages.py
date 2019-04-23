@@ -1,3 +1,4 @@
+from collections import OrderedDict
 import time
 import copy
 import os
@@ -12,6 +13,7 @@ inputs = OrderedDict(
     flow_reactor=None, 
     spec_infoclient=None,
     ssh_client=None,
+    ssh_data_dir='/home/data',
     recipe={},
     delay_time=60.,
     n_exposures=1,
@@ -52,7 +54,7 @@ class RunRecipeTakeImages(Workflow):
             hdr.update(self.inputs['flow_reactor'].get_state())
             fn_root = rxn_id+'_exp{}'.format(iexp)
             self.inputs['spec_infoclient'].mar_expose(fn_root,self.inputs['exposure_time'])
-            tmstmp = self.inputs['flow_reactor'].timer.get_epoch_time())
+            tmstmp = self.inputs['flow_reactor'].timer.get_epoch_time()
             smpl_id = rxn_id+'_{}'.format(int(tmstmp))
             hdr.update(time=tmstmp,
                 reaction_id=rxn_id,
@@ -70,14 +72,15 @@ class RunRecipeTakeImages(Workflow):
             for iexp in range(self.inputs['n_exposures']):
                 fn_root = rxn_id+'_exp{}'.format(iexp)
                 img_fn = fn_root+'_0001.tif'
-                mar_path = mar_data_dir+'/'+img_fn
+                mar_path = self.inputs['ssh_data_dir']+'/'+img_fn
                 local_path = os.path.join(self.inputs['image_output_dir'],img_fn)
                 self.inputs['ssh_client'].copy_file(mar_path,local_path)
                 img = fabio.open(local_path).data
                 self.outputs['images'].append(img)
                 self.outputs['image_paths'].append(local_path)
 
-        # pause the reactor
+        # pause the reactor, then return
         self.inputs['flow_reactor'].set_temperature(25.)
         self.inputs['flow_reactor'].stop_pumps()
+        return self.outputs
 

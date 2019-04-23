@@ -50,7 +50,7 @@ class Workflow(object):
             if not k in self.inputs:
                 raise ValueError('Input {} is not valid for Workflow {}'.format(k,type(self).__name__))
         self.inputs.update(kwargs)
-        return self.run() 
+        return copy.deepcopy(self.run())
 
     def run(self):
         """Run the Workflow."""

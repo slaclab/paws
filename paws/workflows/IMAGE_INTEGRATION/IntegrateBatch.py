@@ -1,3 +1,4 @@
+from collections import OrderedDict
 import time
 import copy
 import os
@@ -5,8 +6,8 @@ import os
 import numpy as np
 import fabio
 
-from ...Workflow import Workflow
-from ....pawstools import primitives
+from ..Workflow import Workflow
+from ...pawstools import primitives
 
 inputs = OrderedDict(
     integrator=None, 
@@ -43,4 +44,5 @@ class IntegrateBatch(Workflow):
                 dat_path = os.path.join(self.inputs['output_dir'],dat_fn)
                 np.savetxt(dat_path,q_I,delimiter=' ',header='q (1/Angstrom), I (arb)')
                 self.outputs['data_paths'].append(dat_path)
+        return self.outputs
 
