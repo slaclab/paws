@@ -5,9 +5,10 @@ from ...plugins.Timer import Timer
 from ...plugins.MitosPPumpController import MitosPPumpController
 
 inputs = OrderedDict(
-    ppumps_setup = {},
-    flowrates = {},
-    delay_time = 0. 
+    ppumps_setup={},
+    flowrates={},
+    delay_time=0.,
+    verbose=True 
     )
 
 outputs = OrderedDict()
@@ -15,7 +16,7 @@ outputs = OrderedDict()
 class FlushPumps(Workflow):
 
     def __init__(self):
-        super(TarePumps,self).__init__(inputs,outputs)
+        super(FlushPumps,self).__init__(inputs,outputs)
 
     def run(self):
         # pump controller plugins run on timer ticks
