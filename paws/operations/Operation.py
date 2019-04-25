@@ -7,10 +7,10 @@ class Operation(object):
     """Class template for implementing paws operations"""
 
     def __init__(self,inputs,outputs):
-        self.inputs = OrderedDict(copy.deepcopy(inputs))
-        self.outputs = OrderedDict(copy.deepcopy(outputs))
-        self.input_doc = OrderedDict.fromkeys(self.inputs.keys()) 
-        self.output_doc = OrderedDict.fromkeys(self.outputs.keys()) 
+        self.default_inputs = copy.deepcopy(inputs)
+        self.default_outputs = copy.deepcopy(outputs)
+        self.inputs = copy.deepcopy(inputs)
+        self.outputs = copy.deepcopy(outputs)
         self.message_callback = self.tagged_print 
         self.data_callback = None 
 
@@ -20,6 +20,10 @@ class Operation(object):
         # to decide whether or not to stop.
         self.stop_lock = Condition()
         self.stop_flag = False
+
+        # TODO: deprecate instance-level io docs
+        self.input_doc = OrderedDict.fromkeys(self.inputs.keys())
+        self.output_doc = OrderedDict.fromkeys(self.outputs.keys())
 
     def __getitem__(self,key):
         return self.__dict__[key]
@@ -35,17 +39,20 @@ class Operation(object):
         print('[{}] {}'.format(type(self).__name__,msg))
 
     def run_with(self,**kwargs):
-        """Run the Operation with keyword arguments substituted for the inputs.
+        """Run the Operation with inputs specified by keyword arguments.
 
-        Any keyword arguments that match the Operation.inputs keys
-        are loaded into the Operation.inputs before calling Operation.run().
-        All relevant results are stored in Operation.outputs.
+        When called, this method loads the default inputs and outputs into the Operation,
+        then updates the inputs with the keyword arguments,
+        then returns a copy of the return value of the Operation's run() function
+        (often, the return value of run() will be the Operation outputs).
         """
         for k in kwargs.keys():
             if not k in self.inputs:
                 raise ValueError('Input {} is not valid for Operation {}'.format(k,type(self).__name__))
+        self.inputs = copy.deepcopy(self.default_inputs)
+        self.outputs = copy.deepcopy(self.default_outputs)
         self.inputs.update(kwargs)
-        return self.run() 
+        return copy.deepcopy(self.run()) 
 
     def run(self):
         """Run the Operation.

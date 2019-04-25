@@ -1,4 +1,5 @@
 from threading import Condition
+import time
 
 import paramiko
 
@@ -73,6 +74,7 @@ class SSHClient(PawsPlugin):
                     try_again = False
                 except:
                     n_tries += 1
+                    time.sleep(1.)
                     if n_tries > 100:
                         self.message_callback('failed to copy {}'.format(remote_path))
                         try_again = False

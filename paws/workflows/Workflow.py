@@ -11,10 +11,10 @@ class Workflow(object):
         self.message_callback = self.tagged_print
         self.stop_flag = False
 
+        self.default_inputs = copy.deepcopy(inputs)
+        self.default_outputs = copy.deepcopy(outputs)
         self.inputs = copy.deepcopy(inputs)
         self.outputs = copy.deepcopy(outputs)
-        self.input_doc = dict.fromkeys(self.inputs.keys())
-        self.output_doc = dict.fromkeys(self.outputs.keys())
 
     def tagged_print(self,msg):
         msg = '[{}] {}'.format(type(self).__name__,msg)  
@@ -40,17 +40,20 @@ class Workflow(object):
         self.log_file = file_path 
 
     def run_with(self,**kwargs):
-        """Run the Workflow with keyword arguments substituted for the inputs.
+        """Run the Workflow with inputs specified by keyword arguments.
 
-        Any keyword arguments that match the Workflow.inputs keys
-        are loaded into the Workflow.inputs before calling Workflow.run().
-        All relevant results are stored in Workflow.outputs.
+        When called, this method loads the default inputs and outputs into the Workflow,
+        then updates the inputs with the keyword arguments,
+        then returns a copy of the return value of the Workflow's run() function
+        (often, the return value of run() will be the Workflow outputs).
         """
         for k in kwargs.keys():
             if not k in self.inputs:
                 raise ValueError('Input {} is not valid for Workflow {}'.format(k,type(self).__name__))
+        self.inputs = copy.deepcopy(self.default_inputs)
+        self.outputs = copy.deepcopy(self.default_outputs)
         self.inputs.update(kwargs)
-        return self.run() 
+        return copy.deepcopy(self.run())
 
     def run(self):
         """Run the Workflow."""
