@@ -243,6 +243,7 @@ class BayesianDesigner(PawsPlugin):
                     raise KeyError('target key {} does not exist'.format(y_key))
                 self.targets[y_key] = targ_spec
             self._set_target_data()
+        if self.verbose: self.message_callback('targets set: {}'.format(kwargs))
 
     def set_constraints(self,**kwargs):
         with self.modeling_lock:
@@ -251,6 +252,7 @@ class BayesianDesigner(PawsPlugin):
                     raise KeyError('constraint key {} does not exist'.format(y_key))
                 self.constraints[y_key] = y_val
             self._set_target_data()
+        if self.verbose: self.message_callback('constraints set: {}'.format(kwargs))
 
     def set_categorical_constraints(self,**kwargs):
         with self.modeling_lock:
@@ -259,6 +261,7 @@ class BayesianDesigner(PawsPlugin):
                     raise KeyError('categorical constraint key {} does not exist'.format(y_key))
                 self.categorical_constraints[y_key] = y_cat
             self._set_target_data()
+        if self.verbose: self.message_callback('categorical constraints set: {}'.format(kwargs))
 
     def set_range_constraints(self,**kwargs):
         with self.modeling_lock:
@@ -267,6 +270,7 @@ class BayesianDesigner(PawsPlugin):
                     raise KeyError('range constraint key {} does not exist'.format(y_key))
                 self.range_constraints[y_key] = y_range
             self._set_target_data()
+        if self.verbose: self.message_callback('range constraints set: {}'.format(kwargs))
 
     def cov_vector(self,xs,idx_filter=None):
         if idx_filter is None:
