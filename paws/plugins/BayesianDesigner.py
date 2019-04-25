@@ -89,7 +89,7 @@ class BayesianDesigner(PawsPlugin):
         if self.covariance_kernel == 'sq_exp':
             return self._sq_exp_kernel(x1,x2,self.cov_params['width'])
         elif self.covariance_kernel == 'inv_exp':
-            return self._exp_kernel(x1,x2,self.cov_params['width'])
+            return self._inv_exp_kernel(x1,x2,self.cov_params['width'])
         else:
             raise ValueError('invalid kernel specification: {}'.format(self.covariance_kernel))
 
@@ -236,33 +236,41 @@ class BayesianDesigner(PawsPlugin):
                 self.filtered_cov_mats[y_key] = self.cov_mat[good_idx,:][:,good_idx]  
                 self.filtered_inv_cov_mats[y_key] = np.linalg.inv(self.filtered_cov_mats[y_key]) 
 
-    def set_target(self,y_key,targ_spec):
-        if not y_key in self.targets:
-            raise KeyError('target key {} does not exist'.format(y_key))
+    def set_targets(self,**kwargs):
         with self.modeling_lock:
-            self.targets[y_key] = targ_spec
+            for y_key,targ_spec in kwargs.items():
+                if not y_key in self.targets:
+                    raise KeyError('target key {} does not exist'.format(y_key))
+                self.targets[y_key] = targ_spec
             self._set_target_data()
+        if self.verbose: self.message_callback('targets set: {}'.format(kwargs))
 
-    def set_constraint(self,y_key,y_val):
-        if not y_key in self.constraints:
-            raise KeyError('constraint key {} does not exist'.format(y_key))
+    def set_constraints(self,**kwargs):
         with self.modeling_lock:
-            self.constraints[y_key] = y_val
+            for y_key,y_val in kwargs.items():
+                if not y_key in self.constraints:
+                    raise KeyError('constraint key {} does not exist'.format(y_key))
+                self.constraints[y_key] = y_val
             self._set_target_data()
+        if self.verbose: self.message_callback('constraints set: {}'.format(kwargs))
 
-    def set_categorical_constraint(self,y_key,y_cat):
-        if not y_key in self.categorical_constraints:
-            raise KeyError('categorical constraint key {} does not exist'.format(y_key))
+    def set_categorical_constraints(self,**kwargs):
         with self.modeling_lock:
-            self.categorical_constraints[y_key] = y_cat
+            for y_key,y_val in kwargs.items():
+                if not y_key in self.categorical_constraints:
+                    raise KeyError('categorical constraint key {} does not exist'.format(y_key))
+                self.categorical_constraints[y_key] = y_cat
             self._set_target_data()
+        if self.verbose: self.message_callback('categorical constraints set: {}'.format(kwargs))
 
-    def set_range_constraint(self,y_key,y_range):
-        if not y_key in self.range_constraints:
-            raise KeyError('range constraint key {} does not exist'.format(y_key))
+    def set_range_constraints(self,**kwargs):
         with self.modeling_lock:
-            self.range_constraints[y_key] = y_range
+            for y_key,y_val in kwargs.items():
+                if not y_key in self.range_constraints:
+                    raise KeyError('range constraint key {} does not exist'.format(y_key))
+                self.range_constraints[y_key] = y_range
             self._set_target_data()
+        if self.verbose: self.message_callback('range constraints set: {}'.format(kwargs))
 
     def cov_vector(self,xs,idx_filter=None):
         if idx_filter is None:
@@ -331,9 +339,9 @@ class BayesianDesigner(PawsPlugin):
                 else:
                     covvec_y,gp_var_y,gp_sd_y = covvec_all,gp_var_all,gp_sd_all 
                     inv_cov_y = self.inv_cov_mat
-                ys_mean = self._gp_mean(covvec_y,inv_cov_y,self.ys_arrays[y_key])[0]
                 gp_mean_y = self._gp_mean(covvec_y,inv_cov_y,self.gp_arrays[y_key])[0]
                 gp_preds[y_key] = [gp_mean_y,gp_sd_y]
+                ys_mean = self._gp_mean(covvec_y,inv_cov_y,self.ys_arrays[y_key])[0]
                 mean = self.y_scalers[y_key].inverse_transform(np.array(ys_mean).reshape(-1,1))[0,0]
                 sd = gp_sd_y*self.y_scalers[y_key].scale_[0]
                 preds[y_key] = [mean,sd]
@@ -615,7 +623,7 @@ class BayesianDesigner(PawsPlugin):
                         obj_current = obj_new
                         n_acc += 1
 
-            if np.mod(iit,100) == 0:
+            if (np.mod(iit,1000)==0) or (iit<1000 and np.mod(iit,100)==0):
                 # check the acceptance ratio
                 ac_ratio = float(n_acc)/iit
                 if self.verbose:

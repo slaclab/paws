@@ -42,6 +42,23 @@ if not os.path.exists(paws_cfg_dir):
 if not os.path.exists(paws_scratch_dir):
     os.mkdir(paws_scratch_dir)
 
+def primitives(v):
+    if isinstance(v,dict):
+        rd = {}
+        for kk,vv in v.items():
+            rd[kk] = primitives(vv)
+        return rd
+    elif isinstance(v,list):
+        return [primitives(vv) for vv in v]
+    elif isinstance(v,str):
+        return str(v)
+    elif isinstance(v,int):
+        return int(v)
+    elif isinstance(v,float):
+        return float(v)
+    else:
+        return v
+
 class WorkflowAborted(Exception):
     pass
 
