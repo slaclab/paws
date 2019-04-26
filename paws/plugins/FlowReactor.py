@@ -31,6 +31,7 @@ class FlowReactor(PawsPlugin):
         self.pumps_lock = Condition()
         self.state_lock = Condition()
         self.state = {}
+        self.recipe = {}
         self.controller_thread = None
 
     def start(self):
@@ -158,6 +159,7 @@ class FlowReactor(PawsPlugin):
         rcp_str = self.prettyprint_recipe(recipe)
         if self.verbose: self.message_callback(rcp_str)
         self.add_to_history(rcp_str)
+        self.recipe = recipe
 
     def _set_cryocon(self,recipe):
         keep_trying = True
@@ -226,6 +228,10 @@ class FlowReactor(PawsPlugin):
                 if not pstate['flow_rate_ok']:
                     flowrate_alert_msg += '{} flowrate alert: {}/{}\n'.format(
                         nm,pstate['flow_rate'],pstate['target_flow_rate'])
+                    if self.recipe:
+                        frt_val = self.recipe[nm+'_flowrate']
+                        if self.verbose: self.message_callback('re-trying to set {} to {}/min'.format(nm,frt_val))
+                        self.ppumps[nm].set_flowrate(frt_val)
                 if pstate['bad_flow_detected']:
                     if self.verbose: self.message_callback(
                         '{} flowrate fault- requesting stop'.format(nm))
