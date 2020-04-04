@@ -11,7 +11,7 @@ from ....operations.SSRL_BEAMLINE_1_5.ReadSpecHeader import ReadSpecHeader
 class Read(Read2.Read):
 
     def __init__(self):
-        super(Read,self).__init__(inputs,outputs)
+        super(Read,self).__init__()
         self.reader = ReadSpecHeader()
 
     # override the header reader

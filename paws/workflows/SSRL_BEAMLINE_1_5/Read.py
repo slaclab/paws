@@ -40,6 +40,7 @@ class Read(Workflow):
         self.outputs = copy.deepcopy(outputs)
 
         if (self.inputs['header_file']) and (os.path.exists(self.inputs['header_file'])):
+            self.message_callback('loading {}'.format(self.inputs['header_file']))
             hdata = self.read_header(self.inputs['header_file'])
             self.outputs['header_data'] = hdata
             self.outputs['time'] = hdata['time']
@@ -47,11 +48,13 @@ class Read(Workflow):
             self.message_callback('header file not found: {}'.format(self.inputs['header_file']))
 
         if (self.inputs['image_file']) and (os.path.exists(self.inputs['image_file'])):
+            self.message_callback('loading {}'.format(self.inputs['image_file']))
             self.outputs['image_data'] = fabio.open(self.inputs['image_file'])
         elif self.inputs['image_file']:
             self.message_callback('image file not found: {}'.format(self.inputs['image_file']))
 
         if (self.inputs['q_I_file']) and (os.path.exists(self.inputs['q_I_file'])):
+            self.message_callback('loading {}'.format(self.inputs['q_I_file']))
             q_I = np.loadtxt(self.inputs['q_I_file'],dtype='float') 
             dI = None
             if (q_I is not None) and (q_I.shape[1] > 2):

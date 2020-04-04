@@ -139,10 +139,12 @@ class BayesianDesigner(PawsPlugin):
 
         # model zero-centered integers (-1 and 1) for all categorical constraints
         for y_key, y_cat in self.categorical_constraints.items():
-            y_array = np.array(self.dataset[y_key],dtype=int)
+            # cast as float to deal with nan-filtering
+            y_array = np.array(self.dataset[y_key],dtype=float)
             good_idx = np.invert(np.isnan(y_array))
             self.good_idxs[y_key] = good_idx
-            y_array = y_array[good_idx].reshape(-1,1)  
+            # cast as int for categorical modeling
+            y_array = np.array(y_array,dtype=int)[good_idx].reshape(-1,1) 
             self.y_arrays[y_key] = y_array
             self.ys_arrays[y_key] = y_array
             self.gp_arrays[y_key] = copy.deepcopy(y_array) 
@@ -161,7 +163,7 @@ class BayesianDesigner(PawsPlugin):
 
         # model standardized values for all range constraints
         for y_key, y_range in self.range_constraints.items():
-            y_array = np.array(self.dataset[y_key])
+            y_array = np.array(self.dataset[y_key],dtype=float)
             good_idx = np.invert(np.isnan(y_array))
             self.good_idxs[y_key] = good_idx
             y_array = y_array[good_idx].reshape(-1,1) 
@@ -187,7 +189,7 @@ class BayesianDesigner(PawsPlugin):
         # relative to the incumbent best sample 
         # TODO: how to use self.strategy here?
         for y_key, y_val in self.constraints.items():
-            y_array = np.array(self.dataset[y_key])
+            y_array = np.array(self.dataset[y_key],dtype=float)
             good_idx = np.invert(np.isnan(y_array))
             self.good_idxs[y_key] = good_idx
             y_array = y_array[good_idx].reshape(-1,1)  
@@ -208,7 +210,7 @@ class BayesianDesigner(PawsPlugin):
         # relative to the incumbent best sample,
         # in the context of self.strategy
         for y_key, targ_spec in self.targets.items():
-            y_array = np.array(self.dataset[y_key])
+            y_array = np.array(self.dataset[y_key],float)
             good_idx = np.invert(np.isnan(y_array))
             self.good_idxs[y_key] = good_idx
             y_array = y_array[good_idx].reshape(-1,1)   
